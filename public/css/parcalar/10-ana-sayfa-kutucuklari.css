@@ -1,0 +1,41 @@
+/* Ana sayfadaki renkli kutucuklar ve rozetler. */
+
+/* ===================================================================
+   ANA SAYFA KUTUCUKLARI
+   Okul yazilimlarindaki renkli panel gorunumu: her bolum kendi rengiyle,
+   arkasinda soluk bir simge, uzerine tiklaninca o sayfaya gider.
+   =================================================================== */
+
+.kutucuklar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.kutucuk {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 116px;
+  padding: 14px 15px;
+  border: 0;
+  border-radius: var(--r-buyuk);
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+  font: inherit;
+  color: var(--kutu-yazi);
+  background: var(--kutu-gri);
+  box-shadow: var(--golge-yumusak);
+  transition: transform var(--sure) var(--egri), box-shadow var(--sure) var(--egri),
+              background var(--sure) var(--egri);
+}
+.kutucuk:hover {
+  transform: translateY(calc(var(--kalkis) * -1));
+  box-shadow: var(--golge-kalkik);
+}
+.kutucuk:active { transform: translateY(0); }
+.kutucuk:focus-visible { outline: 3px solid var(--yazi); outline-offset: 2px; }
+

@@ -118,3 +118,19 @@ function hero(baslik, altYazi) {
     '<hr></div>';
 }
 
+/* Ana sayfadaki renkli bolum kutucuklari.
+   liste: [{ k: sayfaAnahtari, ad, renk, ikon, alt, rozet }] */
+function kutucuklar(liste) {
+  var h = '<div class="kutucuklar">';
+  for (var i = 0; i < liste.length; i++) {
+    var t = liste[i];
+    if (!t || !sayfaAcik(t.k)) continue;
+    h += '<button type="button" class="kutucuk ' + t.renk + '" data-nav="' + esc(t.k) + '">' +
+      '<span class="kutucuk-ikon">' + ik(t.ikon) + '</span>' +
+      (t.rozet ? '<span class="kutucuk-rozet">' + esc(t.rozet) + '</span>' : '') +
+      '<span class="kutucuk-ad">' + esc(t.ad) + '</span>' +
+      (t.alt ? '<span class="kutucuk-alt">' + esc(t.alt) + '</span>' : '') +
+      '</button>';
+  }
+  return h + '</div>';
+}
