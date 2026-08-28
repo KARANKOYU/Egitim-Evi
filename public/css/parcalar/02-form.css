@@ -33,6 +33,33 @@
 .msg.bilgi { background: var(--ana-acik); color: var(--ana-koyu); }
 .msg.uyari { background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
 
+/* ===== şifre kutusu: göster/gizle düğmesi ===== */
+.sifre-kap { position: relative; }
+.sifre-kap input { padding-right: 46px; }
+/* Edge kendi göz düğmesini de koyuyor; iki göz olmasın. */
+.sifre-kap input::-ms-reveal,
+.sifre-kap input::-ms-clear { display: none; }
+.sifre-goz {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-mini);
+  background: transparent;
+  color: var(--soluk);
+  cursor: pointer;
+  transition: color var(--sure-kisa) var(--egri), background var(--sure-kisa) var(--egri);
+}
+.sifre-goz:hover { color: var(--yazi); background: var(--gri-zemin); }
+.sifre-goz:focus-visible { outline: 2px solid var(--ana); outline-offset: 1px; }
+.sifre-goz[aria-pressed="true"] { color: var(--ana); }
+.sifre-goz .ikon { width: 19px; height: 19px; }
+
 .caps-uyari {
   display: flex;
   align-items: center;

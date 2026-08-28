@@ -53,6 +53,29 @@
       </div>
     </div>
 
+    <!-- şifremi unuttum: yeni şifreyi belirle -->
+    <div id="yeniSifreEkran" style="display:none">
+      <div class="kod-baslik">
+        <div class="kod-simge"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 19 4"/><path d="m16 7 3 3"/><path d="m19 4 2 2"/></svg></div>
+        <h2>Yeni şifreni belirle</h2>
+        <p>En az 8 karakter, harf ve rakam içermeli.</p>
+      </div>
+      <form id="formYeniSifre" novalidate>
+        <div class="field">
+          <label for="ySifre1">Yeni şifre</label>
+          <input type="password" id="ySifre1" required minlength="8" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="ySifre2">Yeni şifre (tekrar)</label>
+          <input type="password" id="ySifre2" required minlength="8" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn full">Şifreyi güncelle</button>
+      </form>
+      <div class="kod-alt">
+        <button type="button" class="baglanti" id="yVazgec">← Girişe dön</button>
+      </div>
+    </div>
+
 <div id="modalKok"></div>
 
 <script src="/js/app.js"></script>

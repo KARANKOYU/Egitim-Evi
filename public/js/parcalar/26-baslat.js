@@ -1,0 +1,96 @@
+/* Açılış ve çıkış: oturumu doğrula, uygulamayı başlat. */
+
+/* ================= başlat / çıkış ================= */
+
+/* Kişiye bağlı ekran durumu: çıkışta ve rol değişince silinir. Sonraki kişi
+   (ya da başka okuldaki rol) öncekinin açtığı hesapların şifre listesini,
+   seçtiği dosyayı, bildirim panelini, yoklama dersini görmesin. */
+function oturumDurumunuSifirla() {
+  S.viewStudentId = null;
+  S.bildirimSurum = null; S._bildirimler = [];
+  S.yilBilgi = null;
+  S.aktarim = null; S.metinDosya = null;
+  S.yoklamaDers = null; S.yoklamaTarih = ''; S.yoklamaDurum = {};
+  S.programSinif = ''; S.programVeri = null;
+  S.odevF = { ders: '', yildiz: '', durum: '', bas: '', bit: '', mod: 'ogrenci' }; S.odevHam = [];
+  S._sinifListe = null; S._ogrListe = null; S._duzenlenen = null; S._sonuclar = null;
+  S._acikMesaj = null; S._acikOdev = null;
+  ETUT = { liste: [], yonetebilir: false, bugun: '', adaylar: null, secili: null };
+  ROL.liste = [];
+  kisilikVeri = null;
+  var panel = $('bildirimPanel');
+  if (panel) panel.innerHTML = '';
+  var rozet = $('bildirimRozet');
+  if (rozet) rozet.style.display = 'none';
+}
+/* Aydınlatma metni yenilenmişse (ya da hesabı müdür açtıysa) kullanıcı
+   onaylamadan uygulamaya giremez; sunucu da onaysız isteği reddeder. */
+function kvkkOnayIste(d) {
+  $('dis').style.display = 'none';
+  $('app').classList.remove('on');
+  var surum = d.kvkkSurum ? ' (sürüm ' + esc(d.kvkkSurum) + ')' : '';
+  /* Hesabı okul açtıysa kişi metni ilk kez görüyor: "güncellendi" denmez. */
+  var ilk = !(d.user && d.user.kvkkSurum);
+  modalAc(ilk ? 'Aydınlatma metni' : 'Aydınlatma metni güncellendi',
+    (ilk ? '<p>Hoş geldin. Devam etmeden önce kişisel verilerinin nasıl işlendiğini anlatan metni okuyup onaylaman gerekiyor.</p>'
+      : '<p>Kişisel verilerin korunması aydınlatma metni yenilendi' + surum + '. ' +
+        'Devam etmek için metni okuyup onaylaman gerekiyor.</p>') +
+    '<p><a href="/kvkk.html" target="_blank" rel="noopener">Aydınlatma metnini yeni sekmede aç</a></p>' +
+    '<label class="onay-satiri"><input type="checkbox" id="kvkkYeniKutu"> ' +
+    '<span>Aydınlatma metnini okudum, anladım ve kişisel verilerimin bu kapsamda işlenmesini kabul ediyorum. ' +
+    '<a href="/kosullar.html" target="_blank" rel="noopener">Kullanım koşullarını</a> kabul ediyorum.</span></label>' +
+    '<div id="kvkkYeniMesaj" style="margin-top:10px"></div>',
+    '<button class="btn gri" data-act="cikis">Çıkış yap</button>' +
+    '<button class="btn" data-act="kvkk-onayla">Onaylıyorum</button>');
+  var perde = document.querySelector('.perde');
+  if (perde) perde.setAttribute('data-zorunlu', '1');
+}
+
+function cikisYap(sessiz) {
+  var eski = S.token;
+  var bitir = function () {
+    S.token = null; S.user = null; S.children = []; S.veliCocuk = null; S.kapali = [];
+    oturumDurumunuSifirla();                             // sonraki kişi öncekinin ekran durumunu görmesin
+    S._epostaSoruldu = false;                            // e-posta önerisi sonraki hesaba da sorulsun
+    modalKapat();                                        // KVKK onay penceresinden çıkılıyorsa o da kapansın
+    tokenSil(eski);   // bu sekmenin oturumu; hatırlanan başka hesap kalır
+    seferiDurdur();                                      // servisçinin konum gönderimi kesilsin
+    $('app').classList.remove('on');
+    $('sayfa').innerHTML = '';
+    if (S._bildirimSayac) { clearInterval(S._bildirimSayac); S._bildirimSayac = null; }
+    if (!sessiz) $('authMesaj').innerHTML = '';
+    /* Sonraki kişi öncekinin açık bıraktığı sayfaya düşmesin. */
+    if (!/yeni-sifre/.test(location.hash)) {
+      /* Okul adresinden girdiyse o okulun giriş sayfası, değilse /login. */
+      try { history.replaceState(null, '', adrestenOkul() ? location.pathname : '/login'); } catch (e) { }
+    }
+    okulAdresiniYenile().then(girisEkraniGoster);
+  };
+  if (sessiz) return bitir();
+  /* Bu cihazın telefon bildirimi aboneliği çıkışta bırakılır: başka biri
+     aynı cihazda girerse önceki kişinin bildirimleri gelmesin. */
+  var sf = S._sefer;
+  (sf ? api('/servis/sefer-bitir', 'POST', { seferId: sf.id })['catch'](function () { }) : Promise.resolve())
+    .then(bildirimAboneligiBirak)
+    .then(function () { return api('/logout', 'POST'); }).then(bitir)['catch'](bitir);
+}
+
+/* ================= açılış ================= */
+formAlanlariKur();
+authKur();
+tiklamaKur();
+konsolUyarisi();
+/* Kurulum akışı girişten bağımsız: giriş ekranındayken de yüklenebilsin. */
+pwaKur();
+
+/* "İncele" penceresini açana: oraya yapıştırılan kod hesabını ele geçirebilir. */
+function konsolUyarisi() {
+  try {
+    var c = window.console;
+    if (!c || !c.log) return;
+    c.log('%cDur!', 'color:#d62839;font-size:40px;font-weight:700');
+    c.log('%cBu pencere geliştiriciler içindir. Biri sana buraya bir şey yapıştırmanı söylediyse bu bir ' +
+      'dolandırıcılıktır: hesabına ve okulundaki bilgilere erişmeye çalışıyordur. Yapıştırma, pencereyi kapat.',
+      'font-size:15px;line-height:1.5');
+  } catch (e) { /* konsol yoksa önemli değil */ }
+}

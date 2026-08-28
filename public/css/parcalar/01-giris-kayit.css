@@ -1,0 +1,58 @@
+/* Giriş ve kayıt kartı. */
+
+/* ================= giriş / kayıt ================= */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  /* align-items:center yerine flex-start + karta margin:auto:
+     form ekrandan uzun oldugunda (ogrenci kaydi) ortalanan kartin ust kismi
+     kaydirmayla erisilemez hale geliyordu. */
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  /* Zeminin köşesinde markanın soluk hâlesi; koyu temada da aynı token çalışır. */
+  background: radial-gradient(circle at 18% 0%, var(--ana-acik) 0%, transparent 55%), var(--zemin);
+}
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  margin: auto;
+  background: var(--kart);
+  border-radius: var(--r-buyuk);
+  box-shadow: var(--golge);
+  padding: 28px 26px 24px;
+  animation: belir var(--sure) var(--egri) both;
+}
+.auth-logo {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.auth-logo .mark {
+  font-size: 34px;
+  line-height: 1;
+}
+.auth-logo h1 {
+  margin: 8px 0 2px;
+  font-size: 25px;
+  letter-spacing: .5px;
+}
+.auth-logo p { margin: 0; color: var(--soluk); font-size: 13.5px; }
+
+.tabs {
+  display: flex;
+  background: var(--zemin);
+  border-radius: var(--r-kucuk);
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.tabs button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 9px 6px;
+  border-radius: var(--r-mini);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--soluk);
+}
+.tabs button.on { background: var(--kart); color: var(--ana); box-shadow: var(--golge-yumusak); }
