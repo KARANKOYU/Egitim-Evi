@@ -89,3 +89,99 @@ function programSirali(kayitlar) {
     (a.day - b.day) || (saatDakika(a.start) - saatDakika(b.start)));
 }
 
+/* Çakışmalar: aynı öğretmen ya da aynı sınıf, aynı gün kesişen saatlerde.
+   Tespit tek SQL sorgusunda (depo.siniflar.cakismalar); burada biçimlenir. */
+async function cakismalariBul(schoolId) {
+  const satirlar = await depo.siniflar.cakismalar(schoolId);
+  const cakismalar = satirlar.map(r => {
+    const ogretmen = !!r.a_ogretmen && r.a_ogretmen === r.b_ogretmen;
+    return {
+      tur: ogretmen ? 'ogretmen' : 'sinif',
+      ad: ogretmen ? (r.ogretmen_adi || '(silinmiş öğretmen)') : r.a_sinif_adi,
+      day: r.gun,
+      dayName: GUN_ADLARI[r.gun] || ('Gün ' + r.gun),
+      saat: r.a_bas + '-' + r.a_bit + ' ↔ ' + r.b_bas + '-' + r.b_bit,
+      lessons: [
+        { scheduleId: r.a_id, classId: r.a_sinif, className: r.a_sinif_adi, subject: r.a_ders,
+          start: r.a_bas, end: r.a_bit },
+        { scheduleId: r.b_id, classId: r.b_sinif, className: r.b_sinif_adi, subject: r.b_ders,
+          start: r.b_bas, end: r.b_bit }
+      ]
+    };
+  });
+  cakismalar.sort((a, b) => (a.day - b.day) || a.saat.localeCompare(b.saat));
+  return cakismalar;
+}
+
+/* Yeni bir aralık eklenmeden önce çakışma var mı diye bakar.
+   bas / bit dakika cinsinden (09:20 -> 560). */
+async function aralikCakismasi(schoolId, classId, teacherId, day, bas, bit, haricId) {
+  const kesisenler = await depo.siniflar.aralikKesisenler(schoolId, day, dakikaSaat(bas), dakikaSaat(bit), haricId);
+  for (const sp of kesisenler) {
+    if (sp.classId === classId) {
+      return { tur: 'sinif', className: sp._sinifAdi || '?', subject: sp._ders || '?', start: sp.start, end: sp.end };
+    }
+    if (teacherId && sp._ogretmenId === teacherId) {
+      return { tur: 'ogretmen', className: sp._sinifAdi || '?', subject: sp._ders || '?', start: sp.start, end: sp.end };
+    }
+  }
+  return null;
+}
+
+/* Ders depodan öğretmen adı ve programa yerleşen saat sayısıyla gelir. */
+function dersOzeti(l) {
+  return {
+    id: l.id, classId: l.classId, subject: l.subject,
+    teacherId: l.teacherId || '',
+    teacherName: l._ogretmenAdi || '',
+    weeklyHours: l.weeklyHours || 0,
+    placed: l._yerlesen || 0
+  };
+}
+
+async function sinifOzeti(c) {
+  return (await depo.siniflar.ozetleri(c.schoolId, c.id))[0] || null;
+}
+
+function summarize(a) {
+  if (a.status !== 'finished') return null;
+  const s = { yapti: 0, yapmadi: 0, eksik: 0, gec: 0, izinli: 0, gelmedi: 0 };
+  for (const id of a.studentIds) {
+    const r = a.results[id];
+    if (r && s[r] !== undefined) s[r]++;
+  }
+  return s;
+}
+
+/* Kişinin velisi olduğu çocuklar: veli, öğretmen ve müdür için (öğrencide yok). */
+/* Oturumdaki kişinin çocukları. Okul rolü satırında (öğretmen@okul) boştur:
+   çocuklar yetişkin hesabındadır, velilik ayrı bir seçimdir ("Veli — Ad"). */
+async function childrenOf(u) {
+  if (!u || !u.role || u.role === 'student' || u.role === 'admin' || u.anaHesapId) return [];
+  return depo.kullanicilar.cocuklari(u.id);
+}
+
+module.exports = {
+  isTeacherLike,
+  ogretmeninOgrencileri,
+  ogretmeninSiniflari,
+  studentsOfTeacher,
+  teachersOfStudent,
+  branchOf,
+  canSeeStudent,
+  GUN_ADLARI,
+  GUN_SAYISI,
+  saatDakika,
+  saatDuzelt,
+  dakikaSaat,
+  araliklarKesisiyor,
+  sinifOgrencileri,
+  dersEtiketi,
+  programSirali,
+  cakismalariBul,
+  aralikCakismasi,
+  dersOzeti,
+  sinifOzeti,
+  summarize,
+  childrenOf
+};
