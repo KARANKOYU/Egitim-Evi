@@ -84,3 +84,15 @@ function gizliSor(soru) {
   });
 }
 
+function ayarlariOku() {
+  try { return JSON.parse(fs.readFileSync(AYAR_DOSYA, 'utf8')); } catch (e) { return {}; }
+}
+
+function ayarlariYaz(ayar) {
+  fs.mkdirSync(DATA, { recursive: true });
+  fs.writeFileSync(AYAR_DOSYA + '.tmp', JSON.stringify(ayar, null, 2), 'utf8');
+  fs.renameSync(AYAR_DOSYA + '.tmp', AYAR_DOSYA);
+  /* Linux'ta dosyayı yalnızca sahibi okuyabilsin. Windows'ta etkisizdir. */
+  try { fs.chmodSync(AYAR_DOSYA, 0o600); } catch (e) { /* yoksay */ }
+}
+
