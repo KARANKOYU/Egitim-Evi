@@ -39,3 +39,68 @@
 .kutucuk:active { transform: translateY(0); }
 .kutucuk:focus-visible { outline: 3px solid var(--yazi); outline-offset: 2px; }
 
+.kutucuk .kutucuk-ad {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  line-height: 1.2;
+  /* Uzun basliklar kutuyu tasirmasin */
+  overflow-wrap: anywhere;
+}
+.kutucuk .kutucuk-alt {
+  margin-top: 3px;
+  font-size: 12.5px;
+  opacity: .92;
+  overflow-wrap: anywhere;
+}
+
+/* Arka plandaki soluk simge */
+.kutucuk .kutucuk-ikon {
+  position: absolute;
+  right: -6px;
+  bottom: -10px;
+  font-size: 64px;
+  line-height: 1;
+  opacity: .22;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Sag ustteki sayi rozeti */
+.kutucuk .kutucuk-rozet {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--kutu-rozet-zemin);
+  color: var(--kutu-rozet-yazi);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: var(--golge-yumusak);
+}
+
+/* Düz renk: gradyan yok, her kutu tek tonda. */
+.kutucuk.turuncu { background: var(--kutu-turuncu); }
+.kutucuk.yesil   { background: var(--kutu-yesil); }
+.kutucuk.kirmizi { background: var(--kutu-kirmizi); }
+.kutucuk.sari    { background: var(--kutu-sari); }
+.kutucuk.mor     { background: var(--kutu-mor); }
+.kutucuk.mavi    { background: var(--kutu-mavi); }
+.kutucuk.gri     { background: var(--kutu-gri); }
+.kutucuk.camgobegi { background: var(--kutu-camgobegi); }
+.kutucuk.lacivert  { background: var(--kutu-lacivert); }
+
+@media (max-width: 520px) {
+  .kutucuklar { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 11px; }
+  .kutucuk { min-height: 100px; padding: 12px; }
+  .kutucuk .kutucuk-ad { font-size: 15px; }
+  .kutucuk .kutucuk-ikon { font-size: 54px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kutucuk { transition: none; }
+  .kutucuk:hover { transform: none; }
+}
