@@ -5,6 +5,29 @@
 
 var girisListesi = null;   // { adet, kapsam, okul, satirlar, xlsx, indirildi }
 
+EYLEMLER['giris-bilgisi-ac'] = function () { girisBilgisiAc(); };
+
+EYLEMLER['giris-bilgisi-uret'] = function (el) {
+  var girmeyen = $('gbGirmeyen').checked;
+  if (!girmeyen && !confirm('Giriş yapmış öğrencilerin de şifresi değişecek; kendi belirledikleri şifre çalışmaz olur. Devam edilsin mi?')) return;
+  dugmeBekle(el, 'Hazırlanıyor...');
+  return api('/school/giris-bilgisi', 'POST', { classId: $('gbSinif').value, sadeceGirmeyen: girmeyen, onay: true })
+    .then(function (d) {
+      girisListesi = d;
+      girisListesi.indirildi = false;
+      girisSonucGoster();
+      /* Liste sayfası "giriş yaptı" bilgisini tazelesin; pencere açık kalır. */
+      if (S._ogrListe) {
+        var yeni = {};
+        for (var i = 0; i < d.satirlar.length; i++) yeni[d.satirlar[i].kullaniciAdi] = 1;
+        for (var k = 0; k < S._ogrListe.length; k++) {
+          if (yeni[S._ogrListe[k].username]) S._ogrListe[k].girisYapti = false;
+        }
+      }
+    })
+    ['catch'](function (e) { dugmeBitir(el); mesajGoster('gbMesaj', 'hata', e.message); });
+};
+
 function girisSonucGoster() {
   var d = girisListesi;
   var h = '<div class="msg iyi">' + d.adet + ' öğrenci için yeni giriş bilgisi hazır (' + esc(d.kapsam) + ').</div>' +

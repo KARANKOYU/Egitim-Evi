@@ -86,3 +86,35 @@ function yaz(html) {
   iletisimleriDoldur();
 }
 
+function yilSeciciBagla() {
+  var sec = $('yilSec');
+  if (!sec) return;
+  sec.onchange = function () {
+    api('/egitim-yili/bak', 'POST', { id: this.value, ogrenci: yilOgrencisi() })
+      .then(function () { return yilBilgisiYukle(); })
+      .then(function () { git(S.page); })['catch'](hataGoster);
+  };
+}
+
+function bosKutu(g, metin) {
+  return '<div class="bos">' + ik(g, 'buyuk') + '<span>' + esc(metin) + '</span></div>';
+}
+
+/* Her sayfanın altı: aydınlatma metni, sistem hakkında ve sitenin iletişim
+   bilgileri (data/config.yml doluysa; iletisimleriDoldur koyar). */
+function altBilgi() {
+  return '<div class="footer">' +
+    '<p><b>Eğitim Evi</b> — okul yönetim sistemi</p>' +
+    '<p style="margin-top:8px">' +
+    '<a href="/kvkk.html" target="_blank" rel="noopener">Aydınlatma metni</a>' +
+    ' · <a href="#" data-act="kaynakca">Bu sistem hakkında</a></p>' +
+    '<p class="footer-iletisim" data-iletisim hidden></p>' +
+    '</div>';
+}
+
+function hero(baslik, altYazi) {
+  return '<div class="hero"><h1>' + esc(baslik) + '</h1>' +
+    (altYazi ? '<p class="alt">' + esc(altYazi) + '</p>' : '') +
+    '<hr></div>';
+}
+
