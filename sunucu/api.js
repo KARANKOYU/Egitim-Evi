@@ -7,6 +7,75 @@ const { currentUser } = require('./guvenlik');
 const { bad, readBody, sendJSON } = require('./http');
 const site = require('./site');
 
+/* Aydınlatma onayı beklenirken yine de kullanılabilen uçlar. */
+const KVKK_SERBEST = ['me', 'kvkk-onay', 'logout', 'meta', 'challenge', 'okullar', 'schools',
+  'login', 'register', 'sifre-unuttum', 'sifre-yenile', 'okul-adres', 'okul-foto', 'site', 'eposta-onay', 'yorumlar'];
+
+/* Şifresini okul ya da sistem yöneticisi belirlemiş (T.C. no ya da
+   dağıtılan şifre) kişi, kendi şifresini koyana kadar yalnızca bunları
+   kullanabilir. */
+const SIFRE_SERBEST = KVKK_SERBEST.concat(['password']);
+
+/* Rolü olmayan (henüz veli olmamış, okul başvurusu yapmamış) hesabın
+   girebildiği yollar: kendi hesabı, bildirimleri, müdür başvurusu ve veli
+   kodu. Geri kalan her yol burada kapanır; bölümlerin rol denetimine
+   bırakılmaz. */
+const ROLSUZ_SERBEST = KVKK_SERBEST.concat(['profile', 'password', 'notifications',
+  'okul-basvurusu', 'parent', 'push', 'kisilikler', 'kisilik', 'hesap', 'yorumlar', 'hatirlaticilar']);
+
+/* Yolun ilk parçası -> bölüm. Bir yol yalnızca bir bölüme gider. */
+const BOLUM = {
+  'admin': yonetici,
+  'aile': aile,
+  'anketler': anket,
+  'assignments': odev,
+  'challenge': kayit,
+  'devamsizlik': devamsizlik,
+  'egitim-yili': egitim_yili,
+  'ek': ekler,
+  'eposta-onay': kayit,
+  'etut': etut,
+  'examgroups': sinav,
+  'exams': sinav,
+  'hatirlaticilar': hatirlatici,
+  'hesap': kisilik,
+  'islem-kaydi': islem_kaydi,
+  'kisilik': kisilik,
+  'kisilikler': kisilik,
+  'kulupler': okul_hayati,
+  'kvkk-onay': kayit,
+  'login': kayit,
+  'logout': kayit,
+  'me': kayit,
+  'mesajlar': mesaj,
+  'meta': kayit,
+  'myschedule': ilerleyis,
+  'odev-dosya': odev_dosya,
+  'okul-foto': okul_sayfasi,
+  'ozellikler': ozellikler,
+  'okul-sayfa': okul_sayfasi,
+  'notifications': kayit,
+  'okul-adres': kayit,
+  'okul-basvurusu': kayit,
+  'okullar': kayit,
+  'parent': veli,
+  'password': kayit,
+  'profile': kayit,
+  'progress': ilerleyis,
+  'push': push,
+  'register': kayit,
+  'school': okul,
+  'schools': kayit,
+  'servis': okul_hayati,
+  'site': site,
+  'sifre-unuttum': kayit,
+  'sifre-yenile': kayit,
+  'takvim': takvim,
+  'teacher': ogretmen,
+  'yemek': okul_hayati,
+  'yorumlar': yorum,
+};
+
 async function handleApi(req, res, segs, method) {
   const me = await currentUser(req);
   /* Açılış sayfasındaki "şu an açık" sayısı için (yalnızca sayı tutulur). */

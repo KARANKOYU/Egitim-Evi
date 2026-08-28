@@ -35,6 +35,30 @@ function kodlamaSec(req) {
   return '';
 }
 
+/* Statik dosya önbelleği: dosya yolu -> { veri, gzip, br, etag, tur } */
+const statikOnbellek = new Map();
+
+/* Önbellek kaydı: ETag hesaplanır, sıkıştırılabilir türler bir kez gzip ve
+   brotli ile sıkıştırılıp bellekte tutulur. */
+function onbellekKaydi(veri, tur, imza) {
+  const kayit = {
+    imza: imza, veri: veri, tur: tur,
+    etag: '"' + crypto.createHash('sha1').update(veri).digest('hex').slice(0, 20) + '"',
+    gzip: null, br: null
+  };
+  if (SIKISTIRILABILIR.test(tur) && veri.length > SIKISTIRMA_ESIGI) {
+    try {
+      kayit.gzip = zlib.gzipSync(veri, { level: 6 });
+      kayit.br = zlib.brotliCompressSync(veri, {
+        params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 }
+      });
+    } catch (e) {
+      /* Sıkıştırma başarısız olursa ham hâli gönderilir, sorun değil. */
+    }
+  }
+  return kayit;
+}
+
 /* ============ birleşik dosyalar ============
    Arayüz kodu geliştirirken parçalar hâlinde durur (public/js/parcalar/,
    public/css/parcalar/); tarayıcıya tek dosya gider. Derleyici yok: sunucu
@@ -227,6 +251,30 @@ function serveStatic(req, res, urlPath) {
    ikinci açılışta yalnızca HTML sorulur (304), betik ve stil hiç sorulmaz. */
 const SURUMLU = ['/css/style.css', '/js/app.js', '/js/tema.js'];
 const surumluOnbellek = new Map();   // html etag + varlık etag'leri -> kayıt
+
+function htmlSurumle(kayit, geri) {
+  let kalan = SURUMLU.length;
+  const etagler = {};
+  let hata = false;
+  SURUMLU.forEach(adres => {
+    statikOku(path.join(PUB, adres.replace(/^\//, '').split('/').join(path.sep)), (e, k) => {
+      if (e) hata = true; else etagler[adres] = k.etag.replace(/"/g, '');
+      if (--kalan) return;
+      if (hata) return geri(kayit);   // bir varlık okunamadıysa sayfayı olduğu gibi ver
+      const anahtar = kayit.etag + '|' + SURUMLU.map(a => etagler[a]).join('|');
+      const hazir = surumluOnbellek.get(anahtar);
+      if (hazir) return geri(hazir);
+      let metin = kayit.veri.toString('utf8');
+      for (const adres of SURUMLU) {
+        metin = metin.split('"' + adres + '"').join('"' + adres + '?v=' + etagler[adres] + '"');
+      }
+      const yeni = onbellekKaydi(Buffer.from(metin, 'utf8'), kayit.tur, anahtar);
+      surumluOnbellek.clear();          // eski sürümler birikmesin
+      surumluOnbellek.set(anahtar, yeni);
+      geri(yeni);
+    });
+  });
+}
 
 module.exports = {
   GUVENLIK_BASLIKLARI,
