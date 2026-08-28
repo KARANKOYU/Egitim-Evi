@@ -314,3 +314,182 @@ function istemciIp(req) {
   return ip;
 }
 
+/* Pencere içinde izin verilen istek sayısını aşarsa false döner. */
+function hizSinir(anahtar, adet, pencereMs) {
+  const t = Date.now();
+  let k = hizKayit.get(anahtar);
+  if (!k || t > k.bitis) { k = { sayac: 0, bitis: t + pencereMs }; hizKayit.set(anahtar, k); }
+  k.sayac++;
+  return k.sayac <= adet;
+}
+
+const KILIT_ESIGI = 5;   // bu kadar hatalı denemeden sonra kilit
+
+/* Yalnızca başarısız denemeleri sayan sınır. hataSiniriDoldu artırmadan
+   bakar; hataSay yalnızca deneme başarısız olunca çağrılır. */
+function hataSiniriDoldu(anahtar, adet) {
+  const k = hizKayit.get(anahtar);
+  return !!(k && Date.now() <= k.bitis && k.sayac >= adet);
+}
+function hataSay(anahtar, adet, pencereMs) { hizSinir(anahtar, adet, pencereMs); }
+
+function kilitliMi(anahtar) {
+  const k = kilitKayit.get(anahtar);
+  if (!k) return 0;
+  if (Date.now() > k.kilitBitis) { kilitKayit.delete(anahtar); return 0; }
+  return k.sayac >= KILIT_ESIGI ? Math.ceil((k.kilitBitis - Date.now()) / 1000) : 0;
+}
+
+/* Kilide kaç hatalı deneme kaldı? Girişte "2 deneme hakkın kaldı" demek için. */
+function kalanDeneme(anahtar) {
+  const k = kilitKayit.get(anahtar);
+  return Math.max(0, KILIT_ESIGI - (k ? k.sayac : 0));
+}
+
+function basarisizDeneme(anahtar, kilitMs) {
+  const t = Date.now();
+  let k = kilitKayit.get(anahtar);
+  if (!k || t > k.kilitBitis) k = { sayac: 0, kilitBitis: t + kilitMs };
+  k.sayac++;
+  k.kilitBitis = t + kilitMs;
+  kilitKayit.set(anahtar, k);
+}
+
+function denemeSifirla(anahtar) { kilitKayit.delete(anahtar); }
+
+/* Bu IP+e-posta için daha önce hatalı deneme oldu mu? Olduysa girişte
+   doğrulama sorusu istenir. Temiz kullanıcı soruyu hiç görmez. */
+function soruGerekliMi(anahtar) {
+  const k = kilitKayit.get(anahtar);
+  if (!k) return false;
+  if (Date.now() > k.kilitBitis) { kilitKayit.delete(anahtar); return false; }
+  return k.sayac > 0;
+}
+
+/* Kayit sayaci: sadece gercekten hesap acildiginda artar.
+   Formu yanlis dolduran kullanici bu sinira takilmaz; asil amac ayni
+   cihazdan seri sahte hesap acilmasini engellemek. */
+const KAYIT_PENCERE_MS = 60 * 60 * 1000;
+function kayitSayaci(ip, artir) {
+  const anahtar = 'kayitOk:' + ip;
+  const t = Date.now();
+  let k = hizKayit.get(anahtar);
+  if (!k || t > k.bitis) { k = { sayac: 0, bitis: t + KAYIT_PENCERE_MS }; hizKayit.set(anahtar, k); }
+  if (artir) k.sayac++;
+  return k.sayac;
+}
+
+/* Süresi geçmiş kayıtları ve oturumları düzenli olarak temizle. */
+function guvenlikTemizle() {
+  const t = Date.now();
+  for (const [k, v] of hizKayit) if (t > v.bitis) hizKayit.delete(k);
+  for (const [k, v] of kilitKayit) if (t > v.kilitBitis) kilitKayit.delete(k);
+  for (const [k, v] of botSorular) if (t > v.bitis) botSorular.delete(k);
+  for (const [k, v] of girisKodlari) if (t > v.bitis) girisKodlari.delete(k);
+
+  /* Süresi dolan oturumlar ve beklenmedik birikmeye karşı üst sınırı aşanlar
+     (en eskiler) veritabanından silinir. */
+  depo.oturumlar.temizle(EN_FAZLA_OTURUM)
+    .catch(e => console.error('Oturum temizliği hatası:', e.message));
+  /* Tıklanmayan e-posta onay bağlantıları (24 saat) bekleyen bilgileriyle silinir. */
+  depo.onaylar.suresiGecenleriSil()
+    .catch(e => console.error('Onay temizliği hatası:', e.message));
+}
+
+/* ============ bot doğrulaması ============
+   Kayıt formunda sunucunun ürettiği basit bir toplama sorusu sorulur.
+   Cevap istemciye hiç gönderilmez, sunucuda 5 dakika tutulur. */
+const botSorular = new Map();
+const BOT_OMRU_MS = 5 * 60 * 1000;
+const EN_FAZLA_BOT_SORU = 5000;
+
+function botSoruUret() {
+  if (botSorular.size > EN_FAZLA_BOT_SORU) botSorular.clear();
+  const a = crypto.randomInt(3, 10);
+  const b = crypto.randomInt(2, 10);
+  const id = crypto.randomBytes(12).toString('hex');
+  botSorular.set(id, { cevap: a + b, bitis: Date.now() + BOT_OMRU_MS });
+  return { id, soru: a + ' + ' + b + ' = ?' };
+}
+
+/* Doğru cevap tek kullanımlıktır. tuket === false ise cevap kontrol edilir
+   ama soru harcanmaz: kayıt formunda başka bir alan hatalıysa kullanıcı
+   soruyu yeniden çözmesin, "Yine de aç" aynı soruyla geçebilsin. O durumda
+   hesap açılınca botSoruTuket çağrılır. */
+function botCevapDogru(id, cevap, tuket) {
+  const anahtar = String(id || '');
+  const k = botSorular.get(anahtar);
+  if (!k) return false;
+  if (Date.now() > k.bitis) { botSorular.delete(anahtar); return false; }
+  const sayi = parseInt(String(cevap).trim(), 10);
+  if (!Number.isInteger(sayi) || sayi !== k.cevap) return false;
+  if (tuket !== false) botSorular.delete(anahtar);
+  return true;
+}
+
+function botSoruTuket(id) { botSorular.delete(String(id || '')); }
+
+/* JSON gövdesindeki tehlikeli anahtarları temizler (prototype pollution). */
+
+/* ============ oturum ve yetki ============ */
+/* İstekteki "Authorization: Bearer <anahtar>" başlığından kullanıcıyı bulur.
+   Anahtar biçimsizse veritabanına hiç gidilmez. */
+function istekAnahtari(req) {
+  const h = req.headers['authorization'] || '';
+  const token = h.startsWith('Bearer ') ? h.slice(7).trim() : '';
+  return /^[a-f0-9]{48}$/.test(token) ? token : '';
+}
+
+async function currentUser(req) {
+  const token = istekAnahtari(req);
+  if (!token) return null;
+  const kimlik = await depo.oturumlar.kullaniciKimligi(token);
+  if (!kimlik) return null;
+  return depo.kullanicilar.bul(kimlik);
+}
+
+
+module.exports = {
+  ONAY_OMRU_MS,
+  onayBaglantisiGonder,
+  epostaAlaniVarMi,
+  girisKodlari,
+  KOD_OMRU_MS,
+  KOD_EN_FAZLA_DENEME,
+  kodOzeti,
+  epostaMaskele,
+  girisKoduGonder,
+  kodKonsolaYaz,
+  sifirlamaKayit,
+  SIFIRLAMA_OMRU_MS,
+  sifirlamaTemizle,
+  sifirlamaBaglantisi,
+  sifirlamaGonder,
+  sifirlamaKonsolaYaz,
+  girisKoduDogrula,
+  OTURUM_OMRU_MS,
+  EN_FAZLA_OTURUM,
+  hizKayit,
+  kilitKayit,
+  ipGibiMi,
+  istemciIp,
+  hizSinir,
+  kilitliMi,
+  kalanDeneme,
+  hataSiniriDoldu,
+  hataSay,
+  basarisizDeneme,
+  denemeSifirla,
+  soruGerekliMi,
+  KAYIT_PENCERE_MS,
+  kayitSayaci,
+  guvenlikTemizle,
+  botSorular,
+  BOT_OMRU_MS,
+  EN_FAZLA_BOT_SORU,
+  botSoruUret,
+  botCevapDogru,
+  botSoruTuket,
+  currentUser,
+  istekAnahtari
+};

@@ -53,6 +53,55 @@
       </div>
     </div>
 
+    <!-- giriş -->
+    <form id="formGiris" autocomplete="on" novalidate>
+      <div class="kimlik-sec kayan-sekme" role="tablist" aria-label="Neyle gireceksin">
+        <button type="button" id="gKimlikKadi" class="on" role="tab" aria-selected="true">Kullanıcı adı</button>
+        <button type="button" id="gKimlikEposta" role="tab" aria-selected="false">E-posta</button>
+        <span class="kayan-isaret" aria-hidden="true"></span>
+      </div>
+      <div class="field">
+        <label for="gEmail" id="gEmailEtiket">Kullanıcı adı</label>
+        <input type="text" id="gEmail" required autocomplete="username" placeholder="kullanıcı adın"
+               autocapitalize="off" spellcheck="false">
+        <div class="hint" id="gKimlikIpucu"></div>
+      </div>
+      <div class="field">
+        <label for="gSifre">Şifre</label>
+        <input type="password" id="gSifre" required autocomplete="current-password" placeholder="••••••">
+      </div>
+      <div class="field bot-alan">
+        <label for="gBot">Robot değilim doğrulaması</label>
+        <div class="bot-satir">
+          <span class="bot-soru" id="gBotSoru">yükleniyor...</span>
+          <input type="number" id="gBot" inputmode="numeric" required
+                 autocomplete="off" placeholder="Cevap" aria-label="Doğrulama sorusunun cevabı">
+          <button type="button" class="btn gri kucuk" id="gBotYenile" title="Yeni soru">Yenile</button>
+        </div>
+      </div>
+
+      <div class="secenekler">
+        <label class="onay">
+          <input type="checkbox" id="gHatirla" checked>
+          <span>Beni hatırla</span>
+        </label>
+        <label class="onay">
+          <input type="checkbox" id="gKaydetme">
+          <span>Bilgilerimi bu cihaza kaydetme</span>
+        </label>
+      </div>
+      <div class="hint" id="gizlilikNot">
+        Bilgilerin yalnızca okulunun kendi sunucusunda tutulur. Google'a ya da
+        başka bir servise hiçbir şey gönderilmez.
+      </div>
+
+      <button type="submit" class="btn full">Giriş Yap</button>
+      <div class="giris-alt">
+        <button type="button" class="baglanti" id="btnSifremiUnuttum">Şifremi unuttum</button>
+        <button type="button" class="baglanti" id="btnOkulDegis" hidden>Başka bir okul seç</button>
+      </div>
+    </form>
+
     <!-- şifremi unuttum: yeni şifreyi belirle -->
     <div id="yeniSifreEkran" style="display:none">
       <div class="kod-baslik">
