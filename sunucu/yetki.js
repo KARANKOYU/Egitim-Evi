@@ -35,6 +35,21 @@ const OGRETMEN_VARSAYILAN = [
   'derse-atanabilir', 'odev.ver', 'odev.sonuclandir', 'sinav.olustur', 'sinav.not-gir', 'devamsizlik.al', 'ogretmen.sonuclar'
 ];
 
+/* Yeni rol açarken başlanabilecek hazır şablonlar. Müdür seçtikten sonra
+   yetkileri istediği gibi değiştirir; şablon yalnızca başlangıçtır. */
+const ROL_SABLONLARI = [
+  { ad: 'Müdür Yardımcısı', yetkiler: ['program.duzenle', 'ders.yonet', 'ders.ogretmen-ata', 'sinif.yonet',
+    'ogrenci.yerlestir', 'ogrenci.hesap-ac', 'ogrenci.duzenle', 'ogretmen.duzenle', 'devamsizlik.gor',
+    'etut.yonet', 'etut.yoklama', 'mesaj.toplu', 'mesaj.herkese', 'takvim.yonet', 'islem-kaydi.gor'] },
+  { ad: 'Rehber Öğretmen', yetkiler: ['devamsizlik.gor', 'ogrenci.portal', 'mesaj.toplu'] },
+  { ad: 'Etüt Sorumlusu', yetkiler: ['etut.yonet', 'etut.yoklama'] },
+  { ad: 'Nöbetçi Öğretmen', yetkiler: ['etut.yoklama', 'devamsizlik.gor'] },
+  { ad: 'Servis Sorumlusu', yetkiler: ['servis.yonet'] },
+  { ad: 'Kulüp Danışmanı', yetkiler: ['kulup.yonet'] },
+  { ad: 'Zümre Başkanı', yetkiler: ['sinav.olustur', 'mesaj.toplu'] },
+  { ad: 'Kodlayıcı', yetkiler: ['okul.sayfa'] }
+];
+
 function kullaniciYetkileri(u) {
   if (!u) return [];
   if (u.role === 'admin' || u.role === 'principal') return TUM_YETKILER.slice();
