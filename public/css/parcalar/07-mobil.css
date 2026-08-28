@@ -1,0 +1,88 @@
+/* Dar ekran uyarlamaları ve veli kodu kutusu. */
+
+/* ================= mobil ================= */
+@media (max-width: 860px) {
+  .sidebar {
+    position: fixed;
+    top: 62px;
+    left: 0;
+    bottom: 0;
+    max-height: none;
+    z-index: 45;
+    transform: translateX(-101%);
+    transition: transform .22s ease;
+    box-shadow: var(--golge-kalkik);
+  }
+  .sidebar.acik { transform: translateX(0); }
+  .sidebar-perde.acik {
+    display: block;
+    position: fixed;
+    inset: 62px 0 0 0;
+    background: var(--perde);
+    z-index: 44;
+  }
+  .content { padding: 16px 13px 30px; }
+  .iconbtn { min-width: 44px; font-size: 0; padding: 8px; }
+  .iconbtn span.g { font-size: 20px; }
+  .hero h1 { font-size: 21px; }
+  .search { max-width: none; }
+  /* Dar ekranda "İçerik Ara" yazısı "İçer" diye kesiliyordu; büyüteç simgesi yeterli. */
+  .search input::placeholder { color: transparent; }
+  .row2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+  /* Ayarlar ile Profil aynı sayfayı açıyor; dar ekranda Yenile ve
+     Uygulamayı yükle düğmelerine yer kalsın diye Ayarlar gizlenir. */
+  #btnAyarlar { display: none; }
+  .auth-card { padding: 22px 18px; }
+  .grid.k4, .grid.k3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media print {
+  .sidebar, .topbar, .hamburger { display: none; }
+}
+
+/* Toplu giriş bilgisi: her öğrenciye kesilip verilecek kâğıt.
+   Ekranda görünmez; yazdırırken sayfanın geri kalanı gizlenir. */
+#yazdirKap { display: none; }
+@media print {
+  body.yazdiriliyor > *:not(#yazdirKap) { display: none !important; }
+  body.yazdiriliyor { background: #fff; }
+  body.yazdiriliyor #yazdirKap { display: block; color: #000; font-size: 11pt; }
+  .mektup {
+    border: 1px dashed #888;
+    padding: 10pt 12pt;
+    margin: 0 0 8pt;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .mektup .m-ust { display: flex; justify-content: space-between; font-size: 9.5pt; color: #333; }
+  .mektup .m-ad { font-size: 13pt; font-weight: 700; margin: 5pt 0; }
+  .mektup .m-ad span { font-weight: 400; color: #333; margin-left: 6pt; }
+  .mektup table { border-collapse: collapse; margin: 2pt 0 5pt; }
+  .mektup td { padding: 1.5pt 10pt 1.5pt 0; vertical-align: top; }
+  .mektup td:first-child { color: #444; width: 80pt; }
+  .mektup .m-kod { font-family: Consolas, 'Liberation Mono', monospace; font-size: 12pt; letter-spacing: 0.5pt; }
+  .mektup .m-not { font-size: 9pt; color: #333; }
+  .mektup .m-veli { font-size: 9.5pt; margin-top: 5pt; padding-top: 5pt; border-top: 1px solid #ccc; }
+}
+.kod-hucre { font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace; white-space: nowrap; }
+
+/* Öğrenci veli kodu: 14 karakter + özel işaret, okunaklı olmalı */
+.kod-goster {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  font-size: 19px;
+  letter-spacing: 1.5px;
+  color: var(--ana);
+  background: var(--ana-acik);
+  border: 1px dashed var(--ana-cizgi);
+  border-radius: var(--r-mini);
+  padding: 7px 10px;
+  margin-top: 4px;
+  display: inline-block;
+  word-break: break-all;
+  user-select: all;
+  -webkit-user-select: all;
+}
+

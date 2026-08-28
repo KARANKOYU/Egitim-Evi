@@ -1,0 +1,18 @@
+/* Menüyü daraltma ve ödev filtre çubuğu. */
+
+/* ===== masaüstünde menüyü daraltma (☰ ile) =====
+   Not: flex-basis/width gibi yerleşim özelliklerine geçiş animasyonu verilmiyor;
+   bazı tarayıcılarda animasyon yarıda takılıp menüyü 0px genişlikte bırakıyordu.
+   Menü anında gizlenir, açılırken sadece opaklık animasyonu uygulanır. */
+@media (min-width: 861px) {
+  body.sidebar-kapali .sidebar { display: none; }
+  .sidebar { animation: menuBelir .18s ease; }
+}
+@keyframes menuBelir {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { animation: none; }
+}
+

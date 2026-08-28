@@ -100,3 +100,26 @@ function eskiYontemKopyala(metin) {
   } catch (e) { return false; }
 }
 
+function panoyaKopyala(metin, btn) {
+  function geriBildir(oldu) {
+    if (!btn) return;
+    if (!btn.getAttribute('data-eski')) btn.setAttribute('data-eski', btn.textContent);
+    var eski = btn.getAttribute('data-eski');
+    btn.textContent = oldu ? 'Kopyalandı' : 'Kopyalanamadı';
+    setTimeout(function () { btn.textContent = eski; }, 1600);
+  }
+  if (window.navigator && navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(metin).then(
+      function () { geriBildir(true); },
+      function () { geriBildir(eskiYontemKopyala(metin)); }
+    );
+    return;
+  }
+  geriBildir(eskiYontemKopyala(metin));
+}
+
+function hataGoster(e) { alert(e.message); }
+
+/* Şifre sıfırlama bağlantısındaki tek kullanımlık anahtar. */
+var yeniSifreAnahtar = '';
+var yeniSifreEkraniAcDisaridan = function () { };
