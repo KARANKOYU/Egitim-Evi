@@ -157,3 +157,8 @@ async function calistir() {
   rl.close();
 }
 
+calistir().catch(e => {
+  console.error('\n  Beklenmeyen hata:', e.message);
+  rl.close();
+  process.exit(1);
+});
