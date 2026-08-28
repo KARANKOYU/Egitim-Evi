@@ -23,3 +23,38 @@
 </head>
 <body>
 
+    <div class="tabs kayan-sekme" role="tablist">
+      <button type="button" id="tabGiris" class="on" role="tab">Giriş Yap</button>
+      <button type="button" id="tabKayit" role="tab">Hesap Aç</button>
+      <span class="kayan-isaret" aria-hidden="true"></span>
+    </div>
+
+    <div id="authMesaj"></div>
+
+    <!-- iki adımlı giriş: kod ekranı -->
+    <div id="kodEkran" style="display:none">
+      <div class="kod-baslik">
+        <div class="kod-simge"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+        <h2>Giriş kodunu gir</h2>
+        <p id="kodAciklama">Kodu gönderdik.</p>
+      </div>
+      <form id="formKod" autocomplete="one-time-code">
+        <div class="field">
+          <label for="kodGiris">6 haneli kod</label>
+          <input type="text" id="kodGiris" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                 autocomplete="one-time-code" spellcheck="false" class="kod-kutu"
+                 placeholder="______" required>
+        </div>
+        <button type="submit" class="btn full">Doğrula ve gir</button>
+      </form>
+      <div class="kod-alt">
+        <button type="button" class="baglanti" id="kodTekrar">Kodu tekrar gönder</button>
+        <button type="button" class="baglanti" id="kodVazgec">← Geri dön</button>
+      </div>
+    </div>
+
+<div id="modalKok"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

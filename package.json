@@ -1,0 +1,19 @@
+{
+  "name": "egitim-evi",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Okul yönetim ve eğitim takip sistemi: ödev, sınav, devamsızlık, ders programı, mesajlaşma.",
+  "main": "sunucu/index.js",
+  "scripts": {
+    "start": "node sunucu/index.js",
+    "veritabani-kur": "node araclar/veritabani-kur.js",
+    "eposta-ayarla": "node araclar/eposta-ayarla.js",
+    "test": "bash testler/tumtest.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "8.23.0"
+  }
+}

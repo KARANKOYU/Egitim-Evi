@@ -1,0 +1,57 @@
+# --- ASLA depoya girmeyecekler ---
+# Kişisel veri ve gizli bilgi. Depo herkese açık; bunlar çıkarsa
+# öğrenci/veli bilgileri ve e-posta şifresi dünyaya açılır.
+data/db.json
+data/ayarlar.json
+data/yedek/
+data/dosyalar/
+data/push-anahtar.json
+veri/db.*
+veri/ayarlar.json
+veri/yedek/
+sunucu.log
+*.log
+testler/testdata/
+testler/deneme.xlsx
+testler/chrome-*/
+testler/*.birlesik.*
+
+# Veri dosyasının bozuk/taşınmış kopyaları (içlerinde gerçek kişisel veri var)
+data/*.bozuk-*
+data/*.tasindi
+data/*.tmp
+
+# Ortam değişkenleri ve paketler (pg gelince)
+.env
+.env.*
+node_modules/
+
+# Tarayıcı profilleri (araçlar oluşturur, içinde oturum çerezi kalır)
+araclar/chrome-profil/
+araclar/chrome-profil-tema/
+
+# Üretilen görüntüler (yeniden üretilebilir, depoyu şişirir)
+belge/ekran-goruntuleri/
+tasarim/ornekler/
+
+# Yerel kısayollar ve okul listesi (depoya girmez).
+# Okul listesi MEB'den çekilir; araç ve çıkan liste yalnızca kurulum
+# yapılan bilgisayarda durur, sunucuya ayrıca kopyalanır.
+*.bat
+araclar/okullari-cek.js
+data/okullar.json
+
+# Geçici
+*.tmp
+public/_*.html
+public/_*.js
+public/_*.xlsx
+Thumbs.db
+.DS_Store
+
+# Kullanıcının örnek listeleri ve yerel araç ayarları
+yapi/
+.claude/
+
+# Site ayarları (iletişim e-postası ve telefonu); örneği belge/config.ornek.yml
+data/config.yml
