@@ -182,3 +182,9 @@ function islemKaydi(r) {
   };
 }
 
+module.exports = {
+  bos, yokIse,
+  okul, yil, sinif, kullanici, kullaniciSutunlari, KULLANICI_ALANLARI,
+  rol, ders, program, odev, sinavGrubu, sinav, mesaj, devamsizlik, takvim,
+  bildirim, islemKaydi
+};

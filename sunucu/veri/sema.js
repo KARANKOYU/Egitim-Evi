@@ -23,6 +23,29 @@ function dosyalar() {
     .map(ad => ({ surum: Number(ad.slice(0, 3)), ad, yol: path.join(KLASOR, ad) }));
 }
 
+async function semayiGuncelle() {
+  await metinCalistir(
+    'CREATE TABLE IF NOT EXISTS sema_surumleri (' +
+    '  surum integer PRIMARY KEY,' +
+    '  dosya text NOT NULL,' +
+    '  uygulanma timestamptz NOT NULL DEFAULT now()' +
+    ')');
+  const uygulanan = new Set((await sorgu('SELECT surum FROM sema_surumleri')).map(r => r.surum));
+
+  let yeni = 0;
+  for (const d of dosyalar()) {
+    if (uygulanan.has(d.surum)) continue;
+    const metin = fs.readFileSync(d.yol, 'utf8');
+    await islem(async () => {
+      await metinCalistir(metin);
+      await sorgu('INSERT INTO sema_surumleri (surum, dosya) VALUES ($1, $2)', [d.surum, d.ad]);
+    });
+    console.log('  Şema uygulandı: ' + d.ad);
+    yeni++;
+  }
+  return yeni;
+}
+
 /* Yalnızca test veritabanı için: şemayı tamamen silip baştan kurar.
    Adı _test ile bitmeyen veritabanında ASLA çalışmaz. */
 async function testIcinSifirla() {
