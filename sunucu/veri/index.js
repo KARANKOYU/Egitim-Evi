@@ -78,6 +78,50 @@ async function okulKisaAdiBul(ad, ilce, haricId) {
   return null;
 }
 
+/* Açılış: şemayı güncelle, eski db.json varsa bir kez içeri al, ilk yöneticiyi aç. */
+async function baslat() {
+  if (process.env.EE_DB_SIFIRLA === '1') {
+    await testIcinSifirla();   // yalnızca adı _test ile biten veritabanında çalışır
+  }
+  await semayiGuncelle();
+  await depo.ozellikler.yukle();   // okulların kapattığı özellikler bellekte
+  await baglanti.turkceSiralamaKontrol();
+
+  const kisiSayisi = (await baglanti.tek('SELECT count(*) AS n FROM kullanicilar')).n;
+  if (!kisiSayisi && fs.existsSync(DBF)) {
+    const eski = JSON.parse(fs.readFileSync(DBF, 'utf8'));
+    const r = await iceAktar(eski);
+    fs.renameSync(DBF, DBF + '.tasindi');
+    const atlanan = Object.keys(r.atlanan).map(k => k + ': ' + r.atlanan[k]).join(', ');
+    console.log('  Eski db.json PostgreSQL\'e taşındı (' + r.kullanici + ' kullanıcı' +
+      (atlanan ? '; kopuk kayıt atlandı — ' + atlanan : '') + '). Eski dosya: db.json.tasindi');
+  }
+
+  /* Adresi olmayan okullara (eski kayıtlar) adres verilir. */
+  for (const o of await depo.okullar.kisaAdsizlar()) {
+    const kisa = await okulKisaAdiBul(o.ad, o.ilce, o.id);
+    if (kisa) await depo.okullar.kisaAdYaz(o.id, kisa);
+  }
+
+  const admin = await baglanti.tek("SELECT 1 FROM kullanicilar WHERE rol = 'admin' LIMIT 1");
+  if (!admin) {
+    /* İlk yönetici şifresi koda yazılmaz: kod herkese açık depoda, sabit bir
+       şifre canlı sitede herkesin bildiği bir kapı olurdu. Rastgele üretilir
+       ve yalnızca bu pencereye bir kez yazılır. Testler EE_ADMIN_SIFRE ile
+       bilinen bir şifre verir. */
+    const ilkSifre = process.env.EE_ADMIN_SIFRE || ilkSifreUret();
+    await depo.kullanicilar.ekle({
+      id: uid('u'), username: 'admin', email: 'admin@egitimevi.com', pass: await hashPw(ilkSifre),
+      fullName: 'Sistem Yöneticisi', role: 'admin', status: 'approved',
+      city: '', district: '', address: '', createdAt: now()
+    });
+    console.log('\n  ! İlk yönetici hesabı oluşturuldu');
+    console.log('    E-posta : admin@egitimevi.com');
+    console.log('    Şifre   : ' + ilkSifre);
+    console.log('    Bu şifre bir daha gösterilmez. Girince Ayarlar\'dan hemen değiştir.\n');
+  }
+}
+
 module.exports = Object.assign({
   baslat,
   okulKisaAdiBul,
