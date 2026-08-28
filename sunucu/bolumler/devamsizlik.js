@@ -367,3 +367,12 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = {
+  DEVAM_DURUMLAR,
+  DEVAM_AD,
+  gunBicimi,
+  bugun,
+  yoklamaYetkisi,
+  devamsizlikOzeti,
+  uclar
+};
