@@ -141,3 +141,106 @@ function sendJSON(res, code, obj) {
 const ok = (res, obj) => sendJSON(res, 200, obj === undefined ? { ok: true } : obj);
 const bad = (res, msg, code) => sendJSON(res, code || 400, { error: msg });
 
+/* JSON gövdesi en fazla 2 MB ve 30 saniyede gelmeli. Sunucunun genel istek
+   süresi dosya yüklemeleri için uzun tutuldu; yavaş gönderilen JSON bağlantıyı
+   o kadar meşgul etmesin. */
+const GOVDE_SURESI_MS = 30 * 1000;
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    const sure = setTimeout(() => {
+      const e = new Error('İstek zaman aşımına uğradı');
+      e.kod = 408;
+      reject(e);
+      setTimeout(() => { try { req.destroy(); } catch (x) { /* yoksay */ } }, 1500);
+    }, GOVDE_SURESI_MS);
+    req.on('end', () => clearTimeout(sure));
+    req.on('error', () => clearTimeout(sure));
+    req.on('close', () => clearTimeout(sure));
+    req.on('data', c => {
+      size += c.length;
+      if (size > 2e6) {
+        /* Bağlantıyı hemen koparırsak istemci "413" yanıtını göremeden
+           ağ hatası alıyor. Akışı durdurup yanıtın yazılmasına fırsat
+           veriyoruz, sonra kapatıyoruz. */
+        const e = new Error('İstek çok büyük');
+        e.kod = 413;
+        reject(e);
+        try { req.pause(); } catch (x) { /* yoksay */ }
+        setTimeout(() => { try { req.destroy(); } catch (x) { /* yoksay */ } }, 1500);
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf8');
+      if (!raw) return resolve({});
+      try { resolve(govdeTemizle(JSON.parse(raw))); } catch (e) { reject(new Error('Geçersiz veri gönderildi')); }
+    });
+    req.on('error', reject);
+  });
+}
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
+  '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2',
+  '.webmanifest': 'application/manifest+json'
+};
+
+function serveStatic(req, res, urlPath) {
+  let rel;
+  try { rel = decodeURIComponent(urlPath.split('?')[0]); } catch (e) { rel = '/'; }
+  if (rel === '/' || rel === '') rel = '/index.html';
+  /* "_" ile başlayan geliştirme dosyaları (ör. yerel deneme sayfası) ve
+     nokta ile başlayan gizli dosyalar hiç sunulmaz (.well-known hariç). */
+  if (/(^|[\\/])(_|\.(?!well-known[\\/]))/.test(rel)) {
+    res.writeHead(404, baslikEkle({ 'Content-Type': 'text/plain; charset=utf-8' }));
+    return res.end('Bulunamadı');
+  }
+  const full = path.join(PUB, path.normalize(rel).replace(/^(\.\.[\\/])+/, ''));
+  /* Sadece startsWith(PUB) yetmez: "public" ile "publicgizli" de eslesirdi. */
+  if (full !== PUB && !full.startsWith(PUB + path.sep)) return bad(res, 'Yasak', 403);
+  statikOku(full, (err, kayit) => {
+    /* Dosya yoksa tek sayfalık uygulamanın kabuğunu döndür — adres
+       çubuğuna doğrudan #/sayfa yazılınca da açılsın. */
+    if (err) {
+      return statikOku(path.join(PUB, 'index.html'), (e2, kabuk) => {
+        if (e2) {
+          res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+          return res.end('Bulunamadı');
+        }
+        htmlSurumle(kabuk, k => statikGonder(req, res, k));
+      });
+    }
+    if (kayit.tur.indexOf('text/html') === 0) return htmlSurumle(kayit, k => statikGonder(req, res, k));
+    statikGonder(req, res, kayit);
+  });
+}
+
+/* ============ sürümlü adresler ============
+   HTML içindeki /css/style.css, /js/app.js, /js/tema.js adreslerine o
+   dosyanın ETag'i eklenir: /js/app.js?v=abc123. Tarayıcı bu adresi bir yıl
+   saklar; dosya değişince ETag değişir, adres değişir, yenisi iner. Böylece
+   ikinci açılışta yalnızca HTML sorulur (304), betik ve stil hiç sorulmaz. */
+const SURUMLU = ['/css/style.css', '/js/app.js', '/js/tema.js'];
+const surumluOnbellek = new Map();   // html etag + varlık etag'leri -> kayıt
+
+module.exports = {
+  GUVENLIK_BASLIKLARI,
+  baslikEkle,
+  SIKISTIRMA_ESIGI,
+  SIKISTIRILABILIR,
+  kodlamaSec,
+  statikOnbellek,
+  statikOku,
+  sendJSON,
+  ok,
+  bad,
+  readBody,
+  MIME,
+  serveStatic,
+  statikGonder
+};
