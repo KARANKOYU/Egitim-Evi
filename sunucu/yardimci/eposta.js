@@ -121,3 +121,15 @@ async function gonder(ayar, alici, konu, govde) {
   }
 }
 
+/* Sık kullanılan sağlayıcıların hazır ayarları. */
+const SAGLAYICILAR = {
+  gmx:     { ad: 'GMX',     sunucu: 'mail.gmx.com',          port: 587, guvenli: false, not: 'Ayarlar > POP3/IMAP erişimini açman gerekir.' },
+  gmail:   { ad: 'Gmail',   sunucu: 'smtp.gmail.com',        port: 465, guvenli: true,  not: '2 Adımlı Doğrulama açık olmalı, sonra Uygulama Şifresi üret.' },
+  yandex:  { ad: 'Yandex',  sunucu: 'smtp.yandex.com',       port: 465, guvenli: true,  not: 'Uygulama şifresi gerekir.' },
+  zoho:    { ad: 'Zoho',    sunucu: 'smtp.zoho.com',         port: 465, guvenli: true,  not: 'Uygulama şifresi gerekir.' },
+  brevo:   { ad: 'Brevo',   sunucu: 'smtp-relay.brevo.com',  port: 587, guvenli: false, not: 'Kullanıcı adı Brevo SMTP kullanıcısı, şifre SMTP anahtarıdır.' },
+  mailjet: { ad: 'Mailjet', sunucu: 'in-v3.mailjet.com',     port: 587, guvenli: false, not: 'Kullanıcı = API Key, şifre = Secret Key.' },
+  smtp2go: { ad: 'SMTP2GO', sunucu: 'mail.smtp2go.com',      port: 587, guvenli: false, not: 'Panelden SMTP kullanıcısı oluştur.' }
+};
+
+module.exports = { gonder, basligiKodla, SAGLAYICILAR };
