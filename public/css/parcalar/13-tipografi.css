@@ -1,0 +1,30 @@
+/* Başlık ve etiket rötuşları. */
+
+/* ===================================================================
+   TİPOGRAFİ RÖTUŞU
+   =================================================================== */
+h1, h2, h3, h4 {
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.hero h1 {
+  letter-spacing: .02em;
+  font-weight: 700;
+}
+/* Küçük büyük-harf etiketler biraz nefes alsın */
+.field label,
+.sutun-basi,
+.mudur-notu .baslik {
+  letter-spacing: .02em;
+}
+/* Sayı sütunları hizalansın */
+.stat .n,
+.t td,
+.ders-saat,
+.sutun-saat,
+.kod-goster {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kartlara daha yumuşak bir yükseklik hissi */
+.kart { box-shadow: var(--golge-yumusak); }

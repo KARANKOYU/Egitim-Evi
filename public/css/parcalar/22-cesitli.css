@@ -1,0 +1,101 @@
+/* Aktarım adımları, sayfa içi arama, ders ağacı, gün bazlı devamsızlık, eğitim yılı şeridi. */
+
+/* Excel aktarim adimlari */
+.adim {
+  display: flex; gap: 15px; padding: 16px 0;
+  border-bottom: 1px solid var(--cizgi);
+}
+.adim:last-child { border-bottom: 0; padding-bottom: 0; }
+.adim-no {
+  flex: 0 0 30px; height: 30px; border-radius: 50%;
+  background: var(--ana); color: var(--ustune-yazi);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+}
+.adim .ad { font-weight: 600; margin-bottom: 3px; }
+.adim .alt { color: var(--soluk); font-size: 13.5px; line-height: 1.5; }
+
+/* Sayfa ici arama kutusu */
+.ara-kutu {
+  width: 100%; padding: 11px 15px; border: 1px solid var(--cizgi);
+  border-radius: var(--r-kucuk); font: inherit; background: var(--kart); color: var(--yazi);
+}
+.ara-kutu:focus { outline: none; border-color: var(--ana); }
+.ara-kutu::placeholder { color: var(--soluk); }
+
+/* ===== Ders agaci (klasor gorunumu) ===== */
+.ders-dal { border-bottom: 1px solid var(--cizgi); }
+.ders-dal:last-child { border-bottom: 0; }
+.dal-basi {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 13px 10px; background: none; border: 0; cursor: pointer;
+  font: inherit; color: inherit; text-align: left;
+  transition: background .12s ease;
+}
+.dal-basi:hover { background: var(--zemin); }
+.dal-basi.acik { background: var(--ana-acik); }
+.dal-ok {
+  flex: 0 0 14px; color: var(--soluk); font-size: 12px;
+  transition: color .12s ease;
+}
+.dal-basi.acik .dal-ok { color: var(--ana); }
+.dal-ad { font-weight: 600; white-space: nowrap; }
+.dal-alt { color: var(--soluk); font-size: 13px; flex: 1; }
+.dal-sayi { display: flex; gap: 5px; flex: 0 0 auto; }
+
+.dal-icerik { padding: 2px 10px 12px 35px; }
+.dal-grup { margin-bottom: 12px; }
+.dal-grup:last-child { margin-bottom: 0; }
+.dal-grup-baslik {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--soluk);
+  padding: 8px 0 4px; border-bottom: 1px solid var(--cizgi); margin-bottom: 4px;
+}
+.dal-bos { color: var(--soluk); font-size: 13.5px; padding: 4px 0 8px; }
+
+@media (max-width: 620px) {
+  .dal-basi { flex-wrap: wrap; gap: 7px; }
+  .dal-alt { flex: 1 0 100%; padding-left: 25px; }
+  .dal-icerik { padding-left: 12px; }
+}
+
+/* Gun bazli devamsizlik satiri */
+.ders-satir {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid var(--cizgi);
+}
+.ders-satir:last-of-type { border-bottom: 0; }
+.ders-sira {
+  flex: 0 0 62px; font-size: 11.5px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--soluk);
+}
+.durum-kutu {
+  flex: 0 0 auto; padding: 8px 12px; border: 1px solid var(--cizgi);
+  border-radius: var(--r-mini); font: inherit; font-size: 14px;
+  background: var(--kart); color: var(--yazi); cursor: pointer;
+}
+.durum-kutu:focus { outline: none; border-color: var(--ana); }
+@media (max-width: 560px) {
+  .ders-satir { flex-wrap: wrap; gap: 8px; }
+  .ders-sira { flex: 1 0 100%; }
+}
+
+/* Egitim yili seridi */
+.yil-seridi {
+  display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
+  padding: 9px 14px; margin-bottom: 16px;
+  background: var(--kart); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk);
+  font-size: 14px;
+}
+.yil-seridi.arsiv { background: var(--turuncu-zemin); border-color: var(--turuncu); }
+.yil-etiket {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--soluk);
+}
+.yil-seridi select {
+  padding: 6px 11px; border: 1px solid var(--cizgi); border-radius: var(--r-mini);
+  font: inherit; font-size: 14px; background: var(--zemin); color: var(--yazi);
+  cursor: pointer;
+}
+.yil-not { color: var(--turuncu); font-weight: 600; font-size: 13px; }
+

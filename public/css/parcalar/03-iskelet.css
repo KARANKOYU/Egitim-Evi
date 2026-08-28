@@ -4,3 +4,164 @@
 .app { display: none; min-height: 100vh; }
 .app.on { display: block; }
 
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 62px;
+  background: var(--kart);
+  border-bottom: 1.5px solid var(--cizgi);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  transition: background var(--sure) var(--egri), border-color var(--sure) var(--egri);
+}
+.hamburger {
+  display: block;
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--r-mini);
+}
+.hamburger:hover { background: var(--zemin); }
+
+.search {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+}
+.search input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1.5px solid var(--cizgi);
+  border-radius: 999px;
+  outline: none;
+  background: var(--zemin);
+}
+.search input:focus { border-color: var(--ana); background: var(--kart-ust); box-shadow: 0 0 0 3px var(--odak); }
+.search .ico {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--soluk);
+  pointer-events: none;
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.iconbtn {
+  position: relative;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: var(--r-kucuk);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 10.5px;
+  color: var(--soluk);
+  min-width: 54px;
+}
+.iconbtn span.g { font-size: 18px; line-height: 1; }
+.iconbtn:hover { background: var(--zemin); color: var(--ana); }
+.iconbtn.on { color: var(--ana); background: var(--ana-acik); }
+/* Yenile düğmesi sayfa gelene kadar döner. */
+.iconbtn.donuyor .ikon { animation: donme .8s linear infinite; }
+@keyframes donme { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .iconbtn.donuyor .ikon { animation: none; opacity: .5; } }
+.rozet {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  background: var(--vurgu);
+  color: var(--vurgu-yazi);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shell { display: flex; align-items: flex-start; }
+
+.sidebar {
+  width: 232px;
+  flex: 0 0 232px;
+  background: var(--kart);
+  border-right: 1.5px solid var(--cizgi);
+  min-height: calc(100vh - 62px);
+  padding: 16px 12px;
+  position: sticky;
+  top: 62px;
+  align-self: flex-start;
+  max-height: calc(100vh - 62px);
+  overflow-y: auto;
+  transition: background var(--sure) var(--egri), border-color var(--sure) var(--egri);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px 14px;
+  font-weight: 700;
+  font-size: 16px;
+  border-bottom: 2px solid var(--ana-acik);
+  margin-bottom: 12px;
+}
+.brand .mark { font-size: 21px; }
+.navlink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 10px 11px;
+  border-radius: var(--r-kucuk);
+  cursor: pointer;
+  color: var(--yazi);
+  font-size: 14.2px;
+  margin-bottom: 2px;
+  transition: background var(--sure-kisa) var(--egri), color var(--sure-kisa) var(--egri),
+              transform var(--sure-kisa) var(--egri);
+}
+.navlink:hover { background: var(--zemin); transform: translateX(2px); }
+.navlink.on { background: var(--ana-acik); color: var(--ana-koyu); font-weight: 600; }
+.navlink .g { font-size: 17px; width: 21px; text-align: center; }
+.nav-ayrac { height: 1px; background: var(--cizgi); margin: 10px 6px; }
+.nav-baslik { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--soluk); padding: 6px 11px 4px; font-weight: 700; }
+
+.content { flex: 1; min-width: 0; padding: 22px; }
+.page-inner { max-width: 1040px; margin: 0 auto; }
+
+/* karşılama başlığı (çizimdeki gibi) */
+.hero { margin-bottom: 22px; }
+.hero h1 {
+  display: inline;
+  font-size: 29px;
+  margin: 0;
+  letter-spacing: .02em;
+  background: linear-gradient(transparent 58%, var(--ana-cizgi) 58%);
+  padding: 0 3px;
+  line-height: 1.35;
+}
+.hero .alt { margin: 12px 0 0; color: var(--soluk); }
+.hero hr { border: 0; border-top: 2.5px solid var(--ana); margin: 14px 0 0; opacity: .55; }
+
+h2.sb { font-size: 19px; margin: 0 0 14px; }
+h3.sb { font-size: 15.5px; margin: 22px 0 10px; color: var(--soluk); text-transform: uppercase; letter-spacing: .6px; }

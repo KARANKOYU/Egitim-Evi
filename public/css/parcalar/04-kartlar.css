@@ -1,0 +1,69 @@
+/* Kartlar, satırlar, etiketler, sayaçlar. */
+
+/* ================= kartlar ================= */
+.kart {
+  background: var(--kart);
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r);
+  padding: 16px 17px;
+  margin-bottom: 14px;
+  transition: background var(--sure) var(--egri), border-color var(--sure) var(--egri),
+              box-shadow var(--sure) var(--egri), transform var(--sure) var(--egri);
+}
+.kart h3 { margin: 0 0 10px; font-size: 16px; }
+.kart.tikla { cursor: pointer; }
+.kart.tikla:hover { border-color: var(--ana-cizgi); box-shadow: var(--golge-kalkik); transform: translateY(calc(var(--kalkis) * -1)); }
+
+.grid { display: grid; gap: 13px; }
+.grid.k2 { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.grid.k3 { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.grid.k4 { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+
+.stat {
+  background: var(--kart);
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r);
+  padding: 15px 16px;
+}
+.stat .n { font-family: var(--f-baslik); font-size: 30px; font-weight: 700; color: var(--ana); line-height: 1.1; }
+.stat .l { font-size: 12.5px; color: var(--soluk); margin-top: 2px; }
+
+.satir {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--cizgi);
+  flex-wrap: wrap;
+}
+.satir:last-child { border-bottom: 0; }
+.satir .buyu { flex: 1; min-width: 150px; }
+.satir .ad { font-weight: 600; }
+.satir .alt { font-size: 12.5px; color: var(--soluk); }
+
+.etiket {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--ikinci-acik);
+  color: var(--ikinci-koyu);
+  white-space: nowrap;
+}
+.etiket.yesil { background: var(--yesil-zemin); color: var(--yesil-yazi); }
+.etiket.kirmizi { background: var(--kirmizi-zemin); color: var(--kirmizi-yazi); }
+.etiket.turuncu { background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
+.etiket.gri { background: var(--gri-zemin); color: var(--soluk); }
+.etiket.mavi { background: var(--mavi-zemin); color: var(--mavi-yazi); }
+.etiket.bordo { background: var(--bordo); color: var(--bordo-yazi); }
+
+.bos {
+  text-align: center;
+  padding: 34px 18px;
+  color: var(--soluk);
+  background: var(--kart);
+  border: 1.5px dashed var(--cizgi);
+  border-radius: var(--r);
+}
+.bos .g { font-size: 34px; display: block; margin-bottom: 8px; opacity: .65; }
