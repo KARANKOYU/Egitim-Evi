@@ -117,3 +117,18 @@ EYLEMLER['admin-okul-ac'] = function () {
   });
 };
 
+EYLEMLER['admin-sifre-uret'] = function () {
+  /* Okunması kolay (karışan I, l, O, 0 yok) ama güçlü: büyük, küçük, rakam, özel. */
+  var gruplar = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnopqrstuvwxyz', '23456789', '!?*.#'];
+  var dizi = new Uint32Array(12);
+  (window.crypto || window.msCrypto).getRandomValues(dizi);
+  var s = '';
+  for (var i = 0; i < 12; i++) { var g = gruplar[i < 4 ? i : dizi[i] % 3]; s += g[dizi[i] % g.length]; }
+  $('aoSifre').value = s;
+  sifreKurallariniIsaretle('aoSifre', 'aoKural');
+};
+
+EYLEMLER['yorum-gizle'] = function (el, id) {
+  return api('/yorumlar/gizle', 'POST', { id: id, gizli: el.getAttribute('data-gizli') === '1' })
+    .then(function () { return git('yorumlar'); })['catch'](hataGoster);
+};
