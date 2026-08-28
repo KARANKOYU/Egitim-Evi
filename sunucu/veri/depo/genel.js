@@ -82,3 +82,83 @@ async function yoneticilereBildir(metin, baglanti) {
   await topluBildir(idler, metin, baglanti);
 }
 
+async function bildirimleri(kullaniciId, sinir) {
+  return (await sorgu('SELECT * FROM bildirimler WHERE kullanici_id = $1 ORDER BY olusturma DESC LIMIT $2',
+    [kullaniciId, sinir || 100])).map(e.bildirim);
+}
+
+/* Bildirim kutusunun kısa özeti. Yeni bildirim gelince, okununca ya da
+   silinince değişir; istemci her yoklamada bunu gönderir, değişmemişse
+   liste yeniden indirilmez. */
+async function bildirimSurumu(kullaniciId) {
+  const r = await tek(
+    'SELECT count(*) AS toplam, count(*) FILTER (WHERE NOT okundu) AS okunmamis, max(olusturma) AS son ' +
+    'FROM bildirimler WHERE kullanici_id = $1', [kullaniciId]);
+  return {
+    surum: r.toplam + '.' + r.okunmamis + '.' + (r.son ? Date.parse(r.son) : 0),
+    okunmamis: r.okunmamis
+  };
+}
+
+async function bildirimleriOkundu(kullaniciId) {
+  await calistir('UPDATE bildirimler SET okundu = true WHERE kullanici_id = $1 AND NOT okundu', [kullaniciId]);
+}
+
+/* ================= işlem kaydı ================= */
+const ISLEM_SINIR = 5000;
+
+async function islemYaz(kisi, islem, detay, ip) {
+  await sorgu(
+    'INSERT INTO islem_kaydi (id, okul_id, kullanici_id, kullanici_ad, kullanici_rol, islem, detay, ip, tarih) ' +
+    'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+    [uid('ik'), kisi && kisi.schoolId ? kisi.schoolId : null, kisi ? kisi.id : null,
+      kisi ? kisi.fullName : '(bilinmiyor)', kisi ? kisi.role : '', islem, clean(detay, 300),
+      net.isIP(String(ip || '')) ? ip : null, now()]);
+  /* Sınırı aşınca en eskiler atılır. */
+  await calistir('DELETE FROM islem_kaydi WHERE id IN (SELECT id FROM islem_kaydi ORDER BY tarih DESC OFFSET $1)',
+    [ISLEM_SINIR]);
+}
+
+/* okulId null ise bütün okullar (sistem yöneticisi). */
+async function islemKayitlari(okulId, islemTuru, sinir) {
+  const p = [okulId, islemTuru || '', sinir || 300];
+  const kosul = '($1::text IS NULL OR okul_id = $1) AND ($2 = \'\' OR islem = $2)';
+  const kayitlar = (await sorgu('SELECT * FROM islem_kaydi WHERE ' + kosul + ' ORDER BY tarih DESC LIMIT $3', p))
+    .map(e.islemKaydi);
+  const toplam = (await tek('SELECT count(*) AS n FROM islem_kaydi WHERE ' + kosul, p.slice(0, 2))).n;
+  const turler = (await sorgu(
+    'SELECT islem, max(tarih) AS son FROM islem_kaydi WHERE ($1::text IS NULL OR okul_id = $1) ' +
+    'GROUP BY islem ORDER BY son DESC', [okulId])).map(r => r.islem);
+  return { kayitlar, toplam, turler };
+}
+
+/* ================= hatırlatmalar ================= */
+/* Aynı olay için ikinci bildirim gitmesin: anahtarlardan ilk kez görülenleri
+   döndürür (hepsi tek sorguda). Anahtar örneği: 'sinav:e_12:u_34'.
+   İşaretler 30 gün saklanır (hatirlatmaTemizle). */
+async function ilkKezOlanlar(anahtarlar) {
+  if (!anahtarlar.length) return new Set();
+  const r = await sorgu(
+    'INSERT INTO hatirlatmalar (anahtar) SELECT DISTINCT unnest($1::text[]) ON CONFLICT DO NOTHING RETURNING anahtar',
+    [anahtarlar]);
+  return new Set(r.map(x => x.anahtar));
+}
+
+/* Anahtarı ilk kez işaretliyorsa true (hatırlatma gönderilmeli), zaten varsa false. */
+async function hatirlatmaIsaretle(anahtar) {
+  const r = await sorgu('INSERT INTO hatirlatmalar (anahtar) VALUES ($1) ON CONFLICT DO NOTHING RETURNING anahtar',
+    [anahtar]);
+  return r.length > 0;
+}
+
+async function hatirlatmaTemizle(gun) {
+  return calistir('DELETE FROM hatirlatmalar WHERE gonderilme < now() - make_interval(days => $1)', [gun]);
+}
+
+module.exports = {
+  siteSayilari,
+  takvimBul, takvimAraligi, takvimEkle, takvimSil,
+  olaylar, bildir, topluBildir, cokluBildir, yoneticilereBildir, bildirimleri, bildirimSurumu, bildirimleriOkundu,
+  ISLEM_SINIR, islemYaz, islemKayitlari,
+  ilkKezOlanlar, hatirlatmaIsaretle, hatirlatmaTemizle
+};
