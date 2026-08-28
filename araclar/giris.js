@@ -181,3 +181,5 @@ async function mudurYap(kimlik, sifre, basvuru, adminToken) {
   return girisYap(kimlik, sifre);
 }
 
+module.exports = { BASE, LOG, iste, sonKod, sonOnayAnahtari, epostaOnayla, girisYap, botCevabi, hesapAc, okulHesabi, ogretmenYap,
+  kisilikGec, mudurYap, tcUret };
