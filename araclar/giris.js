@@ -151,3 +151,20 @@ async function ogretmenYap(token, g) {
   return Object.assign({ email: eposta }, r.body.hesap);
 }
 
+/* Okul (müdür ya da yetkili) hesap açar. rol: 'student' | 'servisci'; 'teacher'
+   verilirse öğretmen kendi hesabını açıp kodla eklenir (ogretmenYap).
+   g: { fullName, username, email, password, tc, classId, brans, ... }.
+   Şifre verildiği için kişi ilk girişte şifre değiştirmek zorunda kalmaz;
+   hesap bir kez girilip aydınlatma metni onaylanır (testlerde her uç açık olsun). */
+async function okulHesabi(token, rol, g, onaylat) {
+  if (rol === 'teacher') return ogretmenYap(token, g);
+  const r = await iste('/api/school/hesap-ac', 'POST',
+    Object.assign({ rol, tc: tcUret(), password: 'Test1234!' }, g), token);
+  if (r.status !== 200) throw new Error('hesap açma (' + (g.username || g.fullName) + '): ' + (r.body.error || r.status));
+  if (onaylat !== false) {
+    const kisi = await girisYap(g.email || g.username, g.password || 'Test1234!');
+    if (kisi.kvkkGuncel === false) await iste('/api/kvkk-onay', 'POST', { onay: true }, kisi.token);
+  }
+  return r.body.hesap;
+}
+
