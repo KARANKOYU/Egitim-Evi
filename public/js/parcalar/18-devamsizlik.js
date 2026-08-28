@@ -285,3 +285,6 @@ function devamsizlikBagla(siniflar) {
   ogrencileriYukle();
 }
 
+var DEVAM_ADLARI = {
+  var: 'Geldi', yok: 'Gelmedi', gec: 'Geç geldi', izinli: 'İzinli'
+};

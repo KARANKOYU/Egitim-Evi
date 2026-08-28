@@ -1,0 +1,39 @@
+/* Devamsızlık ekranları. */
+
+/* ===== Devamsizlik ===== */
+.yoklama-satir {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 11px 0; border-bottom: 1px solid var(--cizgi);
+}
+.yoklama-satir:last-of-type { border-bottom: 0; }
+.durum-secim { display: flex; gap: 6px; flex-wrap: wrap; }
+.durum-dugme {
+  padding: 6px 13px; border: 1px solid var(--cizgi); border-radius: 999px;
+  background: var(--kart); cursor: pointer; font: inherit; font-size: 13px;
+  color: var(--soluk); transition: all .12s ease; white-space: nowrap;
+}
+.durum-dugme:hover { border-color: var(--ana-cizgi); }
+.durum-dugme.secili { color: var(--ustune-yazi); font-weight: 600; }
+.durum-dugme.var.secili { background: var(--yesil); border-color: var(--yesil); }
+.durum-dugme.yok.secili { background: var(--kirmizi); border-color: var(--kirmizi); }
+.durum-dugme.gec.secili { background: var(--turuncu); border-color: var(--turuncu); }
+.durum-dugme.izinli.secili { background: var(--mavi); border-color: var(--mavi); }
+
+.durum-etiket {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+}
+.durum-etiket.yok { background: var(--kirmizi-zemin); color: var(--kirmizi-yazi); }
+.durum-etiket.gec { background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
+.durum-etiket.izinli { background: var(--mavi-zemin); color: var(--mavi-yazi); }
+.durum-etiket.var { background: var(--yesil-zemin); color: var(--yesil-yazi); }
+
+.tarih-kutu {
+  padding: 9px 12px; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk);
+  font: inherit; background: var(--kart); color: var(--yazi);
+}
+
+/* Ana sayfadaki duyuru satirlari */
+.satir.tiklanir { cursor: pointer; transition: background .12s ease; }
+.satir.tiklanir:hover { background: var(--zemin); }
+
