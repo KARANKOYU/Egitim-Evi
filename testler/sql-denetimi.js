@@ -127,3 +127,49 @@ const DOSYA_IZNI = {
   'yazici.js': [/^adlar\.join\(', '\)$/, /^yerler\.join\(', '\)$/, /^atamalar\.join\(', '\)$/, /^\(adlar\.length \+ 1\)$/]
 };
 
+console.log('');
+console.log('--- SQL denetimi ---');
+
+/* 1. SQL yalnızca sunucu/veri/ altında */
+const SQL_KALIBI = /(['"`])\s*(SELECT\s|INSERT\s+INTO\s|UPDATE\s+[a-z_]+\s+SET\s|DELETE\s+FROM\s|TRUNCATE\s|DROP\s)/i;
+for (const d of dosyalar(SUNUCU)) {
+  if (d.startsWith(VERI)) continue;
+  const kod = yorumsuz(fs.readFileSync(d, 'utf8'));
+  const m = SQL_KALIBI.exec(kod);
+  sonuc('SQL yalnızca veri katmanında: ' + path.relative(KOK, d), !m, m ? m[0] : '');
+}
+
+/* 2-4. veri katmanı */
+let cagriSayisi = 0;
+for (const d of dosyalar(VERI)) {
+  const ad = path.basename(d);
+  const kod = yorumsuz(fs.readFileSync(d, 'utf8'));
+  const goreli = path.relative(KOK, d);
+
+  const istek = /\breq\b|\bbody\.|\bq\.get\(/.exec(kod);
+  sonuc('İstek nesnesi veri katmanında yok: ' + goreli, !istek, istek ? istek[0] : '');
+
+  const sablon = /`[^`]*\$\{/.exec(kod);
+  sonuc('Şablon metin yok: ' + goreli, !sablon, sablon ? sablon[0].slice(0, 60) : '');
+
+  const cagri = /\b(sorgu|tek|calistir|metinCalistir)\(/g;
+  let m;
+  while ((m = cagri.exec(kod))) {
+    /* Tanımın kendisi (async function sorgu(metin, ...)) çağrı değildir. */
+    const once = kod.slice(Math.max(0, m.index - 16), m.index);
+    if (/function\s+$/.test(once)) continue;
+    const arg = ilkArguman(kod, m.index + m[0].length);
+    if (!arg.trim() || /^(metin|sql)$/.test(arg.trim())) continue;   // baglanti.js içindeki iletme
+    cagriSayisi++;
+    const izinler = IZINLI.concat(DOSYA_IZNI[ad] || []);
+    const kotu = toplamParcalari(arg).filter(p => !SABIT_METIN.test(p) && !izinler.some(r => r.test(p)));
+    const satir = kod.slice(0, m.index).split('\n').length;
+    sonuc('Parametreli sorgu: ' + goreli + ':' + satir, !kotu.length,
+      kotu.length ? 'SQL metnine karışan: ' + kotu.join(' | ') : '');
+  }
+}
+sonuc('Veri katmanında sorgu bulundu (' + cagriSayisi + ' çağrı)', cagriSayisi > 50);
+
+console.log('  ' + cagriSayisi + ' sorgu çağrısı incelendi');
+console.log('GECTI: ' + gecti + '  KALDI: ' + kaldi);
+process.exit(kaldi ? 1 : 0);
