@@ -276,6 +276,41 @@ function htmlSurumle(kayit, geri) {
   });
 }
 
+function statikGonder(req, res, kayit) {
+  /* Tarayıcıda aynı sürüm varsa gövdeyi hiç göndermiyoruz. */
+  if (req.headers['if-none-match'] === kayit.etag) {
+    res.writeHead(304, baslikEkle({
+      'ETag': kayit.etag,
+      'Cache-Control': 'no-cache'
+    }));
+    return res.end();
+  }
+
+  /* Yazı tipi ve simgeler bir yıl önbellekte kalır: içerikleri değişmez,
+     değişirse dosya adı değişir. Betik ve stil de adresinde kendi sürümünü
+     (?v=ETag) taşıyorsa aynı şekilde kalıcı: HTML her açılışta sorulur ve
+     içindeki adresler güncel sürümü gösterir, dosyalar hiç sorulmaz. */
+  let surum = '';
+  try { surum = new URL(req.url, 'http://x').searchParams.get('v') || ''; } catch (e) { /* yoksay */ }
+  const kalici = /^(font\/|image\/)/.test(kayit.tur) || (surum && '"' + surum + '"' === kayit.etag);
+  const baslik = {
+    'Content-Type': kayit.tur,
+    'Cache-Control': kalici ? 'public, max-age=31536000, immutable' : 'no-cache',
+    'ETag': kayit.etag
+  };
+
+  let govde = kayit.veri;
+  const kod = kodlamaSec(req);
+  if (kod === 'br' && kayit.br) { govde = kayit.br; baslik['Content-Encoding'] = 'br'; }
+  else if (kod === 'gzip' && kayit.gzip) { govde = kayit.gzip; baslik['Content-Encoding'] = 'gzip'; }
+  if (baslik['Content-Encoding']) baslik['Vary'] = 'Accept-Encoding';
+
+  baslik['Content-Length'] = govde.length;
+  res.writeHead(200, baslikEkle(baslik));
+  res.end(govde);
+}
+
+
 module.exports = {
   GUVENLIK_BASLIKLARI,
   baslikEkle,

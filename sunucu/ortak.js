@@ -102,6 +102,26 @@ function asciiYap(s) {
     .replace(/ö/g, 'o').replace(/ç/g, 'c').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
+/* Okulun kısa adı: egitimevi.org/<kisa-ad>. Sitenin kendi yollarıyla
+   karışmasın diye bazı adlar ayrılmıştır. */
+const KISA_AD_YASAK = new Set(('api css js yazitipi kvkk sw manifest simge index admin yonetici giris kayit cikis ' +
+  'okul okullar veli ogretmen ogrenci mudur servis servisci destek yardim hakkinda iletisim www static assets ' +
+  'favicon robots sitemap egitimevi public sunucu data dosya dosyalar indir sifre hesap ayarlar login signup ' +
+  'logout register about gorsel sss kosullar kullanim-kosullari gizlilik cerez').split(' '));
+
+function kisaAdSorunu(s) {
+  s = metinYap(s);
+  if (!s) return 'Okulun adres adını yaz.';
+  if (s.length < 3) return 'Adres adı en az 3 karakter olmalı.';
+  if (s.length > 40) return 'Adres adı en fazla 40 karakter olabilir.';
+  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(s)) {
+    return 'Adres adında yalnızca küçük harf (Türkçe harf olmadan), rakam ve tire olabilir; tireyle başlayıp bitemez.';
+  }
+  if (/--/.test(s)) return 'Adres adında iki tire yan yana olamaz.';
+  if (KISA_AD_YASAK.has(s)) return 'Bu ad sitenin kendi sayfalarından biri; başka bir ad seç.';
+  return '';
+}
+
 /* Okul adından kısa ad önerisi: "Özel Doruk Koleji" -> "ozel-doruk-koleji". */
 function kisaAdUret(ad) {
   let s = asciiYap(ad).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
