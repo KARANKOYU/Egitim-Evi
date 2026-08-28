@@ -168,3 +168,16 @@ async function okulHesabi(token, rol, g, onaylat) {
   return r.body.hesap;
 }
 
+/* Rolsüz kişi okulunu kaydeder, yönetici onaylar. */
+async function mudurYap(kimlik, sifre, basvuru, adminToken) {
+  const g = await girisYap(kimlik, sifre);
+  const b = await iste('/api/okul-basvurusu', 'POST', Object.assign({ dogum: '1980-01-01', beyan: true }, basvuru), g.token);
+  if (b.status !== 200) throw new Error('müdür başvurusu: ' + (b.body.error || b.status));
+  const bek = await iste('/api/admin/pending', 'GET', null, adminToken);
+  const kisi = (bek.body.principals || []).find(x => x.id === g.user.id || x.anaHesapId === g.user.id);
+  if (!kisi) throw new Error('başvuru yönetici listesinde yok');
+  const k = await iste('/api/admin/decide', 'POST', { userId: kisi.id, approve: true }, adminToken);
+  if (k.status !== 200) throw new Error('müdür onayı: ' + (k.body.error || k.status));
+  return girisYap(kimlik, sifre);
+}
+
