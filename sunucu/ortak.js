@@ -59,3 +59,191 @@ function makeCode() {
    String() hata atıyordu; bkz. clean). */
 const metinYap = v => (v == null || typeof v === 'object') ? '' : String(v);
 
+function normKullaniciAdi(ad) { return metinYap(ad).trim().toLowerCase(); }
+
+function kullaniciAdiSorunu(ad) {
+  const s = normKullaniciAdi(ad);
+  if (!s) return 'Bir kullanıcı adı belirle.';
+  if (s.length < 3) return 'Kullanıcı adı en az 3 karakter olmalı.';
+  if (s.length > 30) return 'Kullanıcı adı en fazla 30 karakter olabilir.';
+  if (/[çğıöşü]/.test(s)) return 'Kullanıcı adında Türkçe harf kullanma (ç yerine c, ş yerine s gibi).';
+  if (!/^[a-z]/.test(s)) return 'Kullanıcı adı bir harfle başlamalı.';
+  if (!/^[a-z][a-z0-9._]*$/.test(s)) return 'Kullanıcı adında yalnızca harf, rakam, nokta ve alt çizgi olabilir.';
+  return '';
+}
+
+/* T.C. kimlik numarası: 11 hane, ilki 0 olamaz; 10. ve 11. haneler
+   resmî algoritmayla öbür hanelerden hesaplanır. Yazım hatasını yakalar
+   (numaranın gerçekten var olduğunu değil). */
+function tcSorunu(tc) {
+  const s = metinYap(tc).replace(/\s/g, '');
+  if (!s) return '';
+  if (!/^[1-9][0-9]{10}$/.test(s)) return 'T.C. kimlik numarası 11 haneli olmalı ve 0 ile başlamamalı.';
+  const d = s.split('').map(Number);
+  const tek = d[0] + d[2] + d[4] + d[6] + d[8];
+  const cift = d[1] + d[3] + d[5] + d[7];
+  const onuncu = ((tek * 7 - cift) % 10 + 10) % 10;
+  const onbirinci = d.slice(0, 10).reduce((a, b) => a + b, 0) % 10;
+  if (d[9] !== onuncu || d[10] !== onbirinci) return 'T.C. kimlik numarası geçersiz, rakamları kontrol et.';
+  return '';
+}
+function normTc(tc) { return metinYap(tc).replace(/\s/g, ''); }
+
+/* ---------------- okul hesapları ve okul adresi ---------------- */
+
+/* Okula ait hesap rolleri: kullanıcı adı ve T.C. no okul içinde benzersiz. */
+const OKUL_ROLLERI = ['principal', 'teacher', 'student', 'servisci'];
+const okulHesabiMi = rol => OKUL_ROLLERI.indexOf(rol) >= 0;
+
+/* Türkçe harfleri ASCII karşılığına çevirir (adres ve kullanıcı adı için). */
+function asciiYap(s) {
+  return metinYap(s).replace(/İ/g, 'i').replace(/I/g, 'ı').toLocaleLowerCase('tr')
+    .replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+    .replace(/ö/g, 'o').replace(/ç/g, 'c').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/* Okul adından kısa ad önerisi: "Özel Doruk Koleji" -> "ozel-doruk-koleji". */
+function kisaAdUret(ad) {
+  let s = asciiYap(ad).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (s.length > 40) {
+    s = s.slice(0, 40);
+    const i = s.lastIndexOf('-');
+    if (i >= 15) s = s.slice(0, i);
+    s = s.replace(/-+$/, '');
+  }
+  if (s.length < 3) s = 'okul-' + (s || 'x');
+  if (KISA_AD_YASAK.has(s)) s += '-okulu';
+  return s;
+}
+
+/* Tablodaki tarih: "12.05.2011", "12/05/2011", "2011-05-12" ya da Excel'in
+   gün sayısı (40675). Anlaşılamazsa null. */
+function tarihCoz(v) {
+  const s = metinYap(v).trim();
+  if (!s) return '';
+  let m = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(s);
+  let iso = '';
+  if (m) iso = m[3] + '-' + (m[2].length < 2 ? '0' : '') + m[2] + '-' + (m[1].length < 2 ? '0' : '') + m[1];
+  else if (/^\d{4}-\d{2}-\d{2}/.test(s)) iso = s.slice(0, 10);
+  else if (/^\d{5}(\.0+)?$/.test(s)) {
+    const n = Number(s);
+    if (n > 7000 && n < 80000) iso = new Date(Date.UTC(1899, 11, 30) + n * 86400000).toISOString().slice(0, 10);
+  }
+  if (!iso) return null;
+  const t = Date.parse(iso + 'T00:00:00Z');
+  if (isNaN(t) || new Date(t).toISOString().slice(0, 10) !== iso) return null;
+  return iso;
+}
+
+/* Ad soyad hep küçük ya da hep büyük yazılmışsa Türkçe kurala göre kelime
+   başları büyük yazılır: "ayşe yılmaz" / "AYŞE YILMAZ" -> "Ayşe Yılmaz".
+   Karışık yazılmışsa ("Ayşe Nur de Vries") dokunulmaz. */
+function adDuzelt(ad) {
+  const s = String(ad == null ? '' : ad).replace(/\s+/g, ' ').trim();
+  if (!/\p{L}/u.test(s)) return s;
+  const hepKucuk = s === s.toLocaleLowerCase('tr');
+  const hepBuyuk = s === s.toLocaleUpperCase('tr');
+  if (!hepKucuk && !hepBuyuk) return s;
+  return s.toLocaleLowerCase('tr')
+    .replace(/(^|[\s\-'’])(\p{L})/gu, (m, once, harf) => once + harf.toLocaleUpperCase('tr'));
+}
+
+/* "2008-05-20" doğumlu kişinin bugünkü yaşı. */
+function yasHesapla(iso) {
+  const p = String(iso || '').split('-').map(Number);
+  if (p.length !== 3 || p.some(isNaN)) return 0;
+  const bugun = new Date();
+  let yas = bugun.getFullYear() - p[0];
+  if (bugun.getMonth() + 1 < p[1] || (bugun.getMonth() + 1 === p[1] && bugun.getDate() < p[2])) yas--;
+  return yas;
+}
+
+/* Doğum tarihi: YYYY-AA-GG. Gelecek olamaz, 1920'den eski olamaz.
+   Öğrencide zorunlu; diğer rollerde boş bırakılabilir. */
+function dogumSorunu(deger, zorunlu) {
+  const d = String(deger || '').trim();
+  if (!d) return zorunlu ? 'Doğum tarihi gerekli' : '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return 'Doğum tarihi geçersiz';
+  const zaman = Date.parse(d + 'T00:00:00Z');
+  if (isNaN(zaman)) return 'Doğum tarihi geçersiz';
+  if (new Date(zaman).toISOString().slice(0, 10) !== d) return 'Böyle bir gün yok';
+  if (zaman > Date.now()) return 'Doğum tarihi gelecekte olamaz';
+  if (Number(d.slice(0, 4)) < 1920) return 'Doğum tarihi çok eski';
+  return '';
+}
+
+/* Bu hesabın şifresi güçlü kurala mı tabi? Öğrenci ve servisçi dışında herkes. */
+const gucluSifreli = u => !u || (u.role !== 'student' && u.role !== 'servisci');
+/* Metin alanı bekliyoruz. İstemci nesne ya da dizi gönderirse bunu metne
+   çevirmeye çalışmak yanlış: govdeTemizle prototipsiz nesne ürettiği için
+   String() "Cannot convert object to primitive value" diye patlıyordu ve
+   herkes istediği uca 500 aldırabiliyordu. Nesne geldiyse boş sayıyoruz. */
+function clean(s, max) {
+  if (s == null) return '';
+  if (typeof s === 'object') return '';
+  return String(s).replace(/\u0000/g, '').trim().slice(0, max || 200);
+}
+
+/* Virgüllü ya da noktalı ondalık sayı: "490,161" -> 490.161.
+   Boş, sayı olmayan ya da sonsuz değer için null döner. */
+function ondalik(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  const s = String(v).trim().replace(/\s/g, '').replace(',', '.');
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
+  const n = Number(s);
+  return isFinite(n) ? n : null;
+}
+
+const ESKI_SAATLER = [
+  null,
+  ['09:00', '09:40'], ['09:50', '10:30'], ['10:40', '11:20'], ['11:30', '12:10'],
+  ['13:00', '13:40'], ['13:50', '14:30'], ['14:40', '15:20'], ['15:30', '16:10'],
+  ['16:20', '17:00'], ['17:10', '17:50'], ['18:00', '18:40'], ['18:50', '19:30'],
+  ['19:40', '20:20'], ['20:30', '21:10']
+];
+
+function gunTarih(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const i = n => (n < 10 ? '0' : '') + n;
+  return i(d.getDate()) + '.' + i(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+
+
+module.exports = {
+  yasHesapla,
+  gucluSifreli,
+  SUBJECTS,
+  CITIES,
+  RESULT_TYPES,
+  uid,
+  now,
+  govdeTemizle,
+  KOD_ALFABE,
+  KOD_UZUNLUK,
+  kodSade,
+  makeCode,
+  normKullaniciAdi,
+  kullaniciAdiSorunu,
+  tcSorunu,
+  normTc,
+  adDuzelt,
+  normTelefon,
+  telefonSorunu,
+  dogumSorunu,
+  normEmail,
+  sifreSorunu,
+  clean,
+  ondalik,
+  ESKI_SAATLER,
+  gunTarih,
+  metinYap,
+  OKUL_ROLLERI,
+  okulHesabiMi,
+  asciiYap,
+  kisaAdSorunu,
+  kisaAdUret,
+  tarihCoz
+};
