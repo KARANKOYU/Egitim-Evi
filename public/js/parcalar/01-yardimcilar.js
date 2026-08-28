@@ -9,6 +9,33 @@ function esc(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+function api(path, method, body) {
+  var opt = { method: method || 'GET', headers: {} };
+  if (S.token) opt.headers['Authorization'] = 'Bearer ' + S.token;
+  if (body) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  return fetch('/api' + path, opt).then(function (r) {
+    return r.text().then(function (t) {
+      var j = {};
+      try { j = t ? JSON.parse(t) : {}; } catch (e) { j = {}; }
+      if (!r.ok) {
+        if (r.status === 401 && S.token) { cikisYap(true); }
+        /* Oturum açıkken sunucu önce şifre belirlemeyi isterse (ör. yönetim
+           şifreyi bu arada T.C. no'ya çevirdi) pencere açılır. */
+        if (r.status === 403 && j.sifreDegismeli && S.user && path !== '/password') {
+          S.user.sifreDegismeli = true;
+          sifreBelirleIste();
+        }
+        var hata = new Error(j.error || ('Bir hata oluştu (' + r.status + ')'));
+        /* Çağıran taraf ek alanlara bakabilsin (ör. "bu hesap zaten var"). */
+        hata.durum = r.status;
+        hata.veri = j;
+        throw hata;
+      }
+      return j;
+    });
+  });
+}
+
 /* Parça dosyaların kendi düğme eylemleri: EYLEMLER[eylemAdi] = function (el, id) {}.
    islem() (25-tiklama.js) önce buraya bakar; böylece bir ekranın düğmeleri
    o ekranın dosyasında durur. */

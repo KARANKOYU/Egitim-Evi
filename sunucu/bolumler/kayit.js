@@ -674,3 +674,12 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = {
+  benimGorunum,
+  KVKK_SURUM,
+  kvkkGuncelMi,
+  kisilikListesi,
+  oturumCevabi,
+  register,
+  uclar
+};
