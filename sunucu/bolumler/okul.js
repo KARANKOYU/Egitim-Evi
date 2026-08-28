@@ -44,3 +44,51 @@ function uyariMetni(u) {
     ' dersiyle çakışıyor (' + u.start + '-' + u.end + ')';
 }
 
+/* Yeni veli kodu: başkasında olmayan. */
+async function yeniKod() {
+  let code = makeCode();
+  while (await depo.kullanicilar.kodVarMi(code)) code = makeCode();
+  return code;
+}
+
+/* Okunması kolay, tahmini zor şifre: 8 harf + 2 rakam; karışan harfler
+   (I/l/1, O/0) yok. crypto.randomInt ile (Math.random değil). */
+const SIFRE_HARF = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+const SIFRE_RAKAM = '23456789';
+function rastgeleSifre() {
+  let s = '';
+  for (let i = 0; i < 8; i++) s += SIFRE_HARF[crypto.randomInt(SIFRE_HARF.length)];
+  for (let i = 0; i < 2; i++) s += SIFRE_RAKAM[crypto.randomInt(SIFRE_RAKAM.length)];
+  return s;
+}
+
+/* Sınıf adı: seviye + şube harfi yazılmışsa tek biçime gelir ("7a",
+   "7 - a", "7/A" -> "7-A"). Başka türlü yazılmış adlara ("Anasınıfı
+   Papatya") dokunulmaz. */
+function sinifAdiDuzelt(ad) {
+  const m = /^(\d{1,2})\s*[-/.]?\s*([a-zçğıöşü])$/i.exec(String(ad || '').trim());
+  return m ? m[1] + '-' + m[2].toLocaleUpperCase('tr') : String(ad || '').trim();
+}
+
+/* Okulun öğrencisi mi? */
+async function okulOgrencisi(me, id) {
+  const st = await depo.kullanicilar.bul(clean(id, 60));
+  return st && st.role === 'student' && st.schoolId === me.schoolId ? st : null;
+}
+
+function xlsxGonder(res, veri, ad) {
+  res.writeHead(200, baslikEkle({
+    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Content-Length': veri.length,
+    'Content-Disposition': 'attachment; filename="' + ad + '"',
+    'Cache-Control': 'no-store'
+  }));
+  res.end(veri);
+}
+
+module.exports = {
+  AKTARIM_SINIR,
+  AKTARIM_DOSYA_SINIR,
+  xlsxGonder,
+  uclar
+};

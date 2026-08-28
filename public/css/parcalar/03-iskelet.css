@@ -1,0 +1,6 @@
+/* Uygulama iskeleti: üst çubuk, sol menü, içerik alanı. */
+
+/* ================= uygulama iskeleti ================= */
+.app { display: none; min-height: 100vh; }
+.app.on { display: block; }
+

@@ -1,0 +1,53 @@
+/* Form alanları, düğmeler, uyarı kutuları. */
+
+/* ================= form ================= */
+.field { margin-bottom: 13px; }
+.field label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--soluk);
+  margin-bottom: 5px;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r-kucuk);
+  background: var(--kart-ust);
+  outline: none;
+  transition: border-color var(--sure-kisa) var(--egri), box-shadow var(--sure-kisa) var(--egri),
+              background var(--sure) var(--egri);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--ana);
+  box-shadow: 0 0 0 3px var(--odak);
+}
+.field textarea { resize: vertical; min-height: 78px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hint { font-size: 12px; color: var(--soluk); margin-top: 4px; }
+
+.msg { padding: 10px 12px; border-radius: var(--r-kucuk); font-size: 13.5px; margin-bottom: 14px; }
+.msg.hata { background: var(--kirmizi-zemin); color: var(--kirmizi-yazi); }
+.msg.iyi { background: var(--yesil-zemin); color: var(--yesil-yazi); }
+.msg.bilgi { background: var(--ana-acik); color: var(--ana-koyu); }
+.msg.uyari { background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
+
+.caps-uyari {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--turuncu-yazi);
+}
+.caps-uyari .ikon { width: 15px; height: 15px; color: var(--turuncu); flex: 0 0 auto; }
+
+/* ===== gün / ay / yıl seçici ===== */
+.tarih-secici {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 8px;
+}
+

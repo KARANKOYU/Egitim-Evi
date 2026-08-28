@@ -1,0 +1,46 @@
+/* Renk ve ölçü değişkenleri, açık/koyu tema, sayfa tabanı, yazı tipleri.
+
+   TEMA NASIL ÇALIŞIR
+   ------------------
+   Bütün renkler burada değişken (token) olarak tanımlıdır; öteki dosyalarda
+   sabit renk kodu yoktur. Üç durum vardır:
+     1. Kullanıcı seçmedi (varsayılan "Sistem"): işletim sisteminin tercihi
+        prefers-color-scheme ile okunur.
+     2. "Açık" seçti: <html data-tema="acik">  -> açık palet, sistem ne derse desin.
+     3. "Koyu" seçti: <html data-tema="koyu">  -> koyu palet.
+   Seçim public/js/tema.js tarafından sayfa çizilmeden önce uygulanır
+   (aksi hâlde koyu temada bir an beyaz ekran yanıp söner). */
+
+/* Hareketi istemeyen kullanıcı (işletim sistemi ayarı): geçişler kapanır. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --sure: 0ms; --sure-kisa: 0ms; --kalkis: 0px; }
+}
+
+* { box-sizing: border-box; }
+
+/* hidden özniteliği her zaman gizler: bir sınıfın display:flex kuralı onu
+   ezmesin (yetki penceresinde kapalı yetkinin sınıf listesi görünüyordu). */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--zemin);
+  color: var(--yazi);
+  font-family: var(--f-govde);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  transition: background-color var(--sure) var(--egri), color var(--sure) var(--egri);
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--ana); }
+
+/* Başlıklar serif: sayfa adı ve büyük başlıklar Newsreader, kalanı sans. */
+h1, h2 { font-family: var(--f-baslik); letter-spacing: .01em; }
+
+/* Kodlar, kullanıcı adları, giriş kodları: eş genişlikli. */
+code, .kod, .veli-kodu { font-family: var(--f-kod); }
