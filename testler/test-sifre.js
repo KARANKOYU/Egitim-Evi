@@ -16,3 +16,9 @@ function sonAnahtar() {
   return m[m.length - 1].match(/([a-f0-9]{64})/)[1];
 }
 
+async function baglantiIste(email) {
+  const bot = await botCevabi();
+  return iste('/api/sifre-unuttum', 'POST',
+    { email, challengeId: bot.challengeId, challengeAnswer: bot.challengeAnswer });
+}
+
