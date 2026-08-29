@@ -120,3 +120,9 @@ SAYFALAR['okul-ogrenciler'] = function () {
     });
 };
 
+/* Müdür bir öğrencinin portalını açar (veli görünümüyle aynı mantık) */
+function ogrenciPortalAc(studentId, ad) {
+  S.viewStudentId = studentId;
+  S.viewStudentName = ad;
+  git('ilerleyisim');
+}
