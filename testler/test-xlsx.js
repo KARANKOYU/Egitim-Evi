@@ -131,3 +131,7 @@ kontrol('AA = 26', xlsx.sutunAd(26) === 'AA', xlsx.sutunAd(26));
 kontrol('AB = 27', xlsx.sutunAd(27) === 'AB', xlsx.sutunAd(27));
 kontrol('geri cevrim tutarli', xlsx.sutunNo('AB') === 27, String(xlsx.sutunNo('AB')));
 
+console.log();
+console.log('  GECTI: ' + gecti + '   KALDI: ' + kaldi);
+console.log('  Ornek dosya: ' + path.join(CIKTI, 'deneme.xlsx'));
+process.exit(kaldi ? 1 : 0);
