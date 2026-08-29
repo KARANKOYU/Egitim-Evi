@@ -60,3 +60,46 @@ async function dersOzetleri(simdi) {
   return giden.length;
 }
 
+async function odevHatirlatmalari(simdi) {
+  if (simdi.getHours() < ODEV_BAS) return 0;
+  const yarin = yerelTarihAnahtari(new Date(simdi.getTime() + 24 * 60 * 60 * 1000));
+
+  /* Öğrenci başına yarın teslim edilecek, henüz sonuçlanmamış ödevler */
+  const ogrencinin = new Map();
+  for (const a of await depo.odevler.bitisiOlanlar(yarin)) {
+    if (depo.ozellikler.kapaliMi(a.schoolId, 'odev')) continue;   // okul ödevleri kapattı
+    for (const sid of a.studentIds) {
+      if (a.results[sid]) continue;
+      if (!ogrencinin.has(sid)) ogrencinin.set(sid, []);
+      ogrencinin.get(sid).push(a);
+    }
+  }
+  if (!ogrencinin.size) return 0;
+
+  const anahtar = id => 'odev-yarin:' + id + ':' + yarin;
+  const ilk = await depo.genel.ilkKezOlanlar(Array.from(ogrencinin.keys()).map(anahtar));
+  const giden = [];
+  for (const [sid, odevler] of ogrencinin) {
+    if (!ilk.has(anahtar(sid))) continue;
+    const a = odevler[0];
+    const metin = odevler.length === 1
+      ? 'Yarın ' + a.subject + ' dersinden "' + a.title + '" ödevin var (son saat ' + a.endTime + ').'
+      : 'Yarın ' + odevler.length + ' ödevin var: ' +
+        listeYaz(odevler.map(o => o.subject + ' "' + o.title + '"'), 'ödev') + '.';
+    giden.push({ kime: sid, metin, baglanti: '#/odevler' });
+  }
+  await depo.genel.cokluBildir(giden);
+  return giden.length;
+}
+
+async function hatirlatmalariCalistir() {
+  try {
+    const simdi = new Date();
+    await dersOzetleri(simdi);
+    await odevHatirlatmalari(simdi);
+    await depo.genel.hatirlatmaTemizle(30);   // 30 günden eski işaretler
+  } catch (e) {
+    console.error('Hatırlatma hatası:', e.message);
+  }
+}
+
