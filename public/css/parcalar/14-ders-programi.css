@@ -296,3 +296,13 @@ table.hafta th.ekle-sutun {
 }
 .hafta-ekle:hover { border-color: var(--ana); color: var(--ana); background: var(--ana-acik); }
 
+@media (max-width: 520px) {
+  .gun-gezgin { flex-direction: column; align-items: stretch; }
+  .gun-ok { width: 100%; }
+  .gun-nokta { min-width: 44px; padding: 6px 4px; }
+  .ders-sutunlar { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gorunum-dugme, .gun-nokta, .gun-ok { transition: none; }
+}
