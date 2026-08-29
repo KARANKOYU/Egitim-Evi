@@ -88,6 +88,23 @@ function girisSonucGoster() {
   if (perde) perde.setAttribute('data-zorunlu', '1');
 }
 
+EYLEMLER['giris-bilgisi-excel'] = function () {
+  var d = girisListesi;
+  if (!d) return;
+  var ham = atob(d.xlsx), bayt = new Uint8Array(ham.length);
+  for (var i = 0; i < ham.length; i++) bayt[i] = ham.charCodeAt(i);
+  var blob = new Blob([bayt], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'giris-bilgileri-' + d.kapsam.replace(/[^0-9A-Za-zÇĞİÖŞÜçğıöşü-]+/g, '-') + '.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  d.indirildi = true;
+};
+
 /* Her kişiye kesilip verilecek bir kâğıt: okulun giriş adresi, kullanıcı adı,
    şifre (ya da "T.C. kimlik numaran") ve öğrenciyse veliye veli kodu.
    Tarayıcının "PDF olarak kaydet" seçeneği de aynı çıktıyı verir.
