@@ -254,3 +254,127 @@ function gunlukGorunum(d, duzenlenebilir, altAlan) {
   return h;
 }
 
+/* --- HAFTALIK GÖRÜNÜM ---
+   Günler satır, ders sıraları sütun. Her hücrede tam detay var; o sırada
+   dersi olmayan hücre "[boş]" yazar. */
+function haftaHucresi(sp, duzenlenebilir, altAlan) {
+  return '<div class="hafta-saat">' + esc(sp.start) + ' – ' + esc(sp.end) + '</div>' +
+    '<div class="hafta-ders">' + esc(sp.subject) + '</div>' +
+    '<div class="hafta-kisi">' + esc(altAlan(sp) || '') + '</div>' +
+    (duzenlenebilir
+      ? '<div class="hafta-islem">' +
+        '<button class="btn kucuk gri" data-act="saat-duzenle" data-id="' + esc(sp.id) + '">Düzenle</button>' +
+        '<button class="btn kucuk tehlike" data-act="saat-sil" data-id="' + esc(sp.id) + '">Sil</button>' +
+        '</div>'
+      : '');
+}
+
+function haftalikGorunum(d, duzenlenebilir, altAlan) {
+  var gunler = gunlereBol(d.cells);
+  var carp = cakisanKimlikler(d);
+  var siralar = dersSiralari(d.cells);
+  var sutun = Math.max(1, siralar.length);
+
+  var h = '<div class="hafta-sar"><table class="hafta"><thead><tr><th class="gun-sutun">Gün</th>';
+  for (var i = 1; i <= sutun; i++) h += '<th>Ders ' + i + '</th>';
+  if (duzenlenebilir) h += '<th class="ekle-sutun"></th>';
+  h += '</tr></thead><tbody>';
+
+  for (var gu = 1; gu <= (d.gunSayisi || 7); gu++) {
+    var liste = gunler[gu] || [];
+    h += '<tr' + (gu === bugunNo() ? ' class="bugun"' : '') + '>' +
+      '<th class="gun-sutun">' + esc(d.gunAdlari[gu] || ('Gün ' + gu)) +
+      (gu === bugunNo() ? '<span class="bugun-etiket">bugün</span>' : '') + '</th>';
+
+    if (!liste.length) {
+      h += '<td class="bos-hucre" colspan="' + sutun + '"><span class="bos-ders">' + BOS_DERS + '</span></td>';
+    } else {
+      var yer = siralaraYerlestir(siralar, liste);
+      for (var j = 0; j < yer.length; j++) {
+        if (!yer[j].length) { h += '<td class="bos-hucre"><span class="bos-ders">' + BOS_DERS + '</span></td>'; continue; }
+        var cakisiyor = false;
+        for (var c = 0; c < yer[j].length; c++) if (carp[yer[j][c].id]) cakisiyor = true;
+        h += '<td' + (cakisiyor ? ' class="cakisma"' : '') + '>';
+        for (var y = 0; y < yer[j].length; y++) {
+          h += (y ? '<div class="hafta-ayrac"></div>' : '') + haftaHucresi(yer[j][y], duzenlenebilir, altAlan);
+        }
+        h += '</td>';
+      }
+    }
+    if (duzenlenebilir) {
+      h += '<td class="ekle-sutun">' +
+        '<button type="button" class="hafta-ekle" data-act="saat-ekle" data-gun="' + gu + '" ' +
+        'title="' + esc(d.gunAdlari[gu]) + ' gününe ders ekle">+</button></td>';
+    }
+    h += '</tr>';
+  }
+  return h + '</tbody></table></div>';
+}
+
+/* Gün / Hafta düğmesi */
+function gorunumSecici() {
+  var hafta = S.programGorunum === 'hafta';
+  return '<div class="gorunum-secici">' +
+    '<button type="button" class="gorunum-dugme' + (hafta ? '' : ' secili') + '" ' +
+    'data-act="program-gorunum" data-tur="gun">Gün</button>' +
+    '<button type="button" class="gorunum-dugme' + (hafta ? ' secili' : '') + '" ' +
+    'data-act="program-gorunum" data-tur="hafta">Hafta</button>' +
+    '</div>';
+}
+
+/* Seçili görünüme göre çizer. */
+function programGovdesi(d, duzenlenebilir, altAlan) {
+  return S.programGorunum === 'hafta'
+    ? haftalikGorunum(d, duzenlenebilir, altAlan)
+    : gunlukGorunum(d, duzenlenebilir, altAlan);
+}
+
+/* Program hangi sayfada açıksa onu yeniden çizer. */
+function programYenidenCiz() {
+  if (S.page === 'program') return programCiz()['catch'](hataGoster);
+  return git(S.page);
+}
+
+/* Ders saati ekleme / düzenleme penceresi */
+function saatModal(gun, mevcutId) {
+  var d = S.programVeri;
+  var mevcut = null;
+  if (mevcutId) {
+    for (var i = 0; i < d.cells.length; i++) if (d.cells[i].id === mevcutId) mevcut = d.cells[i];
+    if (mevcut) gun = mevcut.day;
+  }
+
+  if (!d.lessons.length) {
+    modalAc('Ders ekle', bosKutu('ders', 'Bu sınıfa önce ders eklemelisin. Sınıflar sayfasından ekleyebilirsin.'));
+    return;
+  }
+
+  var h = '<div class="field"><label for="mGun">Gün</label><select id="mGun">';
+  for (var g = 1; g <= (d.gunSayisi || 7); g++) {
+    h += '<option value="' + g + '"' + (g === gun ? ' selected' : '') + '>' +
+      esc(d.gunAdlari[g]) + '</option>';
+  }
+  h += '</select></div>';
+
+  h += '<div class="field"><label for="mDers">Ders</label><select id="mDers">';
+  for (var j = 0; j < d.lessons.length; j++) {
+    var l = d.lessons[j];
+    h += '<option value="' + esc(l.id) + '"' +
+      (mevcut && mevcut.lessonId === l.id ? ' selected' : '') + '>' +
+      esc(l.subject) + (l.teacherName ? ' — ' + esc(l.teacherName) : ' — öğretmen yok') + '</option>';
+  }
+  h += '</select></div>';
+
+  h += '<div class="row2">' +
+    '<div class="field"><label for="mBas">Başlangıç</label>' +
+    '<input type="time" id="mBas" value="' + esc(mevcut ? mevcut.start : '09:00') + '"></div>' +
+    '<div class="field"><label for="mBit">Bitiş</label>' +
+    '<input type="time" id="mBit" value="' + esc(mevcut ? mevcut.end : '09:40') + '"></div>' +
+    '</div>' +
+    '<div class="hint">Saatleri okulunun zil düzenine göre serbestçe yazabilirsin.</div>' +
+    '<div id="saatMesaj" style="margin-top:9px"></div>';
+
+  modalAc(mevcut ? 'Ders saatini düzenle' : 'Ders ekle', h,
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="saat-kaydet" data-id="' + esc(mevcutId || '') + '">Kaydet</button>');
+}
