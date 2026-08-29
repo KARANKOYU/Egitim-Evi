@@ -112,3 +112,187 @@
 .gun-buyuk { font-size: 20px; font-weight: 700; line-height: 1.15; }
 .gun-kucuk { font-size: 12.5px; color: var(--soluk); margin-top: 2px; }
 
+/* --- Günlük görünüm: ders sütunları --- */
+.ders-sutunlar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+.ders-sutun {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--kart);
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r-kucuk);
+  padding: 13px 14px;
+  min-height: 152px;
+  text-align: left;
+  box-shadow: var(--golge-yumusak);
+}
+.sutun-basi {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--soluk);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sutun-saat {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ana);
+  margin-top: 3px;
+}
+.sutun-ders {
+  font-size: 15.5px;
+  font-weight: 600;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.sutun-kisi { font-size: 12.5px; color: var(--soluk); overflow-wrap: anywhere; }
+.sutun-islem { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 10px; }
+
+.ders-sutun.cakisma { border-color: var(--kirmizi); background: var(--kirmizi-zemin); }
+.sutun-uyari {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--kirmizi);
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+.ders-sutun.simdi { border-color: var(--ana); box-shadow: 0 0 0 3px var(--ana-acik); }
+.simdi-etiket {
+  background: var(--ana); color: var(--ustune-yazi); border-radius: 999px;
+  padding: 1px 7px; font-size: 10px; letter-spacing: 0;
+}
+.ders-sutun.bos-saat {
+  background: var(--zemin);
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+.bos-yazi { color: var(--soluk); font-size: 14px; }
+.bos-ders {
+  color: var(--soluk);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ders-sutun.bos-saat .sutun-basi { align-self: stretch; }
+.hafta-ayrac { border-top: 1px dashed var(--cizgi); margin: 8px 0; }
+
+.ders-sutun.ekle {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-style: dashed;
+  background: var(--zemin);
+  cursor: pointer;
+  font: inherit;
+  color: var(--soluk);
+  box-shadow: none;
+}
+.ders-sutun.ekle:hover { border-color: var(--ana); color: var(--ana); background: var(--ana-acik); }
+.ekle-arti { font-size: 26px; line-height: 1; }
+.ekle-yazi { font-size: 13px; font-weight: 600; }
+
+/* --- Haftalık görünüm --- */
+.hafta-sar { overflow-x: auto; margin-bottom: 18px; }
+table.hafta {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 6px;
+  min-width: 640px;
+}
+table.hafta thead th {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--soluk);
+  padding: 4px 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+table.hafta th.gun-sutun {
+  width: 108px;
+  font-size: 13.5px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--yazi);
+  font-weight: 700;
+  vertical-align: top;
+  padding-top: 14px;
+}
+table.hafta tbody tr.bugun th.gun-sutun { color: var(--ana); }
+.bugun-etiket {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ustune-yazi);
+  background: var(--ana);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-top: 4px;
+  width: max-content;
+}
+table.hafta td {
+  background: var(--kart);
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r-kucuk);
+  padding: 10px 12px;
+  vertical-align: top;
+  min-width: 150px;
+}
+table.hafta td.bos-hucre {
+  background: var(--zemin);
+  border-style: dashed;
+  vertical-align: middle;
+}
+table.hafta td.cakisma { border-color: var(--kirmizi); background: var(--kirmizi-zemin); }
+.hafta-saat {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ana);
+}
+.hafta-ders {
+  font-size: 14.5px;
+  font-weight: 600;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.hafta-kisi { font-size: 12px; color: var(--soluk); margin-top: 1px; overflow-wrap: anywhere; }
+.hafta-islem { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+
+table.hafta td.ekle-sutun,
+table.hafta th.ekle-sutun {
+  background: transparent;
+  border: 0;
+  width: 46px;
+  min-width: 46px;
+  padding: 0;
+  vertical-align: middle;
+}
+.hafta-ekle {
+  width: 34px;
+  height: 34px;
+  border: 1.5px dashed var(--cizgi);
+  background: var(--zemin);
+  border-radius: var(--r-mini);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--soluk);
+  cursor: pointer;
+}
+.hafta-ekle:hover { border-color: var(--ana); color: var(--ana); background: var(--ana-acik); }
+
