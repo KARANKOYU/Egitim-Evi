@@ -52,6 +52,11 @@ async function canSeeStudent(viewer, studentId) {
   return false;
 }
 
+/* ============ sınıf / ders / program ============ */
+
+const GUN_ADLARI = ['', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+const GUN_SAYISI = 7;   // program Pazartesi'den Pazar'a kadar
+
 function saatDakika(metin) {
   const m = /^([0-9]{1,2}):([0-9]{2})$/.exec(String(metin || '').trim());
   if (!m) return null;

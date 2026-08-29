@@ -76,6 +76,21 @@ const BOLUM = {
   'yorumlar': yorum,
 };
 
+/* Yıla bağlı kayıt yazan istekler: ödev, sınav, yoklama, takvim etkinliği ve
+   ders programı. Sınıflar, öğrenciler ve sınav şablonları yıllar arası ortak. */
+function arsivYazmasiMi(p, segs, body) {
+  const alt = segs[2] || '';
+  if (p === 'assignments' || p === 'examgroups') return true;
+  if (p === 'exams') return alt !== 'sablonlar';
+  if (p === 'devamsizlik') return alt === 'yoklama' || alt === 'isaretle';
+  if (p === 'takvim') return alt === 'etkinlik' || alt === 'etkinlik-sil';
+  if (p === 'school') {
+    return alt === 'schedule-add' || alt === 'schedule-update' || alt === 'schedule-delete' ||
+      (alt === 'aktarim-ice' && body && body.tur === 'program');
+  }
+  return false;
+}
+
 async function handleApi(req, res, segs, method) {
   const me = await currentUser(req);
   /* Açılış sayfasındaki "şu an açık" sayısı için (yalnızca sayı tutulur). */
