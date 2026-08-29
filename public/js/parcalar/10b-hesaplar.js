@@ -212,3 +212,9 @@ EYLEMLER['hesap-sil'] = function (el, id) {
   })['catch'](function (e) { dugmeBitir(el); hataGoster(e); });
 };
 
+EYLEMLER['kod-yenile'] = function (el, id) {
+  if (!confirm('Yeni veli kodu üretilsin mi? Eski kod çalışmaz olur.')) return;
+  return api('/school/student-code-reset', 'POST', { studentId: id }).then(function (r) {
+    mesajGoster('hesapSifreMesaj', 'iyi', 'Yeni veli kodu: ' + kodBicimle(r.code));
+  })['catch'](hataGoster);
+};
