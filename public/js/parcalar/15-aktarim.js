@@ -231,3 +231,156 @@ EYLEMLER['metin-excel'] = function (el) {
   })['catch'](function (e) { dugmeBitir(el); mesajGoster('mtMesaj', 'hata', e.message); });
 };
 
+EYLEMLER['aktarim-yon'] = function (el) {
+  var A = aktarimDurumu();
+  A.yon = el.getAttribute('data-yon');
+  A.rapor = null;
+  return git('aktarim');
+};
+EYLEMLER['aktarim-tur'] = function (el) {
+  var A = aktarimDurumu();
+  var tur = el.getAttribute('data-tur');
+  if (!AKTARIM_ADLARI[tur]) return;
+  S.aktarim = { yon: 'ice', tur: tur, liste: A.liste || '', dosyaAd: '', dosya: '', rapor: null, sonuc: null };
+  return git('aktarim');
+};
+EYLEMLER['aktarim-sablon'] = function (el) {
+  var A = aktarimDurumu();
+  el.disabled = true;
+  var is = A.tur === 'kisi'
+    ? api('/school/kisi-sablon').then(function (d) { b64Indir(d.dosya, d.ad); })
+    : dosyaIndir('/api/school/aktarim-sablon?tur=program', 'ders-programi-sablon.xlsx');
+  return is.then(function () { el.disabled = false; })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+EYLEMLER['aktarim-sec'] = function () { if ($('aktarimDosya')) $('aktarimDosya').click(); };
+
+function aktarimIstegi(uygula) {
+  var A = S.aktarim;
+  return A.tur === 'kisi'
+    ? api('/school/kisi-aktarim', 'POST', { dosya: A.dosya, dosyaAdi: A.dosyaAd, tur: A.liste || undefined, uygula: uygula })
+    : api('/school/aktarim-ice', 'POST', { tur: 'program', dosya: A.dosya, dosyaAdi: A.dosyaAd, uygula: uygula });
+}
+
+EYLEMLER['aktarim-yukle'] = function (el) {
+  var A = aktarimDurumu();
+  dugmeBekle(el, 'Kontrol ediliyor...');
+  return aktarimIstegi(false).then(function (r) {
+    A.rapor = r.rapor || [];
+    A.ozet = { hazir: r.hazir || 0, guncel: r.guncel || 0, hatali: r.hatali || 0, uyarili: r.uyarili || 0, yeniSiniflar: r.yeniSiniflar || [] };
+    return git('aktarim');
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('aktarimMesaj', 'hata', e.message); });
+};
+
+EYLEMLER['aktarim-uygula'] = function (el) {
+  var A = aktarimDurumu(), oz = A.ozet;
+  var soru = A.tur === 'kisi'
+    ? [oz.hazir ? oz.hazir + ' hesap açılacak' : '', oz.guncel ? oz.guncel + ' hesap güncellenecek' : '',
+      oz.yeniSiniflar.length ? oz.yeniSiniflar.length + ' yeni sınıf açılacak' : ''].filter(Boolean).join(', ') + '. Onaylıyor musun?'
+    : oz.hazir + ' ders saati programa eklenecek.\n\nVar olan program silinmez, üzerine eklenir. Onaylıyor musun?';
+  if (!confirm(soru)) return;
+  dugmeBekle(el, 'Uygulanıyor...');
+  return aktarimIstegi(true).then(function (r) {
+    S.aktarim = { yon: 'ice', tur: A.tur, liste: A.liste, dosyaAd: '', dosya: '', rapor: null, sonuc: r };
+    return git('aktarim');
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('aktarimMesaj', 'hata', e.message); });
+};
+
+EYLEMLER['aktarim-vazgec'] = function () {
+  var A = aktarimDurumu();
+  A.rapor = null; A.dosya = ''; A.dosyaAd = '';
+  return git('aktarim');
+};
+EYLEMLER['aktarim-temizle'] = function () {
+  var A = aktarimDurumu();
+  if (A.sonuc && A.sonuc.hesaplar && A.sonuc.hesaplar.length &&
+    !confirm('Giriş bilgileri listesi kapanacak ve bir daha gösterilmeyecek. Kapatılsın mı?')) return;
+  A.sonuc = null;
+  return git('aktarim');
+};
+EYLEMLER['aktarim-mektup'] = function () {
+  var A = aktarimDurumu();
+  if (!A.sonuc || !A.sonuc.hesaplar) return;
+  girisMektuplariYazdir(S.user.schoolName, A.sonuc.hesaplar.map(function (o) {
+    return { ad: o.ad, sinif: o.sinif, kullaniciAdi: o.kullaniciAdi, sifre: o.sifre, tcIle: o.tcIle, veliKodu: o.veliKodu };
+  }));
+};
+EYLEMLER['aktarim-disa'] = function (el) {
+  var tur = el.getAttribute('data-tur'), kayit = null;
+  for (var i = 0; i < DISA_LISTE.length; i++) if (DISA_LISTE[i].k === tur) kayit = DISA_LISTE[i];
+  if (!kayit) return;
+  el.disabled = true;
+  var is = tur === 'kisi'
+    ? api('/school/kisi-disa').then(function (d) { b64Indir(d.dosya, d.ad); })
+    : dosyaIndir('/api/school/aktarim-disa?tur=' + tur, kayit.dosya);
+  return is.then(function () { el.disabled = false; })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+/* Dosya girişi her çizimden sonra yeniden bağlanır: sayfa baştan yazılıyor. */
+function aktarimDosyaBagla() {
+  var giris = $('aktarimDosya');
+  if (!giris) return;
+  giris.onchange = function () {
+    var d = giris.files && giris.files[0];
+    if (!d) return;
+    if (d.size > 950000) {
+      mesajGoster('aktarimMesaj', 'hata', 'Dosya çok büyük (en fazla 950 KB). Listeyi ikiye bölüp iki kez yükle.');
+      return;
+    }
+    var okuyucu = new FileReader();
+    okuyucu.onload = function () {
+      /* Sonuç "data:...;base64,XXXX" biçiminde; yalnız XXXX kısmı lazım. */
+      var metin = String(okuyucu.result);
+      S.aktarim.dosya = metin.slice(metin.indexOf(',') + 1);
+      S.aktarim.dosyaAd = d.name;
+      S.aktarim.rapor = null;
+      S.aktarim.sonuc = null;
+      git('aktarim');
+    };
+    okuyucu.onerror = function () { mesajGoster('aktarimMesaj', 'hata', 'Dosya okunamadı.'); };
+    okuyucu.readAsDataURL(d);
+  };
+}
+
+SAYFALAR['islem-kaydi'] = function () {
+  if (!S.islemSuz) S.islemSuz = '';
+  return api('/islem-kaydi' + (S.islemSuz ? '?islem=' + encodeURIComponent(S.islemSuz) : ''))
+    .then(function (d) {
+      var h = hero('İŞLEM KAYDI', '');
+
+      if (d.turler.length) {
+        h += '<div class="kart"><div class="sekme-satir">' +
+          '<button class="sekme kucuk' + (S.islemSuz ? '' : ' secili') +
+          '" data-act="islem-suz" data-islem="">Hepsi</button>';
+        for (var t = 0; t < d.turler.length; t++) {
+          h += '<button class="sekme kucuk' +
+            (S.islemSuz === d.turler[t].k ? ' secili' : '') +
+            '" data-act="islem-suz" data-islem="' + esc(d.turler[t].k) + '">' +
+            esc(d.turler[t].ad) + '</button>';
+        }
+        h += '</div></div>';
+      }
+
+      if (!d.kayitlar.length) {
+        h += bosKutu('belge', 'Henüz kayıt yok. Önemli işlemler yapıldıkça burada birikir.');
+        yaz(h);
+        return;
+      }
+
+      h += '<div class="kart"><h3>Son ' + d.kayitlar.length + ' kayıt' +
+        (d.toplam > d.kayitlar.length ? ' (toplam ' + d.toplam + ')' : '') + '</h3>' +
+        '<div class="rapor-kaydir"><table class="rapor-tablo"><thead><tr>' +
+        '<th>Tarih</th><th>Kişi</th><th>İşlem</th><th>Ayrıntı</th><th>IP</th>' +
+        '</tr></thead><tbody>';
+      for (var i = 0; i < d.kayitlar.length; i++) {
+        var k = d.kayitlar[i];
+        h += '<tr data-ara="' + esc(k.kisi + ' ' + k.islemAd + ' ' + k.detay) + '">' +
+          '<td>' + tarihSaat(k.tarih) + '</td>' +
+          '<td>' + esc(k.kisi) + '<div class="alt">' + (ROL_AD[k.rol] || '') + '</div></td>' +
+          '<td>' + esc(k.islemAd) + '</td>' +
+          '<td>' + esc(k.detay) + '</td>' +
+          '<td class="alt">' + esc(k.ip) + '</td></tr>';
+      }
+      h += '</tbody></table></div></div>';
+      yaz(h);
+    });
+};

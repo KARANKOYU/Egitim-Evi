@@ -1,0 +1,14 @@
+/* Excel aktarım, özel okul rozeti, şifremi unuttum, KVKK kutusu. */
+
+/* ===== Excel aktarım ===== */
+.tur-sec {
+  display: block; width: 100%; text-align: left; padding: 15px 17px;
+  border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--kart);
+  cursor: pointer; font: inherit; color: inherit;
+  transition: border-color .15s ease, background .15s ease;
+}
+.tur-sec:hover { border-color: var(--ana-cizgi); }
+.tur-sec.secili { border-color: var(--ana); background: var(--ana-acik); }
+.tur-sec .ad { font-weight: 600; margin-bottom: 3px; }
+.tur-sec .alt { color: var(--soluk); font-size: 13px; }
+
