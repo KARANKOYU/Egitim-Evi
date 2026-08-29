@@ -124,3 +124,10 @@ console.log('=== 6b) KUCUK DOSYA, DEV TABLO (bellek bombasi) ===');
   kontrol('ve hizli bitiyor', Date.now() - bas < 3000, (Date.now() - bas) + ' ms');
 }
 
+console.log('=== 7) SUTUN ADI CEVRIMI ===');
+kontrol('A = 0', xlsx.sutunAd(0) === 'A', xlsx.sutunAd(0));
+kontrol('Z = 25', xlsx.sutunAd(25) === 'Z', xlsx.sutunAd(25));
+kontrol('AA = 26', xlsx.sutunAd(26) === 'AA', xlsx.sutunAd(26));
+kontrol('AB = 27', xlsx.sutunAd(27) === 'AB', xlsx.sutunAd(27));
+kontrol('geri cevrim tutarli', xlsx.sutunNo('AB') === 27, String(xlsx.sutunNo('AB')));
+
