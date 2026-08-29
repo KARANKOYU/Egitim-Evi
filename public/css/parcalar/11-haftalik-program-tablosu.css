@@ -45,3 +45,63 @@ table.program td { padding: 0; vertical-align: stretch; }
 .hucre:hover { border-color: var(--ana); background: var(--ana-acik); }
 .hucre:focus-visible { outline: 2px solid var(--ana); outline-offset: 1px; }
 
+.hucre.dolu {
+  border-style: solid;
+  border-color: var(--ana-cizgi);
+  background: var(--ana-acik);
+}
+.hucre.cakisma {
+  border-color: var(--kirmizi);
+  background: var(--kirmizi-zemin);
+}
+/* Salt okunur tablolarda (ogretmen/ogrenci) tiklanabilir gorunmesin */
+.hucre.salt { cursor: default; }
+.hucre.salt:hover { border-color: var(--cizgi); background: var(--zemin); }
+.hucre.dolu.salt:hover { border-color: var(--ana-cizgi); background: var(--ana-acik); }
+.hucre.cakisma.salt:hover { border-color: var(--kirmizi); background: var(--kirmizi-zemin); }
+
+.hucre-ders {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  /* Uzun ders adlari hucreyi tasirmasin */
+  overflow-wrap: anywhere;
+}
+.hucre-ogretmen {
+  font-size: 11px;
+  color: var(--soluk);
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.hucre-bos {
+  font-size: 18px;
+  color: var(--cizgi);
+  text-align: center;
+}
+.hucre:hover .hucre-bos { color: var(--ana); }
+
+/* Hucreye ders secme listesi */
+.ders-secim {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--cizgi);
+  background: transparent;
+  padding: 11px 13px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.ders-secim:last-child { border-bottom: 0; }
+.ders-secim:hover { background: var(--ana-acik); }
+.ders-secim.secili { background: var(--ana-acik); box-shadow: inset 3px 0 0 var(--ana); }
+.ders-secim .ad { display: block; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.ders-secim .alt { display: block; font-size: 12px; color: var(--soluk); margin-top: 2px; }
+
+@media (max-width: 640px) {
+  table.program { border-spacing: 3px; min-width: 480px; }
+  .hucre { min-height: 46px; padding: 5px; }
+  .hucre-ders { font-size: 12px; }
+  .hucre-ogretmen { font-size: 10px; }
+}

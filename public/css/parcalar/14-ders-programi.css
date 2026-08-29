@@ -1,0 +1,114 @@
+/* Ders programı: gün ve hafta görünümleri. */
+
+/* ===================================================================
+   DERS PROGRAMI
+   İki görünüm: gün (dersler yan yana sütun) ve hafta (gün satır, ders sütun).
+   Her ikisi de tam detay gösterir: saat, ders, öğretmen ya da sınıf.
+   =================================================================== */
+
+/* --- Gün / Hafta düğmesi --- */
+.gorunum-secici {
+  display: inline-flex;
+  background: var(--zemin);
+  border: 1.5px solid var(--cizgi);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.gorunum-dugme {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 7px 20px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--soluk);
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease, box-shadow .16s ease;
+}
+.gorunum-dugme.secili {
+  background: var(--kart);
+  color: var(--ana);
+  box-shadow: var(--golge-yumusak);
+}
+.gorunum-dugme:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; }
+
+/* --- Gün şeridi: hangi günde kaç ders var --- */
+.gun-seridi {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.gun-nokta {
+  flex: 1 1 auto;
+  min-width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  border: 1.5px solid var(--cizgi);
+  background: var(--kart);
+  border-radius: var(--r-kucuk);
+  padding: 7px 8px;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color .14s ease, background .14s ease;
+}
+.gun-nokta .nokta-ad {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--soluk);
+}
+.gun-nokta .nokta-adet {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--yazi);
+  font-variant-numeric: tabular-nums;
+}
+.gun-nokta.bos .nokta-adet { color: var(--cizgi); }
+.gun-nokta.dolu { background: var(--ana-acik); border-color: var(--ana-cizgi); }
+.gun-nokta.dolu .nokta-ad { color: var(--ana-koyu); }
+.gun-nokta.dolu .nokta-adet { color: var(--ana); }
+.gun-nokta.bugun { border-style: dashed; }
+.gun-nokta.secili {
+  background: var(--ana);
+  border-color: var(--ana);
+}
+.gun-nokta.secili .nokta-ad,
+.gun-nokta.secili .nokta-adet { color: var(--ustune-yazi); }
+.gun-nokta:hover { border-color: var(--ana); }
+
+/* --- Gün gezgini --- */
+.gun-gezgin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--zemin);
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r-kucuk);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.gun-ok {
+  background: var(--kart);
+  border: 1.5px solid var(--cizgi);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--yazi);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gun-ok:hover { border-color: var(--ana); color: var(--ana); }
+.gun-ok:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; }
+.gun-orta { text-align: center; flex: 1; min-width: 0; }
+.gun-buyuk { font-size: 20px; font-weight: 700; line-height: 1.15; }
+.gun-kucuk { font-size: 12.5px; color: var(--soluk); margin-top: 2px; }
+
