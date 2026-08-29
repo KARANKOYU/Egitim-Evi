@@ -1,0 +1,52 @@
+/* Mesajlar ve duyurular. */
+
+/* ===== Mesajlar ===== */
+.sekme-satir { display: flex; gap: 8px; flex-wrap: wrap; }
+.sekme {
+  padding: 9px 16px; border: 1px solid var(--cizgi); border-radius: 999px;
+  background: var(--kart); cursor: pointer; font: inherit; font-size: 14px;
+  color: var(--soluk); transition: all .15s ease; white-space: nowrap;
+}
+.sekme:hover { border-color: var(--ana-cizgi); color: var(--yazi); }
+.sekme.secili {
+  background: var(--ana); border-color: var(--ana); color: var(--ustune-yazi); font-weight: 600;
+}
+.sekme.kucuk { padding: 6px 13px; font-size: 13px; }
+.sekme-rozet {
+  display: inline-block; margin-left: 7px; padding: 1px 7px; border-radius: 999px;
+  background: var(--kirmizi); color: var(--ustune-yazi); font-size: 11px; font-weight: 700;
+}
+.sekme.secili .sekme-rozet { background: rgba(255,255,255,.28); }
+
+.mesaj-satir {
+  padding: 15px 18px; border-bottom: 1px solid var(--cizgi); cursor: pointer;
+  transition: background .12s ease;
+}
+.mesaj-satir:last-child { border-bottom: 0; }
+/* Gönderenin baş harfleri solda, mesaj sağda. */
+.mesaj-satir { display: flex; align-items: flex-start; gap: 12px; }
+.mesaj-govde-kutu { flex: 1 1 auto; min-width: 0; }
+.mesaj-avatar { margin-top: 2px; }
+.mesaj-kimden { display: flex; align-items: center; gap: 10px; }
+.mesaj-satir:hover { background: var(--zemin); }
+.mesaj-satir.yeni { background: var(--vurgu-acik); }
+.mesaj-satir.yeni:hover { background: var(--ana-cizgi); }
+.mesaj-ust {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.mesaj-kim { font-weight: 600; font-size: 14px; }
+.mesaj-tarih { margin-left: auto; color: var(--soluk); font-size: 13px; }
+.mesaj-konu { font-size: 15px; margin-bottom: 3px; }
+.mesaj-onizleme {
+  color: var(--soluk); font-size: 13px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.duyuru-rozet {
+  padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--ana); color: var(--ustune-yazi);
+}
+.cocuk-not {
+  padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--zemin); color: var(--soluk); border: 1px solid var(--cizgi);
+}
+

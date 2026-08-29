@@ -167,3 +167,172 @@ EYLEMLER['mesaj-duzelt'] = function () {
   $('mdGovde').focus();
 };
 
+EYLEMLER['mesaj-duzelt-kaydet'] = function (el, id) {
+  var konu = $('mdKonu').value.trim(), govde = $('mdGovde').value.trim();
+  if (!konu) { alanHatasi('mdKonu', 'Konu yaz.'); return; }
+  if (!govde) { alanHatasi('mdGovde', 'Mesaj boş olamaz.'); return; }
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/mesajlar/duzenle', 'POST', { id: id, konu: konu, govde: govde }).then(function () {
+    return mesajAc(id);
+  }).then(function () { if (S.page === 'mesajlar') git('mesajlar'); })
+    ['catch'](function (e) { dugmeBitir(el); mesajGoster('mdMesaj', 'hata', e.message); });
+};
+
+/* ---- okundu bilgisi: kim okudu, kim okumadı, ne zaman ---- */
+var okumaDurum = { veri: [], filtre: 'hepsi', rol: '', ara: '' };
+var OKUMA_ROL_AD = { student: 'Öğrenciler', parent: 'Veliler', teacher: 'Öğretmenler', principal: 'Yöneticiler' };
+
+function okumaYukle(id) {
+  return api('/mesajlar/okuma?id=' + encodeURIComponent(id)).then(function (d) {
+    okumaDurum = { veri: d.alicilar, filtre: 'hepsi', rol: '', ara: '' };
+    okumaCiz();
+  })['catch'](function (e) {
+    var kap = $('okumaKap');
+    if (kap) kap.querySelector('.okuma-bilgi').innerHTML = '<div class="hint">' + esc(e.message) + '</div>';
+  });
+}
+
+/* ---- yeni mesaj ---- */
+function mesajYeniModal() {
+  return api('/mesajlar/hedefler').then(function (d) {
+    S.mesajHedef = d;
+    var duyuruSecim = d.duyuruIzin
+      ? '<div class="secenekler" style="margin-bottom:14px">' +
+        '<label class="onay"><input type="radio" name="mTur" value="mesaj" checked>' +
+        '<span>Kişisel mesaj</span></label>' +
+        '<label class="onay"><input type="radio" name="mTur" value="duyuru">' +
+        '<span>Duyuru (cevaplanmaz, herkese ulaşır)</span></label></div>'
+      : '';
+
+    var hedefSecim = '<div class="field"><label>Kime</label>' +
+      '<select id="mHedefTur">' +
+      '<option value="kisi">Seçtiğim kişilere</option>' +
+      (d.topluIzin ? '<option value="sinif">Sınıflara</option>' : '') +
+      (d.topluIzin ? '<option value="rol">Rol grubuna</option>' : '') +
+      (d.okulIzin ? '<option value="okul">Tüm okula</option>' : '') +
+      '</select></div>';
+
+    var kisiListe = '<div id="mHedefKisi"><div class="field">' +
+      '<label for="mKisiAra">Kişi ara</label>' +
+      '<input type="text" id="mKisiAra" placeholder="Ad yaz" autocomplete="off">' +
+      '</div><div class="secim-kutu" id="mKisiKutu"></div></div>';
+
+    var sinifListe = '<div id="mHedefSinif" style="display:none"><div class="secim-kutu">';
+    for (var i = 0; i < d.siniflar.length; i++) {
+      sinifListe += '<label class="onay"><input type="checkbox" class="mSinif" value="' +
+        esc(d.siniflar[i].id) + '"><span>' + esc(d.siniflar[i].ad) +
+        ' <span class="alt">(' + d.siniflar[i].sayi + ' öğrenci)</span></span></label>';
+    }
+    sinifListe += '</div></div>';
+
+    var rolListe = '<div id="mHedefRol" style="display:none"><div class="secim-kutu">' +
+      '<label class="onay"><input type="checkbox" class="mRol" value="student">' +
+      '<span>Öğrenciler</span></label>' +
+      '<label class="onay"><input type="checkbox" class="mRol" value="parent">' +
+      '<span>Veliler</span></label>' +
+      '<label class="onay"><input type="checkbox" class="mRol" value="teacher">' +
+      '<span>Öğretmenler</span></label>' +
+      '</div></div>';
+
+    var okulNot = '<div id="mHedefOkul" style="display:none">' +
+      '<div class="msg bilgi">Mesaj okuldaki herkese gidecek.</div></div>';
+
+    var govde = duyuruSecim + hedefSecim + kisiListe + sinifListe + rolListe + okulNot +
+      '<div class="field"><label for="mKonu">Konu</label>' +
+      '<input type="text" id="mKonu" maxlength="120" placeholder="Kısa bir başlık"></div>' +
+      '<div class="field"><label for="mGovde">Mesaj</label>' +
+      '<textarea id="mGovde" rows="7" maxlength="4000" placeholder="Yazmak istediklerin"></textarea>' +
+      '<div class="hint"><span id="mSayac">0</span> / 4000</div></div>' +
+      ekAlani('mesaj', 'mesaj') +
+      '<div id="mMesaj"></div>';
+
+    modalAc('Yeni mesaj', govde,
+      '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+      '<button class="btn" data-act="mesaj-gonder">Gönder</button>');
+
+    mesajModalBagla();
+    ekAlaniKur('mesaj');
+  })['catch'](hataGoster);
+}
+
+function mesajModalBagla() {
+  var d = S.mesajHedef;
+  var secili = {};
+
+  function kisileriCiz() {
+    var q = ($('mKisiAra').value || '').toLocaleLowerCase('tr');
+    var h = '';
+    var n = 0;
+    for (var i = 0; i < d.kisiler.length; i++) {
+      var k = d.kisiler[i];
+      if (q && k.ad.toLocaleLowerCase('tr').indexOf(q) < 0) continue;
+      if (++n > 60) break;
+      h += '<label class="onay' + (k.kapali ? ' pasif' : '') + '">' +
+        '<input type="checkbox" class="mKisi" value="' + esc(k.id) + '"' +
+        (secili[k.id] ? ' checked' : '') + (k.kapali ? ' disabled' : '') + '>' +
+        '<span>' + esc(k.ad) + ' <span class="alt">' + (ROL_AD[k.rol] || '') +
+        (k.brans ? ' · ' + esc(k.brans) : '') +
+        (k.kapali ? ' · mesaj almıyor' : '') + '</span></span></label>';
+    }
+    $('mKisiKutu').innerHTML = h || '<div class="hint">Eşleşen kişi yok.</div>';
+    var kutular = $('mKisiKutu').querySelectorAll('.mKisi');
+    for (var j = 0; j < kutular.length; j++) {
+      kutular[j].onchange = function () { secili[this.value] = this.checked; };
+    }
+  }
+
+  $('mKisiAra').oninput = kisileriCiz;
+  kisileriCiz();
+  S.mesajSecili = secili;
+
+  $('mHedefTur').onchange = function () {
+    var t = this.value;
+    $('mHedefKisi').style.display = t === 'kisi' ? '' : 'none';
+    $('mHedefSinif').style.display = t === 'sinif' ? '' : 'none';
+    $('mHedefRol').style.display = t === 'rol' ? '' : 'none';
+    $('mHedefOkul').style.display = t === 'okul' ? '' : 'none';
+  };
+
+  $('mGovde').oninput = function () {
+    $('mSayac').textContent = this.value.length;
+  };
+}
+
+function mesajGonderIslemi(btn) {
+  var t = $('mHedefTur').value;
+  var hedef = { tur: t };
+  if (t === 'kisi') {
+    hedef.kisiler = Object.keys(S.mesajSecili || {}).filter(function (k) {
+      return S.mesajSecili[k];
+    });
+  } else if (t === 'sinif') {
+    hedef.siniflar = secililer('.mSinif');
+  } else if (t === 'rol') {
+    hedef.roller = secililer('.mRol');
+  }
+
+  var turSecim = document.querySelector('input[name=mTur]:checked');
+  if (ekYukleniyor('mesaj')) { mesajGoster('mMesaj', 'uyari', 'Dosyalar yükleniyor; bitince gönder.'); return; }
+  btn.disabled = true;
+  api('/mesajlar', 'POST', {
+    tur: turSecim ? turSecim.value : 'mesaj',
+    konu: $('mKonu').value,
+    govde: $('mGovde').value,
+    hedef: hedef,
+    ekIdler: ekIdleri('mesaj')
+  }).then(function (r) {
+    modalKapat();
+    git('mesajlar').then(function () { sayfaMesaji('iyi', r.message); });
+    bildirimleriYenile();
+  })['catch'](function (e) {
+    btn.disabled = false;
+    mesajGoster('mMesaj', 'hata', e.message);
+  });
+}
+
+function secililer(secici) {
+  var out = [];
+  var el = document.querySelectorAll(secici);
+  for (var i = 0; i < el.length; i++) if (el[i].checked) out.push(el[i].value);
+  return out;
+}
