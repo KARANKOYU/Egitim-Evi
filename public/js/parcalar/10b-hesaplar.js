@@ -162,3 +162,53 @@ EYLEMLER['hesap-bilgi-kaydet'] = function (el, id) {
   });
 };
 
+EYLEMLER['hesap-sifre-uret'] = function () {
+  /* Okunması kolay ama tahmin edilmesi zor: karışan harfler (I, l, O, 0) yok. */
+  var harfler = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  var rakam = '23456789';
+  var dizi = new Uint32Array(10);
+  (window.crypto || window.msCrypto).getRandomValues(dizi);
+  var s = '';
+  for (var u = 0; u < 8; u++) s += harfler[dizi[u] % harfler.length];
+  s += rakam[dizi[8] % rakam.length] + rakam[dizi[9] % rakam.length];
+  $('hfYeniSifre').value = s;
+};
+
+function hesapSifreGonder(el, id, sifre) {
+  var degistirsin = $('hfDegistirsin') ? $('hfDegistirsin').checked : true;
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/school/hesap-sifre', 'POST', { id: id, password: sifre, degistirsin: degistirsin }).then(function (d) {
+    dugmeBitir(el);
+    mesajGoster('hesapSifreMesaj', 'iyi', d.message + (sifre ? ' Yeni şifre: ' + sifre : ''));
+    if ($('hfYeniSifre')) $('hfYeniSifre').value = '';
+  })['catch'](function (e) {
+    dugmeBitir(el);
+    mesajGoster('hesapSifreMesaj', 'hata', e.message);
+  });
+}
+
+EYLEMLER['hesap-sifre-kaydet'] = function (el, id) {
+  var s = $('hfYeniSifre').value;
+  if (!s) { mesajGoster('hesapSifreMesaj', 'hata', 'Yeni şifreyi yaz ya da üret.'); return; }
+  var sorun = sifreSorunuTR(s, gucluSifreli({ role: S._duzenlenen ? S._duzenlenen.rol : 'student' }));
+  if (sorun) { mesajGoster('hesapSifreMesaj', 'hata', sorun); return; }
+  if (!confirm('Şifre değiştirilsin mi? Kişinin açık oturumları kapanacak.')) return;
+  return hesapSifreGonder(el, id, s);
+};
+
+EYLEMLER['hesap-sifre-tc'] = function (el, id) {
+  if (!confirm('Şifre T.C. kimlik numarası olsun mu? Kişi ilk girişte kendi şifresini belirleyecek; açık oturumları kapanacak.')) return;
+  return hesapSifreGonder(el, id, '');
+};
+
+EYLEMLER['hesap-sil'] = function (el, id) {
+  var ad = el.getAttribute('data-ad') || 'Bu kişi';
+  if (!confirm(el.getAttribute('data-bagli') === '1' ? ad + ' okuldan çıkarılsın mı?'
+    : ad + ' hesabı silinsin mi?\n\nBu işlem geri alınamaz.')) return;
+  dugmeBekle(el, 'Siliniyor...');
+  return api('/school/hesap-sil', 'POST', { id: id, onay: true }).then(function (d) {
+    modalKapat();
+    return git(S.page).then(function () { sayfaMesaji('iyi', d.message); });
+  })['catch'](function (e) { dugmeBitir(el); hataGoster(e); });
+};
+
