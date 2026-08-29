@@ -51,3 +51,69 @@ function aramaSade(metin) {
     .trim();
 }
 
+/* MEB listesinde birkaç yüz okulun adı tamamen büyük harfle yazılmış
+   ("ÇAM İLKOKULU"). Aramada ve kayıtta öbürleri gibi görünsün diye kelime
+   başları büyük yazılır ("Çam İlkokulu"). Yalnızca TAMAMI büyük olan adlara
+   dokunulur; "TOBB Yavuz Selim Ortaokulu" gibi kısaltmalar kalır. Okul
+   kimliği özgün addan üretildiği için değişmez. */
+function adDuzelt(ad) {
+  if (!/[A-ZÇĞİÖŞÜ]{3}/.test(ad) || ad !== ad.toLocaleUpperCase('tr')) return ad;
+  return ad.split(' ').map((k, i) => {
+    if (/^[IVXL]+\.?$/.test(k)) return k;                          // "II. Kademe"
+    const kucuk = k.toLocaleLowerCase('tr');
+    if (i > 0 && (kucuk === 've' || kucuk === 'ile')) return kucuk;
+    return kucuk.replace(/(^|[.\-(/])(\p{L})/gu, (m, once, harf) => once + harf.toLocaleUpperCase('tr'));
+  }).join(' ');
+}
+
+/* il|ilce|ad uclusunden sabit bir kimlik uretir. Liste yeniden olusturulsa
+   bile ayni okul ayni kimligi alir, kayitli hesaplar kopmaz. */
+function okulKimligi(il, ilce, ad) {
+  return 'meb_' + crypto.createHash('sha1')
+    .update(sadelestir(il) + '|' + sadelestir(ilce) + '|' + sadelestir(ad))
+    .digest('hex').slice(0, 12);
+}
+
+function okullariYukle() {
+  if (!fs.existsSync(OKUL_DOSYA)) {
+    console.log('');
+    console.log('  ! data/okullar.json yok - okul listesi devre disi.');
+    console.log('    Dosyayi kurulumu yapan bilgisayardan data/ klasorune kopyala.');
+    console.log('');
+    return;
+  }
+  try {
+    okulVeri = JSON.parse(fs.readFileSync(OKUL_DOSYA, 'utf8'));
+    const { iller, ilceler, tipler, okullar } = okulVeri;
+    /* Eski listelerde bu alanlar yok; olmayınca sorun çıkarmasın. */
+    const resmiTurler = okulVeri.resmiTurler || [];
+    okulAra.length = 0; Array.prototype.push.apply(okulAra, new Array(okullar.length));
+    let ozelSayaci = 0;
+    for (let i = 0; i < okullar.length; i++) {
+      const o = okullar[i];
+      const il = iller[o[0]] || '';
+      const ilce = ilceler[o[1]] || '';
+      const tip = tipler[o[2]] || '';
+      const ad = adDuzelt(o[3]);
+      const ozel = o[4] === 1;
+      if (ozel) ozelSayaci++;
+      okulAra[i] = {
+        id: okulKimligi(il, ilce, o[3]),
+        ad: ad, sade: sadelestir(ad), il: il, ilce: ilce,
+        sadeIlce: sadelestir(ilce), tip: tip,
+        ozel: ozel,
+        kod: o[5] || '',
+        resmiTur: (o[6] !== undefined && resmiTurler[o[6]]) ? resmiTurler[o[6]] : tip
+      };
+    }
+    okulDizini = new AramaDizini(okulAra.map(o => ({ ad: o.ad, yer: o.il + ' ' + o.ilce })));
+    console.log('  Okul listesi: ' + okulAra.length + ' okul yuklendi (' +
+      iller.length + ' il, ' + ozelSayaci + ' ozel)');
+  } catch (e) {
+    console.error('okullar.json okunamadi:', e.message);
+    okulVeri = null;
+    okulAra.length = 0; Array.prototype.push.apply(okulAra, []);
+    okulDizini = new AramaDizini([]);
+  }
+}
+
