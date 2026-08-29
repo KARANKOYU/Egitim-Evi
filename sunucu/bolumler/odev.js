@@ -285,3 +285,10 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = {
+  ODEV_VARSAYILAN_SAAT,
+  odevSaati,
+  odevBitisAni,
+  odevGecikti,
+  uclar
+};
