@@ -120,3 +120,45 @@ function dersOgretmenBagla(classId) {
   }
 }
 
+/* Öğrencileri sınıflara yerleştirme penceresi */
+function sinifOgrencileriModal(classId, ad) {
+  return Promise.all([api('/school/students'), api('/school/classes')]).then(function (r) {
+    var ogrenciler = r[0].students, siniflar = r[1].classes;
+    var h = '<div class="hint" style="margin-bottom:10px">Her öğrencinin sınıfını buradan değiştirebilirsin.</div>';
+
+    if (!ogrenciler.length) {
+      h += bosKutu('ogrenci', 'Okulda kayıtlı öğrenci yok.');
+    } else {
+      for (var i = 0; i < ogrenciler.length; i++) {
+        var o = ogrenciler[i];
+        h += '<div class="satir">' +
+          '<div class="buyu"><div class="ad">' + esc(o.fullName) + '</div>' +
+          '<div class="alt">' + esc(o.username) + '</div></div>' +
+          '<select class="ogrenci-sinif" data-id="' + esc(o.id) + '" ' +
+          'style="padding:7px 9px;border:1.5px solid var(--cizgi);border-radius:8px">' +
+          '<option value="">— sınıfsız —</option>';
+        for (var j = 0; j < siniflar.length; j++) {
+          h += '<option value="' + esc(siniflar[j].id) + '"' +
+            (o.classId === siniflar[j].id ? ' selected' : '') + '>' + esc(siniflar[j].name) + '</option>';
+        }
+        h += '</select></div>';
+      }
+    }
+
+    modalAc(ad ? ad + ' — Öğrenci yerleştirme' : 'Öğrenci yerleştirme', h);
+
+    var kutular = document.querySelectorAll('.ogrenci-sinif');
+    for (var k = 0; k < kutular.length; k++) {
+      (function (sel) {
+        sel.onchange = function () {
+          sel.disabled = true;
+          api('/school/class-assign', 'POST', {
+            studentId: sel.getAttribute('data-id'),
+            classId: sel.value
+          }).then(function () { sel.disabled = false; })
+            ['catch'](function (e) { sel.disabled = false; hataGoster(e); });
+        };
+      })(kutular[k]);
+    }
+  });
+}
