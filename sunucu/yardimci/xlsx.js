@@ -328,3 +328,138 @@ function sayfaAdiTemizle(ad, sira) {
   return s.slice(0, 31);
 }
 
+function hucre(ref, deger, stil) {
+  const st = stil ? ' s="' + stil + '"' : '';
+  if (deger === null || deger === undefined || deger === '') {
+    return st ? '<c r="' + ref + '"' + st + '/>' : '';
+  }
+  if (typeof deger === 'number' && isFinite(deger)) {
+    return '<c r="' + ref + '"' + st + '><v>' + deger + '</v></c>';
+  }
+  /* Metinleri satır içi yazıyoruz: paylaşılan metin tablosu tutmaya gerek kalmıyor. */
+  return '<c r="' + ref + '"' + st + ' t="inlineStr"><is><t xml:space="preserve">' +
+    xmlKac(deger) + '</t></is></c>';
+}
+
+function sayfaYaz(sayfa) {
+  const basliklar = sayfa.basliklar || null;
+  const satirlar = sayfa.satirlar || [];
+  const genislikler = sayfa.genislikler || [];
+  const duz = sayfa.duz === true;   /* başlıksız, süssüz sayfa (açıklama metinleri) */
+
+  const tumSatirlar = basliklar ? [basliklar].concat(satirlar) : satirlar;
+  let enGenis = 0;
+  for (const s of tumSatirlar) if (s && s.length > enGenis) enGenis = s.length;
+  const sonSutun = sutunAd(Math.max(0, enGenis - 1));
+  const sonSatir = Math.max(1, tumSatirlar.length);
+
+  let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"' +
+    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<dimension ref="A1:' + sonSutun + sonSatir + '"/>';
+
+  /* Başlık satırını dondur: uzun listelerde aşağı inince başlıklar görünür kalsın. */
+  x += '<sheetViews><sheetView workbookViewId="0">';
+  if (basliklar && !duz) {
+    x += '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' +
+      '<selection pane="bottomLeft" activeCell="A2" sqref="A2"/>';
+  }
+  x += '</sheetView></sheetViews>';
+  x += '<sheetFormatPr defaultRowHeight="15"/>';
+
+  if (genislikler.length) {
+    x += '<cols>';
+    for (let i = 0; i < genislikler.length; i++) {
+      x += '<col min="' + (i + 1) + '" max="' + (i + 1) +
+        '" width="' + genislikler[i] + '" customWidth="1"/>';
+    }
+    x += '</cols>';
+  }
+
+  x += '<sheetData>';
+  for (let i = 0; i < tumSatirlar.length; i++) {
+    const satir = tumSatirlar[i] || [];
+    const no = i + 1;
+    const baslikMi = !!basliklar && i === 0 && !duz;
+    const stil = duz ? 3 : (baslikMi ? 1 : 2);
+    let hucreler = '';
+    for (let j = 0; j < satir.length; j++) {
+      hucreler += hucre(sutunAd(j) + no, satir[j], stil);
+    }
+    if (!hucreler) continue;
+    x += '<row r="' + no + '"' + (baslikMi ? ' ht="22" customHeight="1"' : '') + '>' +
+      hucreler + '</row>';
+  }
+  x += '</sheetData>';
+
+  /* Süzme okları: müdür 500 öğrenci içinden sınıfa göre eleyebilsin. */
+  if (basliklar && !duz && tumSatirlar.length > 1) {
+    x += '<autoFilter ref="A1:' + sonSutun + sonSatir + '"/>';
+  }
+
+  x += '</worksheet>';
+  return x;
+}
+
+function yaz(sayfalar) {
+  if (!Array.isArray(sayfalar) || !sayfalar.length) {
+    throw new Error('En az bir sayfa gerekli.');
+  }
+  const adlar = sayfalar.map((s, i) => sayfaAdiTemizle(s.ad, i + 1));
+
+  let tipler = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+  for (let i = 0; i < sayfalar.length; i++) {
+    tipler += '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml"' +
+      ' ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  }
+  tipler += '</Types>';
+
+  const kokRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1"' +
+    ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"' +
+    ' Target="xl/workbook.xml"/></Relationships>';
+
+  let kitap = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"' +
+    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+  for (let i = 0; i < adlar.length; i++) {
+    kitap += '<sheet name="' + xmlKac(adlar[i]) + '" sheetId="' + (i + 1) +
+      '" r:id="rId' + (i + 1) + '"/>';
+  }
+  kitap += '</sheets></workbook>';
+
+  let kitapRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  for (let i = 0; i < sayfalar.length; i++) {
+    kitapRels += '<Relationship Id="rId' + (i + 1) + '"' +
+      ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"' +
+      ' Target="worksheets/sheet' + (i + 1) + '.xml"/>';
+  }
+  kitapRels += '<Relationship Id="rId' + (sayfalar.length + 1) + '"' +
+    ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"' +
+    ' Target="styles.xml"/></Relationships>';
+
+  const dosyalar = [
+    { ad: '[Content_Types].xml', veri: Buffer.from(tipler, 'utf8') },
+    { ad: '_rels/.rels', veri: Buffer.from(kokRels, 'utf8') },
+    { ad: 'xl/workbook.xml', veri: Buffer.from(kitap, 'utf8') },
+    { ad: 'xl/_rels/workbook.xml.rels', veri: Buffer.from(kitapRels, 'utf8') },
+    { ad: 'xl/styles.xml', veri: Buffer.from(STILLER, 'utf8') }
+  ];
+  for (let i = 0; i < sayfalar.length; i++) {
+    dosyalar.push({
+      ad: 'xl/worksheets/sheet' + (i + 1) + '.xml',
+      veri: Buffer.from(sayfaYaz(sayfalar[i]), 'utf8')
+    });
+  }
+
+  return zipYaz(dosyalar);
+}
+
+module.exports = { oku, yaz, sutunAd, sutunNo, zipOku, zipYaz, xmlCoz };
