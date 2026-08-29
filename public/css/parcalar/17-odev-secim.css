@@ -41,3 +41,17 @@
 }
 .hedef-ogrenci { font-size: 13.5px; padding: 3px 0; }
 
+/* ===== müdürün ders bazlı ödev görünümü ===== */
+.ders-blok-basi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  border-bottom: 1.5px solid var(--cizgi);
+}
+.ders-blok-basi > div:first-child { flex: 1; min-width: 0; }
+.ders-blok-ad { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.ders-blok-alt { font-size: 12.5px; color: var(--soluk); margin-top: 2px; overflow-wrap: anywhere; }
+.ders-blok-bos { padding: 12px 0 4px; font-size: 13px; color: var(--soluk); }
+
