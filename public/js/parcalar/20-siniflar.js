@@ -104,3 +104,19 @@ function sinifDersleriModal(classId, ad) {
   });
 }
 
+function dersOgretmenBagla(classId) {
+  var kutular = document.querySelectorAll('.ders-ogretmen');
+  for (var i = 0; i < kutular.length; i++) {
+    (function (sel) {
+      sel.onchange = function () {
+        api('/school/lesson-update', 'POST', {
+          lessonId: sel.getAttribute('data-id'),
+          teacherId: sel.value
+        }).then(function () {
+          sinifDersleriModal(classId, (S.dersBilgi.class || {}).name || '')['catch'](hataGoster);
+        })['catch'](hataGoster);
+      };
+    })(kutular[i]);
+  }
+}
+
