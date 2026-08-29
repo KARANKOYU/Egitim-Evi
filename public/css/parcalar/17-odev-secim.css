@@ -15,3 +15,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.hedef-liste {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r-kucuk);
+  background: var(--zemin);
+}
+.hedef-sinif { border-bottom: 1px solid var(--cizgi); }
+.hedef-sinif:last-child { border-bottom: 0; }
+
+.hedef-baslik {
+  padding: 9px 12px;
+  background: var(--kart);
+  border-bottom: 1px solid var(--cizgi);
+  font-size: 14px;
+}
+.hedef-adet { color: var(--soluk); font-size: 12.5px; font-weight: 400; }
+
