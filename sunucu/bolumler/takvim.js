@@ -239,3 +239,11 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = {
+  SABIT_GUNLER,
+  DINI_BAYRAMLAR,
+  tarihEkle,
+  ozelGunler,
+  takvimHedefi,
+  uclar
+};
