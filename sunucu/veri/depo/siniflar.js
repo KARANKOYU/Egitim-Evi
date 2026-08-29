@@ -149,3 +149,42 @@ async function programGuncelle(id, k) {
     [k.lessonId, k.day, k.start, k.end, id]);
 }
 
+async function programSil(id) {
+  await calistir('DELETE FROM ders_programi WHERE id = $1', [id]);
+}
+
+/* Çakışmalar: aynı gün, saatleri kesişen iki ders saati;
+   ya öğretmeni aynı ya da sınıfı aynı. Tek bir öz-birleştirme (self join) sorgusu.
+   Kesişme koşulu: a.baslangic < b.bitis VE b.baslangic < a.bitis
+   (10:00'da biten ile 10:00'da başlayan çakışmaz). */
+async function cakismalar(okulId) {
+  return sorgu(
+    'SELECT a.id AS a_id, a.sinif_id AS a_sinif, a.gun, a.baslangic AS a_bas, a.bitis AS a_bit, ' +
+    '       b.id AS b_id, b.sinif_id AS b_sinif, b.baslangic AS b_bas, b.bitis AS b_bit, ' +
+    '       da.konu AS a_ders, db.konu AS b_ders, sa.ad AS a_sinif_adi, sb.ad AS b_sinif_adi, ' +
+    '       da.ogretmen_id AS a_ogretmen, db.ogretmen_id AS b_ogretmen, t.ad_soyad AS ogretmen_adi ' +
+    'FROM ders_programi a ' +
+    'JOIN ders_programi b ON b.okul_id = a.okul_id AND b.gun = a.gun AND a.id < b.id ' +
+    '                    AND a.baslangic < b.bitis AND b.baslangic < a.bitis ' +
+    'JOIN dersler da ON da.id = a.ders_id JOIN dersler db ON db.id = b.ders_id ' +
+    'JOIN siniflar sa ON sa.id = a.sinif_id JOIN siniflar sb ON sb.id = b.sinif_id ' +
+    'LEFT JOIN kullanicilar t ON t.id = da.ogretmen_id ' +
+    'WHERE a.okul_id = $1 ' +
+    '  AND ((da.ogretmen_id IS NOT NULL AND da.ogretmen_id = db.ogretmen_id) OR a.sinif_id = b.sinif_id) ' +
+    'ORDER BY a.gun, a.baslangic', [okulId]);
+}
+
+/* Eklemeden önce: bu aralık, aynı sınıfın ya da aynı öğretmenin başka bir
+   dersiyle kesişiyor mu? İlk çakışan satırı döndürür. */
+async function aralikKesisenler(okulId, gun, bas, bit, haricId) {
+  return sorgu(PROGRAM_SEC +
+    ' WHERE p.okul_id = $1 AND p.gun = $2 AND p.baslangic < $4::time AND $3::time < p.bitis AND p.id <> $5' +
+    PROGRAM_SIRA, [okulId, gun, bas, bit, haricId || '']).then(s => s.map(programNesnesi));
+}
+
+module.exports = {
+  bul, okulun, ozetleri, sayisi, ekle, sil,
+  dersBul, sinifinDersleri, okulunDersleri, ogretmeninDersleri, dersVarMi, dersEkle, dersGuncelle, dersSil,
+  programBul, sinifinProgrami, ogretmeninProgrami, okulunProgrami, baslamakUzereOlanlar,
+  programVarMi, programEkle, programGuncelle, programSil, cakismalar, aralikKesisenler
+};

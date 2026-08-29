@@ -50,6 +50,40 @@ const ROL_SABLONLARI = [
   { ad: 'Kodlayıcı', yetkiler: ['okul.sayfa'] }
 ];
 
+const roleById = id => depo.roller.bul(id);
+
+/* Gelen kapsam nesnesini doğrular: sadece açık olan yetkiler, gerçek dersler
+   ve okulun kendi sınıfları kalır. "*" hepsi demektir. */
+async function kapsamTemizle(gelen, izinler, schoolId) {
+  const temiz = {};
+  if (!gelen || typeof gelen !== 'object') return temiz;
+
+  const sinifIdler = (await depo.siniflar.okulun(schoolId)).map(c => c.id);
+
+  for (const izin of izinler) {
+    const k = gelen[izin];
+    if (!k || typeof k !== 'object') continue;
+
+    const dersler = Array.isArray(k.dersler)
+      ? k.dersler.map(String).filter(x => x === '*' || SUBJECTS.indexOf(x) >= 0)
+      : [];
+    const siniflar = Array.isArray(k.siniflar)
+      ? k.siniflar.map(String).filter(x => x === '*' || sinifIdler.indexOf(x) >= 0)
+      : [];
+
+    /* Hepsi seçiliyse kapsam yazmaya gerek yok. */
+    const dersHepsi = !dersler.length || dersler.indexOf('*') >= 0;
+    const sinifHepsi = !siniflar.length || siniflar.indexOf('*') >= 0;
+    if (dersHepsi && sinifHepsi) continue;
+
+    temiz[izin] = {
+      dersler: dersHepsi ? ['*'] : dersler,
+      siniflar: sinifHepsi ? ['*'] : siniflar
+    };
+  }
+  return temiz;
+}
+
 function kullaniciYetkileri(u) {
   if (!u) return [];
   if (u.role === 'admin' || u.role === 'principal') return TUM_YETKILER.slice();
@@ -61,6 +95,20 @@ function kullaniciYetkileri(u) {
     for (const y of r.permissions || []) if (temel.indexOf(y) < 0) temel.push(y);
   }
   return temel;
+}
+
+/* Kapsam bağlama uyuyor mu? Kapsam yoksa (null) her şeye uyar. */
+function kapsamUyar(k, baglam) {
+  if (!k || !baglam) return true;
+  if (baglam.ders && Array.isArray(k.dersler) && k.dersler.length &&
+      k.dersler.indexOf('*') < 0 && k.dersler.indexOf(baglam.ders) < 0) {
+    return false;
+  }
+  if (baglam.sinif && Array.isArray(k.siniflar) && k.siniflar.length &&
+      k.siniflar.indexOf('*') < 0 && k.siniflar.indexOf(baglam.sinif) < 0) {
+    return false;
+  }
+  return true;
 }
 
 /* baglam: { ders: 'Matematik', sinif: 'c_...' } — verilmezse sadece
