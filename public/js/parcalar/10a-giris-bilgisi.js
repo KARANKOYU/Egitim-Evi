@@ -5,6 +5,43 @@
 
 var girisListesi = null;   // { adet, kapsam, okul, satirlar, xlsx, indirildi }
 
+function girisBilgisiAc() {
+  var siniflar = S._sinifListe || [];
+  var ogrenciler = S._ogrListe || [];
+  var h = '<div class="field"><label for="gbSinif">Kimler için</label><select id="gbSinif">' +
+    '<option value="">Bütün okul</option>';
+  for (var i = 0; i < siniflar.length; i++) {
+    h += '<option value="' + esc(siniflar[i].id) + '">' + esc(siniflar[i].name) + '</option>';
+  }
+  h += '</select></div>' +
+    '<label class="onay" style="margin:4px 0 12px"><input type="checkbox" id="gbGirmeyen" checked>' +
+    '<span>Yalnızca henüz giriş yapmamış öğrenciler</span></label>' +
+    '<div class="okul-bilgi" id="gbSayi"></div>' +
+    '<div class="msg uyari" style="margin-top:10px">Seçilen öğrencilerin şifreleri yenilenir, açık oturumları kapanır. ' +
+    'Liste yalnızca bir kez gösterilir: Excel olarak indir ya da yazdır, sonra pencereyi kapat.</div>' +
+    '<div id="gbMesaj" style="margin-top:9px"></div>';
+
+  modalAc('Giriş bilgisi dağıt', h,
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="giris-bilgisi-uret">Şifreleri yenile ve listeyi hazırla</button>');
+
+  /* Seçime göre kaç kişinin şifresi değişecek, önceden görünsün. */
+  var say = function () {
+    var sinif = $('gbSinif').value, girmeyen = $('gbGirmeyen').checked;
+    var n = 0;
+    for (var k = 0; k < ogrenciler.length; k++) {
+      var o = ogrenciler[k];
+      if ((!sinif || o.classId === sinif) && (!girmeyen || !o.girisYapti)) n++;
+    }
+    $('gbSayi').innerHTML = n
+      ? '<b>' + n + '</b> öğrencinin şifresi yenilenecek.'
+      : (girmeyen ? 'Bu seçimde henüz giriş yapmamış öğrenci yok.' : 'Bu seçimde öğrenci yok.');
+  };
+  $('gbSinif').onchange = say;
+  $('gbGirmeyen').onchange = say;
+  say();
+}
+
 EYLEMLER['giris-bilgisi-ac'] = function () { girisBilgisiAc(); };
 
 EYLEMLER['giris-bilgisi-uret'] = function (el) {
