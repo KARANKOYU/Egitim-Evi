@@ -105,3 +105,22 @@ let hata2 = '';
 try { xlsx.oku(Buffer.alloc(0)); } catch (e) { hata2 = e.message; }
 kontrol('bos dosya cokertmiyor', hata2.length > 0, hata2);
 
+console.log('=== 6b) KUCUK DOSYA, DEV TABLO (bellek bombasi) ===');
+{
+  /* Tek hucresi en uzak koseye yazilmis kucuk bir .xlsx: eskiden milyarlarca bos
+     hucreyi bellege acmaya calisip sureci dusururdu. Simdi sinir disi hucre atlanir. */
+  const sayfa = '<?xml version="1.0"?><worksheet><sheetData><row r="1"><c r="A1" t="str"><v>Ad</v></c></row>' +
+    '<row r="1048576"><c r="XFD1048576" t="str"><v>x</v></c></row></sheetData></worksheet>';
+  const bomba = xlsx.zipYaz([
+    { ad: 'xl/workbook.xml', veri: Buffer.from('<workbook><sheets><sheet name="S" r:id="rId1"/></sheets></workbook>') },
+    { ad: 'xl/_rels/workbook.xml.rels', veri: Buffer.from('<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>') },
+    { ad: 'xl/worksheets/sheet1.xml', veri: Buffer.from(sayfa) }
+  ]);
+  const bas = Date.now();
+  let sonuc = null, hataMesaji = '';
+  try { sonuc = xlsx.oku(bomba); } catch (e) { hataMesaji = e.message; }
+  kontrol('uzak hucreli kucuk dosya bellegi sismirmiyor', (sonuc && sonuc[0].satirlar.length === 1) || !!hataMesaji,
+    hataMesaji || (sonuc && sonuc[0].satirlar.length));
+  kontrol('ve hizli bitiyor', Date.now() - bas < 3000, (Date.now() - bas) + ' ms');
+}
+
