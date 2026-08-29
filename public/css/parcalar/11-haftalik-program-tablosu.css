@@ -1,0 +1,47 @@
+/* Haftalık ders programı tablosu. */
+
+/* ===================================================================
+   HAFTALIK DERS PROGRAMI TABLOSU
+   =================================================================== */
+
+table.program {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+  /* Dar ekranda sutunlar ezilmesin, tablo yatay kaysin */
+  min-width: 560px;
+}
+table.program th {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--soluk);
+  padding: 6px 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+table.program th.saat-sutun {
+  width: 46px;
+  color: var(--ana);
+  font-size: 14px;
+}
+table.program td { padding: 0; vertical-align: stretch; }
+
+.hucre {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: 54px;
+  padding: 6px 7px;
+  border: 1.5px dashed var(--cizgi);
+  border-radius: var(--r-mini);
+  background: var(--zemin);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--yazi);
+  transition: background .12s ease, border-color .12s ease;
+}
+.hucre:hover { border-color: var(--ana); background: var(--ana-acik); }
+.hucre:focus-visible { outline: 2px solid var(--ana); outline-offset: 1px; }
+
