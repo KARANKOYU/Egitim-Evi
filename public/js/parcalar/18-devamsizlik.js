@@ -127,6 +127,39 @@ function devamsizlikGovdesi(baslik, alt, d, adGoster) {
   return h;
 }
 
+/* --- müdür: sınıf > öğrenci > gün --- */
+SAYFALAR.devamsizlik = function () {
+  return api('/school/classes').then(function (r) {
+    var siniflar = r.classes || [];
+    if (!S.dvSinif && siniflar.length) S.dvSinif = siniflar[0].id;
+    if (!S.dvTarih) S.dvTarih = new Date().toISOString().slice(0, 10);
+
+    var h = hero('DEVAMSIZLIK', '');
+
+    h += '<div class="kart"><div class="filtre-satir">' +
+      '<div class="field"><label for="dvSinif">Sınıf</label><select id="dvSinif">';
+    for (var i = 0; i < siniflar.length; i++) {
+      h += '<option value="' + esc(siniflar[i].id) + '"' +
+        (S.dvSinif === siniflar[i].id ? ' selected' : '') + '>' +
+        esc(siniflar[i].name) + '</option>';
+    }
+    h += '</select></div>' +
+      '<div class="field"><label for="dvOgrenci">Öğrenci</label>' +
+      '<select id="dvOgrenci"><option value="">Yükleniyor...</option></select></div>' +
+      '<div class="field"><label for="dvTarih">Gün</label>' +
+      '<input type="date" id="dvTarih" value="' + esc(S.dvTarih) + '"></div>' +
+      '<button type="button" class="btn kucuk gri" data-act="dv-bugun">Bugün</button>' +
+      '</div><div class="hint" id="dvGunAdi"></div></div>';
+
+    h += '<div id="dvAlan"></div>';
+    h += '<div class="kart"><h3>Dönem özeti</h3><div id="dvOzet">' +
+      '<div class="hint">Öğrenci seçince burada birikimi görürsün.</div></div></div>';
+
+    yaz(h);
+    devamsizlikBagla(siniflar);
+  });
+};
+
 function devamsizlikBagla(siniflar) {
   var sinifSec = $('dvSinif');
   var ogrSec = $('dvOgrenci');
