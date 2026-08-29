@@ -188,3 +188,36 @@ const ANLATIM = {
   ]
 };
 
+const SAYFA_ADI = { ogrenci: 'Öğrenciler', program: 'Ders programı' };
+
+function sablon(tur) {
+  const sutunlar = SUTUNLAR[tur];
+  if (!sutunlar) throw new Error('Bilinmeyen şablon türü.');
+  return xlsx.yaz([
+    {
+      ad: SAYFA_ADI[tur],
+      basliklar: sutunlar.map(s => s.baslik),
+      satirlar: [],
+      genislikler: sutunlar.map(s => s.genislik)
+    },
+    {
+      ad: 'Nasıl doldurulur',
+      duz: true,
+      satirlar: ANLATIM[tur],
+      genislikler: [95]
+    }
+  ]);
+}
+
+/* ============ dışa aktarım ============ */
+
+function disa(sayfaAdi, basliklar, satirlar, genislikler) {
+  return xlsx.yaz([{
+    ad: sayfaAdi,
+    basliklar: basliklar,
+    satirlar: satirlar,
+    genislikler: genislikler || basliklar.map(() => 20)
+  }]);
+}
+
+module.exports = { SUTUNLAR, GUNLER, coz, sablon, disa, anahtarla, saate, gune };
