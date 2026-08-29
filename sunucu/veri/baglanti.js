@@ -143,6 +143,15 @@ const HATA_KODLARI = {
 };
 const BAGLANTI_HATALARI = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', '57P01', '57P03', '08001', '08006'];
 
+function hataCevir(err) {
+  const kod = err && typeof err.code === 'string' ? err.code : '';
+  if (!kod) return null;
+  if (BAGLANTI_HATALARI.indexOf(kod) >= 0) return { kod: 503, mesaj: 'Veritabanına şu an ulaşılamıyor, biraz sonra tekrar dene' };
+  if (HATA_KODLARI[kod]) return { kod: HATA_KODLARI[kod][0], mesaj: HATA_KODLARI[kod][1] };
+  if (/^[0-9A-Z]{5}$/.test(kod)) return { kod: 500, mesaj: 'Sunucu hatası' };
+  return null;
+}
+
 module.exports = {
   sorgu, tek, calistir, islem, metinCalistir, veritabaniAdi, kapat, havuzuAc,
   tr, turkceSiralamaKontrol, hataCevir

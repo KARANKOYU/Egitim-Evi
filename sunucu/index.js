@@ -38,6 +38,86 @@ let surenApi = 0;
 const IP_BAGLANTI_SINIRI = 256;
 const ipBaglanti = new Map();
 
+const server = http.createServer((req, res) => {
+  const method = req.method || 'GET';
+  const urlPath = (req.url || '/').split('?')[0];
+  const ip = istemciIp(req);
+
+  /* Gövde süresi: dosya yüklemesi dışındaki her istek 30 sn içinde tamamlanmalı.
+     Genel istek süresi yüklemeler için uzun tutuldu; gövdesi hiç okunmayan
+     (GET, reddedilen) istekte yavaş damlatılan gövde bağlantıyı tutamasın. */
+  if (!(method === 'POST' && urlPath === '/api/odev-dosya/yukle')) {
+    const sure = setTimeout(() => { if (!req.complete) req.destroy(); }, 30 * 1000);
+    res.on('finish', () => {
+      clearTimeout(sure);
+      /* Cevap gitti ama gövde hâlâ geliyorsa beklenmez. */
+      if (!req.complete) setTimeout(() => req.destroy(), 1500);
+    });
+    res.on('close', () => clearTimeout(sure));
+  }
+
+  /* Genel hız sınırı: tek kaynak sunucuyu istek yağmuruna tutamasın.
+     Okulda bütün sınıf aynı ağdan (tek IP) girer; eskiden IP başına
+     dakikada 300 istek vardı ve dosyalar da sayılıyordu: 30 öğrenci sayfayı
+     birlikte açınca hepsi "çok fazla istek" alıyordu. Şimdi:
+       - dosyalar (bellekten, tarayıcıda önbellekli) ayrı ve bol sınırla,
+       - API IP başına dakikada 1500 ile,
+       - ayrıca her oturum kendi başına dakikada 300 ile sınırlı: tek hesap
+         sınırı zorlasa bile aynı ağdaki öbürleri etkilenmez. */
+  const apiMi = urlPath.indexOf('/api/') === 0;
+  const oturum = apiMi ? istekAnahtari(req) : '';
+  const asildi = apiMi
+    ? !hizSinir('genelApi:' + ip, 1500, 60 * 1000) ||
+      (oturum && !hizSinir('genelOturum:' + oturum.slice(0, 24), 300, 60 * 1000))
+    : !hizSinir('genelDosya:' + ip, 3000, 60 * 1000);
+  if (asildi) {
+    res.writeHead(429, baslikEkle({
+      'Content-Type': 'application/json; charset=utf-8',
+      'Retry-After': '60'
+    }));
+    return res.end(JSON.stringify({ error: 'Çok fazla istek gönderdin. Bir dakika bekle.' }));
+  }
+
+  if (urlPath.indexOf('/api/') === 0) {
+    if (yogun || surenApi >= EN_FAZLA_SUREN_API) {
+      res.writeHead(503, baslikEkle({
+        'Content-Type': 'application/json; charset=utf-8',
+        'Retry-After': '5'
+      }));
+      return res.end(JSON.stringify({ error: 'Sunucu şu an çok yoğun. Birkaç saniye sonra yeniden dene.' }));
+    }
+    surenApi++;
+    let bitti = false;
+    const birak = () => { if (!bitti) { bitti = true; surenApi--; } };
+    res.on('finish', birak);
+    res.on('close', birak);
+    const segs = urlPath.split('/').filter(Boolean);
+    Promise.resolve()
+      .then(() => handleApi(req, res, segs, method))
+      .catch(err => {
+        if (res.headersSent) return;
+        /* Veritabanı hatası: kısıt ihlali 400, bağlantı sorunu 503.
+           Tablo ve kısıt adları istemciye gitmez, günlüğe yazılır. */
+        const vt = hataCevir(err);
+        if (vt) {
+          if (vt.kod >= 500) console.error('Veritabanı hatası [' + err.code + ']:', err.message, urlPath);
+          return bad(res, vt.mesaj, vt.kod);
+        }
+        const mesaj = (err && err.message) ? err.message : 'Sunucu hatası';
+        /* Beklenen istemci hataları (çok büyük gövde, bozuk JSON) 500 değil:
+           500 sunucunun kendi hatası demektir, günlüğü kirletmesin. Beklenmeyen
+           hatanın ayrıntısı istemciye değil günlüğe gider. */
+        const kod = (err && err.kod) ? err.kod
+          : (/çok büyük|Geçersiz veri/i.test(mesaj) ? 400 : 500);
+        if (kod === 500) console.error('API hatası:', urlPath, (err && err.stack) || mesaj);
+        bad(res, kod === 500 ? 'Sunucu hatası' : mesaj, kod);
+      });
+    return;
+  }
+  if (method !== 'GET' && method !== 'HEAD') { res.writeHead(405); return res.end(); }
+  serveStatic(req, res, urlPath);
+});
+
 /* Slowloris: yavas istemci baglantilari acik tutup kaynak tuketemesin. */
 server.headersTimeout = 20 * 1000;
 /* Dosya yüklemesi (200 MB'a kadar, okul ağında) dakikalar sürebilir. JSON
