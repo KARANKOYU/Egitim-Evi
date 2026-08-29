@@ -124,3 +124,38 @@ for (const dosya of DOSYALAR) {
   }
 }
 
+if (!rapor.length) {
+  console.log('  yaygin yazim hatasi bulunamadi');
+} else {
+  for (const r of rapor) {
+    console.log('  ' + r.dosya + ':' + r.satir);
+    console.log('     "' + r.yanlis + '" -> "' + r.dogru + '"');
+    console.log('     ' + r.metin);
+  }
+}
+
+/* --- Turkce karakter kullanilmayan uzun metinler --- */
+console.log();
+console.log('=== TURKCE KARAKTERSIZ SUPHELI METINLER ===');
+let supheli = 0;
+for (const dosya of DOSYALAR) {
+  const tam = path.join(KOK, dosya);
+  if (!fs.existsSync(tam)) continue;
+  const icerik = fs.readFileSync(tam, 'utf8');
+  for (const { metin, konum } of metinleriTopla(icerik)) {
+    /* Turkce cumle gorunumlu ama hic ozel karakter yok -> supheli */
+    const kelimeler = metin.split(/\s+/).filter(w => /^[a-zA-Z]{4,}$/.test(w));
+    if (kelimeler.length < 4) continue;
+    if (/[çğıöşüÇĞİÖŞÜ]/.test(metin)) continue;
+    if (/^[A-Z][a-z]+(\s[A-Z][a-z]+)+$/.test(metin)) continue;   /* ozel isim */
+    if (/[<>{}=;]/.test(metin)) continue;                        /* kod */
+    if (sqlMi(metin)) continue;                                  /* SQL */
+    supheli++;
+    if (supheli <= 12) {
+      console.log('  ' + dosya + ':' + satirNo(icerik, konum) + '  ' + metin.slice(0, 78));
+    }
+  }
+}
+if (!supheli) console.log('  yok');
+else if (supheli > 12) console.log('  ... ve ' + (supheli - 12) + ' tane daha');
+
