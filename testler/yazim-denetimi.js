@@ -159,3 +159,5 @@ for (const dosya of DOSYALAR) {
 if (!supheli) console.log('  yok');
 else if (supheli > 12) console.log('  ... ve ' + (supheli - 12) + ' tane daha');
 
+console.log();
+console.log('  ' + bulgu + ' yazim hatasi, ' + supheli + ' supheli metin');
