@@ -121,6 +121,17 @@ function yetkiVarMi(u, izin, baglam) {
   return kapsamUyar(yetkiKapsami(u, izin), baglam);
 }
 
+/* Öğrenciye dokunan yetkinin sınıf kapsamı: rolü belirli sınıflarla
+   sınırlıysa sınıfsız öğrenci kapsam DIŞINDA sayılır (yetkiVarMi boş sınıfı
+   denetlemeden geçiriyordu). */
+function ogrenciKapsamindaMi(u, izin, sinifId) {
+  if (!yetkiVarMi(u, izin)) return false;
+  if (u.role === 'admin' || u.role === 'principal' || temelRoldeMi(u, izin)) return true;
+  const k = yetkiKapsami(u, izin);
+  if (!k || !Array.isArray(k.siniflar) || !k.siniflar.length || k.siniflar.indexOf('*') >= 0) return true;
+  return !!sinifId && k.siniflar.indexOf(sinifId) >= 0;
+}
+
 function rolOzeti(r) {
   return {
     id: r.id, name: r.name, tur: r.tur || 'ozel',
