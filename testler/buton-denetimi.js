@@ -75,3 +75,48 @@ const oluEylem = eleAlinanAct.filter(a => uretilenAct.indexOf(a) < 0);
 if (!oluEylem.length) console.log('  yok');
 else oluEylem.forEach(a => console.log('  ? act === \'' + a + '\' -> hic dugme uretmiyor'));
 
+console.log();
+console.log('=== 3) OLMAYAN SAYFAYA GIDEN BAGLANTI ===');
+/* data-nav degerleri sayfa anahtari olmali; birkac ozel deger disinda */
+const OZEL_NAV = ['geri-veli'];
+const oluNav = uretilenNav.filter(n =>
+  sayfalar.indexOf(n) < 0 && OZEL_NAV.indexOf(n) < 0);
+if (!oluNav.length) console.log('  yok');
+else { sorun += oluNav.length; oluNav.forEach(n => console.log('  ! data-nav="' + n + '" -> SAYFALAR.' + n + ' tanimsiz')); }
+
+console.log();
+console.log('=== 4) MENUDE OLUP SAYFASI OLMAYAN ===');
+/* geri-veli sayfa degil, tiklama dagiticisinda ele aliniyor. */
+const menuOlu = menuAnahtar.filter(k =>
+  sayfalar.indexOf(k) < 0 && OZEL_NAV.indexOf(k) < 0);
+if (!menuOlu.length) console.log('  yok');
+else { sorun += menuOlu.length; menuOlu.forEach(k => console.log('  ! menu "' + k + '" -> SAYFALAR.' + k + ' tanimsiz')); }
+
+console.log();
+console.log('=== 5) SAYFASI OLUP HIC ULASILAMAYAN ===');
+const ulasilmaz = sayfalar.filter(k =>
+  menuAnahtar.indexOf(k) < 0 && uretilenNav.indexOf(k) < 0 &&
+  !new RegExp("git\\('" + k + "'\\)").test(APP));
+if (!ulasilmaz.length) console.log('  yok');
+else ulasilmaz.forEach(k => console.log('  ? SAYFALAR.' + k + ' -> menude yok, git() ile de cagrilmiyor'));
+
+console.log();
+console.log('=== 6) API YOLU / SUNUCU UCU KARSILASTIRMASI ===');
+/* Sunucu artik sunucu/ altinda modullere bolunmus; hepsini birlestirip tara. */
+function sunucuMetni(k) { let m = ''; for (const ad of fs.readdirSync(path.join(KOK, k))) {
+  const p = path.join(k, ad); if (fs.statSync(path.join(KOK, p)).isDirectory()) m += sunucuMetni(p);
+  else if (ad.endsWith('.js')) m += fs.readFileSync(path.join(KOK, p), 'utf8') + String.fromCharCode(10); } return m; }
+const SRV = sunucuMetni('sunucu');
+/* Arayuzun cagirdigi api('/...') yollari */
+const cagrilan = benzersiz(
+  [...APP.matchAll(/api\('\/([a-zA-Z0-9_\-\/]+)/g)].map(m => m[1].split('/')[0]));
+/* Sunucunun tanidigi ust seviye yollar */
+const tanimli = benzersiz(
+  [...SRV.matchAll(/p [!=]== '([a-zA-Z0-9_-]+)'/g)].map(m => m[1]));   // "p === 'x'" ya da "if (p !== 'x') return false"
+const eksikUc = cagrilan.filter(y => tanimli.indexOf(y) < 0);
+if (!eksikUc.length) console.log('  tum api yollari sunucuda tanimli (' + cagrilan.length + ' yol)');
+else { sorun += eksikUc.length; eksikUc.forEach(y => console.log('  ! api(\'/' + y + '...\') -> sunucuda p === \'' + y + '\' yok')); }
+
+console.log();
+console.log(sorun ? '  ' + sorun + ' SORUN BULUNDU' : '  SORUN YOK');
+process.exit(sorun ? 1 : 0);
