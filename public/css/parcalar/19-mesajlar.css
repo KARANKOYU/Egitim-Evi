@@ -50,3 +50,48 @@
   background: var(--zemin); color: var(--soluk); border: 1px solid var(--cizgi);
 }
 
+.mesaj-govde {
+  margin: 14px 0; line-height: 1.65; white-space: pre-wrap; word-break: break-word;
+}
+.mesaj-detay-ust {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; flex-wrap: wrap; padding-bottom: 12px;
+  border-bottom: 1px solid var(--cizgi);
+}
+.mesaj-alicilar {
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--cizgi);
+  max-height: 220px; overflow-y: auto;
+}
+.alici-satir { padding: 5px 0; font-size: 14px; }
+.alici-satir .okudu { color: var(--yesil); font-size: 12px; font-weight: 600; }
+.alici-satir .okumadi { color: var(--soluk); font-size: 12px; }
+
+/* Okundu bilgisi (gönderen görür) */
+.okuma-rozet {
+  padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  background: var(--zemin); color: var(--soluk); border: 1px solid var(--cizgi);
+  font-variant-numeric: tabular-nums;
+}
+.okuma-rozet.tam { background: var(--yesil-zemin); color: var(--yesil-yazi); border-color: transparent; }
+.mesaj-alicilar.okuma-bolum { max-height: none; overflow: visible; }
+.okuma-ozet { font-size: 14px; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.okuma-roller { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.okuma-rol {
+  font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  background: var(--kart); color: inherit; border: 1px solid var(--cizgi);
+  font-variant-numeric: tabular-nums;
+}
+.okuma-rol.secili { background: var(--ana-acik); border-color: var(--ana); color: var(--ana-koyu); }
+.okuma-arac { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.okuma-arac .ara-kutu { flex: 1; min-width: 140px; }
+.okuma-liste { max-height: 260px; overflow-y: auto; border-top: 1px solid var(--cizgi); }
+.okuma-liste .alici-satir { display: flex; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--cizgi); }
+.okuma-liste .alici-satir .buyu { flex: 1; min-width: 0; }
+.okuma-liste .okudu { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.secim-kutu {
+  max-height: 230px; overflow-y: auto; border: 1px solid var(--cizgi);
+  border-radius: var(--r-kucuk); padding: 10px 13px; margin-bottom: 14px;
+}
+.secim-kutu .onay { display: flex; padding: 4px 0; }
+.onay.pasif { opacity: .5; }
