@@ -33,3 +33,11 @@
 }
 .hedef-adet { color: var(--soluk); font-size: 12.5px; font-weight: 400; }
 
+.hedef-ogrenciler {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 2px 10px;
+  padding: 8px 12px 10px 30px;
+}
+.hedef-ogrenci { font-size: 13.5px; padding: 3px 0; }
+
