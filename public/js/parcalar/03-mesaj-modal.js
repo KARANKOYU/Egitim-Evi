@@ -8,6 +8,22 @@ function mesajGoster(hedef, tur, metin) {
   if (tur === 'iyi') setTimeout(function () { if (el) el.innerHTML = ''; }, 6000);
 }
 
+/* İşlem sonrası sayfanın en üstüne kısa mesaj. mesajGoster('sayfa') bütün
+   sayfanın yerine yazıyordu; bu, çizilmiş sayfanın üstüne ekler. */
+function sayfaMesaji(tur, metin) {
+  var s = $('sayfa');
+  if (!s) return;
+  var eski = s.querySelector('.sayfa-mesaj');
+  if (eski) eski.parentNode.removeChild(eski);
+  s.insertAdjacentHTML('afterbegin', '<div class="msg ' + tur + ' sayfa-mesaj" role="status">' + esc(metin) + '</div>');
+  if (tur === 'iyi') {
+    setTimeout(function () {
+      var m = s.querySelector('.sayfa-mesaj');
+      if (m) m.parentNode.removeChild(m);
+    }, 6000);
+  }
+}
+
 /* Oturum anahtarini adres satirina koyamayiz: tarayici gecmisine ve sunucu
    gunlugune duser. Dosyayi baslikla alip yerel baglantiya cevirip indiriyoruz. */
 function dosyaIndir(yol, ad) {

@@ -387,3 +387,15 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = {
+  MESAJ_KONU_SINIR,
+  MESAJ_GOVDE_SINIR,
+  MESAJ_SAATLIK_SINIR,
+  velileriBul,
+  mesajKimden,
+  mesajGidebilirMi,
+  mesajYazilabilirler,
+  mesajAlicilariCoz,
+  mesajOzeti,
+  uclar
+};
