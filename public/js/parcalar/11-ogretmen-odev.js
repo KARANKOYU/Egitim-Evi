@@ -396,3 +396,27 @@ function odevSayimYaz() {
   if (kap) kap.innerHTML = parca.join(' ');
 }
 
+/* Kutu değişince: rengi güncellenir, kaydedilecekler listesine yazılır.
+   Boş seçim ("— Seç —") kaydedilince eski sonucu kaldırır. */
+document.addEventListener('change', function (ev) {
+  var t = ev.target;
+  if (!t.classList || !t.classList.contains('sonuc-kutu')) return;
+  t.setAttribute('data-deger', t.value);
+  S._sonuclar = S._sonuclar || {};
+  S._sonuclar[t.getAttribute('data-sid')] = t.value;
+  odevSayimYaz();
+});
+
+EYLEMLER['sonuc-hepsi'] = function (el) {
+  var deger = el.getAttribute('data-val');
+  var kutular = document.querySelectorAll('.sonuc-kutu');
+  S._sonuclar = S._sonuclar || {};
+  for (var i = 0; i < kutular.length; i++) {
+    if (kutular[i].value) continue;
+    kutular[i].value = deger;
+    kutular[i].setAttribute('data-deger', deger);
+    S._sonuclar[kutular[i].getAttribute('data-sid')] = deger;
+  }
+  odevSayimYaz();
+};
+
