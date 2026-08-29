@@ -277,3 +277,122 @@ function odevYeniModal() {
   });
 }
 
+/* Sınıf kutusu tüm öğrencilerini seçer; öğrenciler değişince sınıf kutusu güncellenir. */
+function odevSecimBagla() {
+  var sinifKutulari = document.querySelectorAll('.sinif-kutu');
+  var ogrenciKutulari = document.querySelectorAll('.ogrenci-kutu');
+
+  function sayaciYenile() {
+    var n = document.querySelectorAll('.ogrenci-kutu:checked').length;
+    var e = $('odevSayac');
+    if (e) e.textContent = n + ' öğrenci seçili';
+
+    /* Sınıf kutusu: hepsi seçiliyse dolu, bir kısmı seçiliyse belirsiz */
+    for (var i = 0; i < sinifKutulari.length; i++) {
+      var sid = sinifKutulari[i].getAttribute('data-sinif');
+      var hepsi = document.querySelectorAll('.ogrenci-kutu[data-sinif="' + sid + '"]');
+      var secili = document.querySelectorAll('.ogrenci-kutu[data-sinif="' + sid + '"]:checked');
+      sinifKutulari[i].checked = hepsi.length > 0 && secili.length === hepsi.length;
+      sinifKutulari[i].indeterminate = secili.length > 0 && secili.length < hepsi.length;
+    }
+  }
+
+  for (var i = 0; i < sinifKutulari.length; i++) {
+    (function (kutu) {
+      kutu.onchange = function () {
+        var sid = kutu.getAttribute('data-sinif');
+        var liste = document.querySelectorAll('.ogrenci-kutu[data-sinif="' + sid + '"]');
+        for (var j = 0; j < liste.length; j++) liste[j].checked = kutu.checked;
+        sayaciYenile();
+      };
+    })(sinifKutulari[i]);
+  }
+  for (var k = 0; k < ogrenciKutulari.length; k++) {
+    ogrenciKutulari[k].onchange = sayaciYenile;
+  }
+  sayaciYenile();
+}
+
+/* Ödev kontrolü: üstte ödevin adı, altında konusu, altında ödevin
+   verildiği öğrenciler alt alta. Her öğrencinin yanındaki kutuya
+   tıklayınca sonuç seçilir: Yaptı, Geç yaptı, Eksik, Yapmadı,
+   Gelmedi (izinli), Gelmedi (izinsiz). */
+var ODEV_SONUC_SIRA = ['yapti', 'gec', 'eksik', 'yapmadi', 'izinli', 'gelmedi'];
+
+function odevAc(id) {
+  return api('/assignments/' + id).then(function (d) {
+    var a = d.assignment;
+    S._acikOdev = a;
+    S._acikOdevEkleri = d.ekler || [];
+    var acan = d.students.filter(function (s) { return s.acilma; }).length;
+
+    var h = '<div class="odev-bas">' +
+      '<h1 class="odev-ad">' + esc(a.title) + '</h1>' +
+      '<div class="odev-konu"><span>Konusu</span>' + (a.description ? esc(a.description) : esc(a.subject)) + '</div>' +
+      '<div class="odev-meta">' + esc(a.subject) + ' · ' +
+      (a.endAt ? 'son teslim ' + tarihGunSaat(a.endAt, a.endTime) : 'süresiz') + ' · ' +
+      d.students.length + ' öğrenci · ' + acan + ' kişi açtı</div>' + ekListesiGoster(d.ekler) + '</div>';
+
+    /* Teslim tarihi geçmiş ya da sonuçlanmış olsa da sonuçlar değiştirilebilir;
+       öğretmen bunu bilmezse ekranı salt okunur sanıyor. */
+    if (a.status === 'finished' || teslimGecti(a.endAt, a.endTime)) {
+      h += '<div class="msg bilgi">Bu ödevin süresi doldu' +
+        (a.status === 'finished' ? ' ve sonuçlandırıldı' : '') +
+        '. Sonuçları yine de değiştirip yeniden kaydedebilirsin.</div>';
+    }
+
+    h += '<div class="kart odev-kontrol">' +
+      '<div class="ok-ust"><h3>Öğrenciler</h3>' +
+      '<button class="btn kucuk gri" data-act="sonuc-hepsi" data-val="yapti">Seçilmemişlerin hepsi: Yaptı</button></div>';
+    for (var i = 0; i < d.students.length; i++) {
+      var s = d.students[i];
+      /* "Ödev 20.05.2026 16:20 tarihinde açıldı" ya da "Ödev açılmadı" */
+      var acilma = s.acilma
+        ? '<div class="acilma-yazi">Ödev ' + tarihSaat(s.acilma) + ' tarihinde açıldı</div>'
+        : '<div class="acilma-yazi acilmadi">Ödev açılmadı</div>';
+      var secenek = '<option value="">— Seç —</option>';
+      for (var j = 0; j < ODEV_SONUC_SIRA.length; j++) {
+        var k = ODEV_SONUC_SIRA[j];
+        secenek += '<option value="' + k + '"' + (s.result === k ? ' selected' : '') + '>' + SONUC[k].ad + '</option>';
+      }
+      h += '<div class="satir ok-satir" data-ara="' + esc(s.fullName) + '">' +
+        '<span class="ok-sira">' + (i + 1) + '</span>' +
+        '<div class="buyu"><div class="ad">' + esc(s.fullName) + '</div>' + acilma + '</div>' +
+        '<select class="sonuc-kutu" data-sid="' + esc(s.id) + '" data-deger="' + esc(s.result || '') + '" ' +
+        'aria-label="' + esc(s.fullName) + ' sonucu">' + secenek + '</select></div>';
+    }
+    h += '<div class="ok-sayim" id="okSayim"></div></div>';
+
+    var sonuclar = yetkim('odev.sonuclandir');
+    h += '<div class="sinav-alt">' +
+      (sonuclar ? '<button class="btn" data-act="odev-bitir" data-id="' + esc(a.id) + '">' +
+        (a.status === 'finished' ? 'Değişiklikleri kaydet' : 'Sonuçlandır ve kaydet') + '</button>' : '') +
+      (sonuclar && a.status === 'finished' ? '<button class="btn gri" data-act="odev-tekrar" data-id="' + esc(a.id) + '">Tekrar aç</button>' : '') +
+      (yetkim('odev.ver') ? '<button class="btn ghost" data-act="odev-duzelt">Ödevi düzenle</button>' : '') +
+      '<button class="btn gri" data-nav="ogr-odevler">Geri dön</button></div>';
+
+    S._sonuclar = {};
+    yaz(h);
+    odevSayimYaz();
+    ogretmenTeslimleri(a.id, a.title);
+  });
+}
+
+/* Altta canlı sayım: "Yaptı 12 · Geç yaptı 2 · ... · Seçilmemiş 3" */
+function odevSayimYaz() {
+  var kutular = document.querySelectorAll('.sonuc-kutu');
+  var sayim = {}, bos = 0;
+  for (var i = 0; i < kutular.length; i++) {
+    var v = kutular[i].value;
+    if (v) sayim[v] = (sayim[v] || 0) + 1; else bos++;
+  }
+  var parca = [];
+  for (var j = 0; j < ODEV_SONUC_SIRA.length; j++) {
+    var k = ODEV_SONUC_SIRA[j];
+    if (sayim[k]) parca.push('<span class="etiket ' + SONUC[k].renk + '">' + SONUC[k].ad + ' ' + sayim[k] + '</span>');
+  }
+  if (bos) parca.push('<span class="etiket gri">Seçilmemiş ' + bos + '</span>');
+  var kap = $('okSayim');
+  if (kap) kap.innerHTML = parca.join(' ');
+}
+
