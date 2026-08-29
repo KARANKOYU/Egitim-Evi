@@ -117,3 +117,22 @@ function okullariYukle() {
   }
 }
 
+function okulKimlikBul(id) {
+  const hedef = String(id || '');
+  for (let i = 0; i < okulAra.length; i++) if (okulAra[i].id === hedef) return okulAra[i];
+  return null;
+}
+
+
+module.exports = {
+  OKUL_DOSYA,
+  okulVeri,
+  okulAra,
+  TR_SADE_HARF,
+  sadelestir,
+  aramaSade,
+  okulKimligi,
+  okullariYukle,
+  okulArama,
+  okulKimlikBul
+};
