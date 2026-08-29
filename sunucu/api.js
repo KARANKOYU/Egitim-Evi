@@ -7,6 +7,34 @@ const { currentUser } = require('./guvenlik');
 const { bad, readBody, sendJSON } = require('./http');
 const site = require('./site');
 
+/* Bölümler: her biri kendi uçlarını `uclar(k)` ile sunar. */
+const anket = require('./bolumler/anket');
+const devamsizlik = require('./bolumler/devamsizlik');
+const egitim_yili = require('./bolumler/egitim-yili');
+const ekler = require('./bolumler/ekler');
+const etut = require('./bolumler/etut');
+const ilerleyis = require('./bolumler/ilerleyis');
+const islem_kaydi = require('./bolumler/islem-kaydi');
+const kayit = require('./bolumler/kayit');
+const kisilik = require('./bolumler/kisilik');
+const mesaj = require('./bolumler/mesaj');
+const odev = require('./bolumler/odev');
+const odev_dosya = require('./bolumler/odev-dosya');
+const okul_hayati = require('./bolumler/okul-hayati');
+const okul_sayfasi = require('./bolumler/okul-sayfasi');
+const push = require('./bolumler/push');
+const ogretmen = require('./bolumler/ogretmen');
+const okul = require('./bolumler/okul');
+const sinav = require('./bolumler/sinav');
+const takvim = require('./bolumler/takvim');
+const yorum = require('./bolumler/yorum');
+const ozellikler = require('./bolumler/ozellikler');
+const hatirlatici = require('./bolumler/hatirlatici');
+const aile = require('./bolumler/aile');
+const { depo } = require('./veri');
+const veli = require('./bolumler/veli');
+const yonetici = require('./bolumler/yonetici');
+
 /* Aydınlatma onayı beklenirken yine de kullanılabilen uçlar. */
 const KVKK_SERBEST = ['me', 'kvkk-onay', 'logout', 'meta', 'challenge', 'okullar', 'schools',
   'login', 'register', 'sifre-unuttum', 'sifre-yenile', 'okul-adres', 'okul-foto', 'site', 'eposta-onay', 'yorumlar'];

@@ -130,3 +130,9 @@ async function dersinOdevleri(okulId, sinifId, konu) {
   }));
 }
 
+module.exports = {
+  duzelt,
+  bul, ogretmenin, okulun, ogrencinin, bitisiOlanlar, ekle, sonuclandir, yenidenAc, sil, acildi, yildizla, yildizlilari,
+  tarihVeyaNull,
+  takvimIcin, dersBaglari, dersinOdevleri
+};

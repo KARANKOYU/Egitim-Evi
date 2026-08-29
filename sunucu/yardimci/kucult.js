@@ -104,4 +104,18 @@ function cssYorumSil(kaynak) {
   return cikti.replace(/[ \t]+$/gm, '').replace(/\n{2,}/g, '\n');
 }
 
+/* Güvenli sarmalayıcı: sonuç JS olarak derlenmiyorsa orijinal döner. */
+function kucultKontrollu(kaynak, tur) {
+  if (process.env.EE_ACIK_KAYNAK === '1') return kaynak;
+  try {
+    if (tur === 'css') return cssYorumSil(kaynak);
+    const sonuc = jsYorumSil(kaynak);
+    new vm.Script(sonuc);   // yalnızca derlenir, çalıştırılmaz
+    return sonuc;
+  } catch (e) {
+    console.error('  Uyarı: ' + tur + ' yorumları atılamadı (' + e.message + '); yorumlu hâli gönderiliyor.');
+    return kaynak;
+  }
+}
+
 module.exports = { jsYorumSil, cssYorumSil, kucultKontrollu };
