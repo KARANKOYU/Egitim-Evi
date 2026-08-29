@@ -103,3 +103,10 @@ async function hatirlatmalariCalistir() {
   }
 }
 
+module.exports = {
+  HATIRLATMA_ARALIK_MS,
+  yerelTarihAnahtari,
+  dersOzetleri,
+  odevHatirlatmalari,
+  hatirlatmalariCalistir
+};

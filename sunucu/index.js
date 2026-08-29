@@ -147,6 +147,14 @@ server.on('connection', soket => {
 const temizlikSayaci = setInterval(guvenlikTemizle, 10 * 60 * 1000);
 if (temizlikSayaci.unref) temizlikSayaci.unref();
 
+/* Ders ve ödev hatırlatmaları */
+const hatirlatmaSayaci = setInterval(hatirlatmalariCalistir, HATIRLATMA_ARALIK_MS);
+/* Kişisel hatırlatıcılar dakikada bir: "08:30" dendiyse 08:30'da gitsin. */
+const { hatirlaticilariGonder } = require('./bolumler/hatirlatici');
+const hatirlaticiSayaci = setInterval(() => { hatirlaticilariGonder().catch(e => console.error('Hatırlatıcı:', e.message)); }, 60 * 1000);
+if (hatirlaticiSayaci.unref) hatirlaticiSayaci.unref();
+if (hatirlatmaSayaci.unref) hatirlatmaSayaci.unref();
+
 /* Bildirim yazılınca aboneliği olan kişinin telefonuna da gider. */
 require('./push').baslat();
 
