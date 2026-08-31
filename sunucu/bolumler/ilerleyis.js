@@ -55,3 +55,8 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = {
+  odevSerisi,
+  progressOf,
+  uclar
+};
