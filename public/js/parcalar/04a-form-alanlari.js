@@ -41,3 +41,12 @@ function formHatalariniSil(form) {
   for (var i = 0; i < hatali.length; i++) alanTemizle(hatali[i]);
 }
 
+/* İlk hatalı kutuya götür: ekranın ortasına kaydır, imleci içine koy. */
+function ilkHatayaGit(form) {
+  var el = form && form.querySelector('[aria-invalid="true"]');
+  if (!el) return;
+  var azalt = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ block: 'center', behavior: azalt ? 'auto' : 'smooth' });
+  try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+}
+
