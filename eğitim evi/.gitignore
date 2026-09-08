@@ -1,0 +1,32 @@
+# --- ASLA depoya girmeyecekler ---
+# Kişisel veri ve gizli bilgi. Depo herkese açık; bunlar çıkarsa
+# öğrenci/veli bilgileri ve e-posta şifresi dünyaya açılır.
+data/db.json
+data/db.sqlite
+data/db.sqlite-wal
+data/db.sqlite-shm
+data/ayarlar.json
+data/yedek/
+data/okullar-onceki.json
+veri/db.*
+veri/ayarlar.json
+veri/yedek/
+sunucu.log
+*.log
+
+# Tarayıcı profilleri (araçlar oluşturur, içinde oturum çerezi kalır)
+araclar/chrome-profil/
+araclar/chrome-profil-tema/
+
+# Üretilen görüntüler (yeniden üretilebilir, depoyu şişirir)
+ekran-goruntuleri/
+tasarim/ornekler/
+belge/ekran-goruntuleri/
+
+# Geçici
+*.tmp
+public/_*.html
+public/_*.js
+public/_*.xlsx
+Thumbs.db
+.DS_Store

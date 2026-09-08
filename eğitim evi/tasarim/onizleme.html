@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eğitim Evi — Tasarım Önizlemesi</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  body { background: var(--zemin); }
+  .onizleme { max-width: 1000px; margin: 0 auto; padding: 24px 18px 60px; }
+  .bolum { margin-bottom: 46px; scroll-margin-top: 20px; }
+  .bolum-baslik {
+    display: flex; align-items: baseline; gap: 12px;
+    padding-bottom: 10px; margin-bottom: 16px;
+    border-bottom: 2px solid var(--ana-acik);
+  }
+  .bolum-no {
+    background: var(--ana); color: #fff; font-weight: 700; font-size: 13px;
+    width: 26px; height: 26px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .bolum-baslik h2 { margin: 0; font-size: 19px; }
+  .bolum-baslik .aciklama { font-size: 13px; color: var(--soluk); }
+  .cerceve {
+    background: var(--kart); border: 1.5px solid var(--cizgi);
+    border-radius: 14px; padding: 20px; overflow: hidden;
+  }
+  .not { font-size: 12.5px; color: var(--soluk); margin-top: 10px; }
+  .ust-baslik { text-align: center; margin-bottom: 34px; }
+  .ust-baslik h1 { margin: 0 0 6px; font-size: 26px; }
+  .ust-baslik p { margin: 0; color: var(--soluk); }
+
+  /* --- giriş ekranı önizlemesi --- */
+  .giris-onizleme { max-width: 430px; margin: 0 auto; }
+
+  .tabs-yeni {
+    display: flex;
+    gap: 6px;
+    background: var(--zemin);
+    border: 1.5px solid var(--cizgi);
+    border-radius: 999px;
+    padding: 5px;
+    margin-bottom: 22px;
+  }
+  .tab-yeni {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    border-radius: 999px;
+    padding: 11px 14px;
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--soluk);
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+  }
+  .tab-yeni.secili {
+    background: var(--kart);
+    color: var(--ana);
+    box-shadow: 0 1px 4px rgba(31,27,46,.12);
+  }
+
+  .btn.hap { border-radius: 999px; padding: 12px 30px; }
+
+  .giris-alt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+
+  /* --- günlük ders programı --- */
+  .prog-ust {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .prog-ozet { font-size: 13.5px; color: var(--soluk); }
+
+  .gun-gezgin {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--zemin);
+    border: 1.5px solid var(--cizgi);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .gun-ok {
+    border: 0;
+    background: var(--kart);
+    border: 1.5px solid var(--cizgi);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--yazi);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .gun-ok:hover { border-color: var(--ana); color: var(--ana); }
+  .gun-orta { text-align: center; flex: 1; min-width: 0; }
+  .gun-buyuk {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: .2px;
+  }
+  .gun-kucuk { font-size: 12.5px; color: var(--soluk); margin-top: 2px; }
+
+  .gun-noktalar {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin: 12px 0 18px;
+    flex-wrap: wrap;
+  }
+  .nokta {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--zemin);
+    border: 1.5px solid var(--cizgi);
+    color: var(--soluk);
+  }
+  .nokta.dolu { color: var(--ana-koyu); background: var(--ana-acik); border-color: var(--ana-cizgi); }
+  .nokta.secili { background: var(--ana); border-color: var(--ana); color: #fff; }
+  .nokta.bos { opacity: .5; }
+
+  /* Sütunlar: ekran genişledikçe yayılır, daraldıkça alt alta iner */
+  .ders-sutunlar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+    gap: 12px;
+    align-items: stretch;
+  }
+  .ders-sutun {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: var(--kart);
+    border: 1.5px solid var(--cizgi);
+    border-radius: 12px;
+    padding: 13px 14px;
+    min-height: 150px;
+    text-align: left;
+  }
+  .sutun-basi {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--soluk);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sutun-saat {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 13px;
+    color: var(--ana);
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .sutun-ders {
+    font-size: 15.5px;
+    font-weight: 600;
+    margin-top: 6px;
+    overflow-wrap: anywhere;
+  }
+  .sutun-kisi { font-size: 12.5px; color: var(--soluk); overflow-wrap: anywhere; }
+  .sutun-islem { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 10px; }
+
+  .ders-sutun.cakisma { border-color: var(--kirmizi); background: #fef2f2; }
+  .sutun-uyari {
+    font-size: 11.5px;
+    color: var(--kirmizi);
+    font-weight: 600;
+    margin-top: 5px;
+    overflow-wrap: anywhere;
+  }
+
+  .ders-sutun.simdi { border-color: var(--ana); box-shadow: 0 0 0 3px var(--ana-acik); }
+  .simdi-etiket {
+    background: var(--ana); color: #fff; border-radius: 999px;
+    padding: 1px 7px; font-size: 10px; letter-spacing: 0;
+  }
+
+  .ders-sutun.bos-saat { background: var(--zemin); border-style: dashed; }
+  .bos-yazi { color: var(--soluk); font-weight: 400; font-size: 14px; }
+
+  .ders-sutun.ekle {
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-style: dashed;
+    background: var(--zemin);
+    cursor: pointer;
+    font: inherit;
+    color: var(--soluk);
+  }
+  .ders-sutun.ekle:hover { border-color: var(--ana); color: var(--ana); background: var(--ana-acik); }
+  .ekle-arti { font-size: 26px; line-height: 1; }
+  .ekle-yazi { font-size: 13px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="onizleme">
+
+  <div class="ust-baslik">
+    <h1>Tasarım Önizlemesi</h1>
+    <p>Bu ekranlar henüz kodlanmadı — nasıl görüneceğini gösteriyor.</p>
+  </div>
+
+  <!-- 1 -->
+  <div class="bolum" id="b1">
+    <div class="bolum-baslik">
+      <span class="bolum-no">1</span>
+      <h2>Giriş ekranı</h2>
+      <span class="aciklama">çizimine göre · sekmeler üstte, buton ve bağlantı yan yana</span>
+    </div>
+    <div class="cerceve">
+      <div class="giris-onizleme">
+        <div class="tabs-yeni">
+          <button type="button" class="tab-yeni">Kayıt Ol</button>
+          <button type="button" class="tab-yeni secili">Giriş Yap</button>
+        </div>
+
+        <div class="field">
+          <label>Kullanıcı Adı / gmail</label>
+          <input type="text" value="ahmet.yilmaz" readonly>
+          <div class="hint">Okulun verdiği kullanıcı adıyla da, e-postanla da girebilirsin.</div>
+        </div>
+
+        <div class="field">
+          <label>Şifre</label>
+          <input type="password" value="12345678" readonly>
+        </div>
+
+        <div class="field bot-alan">
+          <label>Robot değilim doğrulaması</label>
+          <div class="bot-satir">
+            <span class="bot-soru">7 + 4 = ?</span>
+            <input type="number" placeholder="Cevap" readonly>
+            <button type="button" class="btn gri kucuk">Yenile</button>
+          </div>
+        </div>
+
+        <div class="secenekler">
+          <label class="onay"><input type="checkbox" checked disabled><span>Beni hatırla</span></label>
+          <label class="onay"><input type="checkbox" disabled><span>Bilgilerimi bu cihaza kaydetme</span></label>
+        </div>
+
+        <div class="giris-alt">
+          <button type="button" class="btn hap">Giriş Yap</button>
+          <button type="button" class="baglanti">Şifremi unuttum</button>
+        </div>
+      </div>
+
+      <div class="not">
+        Çizimindeki düzen: sekmeler üstte hap şeklinde, seçili olan beyaz;
+        giriş butonu tam genişlik değil, yanında "Şifremi unuttum".
+        Doğrulama sorusu ve hatırlama kutuları çizimde yoktu — istersen kaldırırım.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="bolum" id="b2">
+    <div class="bolum-baslik">
+      <span class="bolum-no">2</span>
+      <h2>Şifremi unuttum</h2>
+      <span class="aciklama">e-posta ile sıfırlama · okul hesapları için müdüre yönlendirme</span>
+    </div>
+    <div class="cerceve">
+      <div style="max-width:420px;margin:0 auto">
+        <h3 style="margin-top:0">Şifreni sıfırla</h3>
+        <div class="field">
+          <label>Hesabının e-posta adresi</label>
+          <input type="text" value="ahmet@ornek.com" readonly>
+          <div class="hint">Sıfırlama bağlantısı bu adrese gönderilir, 30 dakika geçerlidir.</div>
+        </div>
+        <button class="btn full">Sıfırlama bağlantısı gönder</button>
+        <div class="msg bilgi" style="margin-top:14px">
+          Hesabını okul açtıysa ve e-postan kayıtlı değilse, şifreni
+          <b>okul yönetiminden</b> istemen gerekir.
+        </div>
+        <div style="text-align:center;margin-top:12px">
+          <button type="button" class="baglanti">Geri dön</button>
+        </div>
+      </div>
+      <div class="not">E-postası olmayan öğrenci hesapları için müdür sıfırlaması zaten var.</div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="bolum" id="b3">
+    <div class="bolum-baslik">
+      <span class="bolum-no">3</span>
+      <h2>Öğrenci arama</h2>
+      <span class="aciklama">müdür ve öğretmen için · ad, sınıf, kullanıcı adı</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart filtre" style="margin:0 0 14px">
+        <div class="filtre-satir">
+          <div class="field" style="flex:2 1 220px">
+            <label>Ara</label>
+            <input type="text" value="ays" readonly>
+          </div>
+          <div class="field">
+            <label>Sınıf</label>
+            <select disabled><option>Tüm sınıflar</option></select>
+          </div>
+          <div class="field">
+            <label>Durum</label>
+            <select disabled><option>Tümü</option></select>
+          </div>
+          <button class="btn gri kucuk">Temizle</button>
+        </div>
+        <div class="filtre-ozet">128 öğrenciden 3 tanesi gösteriliyor</div>
+      </div>
+      <div class="kart">
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Ayşe Demir <span class="etiket mavi">7-A</span></div>
+            <div class="alt">Kullanıcı adı: <b>ayse.demir</b></div>
+          </div>
+          <button class="btn kucuk ghost">Hesap</button>
+          <button class="btn kucuk gri">Portalını aç</button>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Ayşenur Kaya <span class="etiket mavi">8-B</span></div>
+            <div class="alt">Kullanıcı adı: <b>aysenur.kaya</b></div>
+          </div>
+          <button class="btn kucuk ghost">Hesap</button>
+          <button class="btn kucuk gri">Portalını aç</button>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Beyza Ayşan <span class="etiket mavi">6-C</span></div>
+            <div class="alt">Kullanıcı adı: <b>beyza.aysan</b></div>
+          </div>
+          <button class="btn kucuk ghost">Hesap</button>
+          <button class="btn kucuk gri">Portalını aç</button>
+        </div>
+      </div>
+      <div class="not">Türkçe karakter esnek: "ays" yazınca "Ayşe", "Ayşenur", "Ayşan" gelir.</div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="bolum" id="b4">
+    <div class="bolum-baslik">
+      <span class="bolum-no">4</span>
+      <h2>Özel roller</h2>
+      <span class="aciklama">müdür rol adını kendi koyar, yetkileri kendi seçer</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart" style="margin-top:0">
+        <h3>Yeni rol</h3>
+        <div class="field">
+          <label>Rol adı</label>
+          <input type="text" value="Müdür Yardımcısı" readonly>
+        </div>
+        <label style="font-size:12px;color:var(--soluk);display:block;margin-bottom:8px">Yetkiler</label>
+        <div class="secenekler" style="margin-top:0">
+          <label class="onay"><input type="checkbox" checked disabled><span>Öğrenci portalına girebilir</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Ders programını düzenleyebilir</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Sınıf açıp öğrenci yerleştirebilir</span></label>
+          <label class="onay"><input type="checkbox" disabled><span>Öğretmen ekleyip çıkarabilir</span></label>
+          <label class="onay"><input type="checkbox" disabled><span>Öğrenci şifresi sıfırlayabilir</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Devamsızlık girebilir</span></label>
+          <label class="onay"><input type="checkbox" disabled><span>Sınav oluşturabilir</span></label>
+          <label class="onay"><input type="checkbox" disabled><span>İşlem kaydını görebilir</span></label>
+        </div>
+        <button class="btn" style="margin-top:12px">Rolü oluştur</button>
+      </div>
+
+      <div class="kart">
+        <h3>Tanımlı roller</h3>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Müdür Yardımcısı</div>
+            <div class="alt">4 yetki · 2 kişi bu rolde</div>
+          </div>
+          <button class="btn kucuk ghost">Düzenle</button>
+          <button class="btn kucuk tehlike">Sil</button>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Rehber Öğretmen</div>
+            <div class="alt">2 yetki · 1 kişi bu rolde</div>
+          </div>
+          <button class="btn kucuk ghost">Düzenle</button>
+          <button class="btn kucuk tehlike">Sil</button>
+        </div>
+      </div>
+      <div class="not">Rol bir kişiye atanınca menüsü ve erişebildiği sayfalar otomatik değişir.</div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="bolum" id="b5">
+    <div class="bolum-baslik">
+      <span class="bolum-no">5</span>
+      <h2>Devamsızlık</h2>
+      <span class="aciklama">öğretmen yoklama alır · veli çocuğunun devamsızlığını görür</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart" style="margin-top:0">
+        <h3>Yoklama — 7-A · Matematik · 09:20-10:00</h3>
+        <div class="satir">
+          <div class="buyu"><div class="ad">Ayşe Demir</div></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn kucuk">Geldi</button>
+            <button class="btn kucuk gri">Gelmedi</button>
+            <button class="btn kucuk gri">İzinli</button>
+            <button class="btn kucuk gri">Geç</button>
+          </div>
+        </div>
+        <div class="satir">
+          <div class="buyu"><div class="ad">Burak Öztürk</div></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn kucuk gri">Geldi</button>
+            <button class="btn kucuk tehlike">Gelmedi</button>
+            <button class="btn kucuk gri">İzinli</button>
+            <button class="btn kucuk gri">Geç</button>
+          </div>
+        </div>
+        <button class="btn" style="margin-top:12px">Yoklamayı kaydet</button>
+      </div>
+
+      <div class="kart">
+        <h3>Veli görünümü — Burak'ın devamsızlığı</h3>
+        <div class="grid k4" style="margin-bottom:14px">
+          <div class="stat"><div class="n">3</div><div class="l">Gelmedi</div></div>
+          <div class="stat"><div class="n">1</div><div class="l">İzinli</div></div>
+          <div class="stat"><div class="n">2</div><div class="l">Geç kaldı</div></div>
+          <div class="stat"><div class="n">%94</div><div class="l">Devam oranı</div></div>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Matematik <span class="etiket kirmizi">Gelmedi</span></div>
+            <div class="alt">Salı, 16 Haziran · 09:20-10:00 · Ayşe Kaya</div>
+          </div>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Fen Bilimleri <span class="etiket turuncu">Geç kaldı</span></div>
+            <div class="alt">Pazartesi, 15 Haziran · 10:40-11:20 · Ali Yıldız</div>
+          </div>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Beden Eğitimi <span class="etiket gri">İzinli</span></div>
+            <div class="alt">Cuma, 12 Haziran · 13:20-14:00 · rapor teslim edildi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="bolum" id="b6">
+    <div class="bolum-baslik">
+      <span class="bolum-no">6</span>
+      <h2>İşlem kaydı</h2>
+      <span class="aciklama">kim neyi ne zaman değiştirdi</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart filtre" style="margin:0 0 14px">
+        <div class="filtre-satir">
+          <div class="field"><label>Kim</label><select disabled><option>Herkes</option></select></div>
+          <div class="field"><label>İşlem türü</label><select disabled><option>Tümü</option></select></div>
+          <div class="field"><label>Başlangıç</label><input type="date" disabled></div>
+          <div class="field"><label>Bitiş</label><input type="date" disabled></div>
+        </div>
+      </div>
+      <div class="kart">
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Ayşe Kaya <span class="etiket turuncu">Not değiştirdi</span></div>
+            <div class="alt">Burak Öztürk · Matematik 1. Yazılı: 65 → 75</div>
+            <div class="alt">29.08.2026 14:22 · 192.168.1.42</div>
+          </div>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Mehmet Demir <span class="etiket kirmizi">Şifre sıfırladı</span></div>
+            <div class="alt">Zeynep Şahin hesabının şifresini değiştirdi</div>
+            <div class="alt">29.08.2026 11:05 · 192.168.1.10</div>
+          </div>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Mehmet Demir <span class="etiket yesil">Hesap açtı</span></div>
+            <div class="alt">Deniz Kara · 8-A sınıfına eklendi</div>
+            <div class="alt">28.08.2026 16:40 · 192.168.1.10</div>
+          </div>
+        </div>
+      </div>
+      <div class="not">Kayıtlar silinemez, sadece okunur. Anlaşmazlıkta tek dayanak bu.</div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="bolum" id="b7">
+    <div class="bolum-baslik">
+      <span class="bolum-no">7</span>
+      <h2>Excel / CSV aktarım ve yedekleme</h2>
+      <span class="aciklama">şablon indir · doldur · yükle</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart" style="margin-top:0">
+        <h3>Toplu öğrenci ekleme</h3>
+        <div class="hint" style="margin-bottom:12px">
+          Boş şablonu indir, Excel'de doldur, geri yükle. Şifreleri boş bırakırsan
+          sistem üretir ve listeyi sana verir.
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn ghost">Boş şablon indir (.xlsx)</button>
+          <button class="btn ghost">Boş şablon indir (.csv)</button>
+          <button class="btn">Dosya yükle</button>
+        </div>
+        <div class="tablo-sar">
+          <table class="t">
+            <thead><tr><th>ad_soyad</th><th>kullanici_adi</th><th>sifre</th><th>sinif</th><th>not</th></tr></thead>
+            <tbody>
+              <tr><td>Ayşe Demir</td><td>ayse.demir</td><td>(boş)</td><td>7-A</td><td>Şifreni öğretmeninden al</td></tr>
+              <tr><td>Burak Öztürk</td><td>burak.ozturk</td><td>Okul2026</td><td>7-A</td><td></td></tr>
+              <tr><td>Deniz Kara</td><td>deniz.kara</td><td>(boş)</td><td>8-B</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="msg bilgi" style="margin-top:12px">
+          Yükledikten sonra önizleme çıkar: <b>3 satır okundu, 3 yeni hesap, 0 hata.</b>
+          Onaylayınca hesaplar açılır.
+        </div>
+      </div>
+
+      <div class="kart">
+        <h3>Ders programı aktarımı</h3>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn ghost">Program şablonu indir</button>
+          <button class="btn ghost">Mevcut programı dışa aktar</button>
+          <button class="btn">Program yükle</button>
+        </div>
+        <div class="tablo-sar">
+          <table class="t">
+            <thead><tr><th>sinif</th><th>gun</th><th>baslangic</th><th>bitis</th><th>ders</th><th>ogretmen</th></tr></thead>
+            <tbody>
+              <tr><td>7-A</td><td>Pazartesi</td><td>09:20</td><td>10:00</td><td>Matematik</td><td>Ayşe Kaya</td></tr>
+              <tr><td>7-A</td><td>Pazartesi</td><td>10:10</td><td>10:50</td><td>Türkçe</td><td>Ali Yıldız</td></tr>
+              <tr><td>7-B</td><td>Salı</td><td>09:20</td><td>10:00</td><td>Fen Bilimleri</td><td>Ali Yıldız</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="kart">
+        <h3>Yedekleme</h3>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Otomatik yedek</div>
+            <div class="alt">Her gece 03:00 · son 7 kopya saklanır</div>
+          </div>
+          <span class="etiket yesil">Açık</span>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">yedek-2026-08-29.json</div>
+            <div class="alt">2.4 MB · bugün 03:00</div>
+          </div>
+          <button class="btn kucuk ghost">İndir</button>
+          <button class="btn kucuk gri">Geri yükle</button>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">yedek-2026-08-28.json</div>
+            <div class="alt">2.3 MB · dün 03:00</div>
+          </div>
+          <button class="btn kucuk ghost">İndir</button>
+          <button class="btn kucuk gri">Geri yükle</button>
+        </div>
+        <button class="btn" style="margin-top:12px">Şimdi yedek al</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <div class="bolum" id="b9">
+    <div class="bolum-baslik">
+      <span class="bolum-no">9</span>
+      <h2>Ders programı — gün gün</h2>
+      <span class="aciklama">.ods çizimine göre · tek gün, dersler yan yana, geniş ekranda yayılır</span>
+    </div>
+    <div class="cerceve">
+
+      <div class="prog-ust">
+        <div class="field" style="margin:0;max-width:220px">
+          <label>Sınıf</label>
+          <select disabled><option>7-B</option></select>
+        </div>
+        <div class="prog-ozet">Bugün <b>3 ders</b> · 09:20 – 11:40</div>
+      </div>
+
+      <div class="gun-gezgin">
+        <button type="button" class="gun-ok">‹ önceki gün</button>
+        <div class="gun-orta">
+          <div class="gun-buyuk">Pazartesi</div>
+          <div class="gun-kucuk">31 Ağustos 2026</div>
+        </div>
+        <button type="button" class="gun-ok">sonraki gün ›</button>
+      </div>
+
+      <div class="gun-noktalar">
+        <span class="nokta dolu" title="Pazartesi">Pzt</span>
+        <span class="nokta">Sal</span>
+        <span class="nokta dolu">Çar</span>
+        <span class="nokta dolu">Per</span>
+        <span class="nokta">Cum</span>
+        <span class="nokta bos">Cmt</span>
+        <span class="nokta bos">Paz</span>
+      </div>
+
+      <div class="ders-sutunlar">
+        <div class="ders-sutun">
+          <div class="sutun-basi">Ders 1</div>
+          <div class="sutun-saat">09:20 – 10:00</div>
+          <div class="sutun-ders">Matematik</div>
+          <div class="sutun-kisi">Ayşe Kaya</div>
+          <div class="sutun-islem">
+            <button class="btn kucuk gri">Düzenle</button>
+            <button class="btn kucuk tehlike">Sil</button>
+          </div>
+        </div>
+
+        <div class="ders-sutun">
+          <div class="sutun-basi">Ders 2</div>
+          <div class="sutun-saat">10:10 – 10:50</div>
+          <div class="sutun-ders">Türkçe</div>
+          <div class="sutun-kisi">Ali Yıldız</div>
+          <div class="sutun-islem">
+            <button class="btn kucuk gri">Düzenle</button>
+            <button class="btn kucuk tehlike">Sil</button>
+          </div>
+        </div>
+
+        <div class="ders-sutun cakisma">
+          <div class="sutun-basi">Ders 3</div>
+          <div class="sutun-saat">11:00 – 11:40</div>
+          <div class="sutun-ders">Fen Bilimleri</div>
+          <div class="sutun-kisi">Ali Yıldız</div>
+          <div class="sutun-uyari">Ali Yıldız aynı saatte 8-A'da</div>
+          <div class="sutun-islem">
+            <button class="btn kucuk gri">Düzenle</button>
+            <button class="btn kucuk tehlike">Sil</button>
+          </div>
+        </div>
+
+        <button type="button" class="ders-sutun ekle">
+          <span class="ekle-arti">+</span>
+          <span class="ekle-yazi">Ders ekle</span>
+        </button>
+      </div>
+
+      <div class="not">
+        Ekran genişledikçe sütunlar yayılır, daraldıkça alt alta iner.
+        Üstteki gün şeridinde dolu günler koyu — hangi günlerde ders var, tek bakışta belli.
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 -->
+  <div class="bolum" id="b10">
+    <div class="bolum-baslik">
+      <span class="bolum-no">10</span>
+      <h2>Öğretmenin kendi programı</h2>
+      <span class="aciklama">aynı düzen · öğretmen yerine sınıf yazıyor, düzenleme yok</span>
+    </div>
+    <div class="cerceve">
+
+      <div class="prog-ust">
+        <div class="prog-ozet"><b>Ayşe Kaya</b> · Matematik · haftada 18 saat</div>
+      </div>
+
+      <div class="gun-gezgin">
+        <button type="button" class="gun-ok">‹ önceki gün</button>
+        <div class="gun-orta">
+          <div class="gun-buyuk">Salı</div>
+          <div class="gun-kucuk">1 Eylül 2026 · bugün</div>
+        </div>
+        <button type="button" class="gun-ok">sonraki gün ›</button>
+      </div>
+
+      <div class="gun-noktalar">
+        <span class="nokta dolu">Pzt</span>
+        <span class="nokta dolu secili">Sal</span>
+        <span class="nokta dolu">Çar</span>
+        <span class="nokta">Per</span>
+        <span class="nokta dolu">Cum</span>
+        <span class="nokta bos">Cmt</span>
+        <span class="nokta bos">Paz</span>
+      </div>
+
+      <div class="ders-sutunlar">
+        <div class="ders-sutun simdi">
+          <div class="sutun-basi">Ders 1 <span class="simdi-etiket">şimdi</span></div>
+          <div class="sutun-saat">09:20 – 10:00</div>
+          <div class="sutun-ders">Matematik</div>
+          <div class="sutun-kisi">7-A · 24 öğrenci</div>
+          <div class="sutun-islem">
+            <button class="btn kucuk">Yoklama al</button>
+          </div>
+        </div>
+
+        <div class="ders-sutun">
+          <div class="sutun-basi">Ders 2</div>
+          <div class="sutun-saat">10:10 – 10:50</div>
+          <div class="sutun-ders">Matematik</div>
+          <div class="sutun-kisi">7-B · 21 öğrenci</div>
+          <div class="sutun-islem">
+            <button class="btn kucuk gri">Yoklama al</button>
+          </div>
+        </div>
+
+        <div class="ders-sutun bos-saat">
+          <div class="sutun-basi">Ders 3</div>
+          <div class="sutun-saat">11:00 – 11:40</div>
+          <div class="sutun-ders bos-yazi">Boş saat</div>
+        </div>
+
+        <div class="ders-sutun">
+          <div class="sutun-basi">Ders 4</div>
+          <div class="sutun-saat">13:20 – 14:00</div>
+          <div class="sutun-ders">Matematik</div>
+          <div class="sutun-kisi">8-A · 26 öğrenci</div>
+          <div class="sutun-islem">
+            <button class="btn kucuk gri">Yoklama al</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="not">
+        Öğretmende sınıf adı yazıyor, düzenleme butonu yok. Şu an devam eden ders
+        işaretli. Boş saatler de görünüyor ki öğretmen penceresini bilsin.
+      </div>
+    </div>
+  </div>
+
+  <!-- 8 -->
+  <div class="bolum" id="b8">
+    <div class="bolum-baslik">
+      <span class="bolum-no">8</span>
+      <h2>Mesajlaşma</h2>
+      <span class="aciklama">çoklu alıcı · sınıf seçimi · kim yazabilir ayarı</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart" style="margin-top:0">
+        <h3>Yeni mesaj</h3>
+        <div class="field">
+          <label>Kime</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1.5px solid var(--cizgi);border-radius:10px">
+            <span class="etiket mavi">7-A sınıfı (24 kişi)</span>
+            <span class="etiket mavi">8-B sınıfı (21 kişi)</span>
+            <span class="etiket">Ayşe Demir</span>
+            <span class="etiket">Tüm öğretmenler (12)</span>
+            <span class="etiket gri">+ Ekle</span>
+          </div>
+          <div class="hint">Sınıf, rol ya da tek tek kişi seçebilirsin. Toplam 58 alıcı.</div>
+        </div>
+        <div class="field">
+          <label>Konu</label>
+          <input type="text" value="Yarınki veli toplantısı" readonly>
+        </div>
+        <div class="field">
+          <label>Mesaj</label>
+          <textarea rows="3" readonly>Yarın saat 18:00'de okul konferans salonunda veli toplantısı yapılacaktır.</textarea>
+          <div class="hint">0 / 4000 karakter</div>
+        </div>
+        <button class="btn">Gönder</button>
+      </div>
+
+      <div class="kart">
+        <h3>Gelen kutusu</h3>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Mehmet Demir <span class="etiket mor">Müdür</span></div>
+            <div class="alt">Yarınki veli toplantısı</div>
+            <div class="alt">29.08.2026 15:10</div>
+          </div>
+          <span class="etiket turuncu">Okunmadı</span>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Ayşe Kaya <span class="etiket">Matematik</span></div>
+            <div class="alt">Ödev teslim tarihi uzatıldı</div>
+            <div class="alt">28.08.2026 09:40</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kart">
+        <h3>Bana kim yazabilir</h3>
+        <div class="secenekler" style="margin-top:0">
+          <label class="onay"><input type="checkbox" checked disabled><span>Müdür ve idare</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Öğretmenler</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Kendi öğrencilerim</span></label>
+          <label class="onay"><input type="checkbox" disabled><span>Tüm öğrenciler</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Veliler</span></label>
+        </div>
+        <div class="hint" style="margin-top:8px">
+          Kapattığın gruplar sana mesaj gönderemez. Müdür bu ayarı kapatamaz.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

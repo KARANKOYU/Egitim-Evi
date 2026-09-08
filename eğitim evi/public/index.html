@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c02b30">
+<meta name="description" content="Eğitim Evi - okul, öğretmen, öğrenci ve veli için ödev, sınav ve ilerleme takip sistemi.">
+<title>Eğitim Evi</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/simge-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Eğitim Evi">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="/simge-192.png">
+</head>
+<body>
+
+<!-- ===================== GİRİŞ / KAYIT ===================== -->
+<div class="auth-wrap" id="authWrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="mark"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M10 21v-5h4v5"/><path d="M9.5 11h5"/></svg></div>
+      <h1>Eğitim Evi</h1>
+      <p>Okulun dijital eğitim portalı</p>
+    </div>
+
+    <div class="tabs">
+      <button type="button" id="tabGiris" class="on">Giriş Yap</button>
+      <button type="button" id="tabKayit">Kayıt Ol</button>
+    </div>
+
+    <div id="authMesaj"></div>
+
+    <!-- iki adımlı giriş: kod ekranı -->
+    <div id="kodEkran" style="display:none">
+      <div class="kod-baslik">
+        <div class="kod-simge"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+        <h2>Giriş kodunu gir</h2>
+        <p id="kodAciklama">Kodu gönderdik.</p>
+      </div>
+      <form id="formKod" autocomplete="one-time-code">
+        <div class="field">
+          <label for="kodGiris">6 haneli kod</label>
+          <input type="text" id="kodGiris" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                 autocomplete="one-time-code" spellcheck="false" class="kod-kutu"
+                 placeholder="______" required>
+        </div>
+        <button type="submit" class="btn full">Doğrula ve gir</button>
+      </form>
+      <div class="kod-alt">
+        <button type="button" class="baglanti" id="kodTekrar">Kodu tekrar gönder</button>
+        <button type="button" class="baglanti" id="kodVazgec">← Geri dön</button>
+      </div>
+    </div>
+
+    <!-- giriş -->
+    <form id="formGiris" autocomplete="on">
+      <div class="field">
+        <label for="gEmail">E-posta</label>
+        <input type="email" id="gEmail" required autocomplete="username" placeholder="ornek@gmail.com">
+      </div>
+      <div class="field">
+        <label for="gSifre">Şifre</label>
+        <input type="password" id="gSifre" required autocomplete="current-password" placeholder="••••••">
+      </div>
+      <div class="field bot-alan">
+        <label for="gBot">Robot değilim doğrulaması</label>
+        <div class="bot-satir">
+          <span class="bot-soru" id="gBotSoru">yükleniyor...</span>
+          <input type="number" id="gBot" inputmode="numeric" required
+                 autocomplete="off" placeholder="Cevap" aria-label="Doğrulama sorusunun cevabı">
+          <button type="button" class="btn gri kucuk" id="gBotYenile" title="Yeni soru">Yenile</button>
+        </div>
+      </div>
+
+      <div class="secenekler">
+        <label class="onay">
+          <input type="checkbox" id="gHatirla" checked>
+          <span>Beni hatırla</span>
+        </label>
+        <label class="onay">
+          <input type="checkbox" id="gKaydetme">
+          <span>Bilgilerimi bu cihaza kaydetme</span>
+        </label>
+      </div>
+      <div class="hint" id="gizlilikNot">
+        Bilgilerin yalnızca okulunun kendi sunucusunda tutulur. Google'a ya da
+        başka bir servise hiçbir şey gönderilmez.
+      </div>
+
+      <button type="submit" class="btn full">Giriş Yap</button>
+      <div class="giris-alt">
+        <button type="button" class="baglanti" id="btnSifremiUnuttum">Şifremi unuttum</button>
+      </div>
+    </form>
+
+    <!-- şifremi unuttum: sıfırlama bağlantısı iste -->
+    <div id="sifreEkran" style="display:none">
+      <div class="kod-baslik">
+        <div class="kod-simge"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 19 4"/><path d="m16 7 3 3"/><path d="m19 4 2 2"/></svg></div>
+        <h2>Şifreni mi unuttun?</h2>
+        <p>Hesabının e-posta adresini yaz, sıfırlama bağlantısını oraya gönderelim.</p>
+      </div>
+      <form id="formSifreUnuttum">
+        <div class="field">
+          <label for="sEmail">E-posta</label>
+          <input type="email" id="sEmail" required autocomplete="username" placeholder="ornek@gmail.com">
+        </div>
+        <div class="field bot-alan">
+          <label for="sBot">Robot değilim doğrulaması</label>
+          <div class="bot-satir">
+            <span class="bot-soru" id="sBotSoru">yükleniyor...</span>
+            <input type="number" id="sBot" inputmode="numeric" required
+                   autocomplete="off" placeholder="Cevap" aria-label="Doğrulama sorusunun cevabı">
+            <button type="button" class="btn gri kucuk" id="sBotYenile" title="Yeni soru">Yenile</button>
+          </div>
+        </div>
+        <button type="submit" class="btn full">Sıfırlama bağlantısı gönder</button>
+      </form>
+      <div class="kod-alt">
+        <button type="button" class="baglanti" id="sVazgec">← Girişe dön</button>
+      </div>
+    </div>
+
+    <!-- şifremi unuttum: yeni şifreyi belirle -->
+    <div id="yeniSifreEkran" style="display:none">
+      <div class="kod-baslik">
+        <div class="kod-simge"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 19 4"/><path d="m16 7 3 3"/><path d="m19 4 2 2"/></svg></div>
+        <h2>Yeni şifreni belirle</h2>
+        <p>En az 8 karakter, harf ve rakam içermeli.</p>
+      </div>
+      <form id="formYeniSifre">
+        <div class="field">
+          <label for="ySifre1">Yeni şifre</label>
+          <input type="password" id="ySifre1" required minlength="8" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="ySifre2">Yeni şifre (tekrar)</label>
+          <input type="password" id="ySifre2" required minlength="8" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn full">Şifreyi güncelle</button>
+      </form>
+      <div class="kod-alt">
+        <button type="button" class="baglanti" id="yVazgec">← Girişe dön</button>
+      </div>
+    </div>
+
+    <!-- kayıt -->
+    <form id="formKayit" style="display:none" autocomplete="on">
+      <div class="field">
+        <label for="kRol">Hesap türü</label>
+        <select id="kRol">
+          <option value="student">Öğrenci</option>
+          <option value="parent">Veli</option>
+          <option value="teacher">Öğretmen</option>
+          <option value="principal">Müdür</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="kAd">Ad Soyad (gerçek adın)</label>
+        <input type="text" id="kAd" required placeholder="Ahmet Yılmaz" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="kEmail">E-posta</label>
+        <input type="email" id="kEmail" required placeholder="ornek@gmail.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="kSifre">Şifre (en az 8 karakter, harf ve rakam içermeli)</label>
+        <input type="password" id="kSifre" required minlength="8" autocomplete="new-password">
+      </div>
+
+      <div class="kvkk-alan">
+        <label class="onay">
+          <input type="checkbox" id="kKvkk" required>
+          <span><a href="/kvkk.html" target="_blank" rel="noopener">Aydınlatma metnini</a>
+          okudum, anladım ve kişisel verilerimin bu kapsamda işlenmesini kabul ediyorum.</span>
+        </label>
+        <div class="hint" id="kvkkVeliNot" style="display:none">
+          Öğrenci 18 yaşından küçükse bu onayı velisi verir.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="kTelefon">Telefon</label>
+        <input type="tel" id="kTelefon" required placeholder="0532 123 45 67"
+               inputmode="tel" autocomplete="tel" maxlength="20">
+      </div>
+
+      <div id="kYerAlan">
+        <div class="row2">
+          <div class="field">
+            <label for="kIl">İl</label>
+            <select id="kIl"><option value="">Seç...</option></select>
+          </div>
+          <div class="field">
+            <label for="kIlce">İlçe</label>
+            <select id="kIlce"><option value="">Önce il seç...</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- müdür -->
+      <div id="kMudurAlan" style="display:none">
+        <div class="field">
+          <label for="kOkulAra">Okulunu bul</label>
+          <div class="okul-ust">
+            <input type="text" id="kOkulAra" placeholder="Okul adı yaz — ör. Atatürk Ortaokulu"
+                   autocomplete="off" spellcheck="false">
+            <select id="kOkulTip" aria-label="Okul türü">
+              <option value="">Tüm türler</option>
+            </select>
+          </div>
+          <div class="hint" id="kOkulIpucu">
+            Millî Eğitim Bakanlığı listesindeki tüm okullar aranabilir.
+            İl seçersen sadece o ilde, seçmezsen Türkiye genelinde arar.
+          </div>
+          <div id="kOkulSonuc" class="okul-sonuc"></div>
+          <div id="kOkulSecili" class="okul-secili" style="display:none"></div>
+        </div>
+
+        <details class="okul-elle">
+          <summary>Okulum listede yok</summary>
+          <div class="field">
+            <label for="kOkulAd">Okulun tam adı</label>
+            <input type="text" id="kOkulAd" placeholder="Özel Antalya Renk Ortaokulu" autocomplete="off">
+            <div class="hint">Devlet ya da özel, fark etmez — yeni açılmış ve adı
+            değişmiş okullar listede olmayabilir. Okulun tam adını yaz, sistem
+            yöneticisi kontrol edip onaylar.</div>
+          </div>
+        </details>
+      </div>
+
+      <!-- öğretmen + öğrenci: okul seçimi -->
+      <div id="kOkulSecAlan" style="display:none">
+        <div class="field">
+          <label for="kOkulId">Okulun</label>
+          <select id="kOkulId"><option value="">Önce il seç...</option></select>
+          <div class="hint">Okulunu bulamıyorsan müdürünün henüz kayıt olmamış olabilir.</div>
+        </div>
+      </div>
+
+      <!-- öğretmen -->
+      <div id="kBransAlan" style="display:none">
+        <div class="field">
+          <label for="kBrans">Branşın</label>
+          <select id="kBrans"></select>
+        </div>
+      </div>
+
+      <!-- öğrenci -->
+      <div id="kSinifAlan" style="display:none">
+        <div class="field">
+          <label for="kSinif">Sınıfın</label>
+          <input type="text" id="kSinif" placeholder="7-A">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="kAdres">Adres</label>
+        <textarea id="kAdres" rows="2" maxlength="200"
+                  placeholder="Mahalle, sokak, no — ulaşılabilecek açık adres"></textarea>
+      </div>
+
+      <div class="field bot-alan">
+        <label for="kBot">Robot değilim doğrulaması</label>
+        <div class="bot-satir">
+          <span class="bot-soru" id="kBotSoru">yükleniyor...</span>
+          <input type="number" id="kBot" inputmode="numeric" required
+                 autocomplete="off" placeholder="Cevap" aria-label="Doğrulama sorusunun cevabı">
+          <button type="button" class="btn gri kucuk" id="kBotYenile" title="Yeni soru">↻</button>
+        </div>
+        <div class="hint">Otomatik kayıt botlarını engellemek için soruyor.</div>
+      </div>
+
+      <button type="submit" class="btn full">Kayıt Ol</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== UYGULAMA ===================== -->
+<div class="app" id="app">
+  <div class="topbar">
+    <button class="hamburger" id="hamburger" aria-label="Menü"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="search">
+      <span class="ico"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></span>
+      <input type="search" id="araKutu" placeholder="İçerik Ara" aria-label="İçerik ara">
+    </div>
+    <div class="topbar-right">
+      <button class="iconbtn" id="btnBildirim" title="Gönderiler">
+        <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9z"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg><span>Gönderiler</span>
+        <span class="rozet" id="bildirimRozet" style="display:none">0</span>
+      </button>
+      <button class="iconbtn" id="btnAyarlar" title="Ayarlar">
+        <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span>Ayarlar</span>
+      </button>
+      <button class="iconbtn kur" id="btnKur" title="Uygulamayı telefonuna/bilgisayarına kur" style="display:none">
+        <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7.5 11 4.5 4.5 4.5-4.5"/><path d="M4 20h16"/></svg><span>Uygulamayı yükle</span>
+      </button>
+      <button class="iconbtn" id="btnProfil" title="Profil">
+        <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21v-1.5A5.5 5.5 0 0 1 10 14h4a5.5 5.5 0 0 1 5.5 5.5V21"/></svg><span id="profilEtiket">Profil</span>
+      </button>
+    </div>
+    <div id="bildirimPanel"></div>
+  </div>
+
+  <div class="shell">
+    <div class="sidebar-perde" id="sidebarPerde"></div>
+    <nav class="sidebar" id="sidebar">
+      <div class="brand"><span class="mark"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M10 21v-5h4v5"/><path d="M9.5 11h5"/></svg></span> Eğitim Evi</div>
+      <div id="navListe"></div>
+    </nav>
+    <main class="content">
+      <div class="page-inner" id="sayfa">
+        <div class="yukleniyor">Yükleniyor...</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="modalKok"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

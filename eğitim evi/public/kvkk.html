@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#c02b30">
+<meta name="description" content="Eğitim Evi kişisel verilerin korunması aydınlatma metni. Hangi veriler işleniyor, hangi amaçla, ne kadar süre saklanıyor.">
+<title>Aydınlatma Metni · Eğitim Evi</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="/simge-192.png">
+<style>
+  .belge { max-width: 760px; margin: 0 auto; padding: 40px 22px 80px; }
+  .belge-ust { border-bottom: 1px solid var(--cizgi); padding-bottom: 22px; margin-bottom: 30px; }
+  .belge-ust .marka {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; color: var(--ana); margin-bottom: 18px;
+  }
+  .belge-ust .marka svg { width: 26px; height: 26px; }
+  .belge h1 { font-size: 27px; margin: 0 0 8px; letter-spacing: -.4px; }
+  .belge .alt { color: var(--soluk); font-size: 14px; }
+  .belge h2 {
+    font-size: 17px; margin: 34px 0 10px; padding-top: 4px;
+    color: var(--yazi);
+  }
+  .belge p, .belge li { line-height: 1.7; color: var(--yazi); }
+  .belge p { margin: 0 0 12px; }
+  .belge ul { margin: 0 0 14px; padding-left: 22px; }
+  .belge li { margin-bottom: 6px; }
+  .belge table { width: 100%; border-collapse: collapse; margin: 6px 0 16px; font-size: 14px; }
+  .belge th, .belge td {
+    text-align: left; padding: 9px 11px; border-bottom: 1px solid var(--cizgi);
+    vertical-align: top;
+  }
+  .belge th { color: var(--soluk); font-size: 13px; font-weight: 600; }
+  .belge .kutu {
+    background: var(--ana-acik); border: 1px solid var(--ana-cizgi);
+    border-radius: 12px; padding: 15px 17px; margin: 18px 0;
+  }
+  .belge .kutu p:last-child { margin-bottom: 0; }
+  .belge .geri { display: inline-block; margin-top: 34px; }
+  .belge footer {
+    margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--cizgi);
+    color: var(--soluk); font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="belge">
+
+  <div class="belge-ust">
+    <div class="marka">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/>
+        <path d="M10 21v-5h4v5"/><path d="M9.5 11h5"/>
+      </svg>
+      Eğitim Evi
+    </div>
+    <h1>Kişisel Verilerin Korunması Aydınlatma Metni</h1>
+    <div class="alt">Sürüm 1.1 · Yürürlük tarihi: 29.08.2026</div>
+  </div>
+
+  <p>
+    Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu'nun (KVKK) 10. maddesi
+    uyarınca, Eğitim Evi sistemini kullanan öğrenci, veli, öğretmen ve yöneticileri
+    kişisel verilerinin nasıl işlendiği konusunda bilgilendirmek için hazırlanmıştır.
+  </p>
+
+  <h2>1. Veri sorumlusu kim?</h2>
+  <p>
+    Veri sorumlusu, bu sistemi kullanan <strong>okulun kendisidir</strong>. Eğitim Evi
+    bir yazılımdır; verileri okulun kendi sunucusunda tutar. Okul yönetimi dışında
+    hiçbir üçüncü tarafa veri aktarılmaz.
+  </p>
+
+  <h2>2. Hangi veriler işleniyor?</h2>
+  <table>
+    <thead><tr><th>Veri türü</th><th>Kimden</th></tr></thead>
+    <tbody>
+      <tr><td>Ad, soyad</td><td>Öğrenci, veli, öğretmen, yönetici</td></tr>
+      <tr><td>E-posta adresi</td><td>Tüm kullanıcılar (giriş için)</td></tr>
+      <tr><td>Telefon numarası</td><td>Tüm kullanıcılar (acil durumda ulaşmak için)</td></tr>
+      <tr><td>Adres, il, ilçe</td><td>Tüm kullanıcılar</td></tr>
+      <tr><td>Okul, sınıf, şube bilgisi</td><td>Öğrenci, öğretmen</td></tr>
+      <tr><td>Ödev durumu ve sonuçları</td><td>Öğrenci</td></tr>
+      <tr><td>Sınav notları</td><td>Öğrenci</td></tr>
+      <tr><td>Devamsızlık kayıtları</td><td>Öğrenci</td></tr>
+      <tr><td>Ders programı ve ders atamaları</td><td>Öğretmen, sınıf</td></tr>
+      <tr><td>Veli–öğrenci bağlantısı</td><td>Veli</td></tr>
+      <tr><td>Giriş kayıtları (tarih, IP adresi)</td><td>Tüm kullanıcılar</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Sistem; T.C. kimlik numarası, sağlık bilgisi, din, biyometrik veri ya da
+    KVKK'nın 6. maddesinde sayılan başka bir
+    <strong>özel nitelikli kişisel veriyi toplamaz.</strong>
+  </p>
+
+  <h2>3. Hangi amaçla işleniyor?</h2>
+  <ul>
+    <li>Öğrencinin ödev, sınav ve devamsızlık takibinin yapılması</li>
+    <li>Velinin çocuğunun eğitim durumunu izleyebilmesi</li>
+    <li>Ders programının düzenlenmesi ve duyurulması</li>
+    <li>Okul içi bilgilendirme ve mesajlaşma</li>
+    <li>Acil durumlarda veliye ya da öğretmene telefonla ulaşılması</li>
+    <li>Hesap güvenliğinin sağlanması (iki adımlı giriş, yetkisiz erişimin engellenmesi)</li>
+  </ul>
+
+  <h2>4. Hukuki sebep nedir?</h2>
+  <p>
+    Veriler KVKK'nın 5. maddesinde sayılan sebeplere dayanılarak işlenir:
+    bir sözleşmenin kurulması ve ifası, veri sorumlusunun hukuki yükümlülüğünü
+    yerine getirmesi ve ilgili kişinin açık rızası.
+  </p>
+  <div class="kutu">
+    <p>
+      <strong>Çocuklara ait veriler.</strong> Öğrenci reşit değilse, hesabın
+      açılması ve verilerin işlenmesi velisinin bilgisi ve onayı ile gerçekleşir.
+      Veli, bu onayı dilediği zaman geri çekebilir.
+    </p>
+  </div>
+
+  <h2>5. Verilere kimler erişebilir?</h2>
+  <ul>
+    <li><strong>Öğrenci:</strong> yalnızca kendi verilerine</li>
+    <li><strong>Veli:</strong> yalnızca hesabına bağlı çocuğunun verilerine</li>
+    <li><strong>Öğretmen:</strong> yalnızca kendisine atanmış öğrenci ve derslerin verilerine</li>
+    <li><strong>Müdür ve yetkilendirilmiş personel:</strong> okulunun verilerine</li>
+  </ul>
+  <p>
+    Yetkiler rol bazlı olarak sınırlandırılmıştır; müdür her personele hangi
+    derste ve hangi sınıfta ne yapabileceğini ayrı ayrı belirler.
+  </p>
+
+  <h2>6. Veriler yurt dışına aktarılıyor mu?</h2>
+  <p>
+    Veriler okulun kullandığı sunucuda tutulur. Sunucu Türkiye dışında bir
+    ülkedeyse bu, KVKK'nın 9. maddesi kapsamında yurt dışına aktarım sayılır ve
+    okul bu durumu ayrıca bildirmekle yükümlüdür. Sistem, verilerinizi reklam,
+    analiz ya da başka bir amaçla hiçbir üçüncü şirkete göndermez.
+  </p>
+
+  <h2>7. Ne kadar süre saklanıyor?</h2>
+  <p>
+    Veriler, öğrencinin okulla ilişiği devam ettiği sürece saklanır. İlişik
+    kesildikten sonra mevzuatın öngördüğü saklama süreleri sonunda silinir.
+    Sistem yöneticisi hesabı sildiğinde kişisel veriler kayıtlardan kaldırılır.
+  </p>
+
+  <h2>8. Veriler nasıl korunuyor?</h2>
+  <ul>
+    <li>Şifreler geri döndürülemez biçimde (scrypt) saklanır, düz metin olarak tutulmaz</li>
+    <li>Girişte iki adımlı doğrulama zorunludur</li>
+    <li>Kaba kuvvet denemelerine karşı hesap kilidi ve hız sınırı uygulanır</li>
+    <li>Bağlantı HTTPS ile şifrelenir</li>
+    <li>Veriler düzenli olarak yedeklenir</li>
+  </ul>
+
+  <h2>9. Haklarınız neler? (KVKK madde 11)</h2>
+  <p>Veri sahibi olarak okul yönetimine başvurarak şunları talep edebilirsiniz:</p>
+  <ul>
+    <li>Kişisel verinizin işlenip işlenmediğini öğrenme</li>
+    <li>İşlenmişse buna ilişkin bilgi talep etme</li>
+    <li>İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme</li>
+    <li>Eksik ya da yanlış işlenmişse düzeltilmesini isteme</li>
+    <li>Silinmesini ya da yok edilmesini isteme</li>
+    <li>Düzeltme ve silme işlemlerinin üçüncü kişilere bildirilmesini isteme</li>
+    <li>İşlenen verilerin münhasıran otomatik sistemlerle analiz edilmesi sonucu
+        aleyhinize bir sonuç doğmasına itiraz etme</li>
+    <li>Kanuna aykırı işlenme sebebiyle zarara uğramanız hâlinde zararın
+        giderilmesini talep etme</li>
+  </ul>
+  <p>
+    Başvurularınızı okul yönetimine yazılı olarak iletebilirsiniz. Okul,
+    talebinizi en geç 30 gün içinde sonuçlandırır.
+  </p>
+
+  <h2>10. Bu metin değişirse ne olur?</h2>
+  <p>
+    Metin güncellenirse sürüm numarası değişir ve kullanıcılardan onay yeniden
+    istenir. Onay tarihiniz hesabınızda kayıtlıdır.
+  </p>
+
+  <a class="btn ghost geri" href="/">← Giriş ekranına dön</a>
+
+  <footer>
+    Eğitim Evi · Aydınlatma Metni Sürüm 1.1<br>
+    Bu metin genel bir şablondur. Okulunuzun adını, iletişim bilgilerini ve
+    sunucusunun bulunduğu ülkeyi ekleyerek kendinize uyarlamanız,
+    yayına almadan önce bir hukukçuya danışmanız önerilir.
+  </footer>
+
+</div>
+</body>
+</html>
