@@ -128,6 +128,42 @@ EYLEMLER['admin-sifre-uret'] = function () {
   sifreKurallariniIsaretle('aoSifre', 'aoKural');
 };
 
+EYLEMLER['admin-okul-ac-kaydet'] = function (el) {
+  var kart = $('aoKart');
+  formHatalariniSil(kart);
+  var g = { city: $('bIl').value, district: $('bIlce').value.trim(), kisaAd: $('aoKisa').value.trim().toLowerCase(),
+    mudur: { eposta: $('aoEposta').value.trim(), ad: $('aoAd').value.trim(), soyad: $('aoSoyad').value.trim(),
+      kullaniciAdi: $('aoKadi').value.trim().toLowerCase(), telefon: telefonOku($('aoTelefon')), sifre: $('aoSifre').value } };
+  if (seciliOkul) g.mebSchoolId = seciliOkul.id;
+  else g.schoolName = $('bOkulAd').value.trim();
+  if (!g.mebSchoolId && !g.schoolName) alanHatasi('bOkulAra', 'Okulu listeden seç ya da "Okulum listede yok" bölümüne adını yaz.');
+  if (!g.kisaAd) alanHatasi('aoKisa', 'Okulun adresini yaz.');
+  if (!EPOSTA_DESENI.test(g.mudur.eposta)) alanHatasi('aoEposta', 'Müdürün e-posta adresini yaz.');
+  if (kart.querySelector('.hatali')) { ilkHatayaGit(kart); return; }
+  dugmeBekle(el, 'Açılıyor...');
+  return api('/admin/okul-ac', 'POST', g).then(function (d) {
+    /* Yeni hesapta şifreyi yönetici verdi; müdüre iletebilsin diye bir kez
+       daha gösterilir (sunucu şifreyi geri göndermez, formdaki kullanılır). */
+    var sifre = d.mudur.yeni ? g.mudur.sifre : '';
+    var satir = function (etiket, deger, kopya) {
+      return '<div class="satir"><div class="buyu"><div class="alt">' + etiket + '</div><div class="ad">' + esc(deger) + '</div></div>' +
+        (kopya ? '<button class="btn kucuk gri" data-act="kod-kopyala" data-kod="' + esc(deger) + '">Kopyala</button>' : '') + '</div>';
+    };
+    modalAc('Okul açıldı', '<div class="msg iyi">' + esc(d.message) + '</div>' +
+      satir('Okulun adresi', location.host + '/' + d.okul.kisaAd, true) +
+      satir('Müdürün kullanıcı adı', d.mudur.kullaniciAdi, true) +
+      (sifre ? satir('İlk şifresi (ilk girişte değiştirecek)', sifre, true) : ''),
+      '<button class="btn" data-act="admin-okul-bitti">Tamam</button>');
+  })['catch'](function (e) {
+    dugmeBitir(el);
+    var v = e.veri || {};
+    var hedef = { okul: 'bOkulAra', il: 'bIl', ilce: 'bIlce', kisaAd: 'aoKisa', eposta: 'aoEposta', ad: 'aoAd', soyad: 'aoSoyad',
+      kullaniciAdi: 'aoKadi', telefon: 'aoTelefon', sifre: 'aoSifre' }[v.alan];
+    if (hedef) { alanHatasi(hedef, e.message); ilkHatayaGit(kart); }
+    else mesajGoster('aoMesaj', 'hata', e.message);
+  });
+};
+
 EYLEMLER['yorum-gizle'] = function (el, id) {
   return api('/yorumlar/gizle', 'POST', { id: id, gizli: el.getAttribute('data-gizli') === '1' })
     .then(function () { return git('yorumlar'); })['catch'](hataGoster);
