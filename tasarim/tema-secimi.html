@@ -501,3 +501,115 @@ h3.bolum {
   </div>
 </div>
 
+<script>
+(function () {
+  var on = document.getElementById('on');
+
+  /* Her ayar için kısa açıklama — hangi seçim ne demek, altında yazsın. */
+  var ACIKLAMA = {
+    yon: {
+      tugla:    'Bugünkü tuğla kırmızısı korunur, biraz derinleştirilir. Kimlik değişmez.',
+      murekkep: 'Lacivert ana renk olur, kırmızı ikincil vurguya iner. Resmî kurum hissi.',
+      muhur:    'Bordo ve pirinç. Diploma/mühür çağrışımı, en karakterli seçenek.'
+    },
+    font: {
+      sistem:  'Şu anki hâli. 0 KB, anında gelir, her makinede biraz farklı görünür.',
+      plex:    'IBM Plex Sans — kurumsal, net, rakamları çok okunaklı. ~55 KB.',
+      source:  'Source Sans 3 gövde + başlıklarda Source Serif 4. Belge/kurum hissi. ~80 KB.',
+      figtree: 'Figtree gövde + başlıklarda Newsreader. En sıcak ve modern. ~75 KB.',
+      public:  'Public Sans — sade, resmî, dikkat çekmeyen. ~50 KB.'
+    },
+    kose: {
+      az:   'Köşeler 6px. Sert, ciddi, tablo ağırlıklı ekranlarda derli toplu.',
+      orta: 'Köşeler 14px. Bugünkü hâli.',
+      cok:  'Köşeler 22px. Yumuşak ve dost, biraz daha "uygulama" hissi.'
+    },
+    hareket: {
+      yok:      'Hiç geçiş yok. En hızlı hisseder, zayıf makinelerde en güvenli.',
+      hafif:    '150ms. Renk ve zemin yumuşak geçer, kartlar 1px kalkar.',
+      belirgin: '280ms. Kartlar 3px kalkıp gölge büyütür, sayfa açılırken içerik sırayla belirir.'
+    },
+    kutu: {
+      dolu:    'Bugünkü hâli: turuncu/mavi/yeşil dolu zemin. En dikkat çekici ama en "şablon" duran.',
+      sade:    'Beyaz kart, renk yalnızca ikonda ve ince sol çizgide. En sakin, en az yapay duran.',
+      cizgili: 'Renkli kenarlık, beyaz zemin. Ortası — renk var ama zemini boğmuyor.'
+    }
+  };
+
+  function yazAciklama() {
+    document.getElementById('acYon').textContent     = ACIKLAMA.yon[on.dataset.yon];
+    document.getElementById('acFont').textContent    = ACIKLAMA.font[on.dataset.font];
+    document.getElementById('acKose').textContent    = ACIKLAMA.kose[on.dataset.kose];
+    document.getElementById('acHareket').textContent = ACIKLAMA.hareket[on.dataset.hareket];
+    document.getElementById('acKutu').textContent    = ACIKLAMA.kutu[on.dataset.kutu];
+  }
+
+  var AD = {
+    tugla: 'Tuğla', murekkep: 'Mürekkep', muhur: 'Mühür',
+    acik: 'açık', koyu: 'koyu',
+    sistem: 'Sistem fontu', plex: 'IBM Plex', source: 'Source', figtree: 'Figtree', public: 'Public Sans',
+    az: 'az yuvarlak', orta: 'orta yuvarlak', cok: 'çok yuvarlak',
+    yok: 'hareketsiz', hafif: 'hafif hareket', belirgin: 'belirgin hareket',
+    dolu: 'dolu kutucuk', sade: 'sade kutucuk', cizgili: 'çizgili kutucuk'
+  };
+
+  function ozetle() {
+    var d = on.dataset;
+    document.getElementById('ozetMetin').textContent =
+      [AD[d.yon], AD[d.tema], AD[d.font], AD[d.kose], AD[d.hareket], AD[d.kutu]].join(' · ');
+  }
+
+  function isaretle() {
+    var gruplar = document.querySelectorAll('.secenekler');
+    for (var i = 0; i < gruplar.length; i++) {
+      var ayar = gruplar[i].getAttribute('data-ayar');
+      var dugmeler = gruplar[i].querySelectorAll('button');
+      for (var j = 0; j < dugmeler.length; j++) {
+        var secili = dugmeler[j].getAttribute('data-deger') === on.dataset[ayar];
+        dugmeler[j].setAttribute('aria-pressed', secili ? 'true' : 'false');
+      }
+    }
+    yazAciklama();
+    ozetle();
+  }
+
+  document.addEventListener('click', function (e) {
+    var d = e.target.closest ? e.target.closest('button[data-deger]') : null;
+    if (!d) return;
+    var grup = d.parentNode.getAttribute('data-ayar');
+    on.dataset[grup] = d.getAttribute('data-deger');
+
+    /* Geçişi görebilmek için içeriği yeniden belirt */
+    on.classList.remove('yenile');
+    void on.offsetWidth;
+    on.classList.add('yenile');
+
+    isaretle();
+    try { localStorage.setItem('ee_tema_deneme', JSON.stringify(on.dataset)); } catch (x) {}
+  });
+
+  /* Son bakılan ayarları hatırla */
+  try {
+    var kayit = JSON.parse(localStorage.getItem('ee_tema_deneme') || '{}');
+    for (var k in kayit) if (kayit[k]) on.dataset[k] = kayit[k];
+  } catch (x) {}
+
+  /* Adres satırından ayar: ?yon=muhur&tema=koyu&font=figtree&kose=cok&hareket=belirgin&kutu=sade
+     Hem paylaşmak için hem de örnek görüntüleri toplu üretmek için. */
+  var IZINLI = {
+    yon: ['tugla', 'murekkep', 'muhur'], tema: ['acik', 'koyu'],
+    font: ['sistem', 'plex', 'source', 'figtree', 'public'],
+    kose: ['az', 'orta', 'cok'], hareket: ['yok', 'hafif', 'belirgin'],
+    kutu: ['dolu', 'sade', 'cizgili']
+  };
+  var sorgu = new URLSearchParams(location.search);
+  for (var ayar in IZINLI) {
+    var deger = sorgu.get(ayar);
+    if (deger && IZINLI[ayar].indexOf(deger) >= 0) on.dataset[ayar] = deger;
+  }
+
+  isaretle();
+})();
+</script>
+</body>
+</html>
