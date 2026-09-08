@@ -1,0 +1,849 @@
+<title>Eğitim Evi Yapım Günlüğü</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --kagit: #FBFAF9;
+    --kart: #FFFFFF;
+    --murekkep: #1A1416;
+    --soluk: #6E6164;
+    --cizgi: #E8E1E0;
+    --cizgi-ince: #F1EBEA;
+    --ana: #C02B30;
+    --ana-koyu: #8F1D21;
+    --ana-sis: #FDF2F2;
+    --kod-zemin: #F5F1F0;
+    --yesil: #15803D;
+    --golge: 0 1px 2px rgba(26, 20, 22, .05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --kagit: #151114;
+      --kart: #1D1719;
+      --murekkep: #EFE9EA;
+      --soluk: #A0918F;
+      --cizgi: #322A2C;
+      --cizgi-ince: #262022;
+      --ana: #EC6167;
+      --ana-koyu: #F08D91;
+      --ana-sis: #2A1A1C;
+      --kod-zemin: #221B1D;
+      --yesil: #4ADE80;
+      --golge: 0 1px 2px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --kagit: #151114;
+    --kart: #1D1719;
+    --murekkep: #EFE9EA;
+    --soluk: #A0918F;
+    --cizgi: #322A2C;
+    --cizgi-ince: #262022;
+    --ana: #EC6167;
+    --ana-koyu: #F08D91;
+    --ana-sis: #2A1A1C;
+    --kod-zemin: #221B1D;
+    --yesil: #4ADE80;
+    --golge: 0 1px 2px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--kagit);
+    color: var(--murekkep);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16.5px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sar { max-width: 780px; margin: 0 auto; padding: 0 24px 120px; }
+
+  /* ---------- başlık ---------- */
+  .tepe {
+    padding: 76px 0 40px;
+    border-bottom: 2px solid var(--murekkep);
+    margin-bottom: 44px;
+  }
+  .etiket {
+    font-size: 12px; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ana);
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: clamp(38px, 7vw, 62px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  .ozet {
+    font-size: 19px; color: var(--soluk); margin: 0; max-width: 34em;
+    line-height: 1.6;
+  }
+
+  .kunye {
+    display: flex; flex-wrap: wrap; gap: 26px;
+    margin-top: 34px; padding-top: 24px;
+    border-top: 1px solid var(--cizgi-ince);
+  }
+  .kunye div { min-width: 82px; }
+  .kunye .sayi {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 27px; font-weight: 600; line-height: 1;
+    font-variant-numeric: tabular-nums;
+    display: block; margin-bottom: 5px;
+  }
+  .kunye .ad {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--soluk); font-weight: 500;
+  }
+
+  /* ---------- içindekiler ---------- */
+  .icindekiler {
+    background: var(--kart); border: 1px solid var(--cizgi);
+    border-radius: 14px; padding: 22px 26px; margin-bottom: 56px;
+    box-shadow: var(--golge);
+  }
+  .icindekiler h2 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .11em;
+    color: var(--soluk); margin: 0 0 14px; font-weight: 600;
+    border: 0; padding: 0;
+  }
+  .icindekiler ol { margin: 0; padding: 0; list-style: none; counter-reset: ic; }
+  .icindekiler li { counter-increment: ic; margin-bottom: 3px; }
+  .icindekiler a {
+    color: var(--murekkep); text-decoration: none; font-size: 15px;
+    display: flex; gap: 12px; padding: 4px 0;
+    border-bottom: 1px solid transparent;
+  }
+  .icindekiler a::before {
+    content: counter(ic, decimal-leading-zero);
+    color: var(--ana); font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px; flex: 0 0 26px; padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .icindekiler a:hover { color: var(--ana); }
+
+  /* ---------- bölümler ---------- */
+  section { margin-bottom: 62px; scroll-margin-top: 24px; }
+
+  h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600; font-size: clamp(25px, 4vw, 32px);
+    line-height: 1.15; letter-spacing: -0.018em;
+    margin: 0 0 20px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--cizgi);
+    text-wrap: balance;
+  }
+  h2 .no {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px; color: var(--ana); font-weight: 500;
+    display: block; margin-bottom: 9px; letter-spacing: .06em;
+  }
+  h3 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 17.5px; font-weight: 600; margin: 34px 0 11px;
+    letter-spacing: -0.005em;
+  }
+  p { margin: 0 0 17px; }
+  a { color: var(--ana); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  ul, ol { margin: 0 0 18px; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--ana); }
+
+  strong { font-weight: 600; }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .875em; background: var(--kod-zemin);
+    padding: 2px 6px; border-radius: 5px;
+    border: 1px solid var(--cizgi-ince);
+  }
+  pre {
+    background: var(--kod-zemin); border: 1px solid var(--cizgi);
+    border-radius: 11px; padding: 17px 19px; overflow-x: auto;
+    margin: 0 0 20px; line-height: 1.58;
+  }
+  pre code {
+    background: none; border: 0; padding: 0; font-size: 13.5px;
+    color: var(--murekkep);
+  }
+
+  /* ---------- vurgu kutusu ---------- */
+  .not {
+    border-left: 3px solid var(--ana);
+    background: var(--ana-sis);
+    padding: 16px 20px; border-radius: 0 11px 11px 0;
+    margin: 24px 0;
+  }
+  .not p:last-child { margin-bottom: 0; }
+  .not .bas {
+    font-weight: 600; color: var(--ana-koyu);
+    display: block; margin-bottom: 5px; font-size: 15px;
+  }
+
+  /* ---------- tablo ---------- */
+  .tablo-kap { overflow-x: auto; margin: 0 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th {
+    text-align: left; padding: 10px 13px 10px 0;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--soluk); font-weight: 600;
+    border-bottom: 1.5px solid var(--cizgi);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 13px 11px 0; border-bottom: 1px solid var(--cizgi-ince);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td code { font-size: 12.5px; }
+  .sayisal { font-variant-numeric: tabular-nums; text-align: right; padding-right: 0; }
+
+  /* ---------- parça listesi ---------- */
+  .parca {
+    border: 1px solid var(--cizgi); border-radius: 13px;
+    padding: 20px 23px; margin-bottom: 16px; background: var(--kart);
+    box-shadow: var(--golge);
+  }
+  .parca h3 { margin-top: 0; display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
+  .parca h3 .dosya {
+    font-family: "IBM Plex Mono", monospace; font-size: 12.5px;
+    color: var(--soluk); font-weight: 400;
+  }
+  .parca p:last-child { margin-bottom: 0; }
+
+  /* ---------- alt bilgi ---------- */
+  footer {
+    margin-top: 76px; padding-top: 26px;
+    border-top: 2px solid var(--murekkep);
+    font-size: 14px; color: var(--soluk);
+  }
+  footer p { margin-bottom: 8px; }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .sar { padding: 0 18px 80px; }
+    .tepe { padding-top: 48px; }
+    .kunye { gap: 18px; }
+  }
+</style>
+
+<div class="sar">
+
+  <header class="tepe">
+    <div class="etiket">Yapım günlüğü · Ağustos 2026</div>
+    <h1>Eğitim Evi nasıl yapıldı</h1>
+    <p class="ozet">
+      Bir okul yönetim portalını, tek bir dış paket kullanmadan, sıfırdan
+      yazmanın hikâyesi. Neyi kendimiz yazdık, nereden veri çektik, hangi
+      standartlara baktık.
+    </p>
+
+    <div class="kunye">
+      <div><span class="sayi">0</span><span class="ad">npm paketi</span></div>
+      <div><span class="sayi">11.969</span><span class="ad">satır JS</span></div>
+      <div><span class="sayi">84</span><span class="ad">API ucu</span></div>
+      <div><span class="sayi">371</span><span class="ad">test</span></div>
+      <div><span class="sayi">67.661</span><span class="ad">okul kaydı</span></div>
+    </div>
+  </header>
+
+  <nav class="icindekiler">
+    <h2>İçindekiler</h2>
+    <ol>
+      <li><a href="#ne">Sistem ne yapıyor</a></li>
+      <li><a href="#karar">Temel karar: sıfır bağımlılık</a></li>
+      <li><a href="#mimari">Mimari</a></li>
+      <li><a href="#kendi">Kendi yazdığımız parçalar</a></li>
+      <li><a href="#veri">Okul verisini nereden aldık</a></li>
+      <li><a href="#guvenlik">Güvenlik</a></li>
+      <li><a href="#standart">Başvurduğumuz standartlar</a></li>
+      <li><a href="#model">Veri modeli</a></li>
+      <li><a href="#test">Test yaklaşımı</a></li>
+      <li><a href="#yapmadik">Neyi neden yapmadık</a></li>
+    </ol>
+  </nav>
+
+  <section id="ne">
+    <h2><span class="no">Bölüm 01</span>Sistem ne yapıyor</h2>
+    <p>
+      Eğitim Evi, tek bir okulun günlük işini taşıyan bir web uygulaması.
+      Beş rol var: <strong>öğrenci, veli, öğretmen, müdür</strong> ve sistem
+      <strong>yöneticisi</strong>. Herkes aynı adrese giriyor, gördüğü ekran
+      rolüne göre değişiyor.
+    </p>
+    <p>
+      Müdür sınıfları açıyor, dersleri tanımlıyor, öğretmen atıyor, haftalık
+      ders programını işliyor. Öğretmen ödev veriyor, sınav notu giriyor,
+      yoklama alıyor. Öğrenci ödevlerini ve devamsızlığını görüyor. Veli
+      çocuğunun hesabına bir kodla bağlanıp aynı bilgilere erişiyor.
+    </p>
+    <p>
+      Üzerine şunlar geldi: okul içi mesajlaşma ve duyurular, aylık takvim,
+      Excel ile toplu hesap açma, otomatik yedekleme, işlem kaydı, özelleştirilebilir
+      roller ve zorunlu iki adımlı giriş.
+    </p>
+    <div class="not">
+      <span class="bas">Öğrenciye giden veliye de gider</span>
+      <p>
+        Sistemin en çok düşünülmüş kuralı bu. Bir öğrenciye mesaj gittiğinde,
+        yoklamada devamsız yazıldığında ya da ödevi sonuçlandığında velisi de
+        aynı bilgiyi alıyor. Veli, çocuğuna ne söylendiğini görebilmeli.
+      </p>
+    </div>
+  </section>
+
+  <section id="karar">
+    <h2><span class="no">Bölüm 02</span>Temel karar: sıfır bağımlılık</h2>
+    <p>
+      Projenin en belirleyici kararı en başta verildi: <strong>hiçbir npm paketi
+      kullanılmayacak.</strong> Ne Express, ne bir veritabanı sürücüsü, ne
+      React, ne de bir e-posta kütüphanesi. Yalnızca Node.js'in kendi içinde
+      gelen modüller.
+    </p>
+
+    <h3>Neden</h3>
+    <ul>
+      <li>
+        <strong>Saldırı yüzeyi.</strong> Ortalama bir Node projesi bağımlılık
+        ağacıyla birlikte binlerce paket çeker. Bunların herhangi birine sızan
+        biri, çocuk verisi tutan bir sisteme sızmış olur. Sıfır paket, sıfır
+        tedarik zinciri riski demek.
+      </li>
+      <li>
+        <strong>Ömür.</strong> Bu sistem bir okulda yıllarca çalışacak. Paketler
+        eskir, terk edilir, sürüm çakışır. Node'un yerleşik modülleri
+        eskimez.
+      </li>
+      <li>
+        <strong>Taşınabilirlik.</strong> Klasörü kopyala, <code>node server.js</code>
+        yaz, çalışır. Kurulum adımı yok.
+      </li>
+    </ul>
+
+    <h3>Bedeli</h3>
+    <p>
+      Bedeli, normalde hazır alacağın şeyleri kendin yazmak. Bu projede
+      elle yazılanlar: bir <strong>SMTP istemcisi</strong>, bir
+      <strong>Excel okuyucu/yazıcı</strong>, bir <strong>PNG üretici</strong>,
+      bir <strong>ZIP arşivleyici</strong> ve tüm arayüz katmanı. Toplam
+      bedel, yaklaşık 12 bin satır kod.
+    </p>
+    <p>
+      Kullanılan yerleşik modüller yalnız şunlar:
+      <code>http</code>, <code>fs</code>, <code>path</code>, <code>crypto</code>,
+      <code>net</code>, <code>tls</code>, <code>zlib</code>, <code>url</code>.
+    </p>
+  </section>
+
+  <section id="mimari">
+    <h2><span class="no">Bölüm 03</span>Mimari</h2>
+    <p>
+      Yapı kasıtlı olarak sade: <strong>tek bir Node süreci</strong>, aynı
+      süreçten hem API'yi hem de statik dosyaları servis ediyor. Arayüz
+      tarayıcıda çalışan tek sayfalık bir uygulama; sunucudan yalnızca JSON
+      alıyor.
+    </p>
+
+    <pre><code>tarayıcı
+   │  fetch('/api/...')  →  JSON
+   ▼
+server.js  ── tek süreç, tek dosya
+   ├── statik dosya servisi (public/)
+   ├── API yönlendirme (84 uç)
+   ├── oturum ve yetki katmanı
+   └── data/db.json  ── tüm veri tek dosyada</code></pre>
+
+    <h3>Veri saklama</h3>
+    <p>
+      Veritabanı yok. Her şey <code>data/db.json</code> içinde tutuluyor ve
+      bellekte bir nesne olarak duruyor. Yazma işlemleri gecikmeli
+      birleştiriliyor: art arda gelen değişiklikler tek bir disk yazımına
+      dönüşüyor, dosya önce geçici bir ada yazılıp sonra <em>atomik olarak</em>
+      yeniden adlandırılıyor. Böylece yazma sırasında elektrik kesilse bile
+      yarım dosya kalmıyor.
+    </p>
+    <p>
+      Bu, bir okul ölçeğinde (birkaç bin kayıt) fazlasıyla yeterli. Karşılığında
+      kurulum, göç (migration), yedekleme aracı ve veritabanı yönetimi
+      derdinin tamamı ortadan kalkıyor — yedek almak bir dosyayı kopyalamak
+      demek.
+    </p>
+
+    <h3>Arayüz</h3>
+    <p>
+      Çatı (framework) yok. Arayüz, adres çubuğundaki <code>#/sayfa</code>
+      parçasına göre içeriği değiştiren bir sayfa yöneticisinden ibaret. Her
+      sayfa bir fonksiyon; HTML dizesi üretip ekrana basıyor. Tıklamalar tek
+      bir dinleyiciyle toplanıp <code>data-act</code> özniteliğine göre
+      dağıtılıyor — böylece satır içi <code>onclick</code> hiç kullanılmıyor,
+      bu da güvenlik başlığının katı kalmasını sağlıyor.
+    </p>
+  </section>
+
+  <section id="kendi">
+    <h2><span class="no">Bölüm 04</span>Kendi yazdığımız parçalar</h2>
+    <p>
+      İşin en ilginç kısmı burası. Normalde <code>npm install</code> ile
+      geleceklerin nasıl yazıldığı.
+    </p>
+
+    <div class="parca">
+      <h3>SMTP istemcisi <span class="dosya">eposta.js · 135 satır</span></h3>
+      <p>
+        İki adımlı giriş kodlarını ve şifre sıfırlama bağlantılarını göndermek
+        için gerçek bir e-posta istemcisi gerekiyordu. <code>net</code> ve
+        <code>tls</code> modülleriyle sunucuya bağlanıp SMTP komutlarını elle
+        konuşuyoruz:
+      </p>
+      <pre><code>EHLO egitimevi
+STARTTLS                 → 587 portunda şifreli kanala geç
+AUTH LOGIN               → kullanıcı ve şifre base64
+MAIL FROM / RCPT TO
+DATA → başlıklar + gövde + "."</code></pre>
+      <p>
+        İki bağlantı biçimi destekleniyor: <strong>465</strong> portunda baştan
+        TLS, <strong>587</strong> portunda düz bağlanıp <code>STARTTLS</code> ile
+        yükseltme.
+      </p>
+      <p>
+        Türkçe konu başlıkları için ayrı bir çözüm gerekti: SMTP başlıkları
+        yalnızca ASCII kabul eder. "Eğitim Evi giriş kodun" gibi bir başlık
+        <code>=?UTF-8?B?...?=</code> biçiminde base64'e çevriliyor. Gövde de
+        base64 kodlanıp 76 karakterlik satırlara bölünüyor.
+      </p>
+      <p>
+        Gmail, Yandex, Zoho, GMX, Brevo ve Mailjet için hazır sunucu ayarları
+        gömülü; kullanıcı bir kurulum sihirbazıyla seçiyor.
+      </p>
+    </div>
+
+    <div class="parca">
+      <h3>Excel okuyucu ve yazıcı <span class="dosya">xlsx.js · 505 satır</span></h3>
+      <p>
+        Müdürün 300 öğrenciyi tek tek eklemesi kabul edilemezdi. Excel gerekti —
+        ve <em>yalnızca</em> Excel: kullanıcının kendi ifadesiyle "csv bilmez
+        çoğu kişi".
+      </p>
+      <p>
+        Bir <code>.xlsx</code> dosyası aslında içinde XML dosyaları olan bir zip
+        arşivi. Yani iki iş var: zip kabuğu ve içindeki XML.
+      </p>
+      <p>
+        <strong>Zip tarafı</strong> elle yazıldı: yerel dosya başlıkları,
+        merkezî dizin, arşiv sonu kaydı ve her dosya için CRC32 sağlaması.
+        Sıkıştırmayı Node'un <code>zlib</code>'i yapıyor
+        (<code>deflateRawSync</code> / <code>inflateRawSync</code>).
+      </p>
+      <pre><code>0x04034b50  yerel dosya başlığı
+0x02014b50  merkezî dizin kaydı
+0x06054b50  arşiv sonu (sondan geriye taranarak bulunur)</code></pre>
+      <p>
+        <strong>XML tarafında</strong> yazarken küçük bir numara kullanıldı:
+        metinler paylaşılan bir dizinde tutulmak yerine hücrenin içine
+        gömülüyor (<code>t="inlineStr"</code>). Bu, ayrı bir metin tablosu
+        yönetme ihtiyacını tamamen ortadan kaldırıyor. Okurken ise gerçek
+        Excel dosyaları paylaşılan metin tablosu kullandığı için o da
+        destekleniyor.
+      </p>
+      <div class="not">
+        <span class="bas">Kendi okuyucunun kendi yazdığını okuması hiçbir şey kanıtlamaz</span>
+        <p>
+          Bu yüzden doğrulama LibreOffice ile yapıldı — iki yönlü. Bizim
+          ürettiğimiz dosya LibreOffice'te onarım uyarısı olmadan açıldı;
+          LibreOffice'in ürettiği dosya (paylaşılan metin tablosu, tema,
+          belge özellikleriyle birlikte) bizim okuyucuyla doğru okundu.
+        </p>
+      </div>
+    </div>
+
+    <div class="parca">
+      <h3>PNG üretici <span class="dosya">araclar/simge-uret.js</span></h3>
+      <p>
+        Uygulamanın telefona kurulabilmesi için farklı boyutlarda simge
+        dosyaları gerekiyordu. PNG elle kuruldu: dosya imzası, <code>IHDR</code>
+        başlığı, <code>zlib</code> ile sıkıştırılmış tarama satırlarından oluşan
+        <code>IDAT</code> bloğu ve <code>IEND</code>. Her bloğun sonundaki CRC32
+        de elle hesaplanıyor.
+      </p>
+    </div>
+
+    <div class="parca">
+      <h3>Bot doğrulaması <span class="dosya">server.js içinde</span></h3>
+      <p>
+        Dışarıdan bir CAPTCHA hizmeti kullanmak, her ziyaretçinin bir üçüncü
+        tarafa tanıtılması demekti — çocuk verisi tutan bir sistemde istenmeyen
+        bir şey. Yerine basit bir toplama sorusu üretiliyor
+        (<code>crypto.randomInt</code> ile), cevabı sunucuda tutuluyor,
+        kullanılınca yakılıyor.
+      </p>
+      <p>
+        Girişte bu soru <em>her zaman</em> sorulmuyor — yalnızca o adres ya da
+        IP daha önce başarısız denemede bulunduysa çıkıyor. Böylece normal
+        kullanıcı hiç görmüyor, saldırgan her denemede uğraşıyor.
+      </p>
+    </div>
+  </section>
+
+  <section id="veri">
+    <h2><span class="no">Bölüm 05</span>Okul verisini nereden aldık</h2>
+    <p>
+      Müdür kayıt olurken okulunu resmî listeden seçebilmeli. Bunun için
+      Türkiye'deki tüm okulların listesi gerekiyordu.
+    </p>
+    <p>
+      Başlangıçta hazır bir veri kümesi kullanıldı, ama sonradan iki sorunu
+      görüldü: <strong>2017 tarihliydi</strong> ve <strong>hiç özel okul
+      içermiyordu</strong>. Dokuz yılda binlerce köy okulu kapanmış, binlerce
+      yeni okul açılmıştı. Liste MEB'in kendi kaynaklarından baştan çekildi.
+    </p>
+
+    <h3>Kaynak 1 — devlet okulları</h3>
+    <p>
+      <code>meb.gov.tr/baglantilar/okullar/</code> sayfası okul listesini
+      JavaScript ile yüklüyor. Tarayıcının ağ trafiği izlenerek arkadaki
+      gerçek uç bulundu:
+    </p>
+    <pre><code>POST /baglantilar/okullar/okullar_ajax.php
+il=7&ilce=0&start=0&length=100000&draw=1
+  → { recordsTotal, data: [
+       { OKUL_ADI: "ANTALYA - AKSEKİ - Akseki Anadolu Lisesi",
+         HOST: "aksekianadolulisesi",
+         YOL:  "07/02/970973" } ] }</code></pre>
+    <p>
+      Bu bir <strong>DataTables sunucu tarafı protokolü</strong>.
+      <code>length</code> parametresi büyütülerek bir ilin tamamı tek istekte
+      alınabiliyor — 81 il için 81 istek. <code>YOL</code> alanının son parçası
+      okulun <strong>kurum kodu</strong>; kalıcı ve benzersiz bir kimlik olduğu
+      için ayrıca saklandı.
+    </p>
+    <p>
+      İstek tarayıcı başlıkları olmadan boş dönüyor;
+      <code>User-Agent</code>, <code>Referer</code> ve
+      <code>X-Requested-With</code> göndermek gerekiyor. Çerez gerekmiyor.
+    </p>
+
+    <h3>Kaynak 2 — özel okullar</h3>
+    <p>
+      Özel okullar bambaşka bir yerde: Özel Öğretim Kurumları Genel
+      Müdürlüğü'nün dizininde. Bu klasik sayfalı HTML:
+    </p>
+    <pre><code>GET ookgm.meb.gov.tr/kurumlar.php?sayfa=1&tur=okul&il=ANTALYA&tur2=0
+  → tablo: İlçe | Kurum Adı | Kurum Türü | Adres | Telefon
+  → sayfa başına 250 satır</code></pre>
+    <p>
+      Bu kaynak devlet listesinde olmayan bir şey veriyor: <strong>resmî kurum
+      türü.</strong> "Özel Fen Lisesi", "Özel Türk Okul Öncesi Kurumu" gibi.
+      Bunlar hem saklanıyor hem de arama filtresi kullanışlı kalsın diye
+      13 sade kovaya indirgeniyor.
+    </p>
+
+    <h3>Sonuç</h3>
+    <div class="tablo-kap">
+      <table>
+        <thead>
+          <tr><th>&nbsp;</th><th class="sayisal">Eski (2017)</th><th class="sayisal">Yeni (2026)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Toplam okul</td><td class="sayisal">53.118</td><td class="sayisal">67.661</td></tr>
+          <tr><td>Devlet okulu</td><td class="sayisal">53.118</td><td class="sayisal">55.109</td></tr>
+          <tr><td>Özel okul</td><td class="sayisal">0</td><td class="sayisal">12.552</td></tr>
+          <tr><td>Kurum kodu</td><td class="sayisal">yok</td><td class="sayisal">55.109</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Tarama nazik yapıldı: tek iş parçacığı, istekler arasında bekleme,
+      başarısızlıkta artan aralıkla üç deneme. Tamamı birkaç dakika sürüyor
+      ve <code>node araclar/okullari-cek.js</code> ile tekrarlanabiliyor.
+    </p>
+    <p>
+      Veri, 3,7 MB'lık tek bir JSON dosyasında sıkıştırılmış biçimde tutuluyor:
+      il, ilçe ve tür adları ayrı dizilerde, her okul kaydı bu dizilere işaret
+      eden sayılardan oluşuyor. Açılışta belleğe alınıp aramaya hazır hâle
+      getiriliyor.
+    </p>
+  </section>
+
+  <section id="guvenlik">
+    <h2><span class="no">Bölüm 06</span>Güvenlik</h2>
+    <p>
+      Sistem çocuk verisi tutuyor. Güvenlik sonradan eklenen bir katman değil,
+      baştan kurulmuş bir çerçeve.
+    </p>
+
+    <h3>Şifreler</h3>
+    <p>
+      <code>scrypt</code> ile saklanıyor (N=16384, r=8, p=1), her şifre için
+      ayrı tuz. Karşılaştırma <code>timingSafeEqual</code> ile — böylece
+      yanıt süresinden şifre hakkında bilgi sızmıyor.
+    </p>
+    <p>
+      Önemli bir ayrıntı: karma üretimi <em>asenkron</em> sürümle yapılıyor.
+      Senkron sürüm olay döngüsünü kilitler; yüz eşzamanlı giriş denemesi
+      sunucuyu saniyelerce donduracaktı. Senkron sürüm yalnızca açılışta, ilk
+      yönetici hesabı için bir kez çalışıyor.
+    </p>
+
+    <h3>Giriş</h3>
+    <ul>
+      <li><strong>İki adımlı doğrulama zorunlu</strong> — şifre doğru olsa bile e-postaya giden 6 haneli kod girilmeden oturum açılmıyor.</li>
+      <li><strong>Kaba kuvvet kilidi</strong> — IP ve e-posta birlikte sayılıyor; belli sayıda hatadan sonra hesap geçici kilitleniyor.</li>
+      <li><strong>Koşullu bot sorusu</strong> — yalnızca daha önce hata yapılmışsa çıkıyor.</li>
+      <li><strong>Oturum süresi</strong> — 7 gün, ve kişi başına açık oturum sayısı sınırlı.</li>
+    </ul>
+
+    <h3>Şifre sıfırlama</h3>
+    <p>
+      Üç ayrı tuzağa dikkat edildi:
+    </p>
+    <ul>
+      <li>
+        <strong>Hesabın varlığı sızdırılmıyor.</strong> E-posta kayıtlı olsa da
+        olmasa da aynı cevap dönüyor. Aksi hâlde bu uç, "bu adres bu okulda
+        kayıtlı mı" sorusunu soran bir araca dönerdi.
+      </li>
+      <li>
+        <strong>Bağlantı tek kullanımlık ve 1 saatlik.</strong> Anahtar
+        adresin <code>#</code> kısmında taşınıyor, yani sunucu günlüklerine
+        hiç düşmüyor.
+      </li>
+      <li>
+        <strong>Şifre değişince tüm oturumlar kapanıyor.</strong> Hesabı ele
+        geçiren biri varsa açık oturumuyla devam edemesin diye.
+      </li>
+    </ul>
+
+    <h3>Yetkiler</h3>
+    <p>
+      26 ayrı yetki var ve bunların onu <strong>kapsamlı</strong>: müdür bir
+      öğretmene "yoklama alabilir" demekle kalmıyor, "hangi derste, hangi
+      sınıfta" diye sınırlayabiliyor. Müdür kendi rol adını da belirliyor —
+      "Zümre Başkanı", "Müdür Yardımcısı" gibi.
+    </p>
+    <div class="not">
+      <span class="bas">Test sırasında bulunan gerçek bir açık</span>
+      <p>
+        Öğretmenlerin <em>varsayılan</em> yoklama yetkisi kapsamsız geliyordu.
+        Bu, herhangi bir öğretmenin hiç girmediği bir derste bir öğrenciyi
+        devamsız yazabilmesi demekti. Kural daraltıldı: öğretmen ya dersin
+        kendi öğretmeni olmalı, ya da müdür ona o ders ve sınıf için açıkça
+        kapsam vermiş olmalı.
+      </p>
+    </div>
+
+    <h3>Ağ katmanı</h3>
+    <ul>
+      <li><strong>İçerik Güvenlik Politikası</strong> — <code>script-src 'self'</code>. Satır içi script hiç çalışmıyor; bu yüzden arayüzde tek bir <code>onclick</code> bile yok.</li>
+      <li><strong>Hız sınırı</strong> — genel istek sınırı, ayrıca giriş, arama, mesaj ve şifre sıfırlama için ayrı sayaçlar.</li>
+      <li><strong>Ters vekil farkındalığı</strong> — Cloudflare ya da nginx arkasında gerçek ziyaretçi adresini başlıktan okuyor. Bu ayar <em>kapalı geliyor</em>: açıkken vekil arkasında değilsen herkes başlığı uydurup hız sınırını aşabilir.</li>
+      <li><strong>Prototip kirlenmesi</strong> — gelen JSON gövdelerinde <code>__proto__</code> gibi anahtarlar temizleniyor.</li>
+      <li><strong>İstek gövdesi sınırı</strong> — 2 MB.</li>
+    </ul>
+
+    <h3>Veri koruma</h3>
+    <p>
+      KVKK'nın 10. maddesi gereği bir aydınlatma metni yazıldı ve kayıt
+      ekranında onay zorunlu hâle getirildi. Onayın <em>tarihi ve metnin
+      sürümü</em> kullanıcı kaydına yazılıyor — ispat gerektiğinde lazım.
+      Metin değişirse sürüm artıyor ve onay yeniden isteniyor.
+    </p>
+    <p>
+      Yedekleme günde bir kez otomatik çalışıyor, son 14 kopya saklanıyor.
+      Geri yükleme yapılmadan önce o anki hâl ayrıca kopyalanıyor — yanlış
+      yedeği seçmek geri dönülmez bir hata olmasın diye.
+    </p>
+  </section>
+
+  <section id="standart">
+    <h2><span class="no">Bölüm 07</span>Başvurduğumuz standartlar</h2>
+    <p>
+      Hazır kütüphane kullanmayınca, biçimleri tanımlayan belgelere doğrudan
+      bakmak gerekti.
+    </p>
+    <div class="tablo-kap">
+      <table>
+        <thead>
+          <tr><th>Standart</th><th>Nerede kullanıldı</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RFC 5321 — SMTP</td><td>E-posta gönderimi: komut sırası, yanıt kodları</td></tr>
+          <tr><td>RFC 2047 — MIME encoded-word</td><td>Türkçe karakterli e-posta konu başlıkları</td></tr>
+          <tr><td>RFC 8314 — örtük TLS</td><td>465 portunda baştan şifreli bağlantı</td></tr>
+          <tr><td>PKWARE APPNOTE — ZIP</td><td>Excel dosyasının kabuğu</td></tr>
+          <tr><td>ECMA-376 — OOXML</td><td>Excel içindeki XML bölümleri</td></tr>
+          <tr><td>RFC 1951 — DEFLATE</td><td>Zip sıkıştırması (<code>zlib</code> üzerinden)</td></tr>
+          <tr><td>ISO 15948 — PNG</td><td>Uygulama simgelerinin üretimi</td></tr>
+          <tr><td>RFC 7914 — scrypt</td><td>Şifre saklama</td></tr>
+          <tr><td>W3C Web App Manifest</td><td>Telefona/masaüstüne kurulabilirlik</td></tr>
+          <tr><td>W3C Service Worker</td><td>Çevrimdışı çalışma</td></tr>
+          <tr><td>W3C Content Security Policy</td><td>Script kısıtlaması</td></tr>
+          <tr><td>KVKK — 6698 sayılı kanun</td><td>Aydınlatma metni ve onay akışı</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Buna ek olarak bir de <em>gözlemlenerek</em> çözülen protokol var:
+      MEB'in okul listesi ucu, DataTables kütüphanesinin sunucu tarafı istek
+      biçimini kullanıyor. Belgesi yok; tarayıcının gönderdiği istek yakalanıp
+      taklit edildi.
+    </p>
+  </section>
+
+  <section id="model">
+    <h2><span class="no">Bölüm 08</span>Veri modeli</h2>
+    <p>
+      Tümü <code>data/db.json</code> içinde, düz diziler hâlinde:
+    </p>
+    <div class="tablo-kap">
+      <table>
+        <thead>
+          <tr><th>Tablo</th><th>Ne tutuyor</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>users</code></td><td>Beş rolün tamamı; rol alanıyla ayrılıyor</td></tr>
+          <tr><td><code>schools</code></td><td>Kayıtlı okullar (MEB listesinden ya da elle)</td></tr>
+          <tr><td><code>classes</code> / <code>lessons</code></td><td>Sınıflar ve o sınıftaki dersler</td></tr>
+          <tr><td><code>schedule</code></td><td>Haftalık ders programı satırları</td></tr>
+          <tr><td><code>assignments</code></td><td>Ödevler; sonuçlar ödevin içinde</td></tr>
+          <tr><td><code>examGroups</code> / <code>exams</code></td><td>Sınav grupları ve ağırlıklı notlar</td></tr>
+          <tr><td><code>devamsizlik</code></td><td>Yalnızca devamsızlıklar — "geldi" kaydı tutulmuyor</td></tr>
+          <tr><td><code>mesajlar</code></td><td>Mesaj ve duyurular; alıcı listesi içinde</td></tr>
+          <tr><td><code>takvim</code></td><td>Okulun kendi etkinlik ve tatilleri</td></tr>
+          <tr><td><code>parentLinks</code></td><td>Veli–öğrenci bağlantısı</td></tr>
+          <tr><td><code>roles</code></td><td>Müdürün tanımladığı özel roller</td></tr>
+          <tr><td><code>islemKaydi</code></td><td>Geri alması zor işlemlerin kaydı</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      İki tasarım tercihi dikkat çekici. Birincisi, yoklamada
+      <strong>yalnızca devamsızlıklar saklanıyor</strong>: 500 öğrencilik bir
+      okulda günde 6 ders için "geldi" yazmak yılda milyonlarca gereksiz kayıt
+      demekti. İkincisi, <strong>okul listesi ayrı bir dosyada</strong> —
+      67 bin kayıt her yedeğe girmiyor, çünkü değişmiyor.
+    </p>
+  </section>
+
+  <section id="test">
+    <h2><span class="no">Bölüm 09</span>Test yaklaşımı</h2>
+    <p>
+      371 test var ve neredeyse hepsi <strong>uçtan uca</strong>: gerçek bir
+      sunucu ayağa kaldırılıyor, gerçek HTTP istekleri atılıyor, gerçek
+      dosyaya yazılıyor.
+    </p>
+    <p>
+      Birim testi yerine bunun seçilmesinin sebebi şu: bu projede hataların
+      çoğu tek bir fonksiyonun içinde değil, <em>katmanların arasında</em>
+      çıkıyor. "Yetki kontrolü doğru mu" sorusunun cevabı, yetki fonksiyonunu
+      tek başına çağırmakla değil, yetkisiz bir kullanıcının isteğinin
+      gerçekten 403 almasıyla anlaşılıyor.
+    </p>
+    <p>
+      Testler iki adımlı girişi de gerçekten geçiyor: e-posta ayarlı olmadığında
+      sunucu doğrulama kodunu kendi günlüğüne yazıyor, test de oradan okuyup
+      giriyor.
+    </p>
+
+    <h3>Paketler</h3>
+    <div class="tablo-kap">
+      <table>
+        <thead><tr><th>Paket</th><th class="sayisal">Test</th><th>Kapsam</th></tr></thead>
+        <tbody>
+          <tr><td>test-aktarim</td><td class="sayisal">48</td><td>Excel içe/dışa aktarım</td></tr>
+          <tr><td>test-program</td><td class="sayisal">43</td><td>Ders programı, çakışmalar</td></tr>
+          <tr><td>test-mesaj</td><td class="sayisal">39</td><td>Mesajlaşma, veli kopyası, izinler</td></tr>
+          <tr><td>guvenlik-test</td><td class="sayisal">38</td><td>Kayıt, giriş, hız sınırı, kilit</td></tr>
+          <tr><td>test-takvim</td><td class="sayisal">33</td><td>Takvim, tatiller, etkinlikler</td></tr>
+          <tr><td>test-xlsx</td><td class="sayisal">32</td><td>Zip ve XML motoru (sunucusuz)</td></tr>
+          <tr><td>test-yonetim</td><td class="sayisal">28</td><td>Okul yönetimi, onaylar</td></tr>
+          <tr><td>test-rol</td><td class="sayisal">25</td><td>Özel roller</td></tr>
+          <tr><td>test-devamsizlik</td><td class="sayisal">25</td><td>Yoklama ve görüntüleme yetkileri</td></tr>
+          <tr><td>test-sifre</td><td class="sayisal">23</td><td>Şifre sıfırlama, KVKK onayı</td></tr>
+          <tr><td>test-kapsam</td><td class="sayisal">20</td><td>Ders/sınıf kapsamlı yetkiler</td></tr>
+          <tr><td>test-yedek</td><td class="sayisal">17</td><td>Yedekleme ve geri yükleme</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Her paketten önce sunucu yeniden başlatılıyor — hız sınırı ve kilit
+      sayaçları bellekte tutulduğu için art arda çalışan paketler birbirini
+      kilitliyordu.
+    </p>
+    <p>
+      Buna ek olarak bir de <strong>tarayıcı taraması</strong> yapılıyor: beş
+      rolün tüm sayfaları (45 sayfa) tek tek geziliyor, JavaScript hatası ve
+      boş ekran aranıyor. Bu tarama, mesaj detayını tamamen çökertecek bir
+      hatayı ve velinin çocuğunun devamsızlığını göremediği bir eksiği yakaladı.
+    </p>
+  </section>
+
+  <section id="yapmadik">
+    <h2><span class="no">Bölüm 10</span>Neyi neden yapmadık</h2>
+
+    <h3>Veritabanı</h3>
+    <p>
+      Bir okul birkaç bin kayıt üretiyor. PostgreSQL kurmak, bağlantı havuzu
+      yönetmek ve göç betikleri yazmak bu ölçekte kazançtan çok yük. JSON
+      dosyası, veri belli bir boyutu aşana kadar daha hızlı ve çok daha basit.
+      Aşarsa değiştirilir — veri katmanı zaten tek bir yerde toplanmış durumda.
+    </p>
+
+    <h3>Arayüz çatısı</h3>
+    <p>
+      React ya da Vue, bu arayüzün karmaşıklığı için fazla. Sayfa sayısı belli,
+      durum yönetimi basit. Karşılığında derleme adımı, paket ağacı ve sürüm
+      bakımı gelirdi.
+    </p>
+
+    <h3>Gerçek CAPTCHA</h3>
+    <p>
+      reCAPTCHA her ziyaretçiyi Google'a tanıtırdı. Bir okul portalında,
+      üstelik çocuk verisiyle, buna değmez. Basit toplama sorusu otomatik
+      kayıt botlarını elemeye yetiyor; hedefli bir saldırıya karşı zaten hız
+      sınırı ve hesap kilidi var.
+    </p>
+
+    <h3>.exe ve .apk</h3>
+    <p>
+      İstenmişti, ama HTTPS'e geçildiğinde <strong>PWA bunu zaten
+      karşılıyor</strong>: telefonda "Ana ekrana ekle", masaüstünde tarayıcının
+      "Yükle" düğmesi. Simgeler, manifest ve servis işçisi hazır. Gerçek bir
+      <code>.apk</code> üretmek Android SDK kurulumu ve imzalama süreci
+      demekti — aynı sonuç için haftalarca iş.
+    </p>
+
+    <h3>Dinî bayramların hesaplanması</h3>
+    <p>
+      Takvimdeki sabit özel günler (23 Nisan, 15 Temmuz, 29 Ekim…) her yıl aynı
+      tarihte olduğu için doğrudan kodda. Ramazan ve Kurban Bayramı ise ay
+      takvimine göre kaydığı için <em>hesaplanmıyor</em>, tablodan okunuyor.
+      Hesaplamak mümkün ama Diyanet'in ilan ettiği tarihle her zaman
+      örtüşmeyebilir; bir okul takviminde yanlış tarih göstermektense tabloyu
+      yılda bir güncellemek daha doğru.
+    </p>
+  </section>
+
+  <footer>
+    <p><strong>Eğitim Evi</strong> — okul yönetim sistemi</p>
+    <p>
+      Node.js yerleşik modülleriyle, dış paket kullanmadan yazıldı.
+      11.969 satır JavaScript, 84 API ucu, 371 test.
+    </p>
+    <p>Yapım günlüğü · Ağustos 2026</p>
+  </footer>
+
+</div>
