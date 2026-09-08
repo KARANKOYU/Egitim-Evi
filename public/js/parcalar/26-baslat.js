@@ -46,6 +46,43 @@ function kvkkOnayIste(d) {
   if (perde) perde.setAttribute('data-zorunlu', '1');
 }
 
+function uygulamayiBaslat() {
+  $('dis').style.display = 'none';
+  $('app').classList.add('on');
+  okulYolunuAyarla();
+  $('profilEtiket').textContent = S.user.fullName.split(' ')[0];
+  $('profilAvatar').innerHTML = avatar(S.user.fullName, S.user.anaHesapId || S.user.id);
+  /* Hesapta kayıtlı tema bu tarayıcıdakinden farklıysa hesaptaki kazanır. */
+  if (window.temaAyarla && S.user.tema && S.user.tema !== 'sistem' && window.temaOku() !== S.user.tema) {
+    window.temaAyarla(S.user.tema);
+  }
+  S.viewStudentId = null;
+  if (!S.meta.cities.length) {
+    api('/meta').then(function (m) { S.meta = m; })['catch'](function () { });
+  }
+  /* Girişten ya da rol değişiminden gelen hedef (seçim ekranı, ana sayfa) adresi geçer. */
+  adrestekiCocuguAl();
+  var acilis = S.acilis || adrestenSayfa();
+  S.acilis = null;
+  /* Rolsüz hesap okul sayfalarına giremez; adres ne olursa olsun başlangıç.
+     Servisçinin de yalnızca kendi sayfaları var. */
+  if (!S.user.role && acilis !== 'profil' && acilis !== 'kisilikler') acilis = 'ana';
+  if (S.user.role === 'servisci' && ['ana', 'mesajlar', 'takvim', 'profil'].indexOf(acilis) < 0) acilis = 'ana';
+  /* Yıl bilgisi sayfa çizilmeden gelsin ki şerit ilk açılışta da görünsün. */
+  yilBilgisiYukle().then(function () {
+    return git(acilis && SAYFALAR[acilis] ? acilis : 'ana');
+  }).then(function () {
+    if (S._acilisMesaji) { sayfaMesaji(S._acilisMesaji.tur, S._acilisMesaji.d.message); S._acilisMesaji = null; }
+    epostaOnerisi();
+  });
+  bildirimleriYenile();
+  bildirimEsitle();
+  siteBilgisiYukle();   // alt bilgideki iletişim bilgileri
+  if (!S._bildirimSayac) {
+    S._bildirimSayac = setInterval(bildirimleriYenile, 30000);
+  }
+}
+
 function cikisYap(sessiz) {
   var eski = S.token;
   var bitir = function () {
