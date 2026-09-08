@@ -44,3 +44,30 @@ function sifreBelirleIste() {
   $('zEski').focus();
 }
 
+EYLEMLER['zorunlu-sifre-kaydet'] = function (el) {
+  var kok = $('modalGovde');
+  formHatalariniSil(kok);
+  var eski = $('zEski').value, y1 = $('zYeni').value, y2 = $('zYeni2').value;
+  var u = S.user || {};
+  if (!eski) alanHatasi('zEski', 'Şu anki şifreni yaz.');
+  var sorun = sifreSorunuTR(y1, gucluSifreli(u));
+  if (sorun) alanHatasi('zYeni', sorun);
+  else if (y1 === eski) alanHatasi('zYeni', 'Yeni şifre okulun verdiğiyle aynı olamaz.');
+  else if ((u.tc && y1.indexOf(u.tc) >= 0) ||
+           (u.username && String(u.username).length >= 4 && y1.toLowerCase().indexOf(String(u.username).toLowerCase()) >= 0)) {
+    alanHatasi('zYeni', 'Şifren T.C. kimlik numaranı ya da kullanıcı adını içermesin.');
+  } else if (y1 !== y2) alanHatasi('zYeni2', 'İki şifre birbirini tutmuyor.');
+  if (kok.querySelector('.hatali')) { ilkHatayaGit(kok); return; }
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/password', 'POST', { old: eski, 'new': y1 }).then(function (d) {
+    S.user = d.user;
+    modalKapat();
+    uygulamayiBaslat();
+  })['catch'](function (e) {
+    dugmeBitir(el);
+    var v = e.veri || {};
+    if (v.alan === 'eski') { alanHatasi('zEski', e.message); $('zEski').focus(); }
+    else if (v.alan === 'yeni') { alanHatasi('zYeni', e.message); $('zYeni').focus(); }
+    else mesajGoster('zMesaj', 'hata', e.message);
+  });
+};
