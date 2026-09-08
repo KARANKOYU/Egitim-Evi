@@ -120,3 +120,12 @@ function tarihSeciciGuncelle(kap) {
   kap.classList.toggle('eksik', !gizli.value && !!(gun.value || ay.value || yil.value));
 }
 
+/* Hiç seçilmediyse ''; yarım seçildiyse 'eksik'; tamamsa YYYY-AA-GG. */
+function tarihSeciciDurum(kimlik) {
+  var gizli = $(kimlik);
+  if (!gizli) return '';
+  if (gizli.value) return gizli.value;
+  var kap = gizli.closest('.tarih-secici');
+  return kap && kap.classList.contains('eksik') ? 'eksik' : '';
+}
+
