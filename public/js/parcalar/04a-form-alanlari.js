@@ -129,3 +129,54 @@ function tarihSeciciDurum(kimlik) {
   return kap && kap.classList.contains('eksik') ? 'eksik' : '';
 }
 
+/* ================= kurulum ================= */
+function formAlanlariKur() {
+  sifreKutulariniTara(document);
+  if (window.MutationObserver) {
+    new MutationObserver(function () { sifreKutulariniTara(document); })
+      .observe(document.body, { childList: true, subtree: true });
+  }
+
+  document.addEventListener('mousedown', function (e) {
+    /* Göz düğmesine basınca imleç şifre kutusundan çıkmasın (telefonda
+       klavye kapanmasın). */
+    if (e.target.closest && e.target.closest('.sifre-goz')) e.preventDefault();
+  });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('.sifre-goz') : null;
+    if (!b) return;
+    var input = b.parentNode.querySelector('input');
+    if (!input) return;
+    sifreGoster(input, input.type === 'password');
+    input.focus();
+    try { var n = input.value.length; input.setSelectionRange(n, n); } catch (x) { /* bazı türlerde yok */ }
+  });
+  /* Form sıfırlanınca görünen şifre yeniden gizlensin. */
+  document.addEventListener('reset', function (e) {
+    var liste = e.target.querySelectorAll('input[data-goz]');
+    for (var i = 0; i < liste.length; i++) sifreGoster(liste[i], false);
+  }, true);
+
+  var capsBak = function (e) {
+    var t = e.target;
+    if (!t || !t.getAttribute || !t.getAttribute('data-goz') || !e.getModifierState) return;
+    capsUyarisi(t, e.getModifierState('CapsLock'));
+  };
+  document.addEventListener('keydown', capsBak);
+  document.addEventListener('keyup', capsBak);
+  document.addEventListener('focusout', function (e) {
+    if (e.target && e.target.getAttribute && e.target.getAttribute('data-goz')) capsUyarisi(e.target, false);
+  });
+
+  /* Kullanıcı düzeltmeye başlayınca kırmızı hata kalksın. */
+  var duzeltiyor = function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var kap = t.closest('.tarih-secici');
+    if (kap && e.type === 'change') tarihSeciciGuncelle(kap);
+    var alan = t.closest('.hatali');
+    if (alan) alanTemizle(alan);
+  };
+  document.addEventListener('input', duzeltiyor);
+  document.addEventListener('change', duzeltiyor);
+}
