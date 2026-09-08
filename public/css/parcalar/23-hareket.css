@@ -1,0 +1,63 @@
+/* Hareket: sayfa açılışında içeriğin sırayla belirmesi, açılır pencere
+   ve perde geçişleri, küçük dokunma tepkileri.
+
+   Süre ve eğri 00-temel.css'teki --sure / --egri değişkenlerinden gelir;
+   işletim sisteminde "hareketi azalt" açıksa hepsi kapanır. */
+
+/* Sayfa içeriği: her ana blok bir öncekinden 40 ms sonra belirir.
+   yaz() içeriği yeniden kurduğu için her sayfa geçişinde tekrarlanır. */
+.page-inner > * {
+  animation: belir var(--sure) var(--egri) both;
+}
+.page-inner > *:nth-child(2) { animation-delay: 40ms; }
+.page-inner > *:nth-child(3) { animation-delay: 80ms; }
+.page-inner > *:nth-child(4) { animation-delay: 120ms; }
+.page-inner > *:nth-child(5) { animation-delay: 160ms; }
+.page-inner > *:nth-child(6) { animation-delay: 200ms; }
+.page-inner > *:nth-child(n+7) { animation-delay: 240ms; }
+
+@keyframes belir {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Açılır pencere: perde solarak gelir, pencere hafif yukarı süzülür. */
+@keyframes perde {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pencere {
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Bildirim paneli */
+.panel { animation: pencere var(--sure) var(--egri) both; }
+
+/* Sık dokunulan küçük parçalar yumuşak geçsin */
+.satir, .etiket, .iconbtn, .tabs button, .durum-dugme, .sekme, .hucre,
+.gun-nokta, .tur-sec, .durum-kutu, .agac-satir {
+  transition: background var(--sure-kisa) var(--egri), color var(--sure-kisa) var(--egri),
+              border-color var(--sure-kisa) var(--egri), box-shadow var(--sure-kisa) var(--egri);
+}
+.satir:hover { background: var(--ana-acik); }
+
+/* Kutucuklar sayfa açılırken hafif büyüyerek gelsin */
+.kutucuklar .kutucuk { animation: kutu var(--sure) var(--egri) both; }
+.kutucuklar .kutucuk:nth-child(2) { animation-delay: 50ms; }
+.kutucuklar .kutucuk:nth-child(3) { animation-delay: 100ms; }
+.kutucuklar .kutucuk:nth-child(4) { animation-delay: 150ms; }
+.kutucuklar .kutucuk:nth-child(5) { animation-delay: 200ms; }
+.kutucuklar .kutucuk:nth-child(n+6) { animation-delay: 250ms; }
+@keyframes kutu {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Hareketi azalt: her şey anında. */
+@media (prefers-reduced-motion: reduce) {
+  .page-inner > *, .modal, .perde, .panel, .kutucuklar .kutucuk, .auth-card { animation: none; }
+  .kart, .kutucuk, .btn, .navlink, .satir, .etiket, .iconbtn, .tabs button,
+  .durum-dugme, .sekme, .hucre, .gun-nokta, .tur-sec, .durum-kutu, .agac-satir { transition: none; }
+  .kart.tikla:hover, .kutucuk:hover, .btn:hover, .navlink:hover { transform: none; }
+}

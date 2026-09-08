@@ -27,6 +27,31 @@
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .hint { font-size: 12px; color: var(--soluk); margin-top: 4px; }
 
+.btn {
+  border: 0;
+  background: var(--ana);
+  color: var(--ustune-yazi);
+  padding: 11px 18px;
+  border-radius: var(--r-kucuk);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--sure-kisa) var(--egri), transform var(--sure-kisa) var(--egri),
+              box-shadow var(--sure-kisa) var(--egri), color var(--sure-kisa) var(--egri);
+}
+.btn:hover { background: var(--ana-koyu); transform: translateY(-1px); box-shadow: var(--golge); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+/* Bağlantı olarak yazılmış düğme (<a class="btn">) de düğme gibi görünsün. */
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn.full { width: 100%; }
+.btn.ghost { background: var(--ana-acik); color: var(--ana-koyu); }
+.btn.ghost:hover { background: var(--ana-cizgi); }
+.btn.gri { background: var(--gri-zemin); color: var(--yazi); }
+.btn.gri:hover { background: var(--gri-zemin-koyu); }
+.btn.kucuk { padding: 7px 12px; font-size: 13px; border-radius: var(--r-mini); }
+.btn.tehlike { background: var(--kirmizi); }
+.btn.tehlike:hover { background: var(--kirmizi); filter: brightness(.9); }
+
 .msg { padding: 10px 12px; border-radius: var(--r-kucuk); font-size: 13.5px; margin-bottom: 14px; }
 .msg.hata { background: var(--kirmizi-zemin); color: var(--kirmizi-yazi); }
 .msg.iyi { background: var(--yesil-zemin); color: var(--yesil-yazi); }
