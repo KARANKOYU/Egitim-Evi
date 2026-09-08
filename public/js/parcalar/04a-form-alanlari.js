@@ -50,3 +50,23 @@ function ilkHatayaGit(form) {
   try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
 }
 
+/* ================= şifre kutusu ================= */
+/* Her şifre kutusunun sağına göz düğmesi eklenir. Sayfalar innerHTML ile
+   yeniden çizildiği için tek tek çağırmak yerine DOM izlenir. */
+function sifreGozuEkle(input) {
+  if (input.getAttribute('data-goz')) return;
+  input.setAttribute('data-goz', '1');
+  var kap = document.createElement('div');
+  kap.className = 'sifre-kap';
+  input.parentNode.insertBefore(kap, input);
+  kap.appendChild(input);
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'sifre-goz';
+  b.title = 'Şifreyi göster';
+  b.setAttribute('aria-label', 'Şifreyi göster');
+  b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = ik('goz');
+  kap.appendChild(b);
+}
+
