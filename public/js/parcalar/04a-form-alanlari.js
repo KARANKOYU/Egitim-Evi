@@ -86,3 +86,18 @@ function sifreKutulariniTara(kok) {
   for (var i = 0; i < liste.length; i++) sifreGozuEkle(liste[i]);
 }
 
+/* Caps Lock açıkken şifre yanlış yazılır ve kişi nedenini anlamaz. */
+function capsUyarisi(input, acik) {
+  var alan = input.closest('.field') || input.parentNode;
+  var uyari = alan.querySelector('.caps-uyari');
+  if (acik && !uyari) {
+    uyari = document.createElement('div');
+    uyari.className = 'caps-uyari';
+    uyari.innerHTML = ik('uyari') + '<span>Büyük harf kilidi (Caps Lock) açık.</span>';
+    var kap = input.closest('.sifre-kap') || input;
+    kap.parentNode.insertBefore(uyari, kap.nextSibling);
+  } else if (!acik && uyari) {
+    uyari.remove();
+  }
+}
+
