@@ -23,3 +23,15 @@ function alanHatasi(el, mesaj, ekHtml) {
   el.setAttribute('aria-describedby', kutu.id);
 }
 
+function alanTemizle(alan) {
+  if (!alan) return;
+  alan.classList.remove('hatali');
+  var kutu = alan.querySelector('.alan-hata');
+  if (kutu) kutu.remove();
+  var isaretli = alan.querySelectorAll('[aria-invalid]');
+  for (var i = 0; i < isaretli.length; i++) {
+    isaretli[i].removeAttribute('aria-invalid');
+    isaretli[i].removeAttribute('aria-describedby');
+  }
+}
+
