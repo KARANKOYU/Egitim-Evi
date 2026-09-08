@@ -420,3 +420,19 @@ EYLEMLER['sonuc-hepsi'] = function (el) {
   odevSayimYaz();
 };
 
+EYLEMLER['odev-duzelt-kaydet'] = function (el, id) {
+  var kok = $('modalGovde');
+  formHatalariniSil(kok);
+  var g = { title: $('odBaslik').value.trim(), description: $('odAciklama').value.trim(),
+    startAt: $('odBas').value, startTime: $('odBasSaat').value, endAt: $('odBit').value, endTime: $('odSaat').value || '12:00',
+    ekIdler: ekIdleri('odevDuzelt'), ekSilIdler: ekSilinecekler('odevDuzelt') };
+  if (ekYukleniyor('odevDuzelt')) { mesajGoster('odMesaj', 'uyari', 'Dosyalar yükleniyor; bitince kaydet.'); return; }
+  if (!g.title) alanHatasi('odBaslik', 'Ödevin adını yaz.');
+  if (g.startAt && g.endAt && g.endAt < g.startAt) alanHatasi('odBit', 'Son tarih başlangıçtan önce olamaz.');
+  if (kok.querySelector('.hatali')) { ilkHatayaGit(kok); return; }
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/assignments/' + id + '/update', 'POST', g).then(function (d) {
+    modalKapat();
+    return odevAc(id).then(function () { sayfaMesaji('iyi', d.message); });
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('odMesaj', 'hata', e.message); });
+};
