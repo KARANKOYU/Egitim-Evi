@@ -35,3 +35,9 @@ function alanTemizle(alan) {
   }
 }
 
+function formHatalariniSil(form) {
+  if (!form) return;
+  var hatali = form.querySelectorAll('.hatali');
+  for (var i = 0; i < hatali.length; i++) alanTemizle(hatali[i]);
+}
+
