@@ -24,3 +24,17 @@ const AILELER = [
 ];
 const ALT_KUMELER = ['latin', 'latin-ext'];
 
+/* Google, tarayıcıya göre biçim seçer; woff2 almak için modern tarayıcı gibi görünmek gerekir. */
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
+
+function indir(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': UA } }, res => {
+      if (res.statusCode !== 200) return reject(new Error(url + ' -> ' + res.statusCode));
+      const parcalar = [];
+      res.on('data', d => parcalar.push(d));
+      res.on('end', () => resolve(Buffer.concat(parcalar)));
+    }).on('error', reject);
+  });
+}
+
