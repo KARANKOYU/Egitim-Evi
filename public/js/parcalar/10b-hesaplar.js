@@ -18,6 +18,30 @@ function adBol(tam) {
   return { ad: p.slice(0, -1).join(' '), soyad: p[p.length - 1] };
 }
 
+/* Sunucuya gitmeden önce: zorunlu alanlar ve biçim. mevcut: düzenlenen hesap
+   (kullanıcı adı eski T.C. no olarak kalmışsa ve değiştirilmiyorsa engellenmez). */
+function hesapDenetle(g, yeni, mevcut) {
+  var kok = $('modalGovde');
+  formHatalariniSil(kok);
+  if (!String(g.ad || '').trim()) alanHatasi('hfAd', 'Adı yaz.');
+  if (!String(g.soyad || '').trim()) alanHatasi('hfSoyad', 'Soyadı yaz.');
+  if (!g.tc) { if (yeni) alanHatasi('hfTc', 'T.C. kimlik no gerekli.'); }
+  else if (tcSorunuTR(g.tc)) alanHatasi('hfTc', tcSorunuTR(g.tc));
+  if (g.kullaniciAdi && !/^[0-9]+$/.test(g.kullaniciAdi) && kullaniciAdiSorunuTR(g.kullaniciAdi)) {
+    alanHatasi('hfKadi', kullaniciAdiSorunuTR(g.kullaniciAdi));
+  }
+  if (g.kullaniciAdi && /^[0-9]+$/.test(g.kullaniciAdi) && g.kullaniciAdi !== g.tc &&
+      !(mevcut && g.kullaniciAdi === mevcut.username)) {
+    alanHatasi('hfKadi', 'Rakamlardan oluşan kullanıcı adı yalnızca kişinin T.C. no\'su olabilir.');
+  }
+  if (g.sifre && sifreSorunuTR(g.sifre, gucluSifreli({ role: g.rol }))) alanHatasi('hfSifre', sifreSorunuTR(g.sifre, gucluSifreli({ role: g.rol })));
+  if (g.eposta && !EPOSTA_DESENI.test(g.eposta)) alanHatasi('hfEposta', 'E-posta adresi eksik ya da hatalı görünüyor.');
+  if (g.telefon && telefonSorunuTR(g.telefon)) alanHatasi('hfTelefon', telefonSorunuTR(g.telefon));
+  if (tarihSeciciDurum('hfDogum') === 'eksik') alanHatasi('hfDogumGun', 'Gün, ay ve yılın üçünü de seç ya da hepsini boş bırak.');
+  if (kok.querySelector('.hatali')) { ilkHatayaGit(kok); return false; }
+  return true;
+}
+
 /* T.C. kutusu yalnızca rakam alır; kullanıcı adı yazılırken küçük harfe döner. */
 function hesapTcBagla() {
   if ($('hfTc')) $('hfTc').addEventListener('input', function () {
