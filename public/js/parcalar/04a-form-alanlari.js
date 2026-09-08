@@ -101,3 +101,22 @@ function capsUyarisi(input, acik) {
   }
 }
 
+/* Seçimler değişince gizli değeri yaz; ayın gün sayısına göre fazlalığı kapat
+   (31 Şubat seçilemesin). Üçü de seçilmeden değer boş kalır. */
+function tarihSeciciGuncelle(kap) {
+  var kimlik = kap.getAttribute('data-tarih');
+  var gun = $(kimlik + 'Gun'), ay = $(kimlik + 'Ay'), yil = $(kimlik + 'Yil'), gizli = $(kimlik);
+  if (!gun || !ay || !yil || !gizli) return;
+  var a = Number(ay.value), y = Number(yil.value) || 2000;   // yıl yokken artık yıl varsay (29 Şubat açık kalsın)
+  var sinir = a ? new Date(y, a, 0).getDate() : 31;
+  for (var i = 0; i < gun.options.length; i++) {
+    var o = gun.options[i];
+    if (o.value) o.disabled = Number(o.value) > sinir;
+  }
+  if (Number(gun.value) > sinir) gun.value = String(sinir);
+  var iki = function (n) { return n < 10 ? '0' + n : '' + n; };
+  gizli.value = (gun.value && ay.value && yil.value)
+    ? yil.value + '-' + iki(Number(ay.value)) + '-' + iki(Number(gun.value)) : '';
+  kap.classList.toggle('eksik', !gizli.value && !!(gun.value || ay.value || yil.value));
+}
+
