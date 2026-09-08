@@ -70,3 +70,14 @@ function sifreGozuEkle(input) {
   kap.appendChild(b);
 }
 
+function sifreGoster(input, goster) {
+  var b = input.parentNode.querySelector('.sifre-goz');
+  input.type = goster ? 'text' : 'password';
+  if (!b) return;
+  var yazi = goster ? 'Şifreyi gizle' : 'Şifreyi göster';
+  b.title = yazi;
+  b.setAttribute('aria-label', yazi);
+  b.setAttribute('aria-pressed', goster ? 'true' : 'false');
+  b.innerHTML = ik(goster ? 'gozKapali' : 'goz');
+}
+
