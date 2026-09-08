@@ -49,3 +49,15 @@
   border: 1px solid var(--ana-cizgi); vertical-align: middle;
 }
 
+/* Giris formu altindaki "Sifremi unuttum" baglantisi */
+.giris-alt { margin-top: 14px; text-align: center; }
+
+/* KVKK onay kutusu */
+.kvkk-alan {
+  margin: 4px 0 16px; padding: 13px 15px;
+  background: var(--zemin); border: 1px solid var(--cizgi); border-radius: var(--r-kucuk);
+}
+.kvkk-alan .onay { align-items: flex-start; }
+.kvkk-alan .onay span { font-size: 14px; line-height: 1.55; }
+.kvkk-alan a { color: var(--ana); font-weight: 600; }
+.kvkk-alan .hint { margin-top: 8px; margin-left: 28px; }
