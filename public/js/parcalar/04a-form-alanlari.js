@@ -81,3 +81,8 @@ function sifreGoster(input, goster) {
   b.innerHTML = ik(goster ? 'gozKapali' : 'goz');
 }
 
+function sifreKutulariniTara(kok) {
+  var liste = (kok || document).querySelectorAll('input[type="password"]:not([data-goz])');
+  for (var i = 0; i < liste.length; i++) sifreGozuEkle(liste[i]);
+}
+
