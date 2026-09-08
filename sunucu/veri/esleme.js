@@ -85,6 +85,39 @@ function kullanici(r) {
   return u;
 }
 
+/* Nesnenin veritabanına yazılacak sütunları (INSERT/UPDATE için). */
+const KULLANICI_ALANLARI = {
+  username: 'kullanici_adi', email: 'eposta', tc: 'tc_kimlik',
+  pass: 'sifre_ozeti', fullName: 'ad_soyad', role: 'rol', status: 'durum',
+  schoolId: 'okul_id', classId: 'sinif_id', customRoleId: 'ozel_rol_id',
+  seciliYil: 'secili_yil_id', seciliGecmis: 'secili_gecmis', createdBy: 'olusturan_id',
+  phone: 'telefon', city: 'il', district: 'ilce', address: 'adres', dogum: 'dogum_tarihi',
+  branch: 'brans', grade: 'sinif_etiketi', code: 'veli_kodu', note: 'okul_notu', tema: 'tema',
+  okulNo: 'okul_no', sifreDegismeli: 'sifre_degismeli', anaHesapId: 'ana_hesap_id', eslesmeKodu: 'eslesme_kodu',
+  okulActi: 'okul_acti'
+};
+/* Bu alanlarda '' veritabanına NULL olarak gider (yabancı anahtar, tarih,
+   rolsüz hesabın rolü, e-postasız hesabın e-postası, boş kimlik no). */
+const NULL_OLABILIR = new Set(['okul_id', 'sinif_id', 'ozel_rol_id', 'secili_yil_id', 'secili_gecmis',
+  'olusturan_id', 'dogum_tarihi', 'rol', 'eposta', 'tc_kimlik', 'ana_hesap_id']);
+
+function kullaniciSutunlari(u) {
+  const s = {};
+  for (const alan in KULLANICI_ALANLARI) {
+    if (u[alan] === undefined) continue;
+    const sutun = KULLANICI_ALANLARI[alan];
+    s[sutun] = NULL_OLABILIR.has(sutun) ? yokIse(u[alan]) : bos(u[alan]);
+  }
+  if (u.mesajAyar && u.mesajAyar.kimden) s.mesaj_kimden = u.mesajAyar.kimden;
+  if (u.kvkk !== undefined) {
+    s.kvkk_onay = !!(u.kvkk && u.kvkk.onay);
+    s.kvkk_tarih = u.kvkk && u.kvkk.tarih ? u.kvkk.tarih : null;
+    s.kvkk_surum = u.kvkk && u.kvkk.surum ? u.kvkk.surum : '';
+  }
+  if (u.createdAt) s.olusturma = u.createdAt;
+  return s;
+}
+
 /* ---------------- ders ve program ---------------- */
 function ders(r) {
   if (!r) return null;

@@ -25,6 +25,33 @@ const { kullanicininKapalilari } = require('./ozellikler');
 const { okulSayfasiGorunumu } = require('./okul-sayfasi');
 const { AramaDizini, sade: sadeArama } = require('../yardimci/bulanik-arama');
 
+/* Aydınlatma metninin sürümü. Metin değişirse burayı da artır:
+   kullanıcıların onayı yeniden istenmelidir. */
+const KVKK_SURUM = '1.9';   // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
+                            // 1.4: ödev dosyaları, anket, servis, kulüp, son giriş;
+                            // 1.5: okulun açtığı hesapta T.C., ev ve servis konumu, telefon bildirimi;
+                            // 1.6: e-posta onayı, müdür başvurusunda yaş, okul sayfası, ödev yıldızı;
+                            // 1.7: mesaj/ödev ekleri (7 gün), açılış yorumları, öğrenci nakli, kişisel hatırlatıcılar
+                            // 1.8: kullanım sırasında yaşanan sorunlar (sorumluluk), kullanım koşulları, Sınıflarım
+                            // 1.9: Eğitim Evi Aile (çocuğun telefonu: konum ve uygulama süreleri, 7 gün)
+
+/* ============ kayıt ============ */
+/* Kendisi kaydolan tek tür hesap yetişkin hesabıdır (veli, öğretmen, müdür
+   adayı). Kayıt olan kişinin rolü yoktur; rolleri sonra eklenir (kisilik.js):
+   veli kodunu giren veli olur, öğretmen eşleme kodunu okuluna verir, okulunu
+   kaydeden kişi müdür başvurusu yapar. Öğrenci ve servisçi kaydolmaz;
+   hesaplarını okul açar (hesaplar.js). */
+
+/* Kullanıcının onayı yürürlükteki metne mi? Müdürün açtığı hesaplarda hiç
+   onay yoktur; metin yenilenince de eski onay geçersizdir. */
+function kvkkGuncelMi(u) {
+  if (!u) return false;
+  /* Sistem yöneticisi kayıt formundan geçmez, sistemi kuran kişidir; onay
+     kapısı ona uygulanmaz (ilk açılışta kendini kilitlemesin). */
+  if (u.role === 'admin') return true;
+  return !!(u.kvkk && u.kvkk.onay && u.kvkk.surum === KVKK_SURUM);
+}
+
 /* Kişinin kendisine giden görünüm: pub() + yalnızca ona gösterilen alanlar.
    T.C. kimlik no başka kimseye gitmez (öğretmen listesi, ilerleyiş vb.). */
 function benimGorunum(u) {

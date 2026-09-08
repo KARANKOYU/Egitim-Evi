@@ -58,6 +58,28 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .msg.bilgi { background: var(--ana-acik); color: var(--ana-koyu); }
 .msg.uyari { background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
 
+/* ===== alan hatası: kutu kırmızı çerçeve, mesaj hemen altında ===== */
+.field.hatali input,
+.field.hatali select,
+.field.hatali textarea { border-color: var(--kirmizi); }
+.field.hatali input:focus,
+.field.hatali select:focus,
+.field.hatali textarea:focus { border-color: var(--kirmizi); box-shadow: 0 0 0 3px var(--hata-odak); }
+.alan-hata {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--kirmizi-yazi);
+}
+.alan-hata .ikon { flex: 0 0 auto; width: 15px; height: 15px; margin-top: 1px; color: var(--kirmizi); }
+.alan-hata .baglanti { font-size: 12.5px; font-weight: 700; padding: 0 2px; color: inherit; }
+.kvkk-alan.hatali .onay input[type="checkbox"] { outline: 2px solid var(--kirmizi); outline-offset: 2px; }
+.kvkk-alan .alan-hata { margin-left: 28px; }
+
 /* ===== şifre kutusu: göster/gizle düğmesi ===== */
 .sifre-kap { position: relative; }
 .sifre-kap input { padding-right: 46px; }
