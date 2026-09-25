@@ -16,3 +16,26 @@
   white-space: nowrap;
 }
 
+/* Hepsi · Zeynep · Burak */
+.cocuk-seridi {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: -6px 0 16px;
+}
+
+/* Devamsızlık özetinde üç sayı yan yana */
+.alt-sayim {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--soluk);
+}
+.alt-sayim b {
+  font-family: var(--f-baslik);
+  font-size: 20px;
+  color: var(--yazi);
+  margin-right: 4px;
+  font-variant-numeric: tabular-nums;
+}
