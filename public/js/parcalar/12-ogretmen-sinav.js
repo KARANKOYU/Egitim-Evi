@@ -484,3 +484,8 @@ EYLEMLER['sinav-olcum-duzenle'] = function (el, id) {
     '<button class="btn" data-act="sinav-olcum-kaydet" data-id="' + esc(id) + '">Kaydet</button>');
 };
 
+EYLEMLER['sinav-olcum-kaydet'] = function (el, id) {
+  return api('/exams/' + id + '/olcumler', 'POST', { olcumler: olcumleriTopla() })
+    .then(function () { modalKapat(); return sinavAc(id); })
+    ['catch'](function (e) { mesajGoster('mHata', 'hata', e.message); });
+};
