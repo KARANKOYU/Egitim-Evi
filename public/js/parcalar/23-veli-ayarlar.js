@@ -188,3 +188,24 @@ EYLEMLER['yorum-sil'] = function () {
   return api('/yorumlar/sil', 'POST', {}).then(function () { yorumKartiniDoldur(); })['catch'](hataGoster);
 };
 
+/* Kullanıcı adı, e-posta, telefon. Değişiklik mevcut şifreyle onaylanır;
+   yalnızca değişen alan gönderilir. */
+function girisBilgileriKarti(hs) {
+  return '<div class="kart" id="girisBilgiKart"><h3>Giriş bilgileri</h3>' +
+    (hs.email ? '' : '<div class="msg uyari">Hesabında e-posta yok. Ekle: giriş kodu ve şifre sıfırlama bağlantısı oraya gelir.</div>') +
+    '<div class="field"><label for="hKadi">Kullanıcı adı</label>' +
+    '<input type="text" id="hKadi" value="' + esc(hs.username) + '" data-ilk="' + esc(hs.username) + '" autocomplete="username" ' +
+    'autocapitalize="off" spellcheck="false" maxlength="30"></div>' +
+    '<div class="field"><label for="hEposta">E-posta</label>' +
+    '<input type="email" id="hEposta" value="' + esc(hs.email) + '" data-ilk="' + esc(hs.email) + '" autocomplete="email" ' +
+    'autocapitalize="off" spellcheck="false" maxlength="120" placeholder="e-posta adresin">' +
+    '<div class="hint">İki adımlı giriş: her girişte bu adrese bir kod gelir. Yetişkin hesaplarında hep açıktır.</div></div>' +
+    '<div class="field"><label for="hTelefon">Telefon</label>' +
+    '<input type="tel" id="hTelefon" value="' + esc(hs.phone) + '" data-ilk="' + esc(hs.phone) + '" autocomplete="tel" ' +
+    'inputmode="tel"></div>' +
+    '<div class="field"><label for="hSifre">Mevcut şifren</label>' +
+    '<input type="password" id="hSifre" autocomplete="current-password">' +
+    '<div class="hint">Değişikliği onaylamak için.</div></div>' +
+    '<button class="btn" data-act="benim-bilgi-kaydet">Kaydet</button><div id="hMesaj" style="margin-top:10px"></div></div>';
+}
+
