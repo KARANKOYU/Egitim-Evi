@@ -23,3 +23,42 @@
     2. EE_DATA=testler/testdata EE_BASE=http://localhost:3200 node araclar/yuk-testi.js
 */
 
+const crypto = require('crypto');
+const { ayarlariYukle } = require('../sunucu/ayarlar');
+ayarlariYukle();
+const baglanti = require('../sunucu/veri/baglanti');
+const { depo } = require('../sunucu/veri');
+const { hashPw } = require('../sunucu/sifre');
+
+const BASE = process.env.EE_BASE || 'http://localhost:3200';
+const SINIF = 24, SINIF_MEVCUT = 30, OGRETMEN = 40, KUCUK_OKUL = 30;
+const DERSLER = ['Matematik', 'Türkçe', 'Fen Bilimleri', 'İngilizce', 'Sosyal Bilgiler',
+  'Din Kültürü ve Ahlak Bilgisi', 'Müzik', 'Beden Eğitimi'];
+const YAVAS_MS = 150, AGIR_KB = 150;
+const OLCUM_TEKRAR = 5, ISTEK_ARASI_MS = 230;
+
+const bekle = ms => new Promise(r => setTimeout(r, ms));
+const say = (() => { let n = 0; return p => p + '_y' + (++n).toString(36); })();
+const gunOnce = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+
+/* Toplu ekleme: satırlar JSON olarak gider, json_populate_recordset tablonun
+   kendi sütun tiplerine çevirir. Sütun adları koddan gelir. */
+async function toplu(tablo, sutunlar, satirlar) {
+  const ad = /^[a-z_]+$/;
+  if (!ad.test(tablo) || !sutunlar.every(s => ad.test(s))) throw new Error('geçersiz ad');
+  for (let i = 0; i < satirlar.length; i += 4000) {
+    const parca = satirlar.slice(i, i + 4000);
+    await baglanti.sorgu(
+      'INSERT INTO ' + tablo + ' (' + sutunlar.join(', ') + ') SELECT ' + sutunlar.join(', ') +
+      ' FROM json_populate_recordset(NULL::' + tablo + ', $1::json)', [JSON.stringify(parca)]);
+  }
+  return satirlar.length;
+}
+
+/* Ölçüm için oturum: 2 adımlı giriş yerine doğrudan oturum açılır. */
+async function oturum(kullaniciId) {
+  const anahtar = crypto.randomBytes(24).toString('hex');
+  await depo.oturumlar.ac(anahtar, kullaniciId);
+  return anahtar;
+}
+
