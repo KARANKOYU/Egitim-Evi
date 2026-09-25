@@ -75,6 +75,31 @@ function sinavSonuclari(d) {
   return tekSinavKarti(d) + grupOrtalamaKarti(d);
 }
 
+/* Gruba bağlı olmayan sınavlar: ana değer sağda, öteki değerler çip olarak. */
+function tekSinavKarti(d) {
+  var h = '';
+  var tek = d.exams || [];
+  if (tek.length) {
+    h += '<div class="kart"><h3>Sınavlar</h3>';
+    for (var i = 0; i < tek.length; i++) {
+      var e = tek[i];
+      var ana = e.olcumler.filter(function (o) { return o.ana; })[0] || e.olcumler[0];
+      var digerleri = e.olcumler.filter(function (o) { return o !== ana && o.deger !== null && o.deger !== undefined; });
+      h += '<div class="satir" data-ara="' + esc(e.name + ' ' + e.subject) + '">' +
+        '<div class="buyu"><div class="ad">' + esc(e.name) + '</div>' +
+        '<div class="alt">' + tarih(e.tarih) + ' · ' + esc(e.subject) + (e.teacherName ? ' · ' + esc(e.teacherName) : '') + '</div>' +
+        (digerleri.length ? '<div class="olcum-cipleri" style="margin-top:6px">' + digerleri.map(function (o) {
+          return '<span class="olcum-cip"><b>' + esc(o.ad) + '</b> ' + sayiTR(o.deger) + '</span>';
+        }).join('') + '</div>' : '') +
+        '</div>' +
+        '<span class="etiket ' + (ana.deger === null || ana.deger === undefined ? 'gri' : 'mavi') + '" title="' + esc(ana.ad) + '">' +
+        (ana.deger === null || ana.deger === undefined ? 'Değer yok' : esc(ana.ad) + ' ' + sayiTR(ana.deger)) + '</span></div>';
+    }
+    h += '</div>';
+  }
+  return h;
+}
+
 /* Sayfa çizildikten sonra her öğrencinin sınav grafiğini getirir. */
 function ilerleyisGrafikleriniYukle(ogrenciIdler) {
   odevGrafikleriniCiz();
