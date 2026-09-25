@@ -13,3 +13,50 @@ table.t input[type="number"], table.t input[type="text"] {
   border-radius: var(--r-mini);
 }
 
+/* ================= sütun grafiği ================= */
+.grafik {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  height: 190px;
+  padding: 10px 4px 0;
+  overflow-x: auto;
+}
+.sutun-sar {
+  flex: 0 0 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.sutun-yigin {
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  border-radius: var(--r-mini) var(--r-mini) 0 0;
+  overflow: hidden;
+  background: var(--zemin);
+  min-height: 3px;
+}
+.sutun-yigin i {
+  display: block;
+  width: 100%;
+  transition: height .3s;
+}
+.sutun-yigin i.yapti { background: var(--yesil); }
+.sutun-yigin i.eksik { background: var(--turuncu); }
+.sutun-yigin i.yapmadi { background: var(--kirmizi); }
+.sutun-yigin i.izinli { background: var(--soluk); }
+.sutun-yigin i.gelmedi { background: var(--bordo); }
+.sutun-ad {
+  font-size: 11px;
+  text-align: center;
+  color: var(--soluk);
+  line-height: 1.25;
+  word-break: break-word;
+}
+.sutun-us { font-size: 12.5px; font-weight: 700; color: var(--ana); }
+
