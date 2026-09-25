@@ -217,3 +217,66 @@ async function degerleriYaz(degerler) {
   });
 }
 
+/* Bir sınavın bütün değerleri: { olcumId: { ogrenciId: deger } } */
+async function degerleri(sinavId) {
+  const satirlar = await sorgu(
+    'SELECT d.olcum_id, d.ogrenci_id, d.deger FROM sinav_degerleri d ' +
+    'JOIN sinav_olcumleri x ON x.id = d.olcum_id WHERE x.sinav_id = $1', [sinavId]);
+  const sonuc = {};
+  for (const r of satirlar) {
+    if (!sonuc[r.olcum_id]) sonuc[r.olcum_id] = {};
+    sonuc[r.olcum_id][r.ogrenci_id] = r.deger;
+  }
+  return sonuc;
+}
+
+/* ================= öğrencinin gözünden ================= */
+
+/* İlerleyiş sayfası: öğrencinin notu olan sınav grupları ve gruptaki sınavlar. */
+async function ogrencininGruplari(ogrenciId) {
+  const gruplar = await sorgu(
+    'SELECT g.*, t.ad_soyad AS ogretmen_adi FROM sinav_gruplari g LEFT JOIN kullanicilar t ON t.id = g.ogretmen_id ' +
+    'WHERE EXISTS (SELECT 1 FROM sinavlar s JOIN sinav_olcumleri x ON x.sinav_id = s.id AND x.ana ' +
+    '              JOIN sinav_degerleri d ON d.olcum_id = x.id WHERE s.grup_id = g.id AND d.ogrenci_id = $1) ' +
+    'ORDER BY g.olusturma', [ogrenciId]);
+  if (!gruplar.length) return [];
+  const sinavlar = await sorgu(
+    'SELECT s.id, s.ad, s.agirlik, s.grup_id, x.alt_sinir, x.ust_sinir, d.deger ' +
+    'FROM sinavlar s JOIN sinav_olcumleri x ON x.sinav_id = s.id AND x.ana ' +
+    'LEFT JOIN sinav_degerleri d ON d.olcum_id = x.id AND d.ogrenci_id = $1 ' +
+    'WHERE s.grup_id = ANY($2::text[]) ORDER BY s.olusturma', [ogrenciId, gruplar.map(g => g.id)]);
+  return gruplar.map(g => Object.assign(e.sinavGrubu(g), {
+    _ogretmenAdi: e.bos(g.ogretmen_adi),
+    _sinavlar: sinavlar.filter(s => s.grup_id === g.id).map(s => ({
+      id: s.id, name: s.ad, weight: s.agirlik,
+      grade: s.deger === null || s.deger === undefined ? null : s.deger,
+      alt: s.alt_sinir, ust: s.ust_sinir
+    }))
+  }));
+}
+
+/* Grafik: öğrencinin, verilen şablonla yapılmış sınavları tarih sırasıyla;
+   her sınavın her ölçümündeki değeri. okulId verilirse yalnızca o okulun
+   sınavları (nakil gelen öğrencinin eski okulu yeni okula görünmez). */
+async function ogrencininSerisi(ogrenciId, sablonId, okulId) {
+  const satirlar = await sorgu(
+    'SELECT s.id, s.ad, s.tarih, x.kod, x.ad AS olcum_adi, x.alt_sinir, x.ust_sinir, x.ana, x.sira, d.deger ' +
+    'FROM sinavlar s JOIN sinav_olcumleri x ON x.sinav_id = s.id ' +
+    'LEFT JOIN sinav_degerleri d ON d.olcum_id = x.id AND d.ogrenci_id = $1 ' +
+    'WHERE s.sablon_id = $2 AND ($3::text IS NULL OR s.okul_id = $3) ' +
+    'AND EXISTS (SELECT 1 FROM sinav_olcumleri x2 JOIN sinav_degerleri d2 ON d2.olcum_id = x2.id ' +
+    '            WHERE x2.sinav_id = s.id AND d2.ogrenci_id = $1) ' +
+    'ORDER BY s.tarih, s.olusturma, x.sira', [ogrenciId, sablonId, okulId || null]);
+  const sinavlar = [];
+  const olcumler = new Map();
+  for (const r of satirlar) {
+    let s = sinavlar.find(x => x.id === r.id);
+    if (!s) { s = { id: r.id, name: r.ad, tarih: r.tarih, degerler: {} }; sinavlar.push(s); }
+    s.degerler[r.kod] = r.deger === undefined ? null : r.deger;
+    if (!olcumler.has(r.kod)) {
+      olcumler.set(r.kod, { kod: r.kod, ad: r.olcum_adi, alt: r.alt_sinir, ust: r.ust_sinir, ana: r.ana, sira: r.sira });
+    }
+  }
+  return { sinavlar, olcumler: Array.from(olcumler.values()).sort((a, b) => a.sira - b.sira) };
+}
+
