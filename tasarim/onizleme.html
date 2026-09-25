@@ -650,3 +650,74 @@
     </div>
   </div>
 
+  <!-- 8 -->
+  <div class="bolum" id="b8">
+    <div class="bolum-baslik">
+      <span class="bolum-no">8</span>
+      <h2>Mesajlaşma</h2>
+      <span class="aciklama">çoklu alıcı · sınıf seçimi · kim yazabilir ayarı</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart" style="margin-top:0">
+        <h3>Yeni mesaj</h3>
+        <div class="field">
+          <label>Kime</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1.5px solid var(--cizgi);border-radius:10px">
+            <span class="etiket mavi">7-A sınıfı (24 kişi)</span>
+            <span class="etiket mavi">8-B sınıfı (21 kişi)</span>
+            <span class="etiket">Ayşe Demir</span>
+            <span class="etiket">Tüm öğretmenler (12)</span>
+            <span class="etiket gri">+ Ekle</span>
+          </div>
+          <div class="hint">Sınıf, rol ya da tek tek kişi seçebilirsin. Toplam 58 alıcı.</div>
+        </div>
+        <div class="field">
+          <label>Konu</label>
+          <input type="text" value="Yarınki veli toplantısı" readonly>
+        </div>
+        <div class="field">
+          <label>Mesaj</label>
+          <textarea rows="3" readonly>Yarın saat 18:00'de okul konferans salonunda veli toplantısı yapılacaktır.</textarea>
+          <div class="hint">0 / 4000 karakter</div>
+        </div>
+        <button class="btn">Gönder</button>
+      </div>
+
+      <div class="kart">
+        <h3>Gelen kutusu</h3>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Mehmet Demir <span class="etiket mor">Müdür</span></div>
+            <div class="alt">Yarınki veli toplantısı</div>
+            <div class="alt">29.08.2026 15:10</div>
+          </div>
+          <span class="etiket turuncu">Okunmadı</span>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Ayşe Kaya <span class="etiket">Matematik</span></div>
+            <div class="alt">Ödev teslim tarihi uzatıldı</div>
+            <div class="alt">28.08.2026 09:40</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kart">
+        <h3>Bana kim yazabilir</h3>
+        <div class="secenekler" style="margin-top:0">
+          <label class="onay"><input type="checkbox" checked disabled><span>Müdür ve idare</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Öğretmenler</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Kendi öğrencilerim</span></label>
+          <label class="onay"><input type="checkbox" disabled><span>Tüm öğrenciler</span></label>
+          <label class="onay"><input type="checkbox" checked disabled><span>Veliler</span></label>
+        </div>
+        <div class="hint" style="margin-top:8px">
+          Kapattığın gruplar sana mesaj gönderemez. Müdür bu ayarı kapatamaz.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
