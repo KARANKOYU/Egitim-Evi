@@ -28,3 +28,18 @@ SAYFALAR.cocuklarim = function () {
   });
 };
 
+function cocukKartlari(list) {
+  if (!list.length) return bosKutu('veli', 'Henüz çocuk eklemedin. Veli kodunu kullanarak ekleyebilirsin.');
+  var h = '<div class="grid k2">';
+  for (var i = 0; i < list.length; i++) {
+    var c = list[i];
+    h += '<div class="kart tikla" data-act="cocuk-ac" data-id="' + esc(c.id) + '" data-ad="' + esc(c.fullName) + '" ' +
+      'data-ara="' + esc(c.fullName) + '">' +
+      '<h3>' + esc(c.fullName) + '</h3>' +
+      '<div style="color:var(--soluk);font-size:13px">' + esc(c.schoolName) + '</div>' +
+      '<div style="margin-top:11px"><span class="etiket">Portalını aç</span> ' +
+      '<button class="btn kucuk gri" data-act="cocuk-sil" data-id="' + esc(c.id) + '">Kaldır</button></div></div>';
+  }
+  return h + '</div>';
+}
+
