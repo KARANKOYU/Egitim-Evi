@@ -30,3 +30,46 @@
     EE_LOG=sunucu.log node araclar/deneme-okulu.js
 */
 
+const { iste, girisYap, hesapAc, okulHesabi } = require('./giris');
+const { ayarlariYukle } = require('../sunucu/ayarlar');
+ayarlariYukle();
+const baglanti = require('../sunucu/veri/baglanti');
+const { depo } = require('../sunucu/veri');
+
+/* Yetişkin hesabının şifresinde büyük/küçük harf, rakam ve özel karakter
+   zorunlu; eski deneme hesapları kuraldan önce açıldığı için eski şifrede. */
+const SIFRE = 'Deneme2026!';
+const ESKI_SIFRE = 'Deneme2026';
+const OKUL = { ad: 'Deneme Ortaokulu', il: 'Ankara', ilce: 'Çankaya' };
+const HESAP = {
+  mudur: { username: 'mudur', email: 'mudur@deneme.test', fullName: 'Selin Aksoy', phone: '05321110011' },
+  ogretmen: { username: 'ogretmen', email: 'ogretmen@deneme.test', fullName: 'Emre Doğan', phone: '05321110022' },
+  ogrenci: { username: 'ogrenci', email: 'ogrenci@deneme.test', fullName: 'Deniz Yıldırım', phone: '05321110033' },
+  veli: { username: 'veli', email: 'veli@deneme.test', fullName: 'Ayten Yıldırım', phone: '05321110044' },
+  yeni: { username: 'yeni.veli', email: 'yeni.veli@deneme.test', fullName: 'Ali Yıldırım', phone: '05321110055' },
+  servisci: { username: 'servisci', fullName: 'Hakan Yolcu', telefon: '05321110066' }
+};
+const OKUL_KONUM = { enlem: 39.9208, boylam: 32.8541 };     // Kızılay çevresi (deneme)
+const EV_KONUM = { enlem: 39.9030, boylam: 32.8600 };
+
+/* Deneme hesabıyla giriş. Aydınlatma metni yenilendiyse (sürüm değişti)
+   bu deneme hesapları için onay burada verilir; gerçek kullanıcı girişte
+   onay penceresini görür. */
+async function gir(eposta) {
+  let g;
+  try { g = await girisYap(eposta, SIFRE); } catch (e) {
+    if (e.status !== 401 && e.status !== 400) throw e;
+    g = await girisYap(eposta, ESKI_SIFRE);
+  }
+  if (g.kvkkGuncel === false) await iste('/api/kvkk-onay', 'POST', { onay: true }, g.token);
+  return g;
+}
+
+/* Hesap yoksa rolsüz açar; varsa olduğu gibi döndürür. */
+async function hesap(h) {
+  const var_ = await depo.kullanicilar.epostayla(h.email);
+  if (var_) return var_;
+  await hesapAc(Object.assign({ password: SIFRE }, h));
+  return depo.kullanicilar.epostayla(h.email);
+}
+
