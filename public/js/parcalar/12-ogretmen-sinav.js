@@ -429,3 +429,7 @@ function degerKutusuDenetle(kutu) {
   return !hatali;
 }
 
+document.addEventListener('input', function (ev) {
+  if (ev.target.classList && ev.target.classList.contains('deger')) degerKutusuDenetle(ev.target);
+});
+
