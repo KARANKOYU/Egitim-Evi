@@ -83,3 +83,30 @@ SAYFALAR['veli-odevler'] = function () {
   });
 };
 
+function veliOdevListesi(list) {
+  var h = '<div class="kart">';
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    var sag;
+    if (a.result && SONUC[a.result]) {
+      sag = '<span class="etiket ' + SONUC[a.result].renk + '">' + SONUC[a.result].ad + '</span>';
+    } else if (a.status === 'finished') {
+      sag = '<span class="etiket gri">Değerlendirilmedi</span>';
+    } else sag = kalanEtiketi(a);
+
+    /* Çocuğun henüz açmadığı aktif ödev turuncuya çalar. */
+    var acilmadi = a.status === 'active' && a.acildi === false;
+    /* Satıra tıklayınca çocuğun bu ödeve yüklediği dosyalar açılır. */
+    h += '<div class="satir odev-satir tikla-odev' + (acilmadi ? ' acilmadi' : '') + '"' + (acilmadi ? ' title="Çocuğun bu ödevi henüz açmadı"' : '') +
+      ' data-act="veli-teslim" data-id="' + esc(a.id) + '" data-ogrenci="' + esc(a.cocuk.id) + '" data-baslik="' + esc(a.title) + '"' +
+      ' data-ara="' + esc(a.cocuk.fullName + ' ' + a.title + ' ' + a.subject) + '">' +
+      cocukRozet(a.cocuk) +
+      '<div class="buyu"><div class="ad">' + esc(a.title) + '</div>' +
+      '<div class="alt">' + esc(a.subject) + ' · ' + esc(a.teacherName) +
+      (a.endAt ? ' · son teslim ' + tarihGunSaat(a.endAt, a.endTime) : '') + '</div>' +
+      (a.description ? '<div class="alt" style="margin-top:4px">' + esc(a.description) + '</div>' : '') +
+      '</div>' + sag + '</div>';
+  }
+  return h + '</div>';
+}
+
