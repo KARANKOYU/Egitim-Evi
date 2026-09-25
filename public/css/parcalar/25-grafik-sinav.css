@@ -71,3 +71,21 @@ table.t input.deger.hatali { border-color: var(--kirmizi); background: var(--kir
 .sablon-kart .olcum-cipleri { margin: 8px 0 10px; }
 .hazir-sablon { border-style: dashed; }
 
+/* ================= açılmamış ödev =================
+   Öğrenci henüz açmadıysa satır turuncuya çalar ve solunda nokta durur. */
+.satir.acilmadi { background: var(--turuncu-zemin); }
+/* Ödev listelerinde bütün satırlar aynı iç boşlukta: turuncu satır ile
+   normal satırın başlıkları aynı hizadan başlar. */
+.satir.odev-satir { padding-left: 12px; padding-right: 12px; border-radius: var(--r-kucuk); }
+.satir.tikla-odev:not(.acilmadi):hover { background: var(--zemin); }
+/* Turuncu zeminde turuncu etiket kaybolmasın */
+.satir.acilmadi .etiket.turuncu { background: var(--kart); box-shadow: inset 0 0 0 1px var(--turuncu); }
+.satir.acilmadi .ad::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--turuncu); margin-right: 7px; vertical-align: middle;
+}
+.satir.tikla-odev { cursor: pointer; }
+.acilma-yazi { font-size: 12.5px; color: var(--soluk); margin-top: 3px; }
+.acilma-yazi.acilmadi { color: var(--turuncu-yazi); }
+.odev-aciklama { white-space: pre-wrap; margin-top: 12px; line-height: 1.6; }
+
