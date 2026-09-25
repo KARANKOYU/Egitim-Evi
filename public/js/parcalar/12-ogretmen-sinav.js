@@ -313,3 +313,96 @@ EYLEMLER['sinav-yeni'] = function (el, grupId) {
   })['catch'](hataGoster);
 };
 
+EYLEMLER['sinav-kaydet'] = function () {
+  var govde = { name: $('mAd').value, tarih: $('mTarih').value };
+  var sablon = $('mSablon').value;
+  if (sablon.indexOf('hazir:') === 0) govde.hazir = sablon.slice(6);
+  else if (sablon) govde.templateId = sablon;
+  if ($('mGrup').value) { govde.groupId = $('mGrup').value; govde.weight = $('mAgirlik').value; }
+  return api('/exams', 'POST', govde).then(function (d) {
+    modalKapat();
+    return sinavAc(d.exam.id);
+  })['catch'](function (e) { mesajGoster('mHata', 'hata', e.message); });
+};
+
+EYLEMLER['sinav-sil'] = function (el, id) {
+  if (!confirm('Bu sınav ve girilmiş bütün değerleri silinsin mi?')) return;
+  var gid = el.getAttribute('data-gid');
+  return api('/exams/' + id + '/delete', 'POST').then(function () {
+    if (gid) return grupAc(gid);
+    return SAYFALAR['ogr-sinavlar']();
+  })['catch'](hataGoster);
+};
+
+/* ---------- Değer girişi ---------- */
+function sinavAc(id) {
+  return api('/exams/' + id).then(function (d) {
+    var e = d.exam;
+    S.acikSinav = d;
+    var altYazi = [tarih(e.tarih), e.subject, e.templateName || 'Şablonsuz',
+      e.groupName ? e.groupName + ' · etki %' + sayiTR(e.weight) : 'Grupsuz'].filter(Boolean).join(' · ');
+    var h = hero(e.name.toLocaleUpperCase('tr'), altYazi);
+
+    h += '<div class="sinav-ust">' + olcumCipleri(e.olcumler) +
+      '<button class="btn kucuk gri" data-act="sinav-olcum-duzenle" data-id="' + esc(e.id) + '">+ Yeni değer ekle / alanları düzenle</button></div>';
+
+    if (!d.students.length) {
+      yaz(h + bosKutu('ogrenci', 'Ders verdiğin sınıflarda öğrenci yok.'));
+      return;
+    }
+
+    /* Sınıf süzgeci: öğretmen birden çok sınıfa giriyorsa */
+    var siniflar = [];
+    for (var i = 0; i < d.students.length; i++) {
+      var c = d.students[i].className || 'Sınıfsız';
+      if (siniflar.indexOf(c) < 0) siniflar.push(c);
+    }
+    siniflar.sort(function (a, b) { return a.localeCompare(b, 'tr'); });
+    if (S.sinavSinif && siniflar.indexOf(S.sinavSinif) < 0) S.sinavSinif = '';
+    if (siniflar.length > 1) {
+      h += '<div class="sekme-satir" style="margin-bottom:10px">' +
+        '<button class="sekme kucuk' + (!S.sinavSinif ? ' secili' : '') + '" data-act="sinav-sinif" data-val="">Tüm sınıflar</button>';
+      for (var s = 0; s < siniflar.length; s++) {
+        h += '<button class="sekme kucuk' + (S.sinavSinif === siniflar[s] ? ' secili' : '') + '" data-act="sinav-sinif" data-val="' +
+          esc(siniflar[s]) + '">' + esc(siniflar[s]) + '</button>';
+      }
+      h += '</div>';
+    }
+
+    h += '<div class="kart"><div class="tablo-sar"><table class="t deger-tablo"><thead><tr><th>Öğrenci</th>' +
+      (siniflar.length > 1 ? '<th>Sınıf</th>' : '');
+    for (var o = 0; o < e.olcumler.length; o++) {
+      var ol = e.olcumler[o];
+      h += '<th class="sayi' + (ol.ana ? ' ana' : '') + '">' + esc(ol.ad) +
+        '<small>' + sayiTR(ol.alt) + ' – ' + sayiTR(ol.ust) + '</small></th>';
+    }
+    h += '</tr></thead><tbody>';
+    for (var r = 0; r < d.students.length; r++) {
+      var st = d.students[r];
+      var sinif = st.className || 'Sınıfsız';
+      h += '<tr data-sinif="' + esc(sinif) + '" data-ara="' + esc(st.fullName) + '"' +
+        (S.sinavSinif && S.sinavSinif !== sinif ? ' class="gizli"' : '') + '><td>' + esc(st.fullName) + '</td>' +
+        (siniflar.length > 1 ? '<td class="sinif-hucre">' + esc(sinif) + '</td>' : '');
+      for (var q = 0; q < e.olcumler.length; q++) {
+        var olc = e.olcumler[q];
+        var v = st.degerler[olc.kod];
+        var metin = v === null || v === undefined ? '' : sayiGirdi(v);
+        h += '<td class="sayi"><input type="text" inputmode="decimal" class="deger" autocomplete="off" ' +
+          'data-ogr="' + esc(st.id) + '" data-kod="' + esc(olc.kod) + '" data-alt="' + olc.alt + '" data-ust="' + olc.ust + '" ' +
+          'data-ilk="' + esc(metin) + '" value="' + esc(metin) + '" placeholder="-" ' +
+          'aria-label="' + esc(st.fullName + ' ' + olc.ad) + '"></td>';
+      }
+      h += '</tr>';
+    }
+    h += '</tbody></table></div></div>';
+    h += '<div class="sinav-alt">' +
+      '<button class="btn" data-act="sinav-deger-kaydet" data-id="' + esc(e.id) + '">Kaydet</button>' +
+      (e.groupId
+        ? '<button class="btn gri" data-act="grup-ac" data-id="' + esc(e.groupId) + '">Gruba dön</button>'
+        : '<button class="btn gri" data-act="sinav-sekme" data-val="sinavlar">Sınavlara dön</button>') +
+      '<span class="hint">Enter ile alttaki öğrenciye geçersin. Boş bırakılan kutu değeri siler.</span>' +
+      '</div><div id="sinavMesaj"></div>';
+    yaz(h);
+  });
+}
+
