@@ -120,3 +120,79 @@ function grupAc(id) {
   });
 }
 
+EYLEMLER['grup-ac'] = function (el, id) { return grupAc(id)['catch'](hataGoster); };
+
+EYLEMLER['grup-yeni'] = function () {
+  var ds = '';
+  if (S.user.role === 'principal') {
+    ds = '<div class="field"><label for="mDers">Ders</label><select id="mDers">';
+    for (var j = 0; j < S.meta.subjects.length; j++) {
+      ds += '<option value="' + esc(S.meta.subjects[j]) + '">' + esc(S.meta.subjects[j]) + '</option>';
+    }
+    ds += '</select></div>';
+  }
+  return modalAc('Yeni sınav grubu', ds +
+    '<div class="field"><label for="mAd">Grup adı</label><input type="text" id="mAd" placeholder="Dönem 1 - Yarıyıl 1"></div><div id="mHata"></div>',
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="grup-kaydet">Oluştur</button>');
+};
+
+EYLEMLER['grup-kaydet'] = function () {
+  var gb = { name: $('mAd').value };
+  if ($('mDers')) gb.subject = $('mDers').value;
+  return api('/examgroups', 'POST', gb).then(function () {
+    modalKapat();
+    S.sinavSekme = 'gruplar';
+    git('ogr-sinavlar');
+  })['catch'](function (e) { mesajGoster('mHata', 'hata', e.message); });
+};
+
+EYLEMLER['grup-sil'] = function (el, id) {
+  if (!confirm('Sınav grubu ve içindeki tüm sınavlar silinsin mi?')) return;
+  return api('/examgroups/' + id + '/delete', 'POST').then(function () {
+    S.sinavSekme = 'gruplar';
+    git('ogr-sinavlar');
+  })['catch'](hataGoster);
+};
+
+/* ---------- Şablonlar ---------- */
+function olcumCipleri(olcumler) {
+  var h = '<div class="olcum-cipleri">';
+  for (var i = 0; i < olcumler.length; i++) {
+    var o = olcumler[i];
+    h += '<span class="olcum-cip' + (o.ana ? ' ana' : '') + '" title="' + (o.ana ? 'Ana değer: ortalamaya ve grafiğe girer' : '') + '">' +
+      '<b>' + esc(o.ad) + '</b> ' + sayiTR(o.alt) + ' – ' + sayiTR(o.ust) + '</span>';
+  }
+  return h + '</div>';
+}
+
+function sablonListesi(d) {
+  var h = '<button class="btn" data-act="sablon-yeni">Yeni şablon</button>' +
+    '<div class="hint" style="margin-top:8px">Şablon, bir sınavın değer alanlarıdır (Puan, Doğru, Yanlış, Net...). ' +
+    'Okuldaki bütün öğretmenler kullanabilir; yalnızca açan kişi ve müdür değiştirir.</div>';
+
+  if (d.hazir.length) {
+    h += '<h3 class="sb">Hazır şablonlar</h3><div class="grid k2">';
+    for (var i = 0; i < d.hazir.length; i++) {
+      var hz = d.hazir[i];
+      h += '<div class="kart sablon-kart hazir-sablon"><h3>' + esc(hz.name) + '</h3>' + olcumCipleri(hz.olcumler) +
+        '<button class="btn kucuk" data-act="sablon-hazir" data-val="' + esc(hz.anahtar) + '">Okula ekle</button></div>';
+    }
+    h += '</div>';
+  }
+
+  h += '<h3 class="sb">Okulun şablonları (' + d.sablonlar.length + ')</h3>';
+  if (!d.sablonlar.length) return h + bosKutu('sinav', 'Henüz şablon yok. Hazırlardan birini ekle ya da yenisini aç.');
+  h += '<div class="grid k2">';
+  for (var j = 0; j < d.sablonlar.length; j++) {
+    var s = d.sablonlar[j];
+    h += '<div class="kart sablon-kart" data-ara="' + esc(s.name) + '"><h3>' + esc(s.name) + '</h3>' + olcumCipleri(s.olcumler) +
+      (s.duzenleyebilir
+        ? '<button class="btn kucuk gri" data-act="sablon-duzenle" data-id="' + esc(s.id) + '">Düzenle</button> ' +
+          '<button class="btn kucuk tehlike" data-act="sablon-sil" data-id="' + esc(s.id) + '">Sil</button>'
+        : '<span class="hint">Açan öğretmen ya da müdür değiştirebilir.</span>') +
+      '</div>';
+  }
+  return h + '</div>';
+}
+
