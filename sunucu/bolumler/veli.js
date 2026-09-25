@@ -42,3 +42,37 @@ async function cocukBagla(hesap, kodHam, req) {
   return { hesap: await depo.kullanicilar.bul(hesap.id), ogrenci: st };
 }
 
+/* ---- uçlar ---- */
+/* k: istek bağlamı (api.js kurar). Cevap yazılmadıysa yönlendirici 404 döner. */
+async function uclar(k) {
+  const { req, res, me, body, p, segs, method, need } = k;
+
+  if (p === 'parent') {
+    /* Veli, öğretmen ve müdür çocuk bağlayabilir (öğretmen aynı zamanda veli
+       olabilir). Rolsüz hesap da veli kodu girebilir: kod doğruysa veli olur. */
+    const rolsuzVeli = me && !me.role && segs[2] === 'link' && method === 'POST';
+    if (!rolsuzVeli && !need(['parent', 'teacher', 'principal'])) return;
+    if (rolsuzVeli && !need()) return;
+    /* Okul rolündeyken çocuk bağları yetişkin hesabındadır. */
+    const hesap = me.anaHesapId ? await depo.kullanicilar.bul(me.anaHesapId) : me;
+    if (!hesap) return bad(res, 'Hesap bulunamadı', 404);
+    if (segs[2] === 'children' && method === 'GET') return ok(res, { children: await depo.kullanicilar.cocuklari(hesap.id) });
+    if (segs[2] === 'link' && method === 'POST') {
+      const r = await cocukBagla(hesap, body.code, req);
+      if (r.hata) return bad(res, r.hata, r.kod);
+      return ok(res, { children: me.anaHesapId ? await depo.kullanicilar.cocuklari(hesap.id) : await childrenOf(r.hesap) });
+    }
+    if (segs[2] === 'unlink' && method === 'POST') {
+      const sid = clean(body.studentId, 60);
+      await depo.kullanicilar.bagiCoz(hesap.id, sid);
+      return ok(res, { children: await depo.kullanicilar.cocuklari(hesap.id) });
+    }
+  }
+
+  return false;
+}
+
+module.exports = {
+  cocukBagla,
+  uclar
+};

@@ -9,6 +9,12 @@ function adrestenSayfa() {
   return m ? m.sayfa : '';
 }
 
+/* Açılışta ve geri/ileri tuşunda: adresteki çocuk veli sayfasında seçilsin. */
+function adrestekiCocuguAl() {
+  var m = adrestenParca(location.hash);
+  if (m && m.cocuk) S.adresCocuk = m.cocuk;
+}
+
 function adrestenParca(adres) {
   var m = /^#?\/?([a-z0-9-]+)(?:\?c=([A-Za-z0-9_-]{1,60}))?$/i.exec(String(adres || '').trim());
   return m ? { sayfa: m[1], cocuk: m[2] || '' } : null;

@@ -28,6 +28,20 @@ function menuSuz(liste) {
   });
 }
 
+/* ================= menü ================= */
+/* Öğretmen ya da müdür aynı zamanda veliyse (çocuğu bağlıysa) menüsüne veli bölümü eklenir. */
+function veliBolumu() {
+  if (!S.children || !S.children.length) return [];
+  return [
+    { ayrac: 1 },
+    { baslik: 'Velisi olduğum' },
+    { k: 'cocuklarim', g: 'veli', ad: 'Çocuklarım' },
+    { k: 'veli-odevler', g: 'odev', ad: 'Ödevleri' },
+    { k: 'veli-devamsizlik', g: 'izinli', ad: 'Devamsızlığı' },
+    { k: 'veli-ilerleyis', g: 'grafik', ad: 'İlerleyişi' }
+  ].concat(S.user.role === 'teacher' && !yetkim('servis.yonet') ? [{ k: 'servis', g: 'servis', ad: 'Servisi' }] : []);
+}
+
 function navTanim() {
   var u = S.user;
   if (!u) return [];
