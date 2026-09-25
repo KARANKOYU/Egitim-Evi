@@ -86,3 +86,117 @@ function olcumleriDogrula(gelen) {
   return { olcumler: liste };
 }
 
+/* Hazır şablonu okulda bul, yoksa oluştur. */
+async function hazirSablon(me, anahtar) {
+  const h = HAZIR_SABLONLAR[anahtar];
+  if (!h) return null;
+  const mevcut = (await depo.sinavlar.sablonlar(me.schoolId)).find(s => s.name === h.name);
+  if (mevcut) return mevcut;
+  /* Hazır şablon okulun ortak şablonudur: ilk kullanan öğretmenin olmaz,
+     yalnızca müdür değiştirir ya da siler. */
+  return depo.sinavlar.sablonEkle({
+    id: uid('sb'), schoolId: me.schoolId, createdBy: '', name: h.name,
+    olcumler: h.olcumler, createdAt: now()
+  });
+}
+
+const sablonDuzenleyebilir = (me, s) => me.role === 'principal' || (!!s.createdBy && s.createdBy === me.id);
+
+function sablonCevabi(me, s) {
+  return {
+    id: s.id, name: s.name, olcumler: s.olcumler, createdAt: s.createdAt,
+    duzenleyebilir: sablonDuzenleyebilir(me, s)
+  };
+}
+
+/* Sınavın ana ölçümü (ortalama ve eski "grades" alanı bunu kullanır). */
+const anaOlcum = e => e.olcumler.find(o => o.ana) || e.olcumler[0] || null;
+
+/* 100 üzerinden: 0-500 aralığında 400, 80 sayılır. */
+function yuzluk(deger, o) {
+  if (deger === null || deger === undefined || !o) return null;
+  return (Number(deger) - Number(o.alt)) / (Number(o.ust) - Number(o.alt)) * 100;
+}
+
+const yuvarla = (n, basamak) => {
+  const k = Math.pow(10, basamak === undefined ? 2 : basamak);
+  return Math.round(n * k) / k;
+};
+
+function tarihDogrula(v) {
+  const s = clean(v, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
+  const d = new Date(s + 'T00:00:00Z');
+  return isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s ? '' : s;
+}
+
+function bugun() {
+  const d = new Date();
+  const p = n => (n < 10 ? '0' : '') + n;
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+/* ---- uçlar ---- */
+/* k: istek bağlamı (api.js kurar). Cevap yazılmadıysa yönlendirici 404 döner. */
+async function uclar(k) {
+  const { res, me, body, q, p, segs, method, need } = k;
+
+  /* ================= sınav grupları ================= */
+  if (p === 'examgroups') {
+    if (!need(null)) return;
+    if (!isTeacherLike(me)) return bad(res, 'Yetkin yok', 403);
+
+    if (method === 'GET' && !segs[2]) {
+      const list = (await yilSuz(me, await depo.sinavlar.ogretmeninGruplari(me.id))).map(g => ({
+        id: g.id, name: g.name, subject: g.subject, createdAt: g.createdAt,
+        examCount: g._sinavSayisi,
+        weightTotal: g._agirlikToplami
+      }));
+      return ok(res, { groups: list });
+    }
+    if (method === 'POST' && !segs[2]) {
+      const name = clean(body.name, 100);
+      if (!name) return bad(res, 'Grup adı gerekli (örn: Dönem 1 - Yarıyıl 1)');
+      const g = {
+        id: uid('g'), teacherId: me.id, schoolId: me.schoolId,
+        subject: me.role === 'teacher' ? me.branch : (clean(body.subject, 60) || branchOf(me)),
+        name, yilId: await yilDamgasi(me), createdAt: now()
+      };
+      if (!yetkiVarMi(me, 'sinav.olustur', { ders: g.subject })) return bad(res, 'Sınav açma yetkin yok', 403);
+      await depo.sinavlar.grupEkle(g);
+      return ok(res, { group: g });
+    }
+
+    const g = await depo.sinavlar.grupBul(clean(segs[2], 60));
+    if (!g) return bad(res, 'Sınav grubu bulunamadı', 404);
+    if (g.teacherId !== me.id) return bad(res, 'Yetkin yok', 403);
+
+    if (method === 'GET') {
+      const students = await ogretmeninOgrencileri(me);
+      const gExams = await depo.sinavlar.grubun(g.id);
+      const exams = gExams.map(e => ({
+        id: e.id, name: e.name, weight: e.weight, tarih: e.tarih, templateName: e.templateName,
+        graded: Object.keys(e.grades).length
+      }));
+      /* Ağırlıklı ortalama, her sınavın ana ölçümü 100 üzerinden alınarak. */
+      const averages = students.map(s => {
+        let ws = 0, wt = 0;
+        gExams.forEach(e => {
+          const v = yuzluk(e.grades[s.id], anaOlcum(e));
+          if (v !== null) { ws += v * Number(e.weight); wt += Number(e.weight); }
+        });
+        return { id: s.id, fullName: s.fullName, average: wt > 0 ? yuvarla(ws / wt) : null };
+      });
+      return ok(res, { group: g, exams, averages });
+    }
+    if (method === 'POST' && segs[3] === 'delete') {
+      await depo.sinavlar.grupSil(g.id);   // sınavları da gider
+      return ok(res);
+    }
+    return;
+  }
+
+  if (p === 'exams') return sinavUclari(k);
+  return false;
+}
+
