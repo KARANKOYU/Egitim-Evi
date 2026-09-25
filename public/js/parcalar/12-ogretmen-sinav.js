@@ -196,3 +196,54 @@ function sablonListesi(d) {
   return h + '</div>';
 }
 
+/* Değer alanı düzenleyicisi: her satır Ad | Alt | Üst | Ana | Sil.
+   Hem şablonda hem açık bir sınavda ("+ Yeni değer ekle") kullanılır. */
+function olcumSatiri(o) {
+  o = o || { ad: '', alt: 0, ust: 100, ana: false };
+  return '<div class="olcum-satir"' + (o.id ? ' data-id="' + esc(o.id) + '"' : '') + (o.kod ? ' data-kod="' + esc(o.kod) + '"' : '') + '>' +
+    '<input type="text" class="o-ad" maxlength="60" placeholder="Doğru" value="' + esc(o.ad) + '" aria-label="Değer adı">' +
+    '<input type="text" class="o-alt" inputmode="decimal" value="' + esc(sayiGirdi(o.alt)) + '" aria-label="Alt sınır">' +
+    '<input type="text" class="o-ust" inputmode="decimal" value="' + esc(sayiGirdi(o.ust)) + '" aria-label="Üst sınır">' +
+    '<label class="o-ana"><input type="radio" name="oAna"' + (o.ana ? ' checked' : '') + '> Ana</label>' +
+    '<button type="button" class="btn kucuk gri o-sil" data-act="olcum-sil" aria-label="Satırı sil">Sil</button>' +
+    '</div>';
+}
+
+function olcumDuzenleyici(olcumler) {
+  var h = '<div class="olcum-baslik"><span>Değer adı</span><span>Alt</span><span>Üst</span><span></span><span class="o-sil"></span></div>' +
+    '<div class="olcum-liste" id="olcumListe">';
+  for (var i = 0; i < olcumler.length; i++) h += olcumSatiri(olcumler[i]);
+  return h + '</div>' +
+    '<button type="button" class="btn kucuk gri" style="margin-top:10px" data-act="olcum-ekle">+ Yeni değer ekle</button>' +
+    '<div class="hint" style="margin-top:8px">Ana değer ortalamaya ve grafiğe girer. Sınırlar -10000 ile 10000 arası; ' +
+    'ondalık için virgül kullanabilirsin (ör. 490,161).</div>';
+}
+
+function olcumleriTopla() {
+  var satirlar = document.querySelectorAll('#olcumListe .olcum-satir');
+  var liste = [];
+  for (var i = 0; i < satirlar.length; i++) {
+    var r = satirlar[i];
+    liste.push({
+      id: r.getAttribute('data-id') || '',
+      kod: r.getAttribute('data-kod') || '',
+      ad: r.querySelector('.o-ad').value,
+      alt: r.querySelector('.o-alt').value,
+      ust: r.querySelector('.o-ust').value,
+      ana: r.querySelector('.o-ana input').checked
+    });
+  }
+  return liste;
+}
+
+EYLEMLER['olcum-ekle'] = function () {
+  var liste = $('olcumListe');
+  liste.insertAdjacentHTML('beforeend', olcumSatiri());
+  liste.lastChild.querySelector('.o-ad').focus();
+};
+EYLEMLER['olcum-sil'] = function (el) {
+  var liste = $('olcumListe');
+  if (liste.children.length <= 1) return mesajGoster('mHata', 'hata', 'En az bir değer alanı kalmalı.');
+  el.closest('.olcum-satir').remove();
+};
+
