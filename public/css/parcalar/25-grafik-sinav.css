@@ -1,6 +1,13 @@
 /* Grafikler (SVG), sınav değer tablosu, şablon düzenleyici,
    açılmamış ödev vurgusu. Renkler 00-temel.css değişkenlerinden. */
 
+/* ================= SVG grafik ================= */
+.svg-grafik { display: block; width: 100%; height: auto; overflow: visible; }
+.svg-grafik .izgara { stroke: var(--cizgi); stroke-width: 1; }
+.svg-grafik .eksen-yazi { fill: var(--soluk); font: 500 11.5px var(--f-govde); }
+.svg-grafik .eksen-yazi.soluk { opacity: .75; font-size: 11px; }
+.svg-grafik .deger-yazi { fill: var(--yazi); font: 700 12px var(--f-govde); font-variant-numeric: tabular-nums; }
+
 /* Sütunlar aşağıdan yukarı hafifçe büyür; hareket azaltılmışsa hiç oynamaz. */
 @media (prefers-reduced-motion: no-preference) {
   .svg-grafik .sutun { transform-box: fill-box; transform-origin: 50% 100%; animation: sutunBuyu .55s var(--egri) both; }
