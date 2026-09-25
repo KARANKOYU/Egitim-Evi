@@ -90,3 +90,6 @@ function masaustuDaralt(kapali) {
   menuDurumYaz(kapali);
 }
 
+function menuDurumOku() {
+  try { return localStorage.getItem('ee_menu') === '1'; } catch (e) { return false; }
+}
