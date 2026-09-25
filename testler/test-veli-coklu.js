@@ -7,3 +7,10 @@
 const { iste, girisYap, hesapAc, mudurYap, okulHesabi } = require('./giris');
 const { kisilikGec } = require('./giris');
 
+let gecti = 0, kaldi = 0;
+function kontrol(ad, sart, detay) {
+  if (sart) { gecti++; console.log('  GECTI  ' + ad); }
+  else { kaldi++; console.log('  KALDI  ' + ad + (detay ? '  -> ' + detay : '')); }
+}
+const J = x => JSON.stringify(x).slice(0, 160);
+
