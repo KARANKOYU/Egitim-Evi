@@ -23,6 +23,49 @@ async function bir(kosul, parametreler) {
   return liste[0] || null;
 }
 
+/* ---------------- tek kullanıcı ---------------- */
+const bul = id => id ? bir('k.id = $1', [id]) : Promise.resolve(null);
+const epostayla = eposta => eposta ? bir('k.eposta = $1', [eposta]) : Promise.resolve(null);
+/* okulId verilirse o okulun hesabı, verilmezse okuldan bağımsız hesap. */
+const kullaniciAdiyla = (ad, okulId) => !ad ? Promise.resolve(null)
+  : okulId ? bir(OKUL_HESABI + ' AND k.okul_id = $2 AND k.kullanici_adi = $1', [ad, okulId])
+    : bir(GENEL_HESAP + ' AND k.kullanici_adi = $1', [ad]);
+const tcIle = (tc, okulId) => !tc ? Promise.resolve(null)
+  : okulId ? bir(OKUL_HESABI + ' AND k.okul_id = $2 AND k.tc_kimlik = $1', [tc, okulId])
+    : bir(GENEL_HESAP + ' AND k.tc_kimlik = $1', [tc]);
+
+/* Bu T.C. no'lu öğrenci (hangi okulda olursa olsun): öğrenci hesabı kişiye
+   ait, T.C. bütün sistemde tek öğrencide (021). */
+const ogrenciTcIle = tc => !tc ? Promise.resolve(null)
+  : bir("k.rol = 'student' AND k.tc_kimlik = $1", [tc]);
+
+/* Girişte yazılan kimlik: @ varsa e-posta (her yerde tek). Yoksa kullanıcı adı:
+   okul adresinden girilmişse önce o okulun hesabı (bulunamazsa 11 haneli
+   T.C. no ile de denenir), sonra okuldan bağımsız hesap (veli). Okul
+   seçilmeden yazılan ad yalnızca tek bir okulda varsa kabul edilir; birden
+   çok okulda varsa { belirsiz: true } döner, kişiden okulunu seçmesi istenir. */
+async function girisKimligiyle(kimlik, okulId) {
+  kimlik = String(kimlik || '');
+  if (!kimlik) return { u: null };
+  if (kimlik.indexOf('@') >= 0) return { u: await bir('k.eposta = $1' + GIRIS, [kimlik]) };
+  const genel = await bir(GENEL_HESAP + GIRIS + ' AND k.kullanici_adi = $1', [kimlik]);
+  if (okulId) {
+    let u = await bir(OKUL_HESABI + GIRIS + ' AND k.okul_id = $2 AND k.kullanici_adi = $1', [kimlik, okulId]);
+    if (!u && /^[1-9][0-9]{10}$/.test(kimlik)) {
+      u = await bir(OKUL_HESABI + GIRIS + ' AND k.okul_id = $2 AND k.tc_kimlik = $1', [kimlik, okulId]);
+    }
+    /* Okulda aynı adla bir öğrenci varken yetişkin hesabıyla girilirse şifre
+       ikisinde de denenir (yedek). */
+    return u ? { u, yedek: genel } : { u: genel };
+  }
+  const okuldakiler = await coklu(OKUL_HESABI + GIRIS + ' AND k.kullanici_adi = $1', [kimlik], ' LIMIT 2');
+  /* Okul seçilmeden: önce yetişkin hesabı; şifre tutmazsa ad tek bir okulda
+     varsa o okulun hesabı denenir (yedek). */
+  if (genel) return { u: genel, yedek: okuldakiler.length === 1 ? okuldakiler[0] : null };
+  if (okuldakiler.length > 1) return { u: null, belirsiz: true };
+  return { u: okuldakiler[0] || null };
+}
+
 /* ---------------- yetişkin hesabı ve okul rolleri ---------------- */
 
 /* Kendisi kaydolmuş yetişkin hesabı mı (rol seçimi ve "Ekle" bunlarda var)?
