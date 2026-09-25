@@ -200,3 +200,258 @@ async function uclar(k) {
   return false;
 }
 
+/* /api/exams: grafik, şablonlar ve sınavlar */
+async function sinavUclari(k) {
+  const { res, me, body, q, segs, method, need } = k;
+  if (!need(null)) return;
+  const alt = clean(segs[2], 60);
+
+  /* ================= grafik =================
+     Öğrenci kendisininkini, veli çocuğununkini, öğretmen ve müdür
+     görebildiği öğrencininkini görür. */
+  if (alt === 'grafik' && method === 'GET') {
+    const oid = clean(q.get('ogrenci'), 60) || (me.role === 'student' ? me.id : '');
+    if (!oid) return bad(res, 'Öğrenci seçmelisin');
+    if (!await canSeeStudent(me, oid)) return bad(res, 'Bu öğrenciyi görme yetkin yok', 403);
+
+    /* Okul personeli yalnızca kendi okulunda yapılan sınavları görür; öğrenci
+       ve velisi (nakil öncesi okullar dahil) hepsini. */
+    const okulSiniri = (me.role === 'student' || me.role === 'parent' || !me.schoolId) ? '' : me.schoolId;
+    const sablonlar = await depo.sinavlar.ogrencininSablonlari(oid, okulSiniri);
+    const istenen = clean(q.get('sablon'), 60);
+    const secili = sablonlar.find(s => s.id === istenen) || sablonlar[0] || null;
+    if (!secili) return ok(res, { sablonlar: [], sablonId: '', olcumler: [], sinavlar: [] });
+
+    const seri = await depo.sinavlar.ogrencininSerisi(oid, secili.id, okulSiniri);
+    const bant = await depo.sinavlar.bantlar(seri.sinavlar.map(s => s.id));
+    return ok(res, {
+      sablonlar: sablonlar.map(s => ({ id: s.id, name: s.ad })),
+      sablonId: secili.id,
+      olcumler: seri.olcumler,
+      sinavlar: seri.sinavlar.map(s => Object.assign(s, { bant: bant[s.id] || {} }))
+    });
+  }
+
+  if (!isTeacherLike(me)) return bad(res, 'Yetkin yok', 403);
+
+  /* ================= şablonlar ================= */
+  if (alt === 'sablonlar') {
+    const sid = clean(segs[3], 60);
+
+    if (!sid && method === 'GET') {
+      const liste = await depo.sinavlar.sablonlar(me.schoolId);
+      const adlar = new Set(liste.map(s => s.name));
+      return ok(res, {
+        sablonlar: liste.map(s => sablonCevabi(me, s)),
+        /* Okulda aynı adla yoksa hazır şablonlar da önerilir. */
+        hazir: Object.keys(HAZIR_SABLONLAR)
+          .filter(k => !adlar.has(HAZIR_SABLONLAR[k].name))
+          .map(k => ({ anahtar: k, name: HAZIR_SABLONLAR[k].name, olcumler: HAZIR_SABLONLAR[k].olcumler }))
+      });
+    }
+
+    if (!sid && method === 'POST') {
+      if (body.hazir) {
+        const s = await hazirSablon(me, clean(body.hazir, 20));
+        if (!s) return bad(res, 'Hazır şablon bulunamadı');
+        return ok(res, { sablon: sablonCevabi(me, s) });
+      }
+      const name = clean(body.name, 60);
+      if (!name) return bad(res, 'Şablon adı gerekli (örn: Yazılı (0-100))');
+      const d = olcumleriDogrula(body.olcumler);
+      if (d.hata) return bad(res, d.hata);
+      if ((await depo.sinavlar.sablonlar(me.schoolId)).some(s => s.name === name)) {
+        return bad(res, 'Bu adla bir şablon zaten var');
+      }
+      const s = await depo.sinavlar.sablonEkle({
+        id: uid('sb'), schoolId: me.schoolId, createdBy: me.id, name, olcumler: d.olcumler, createdAt: now()
+      });
+      return ok(res, { sablon: sablonCevabi(me, s) });
+    }
+
+    const s = await depo.sinavlar.sablonBul(sid);
+    if (!s || s.schoolId !== me.schoolId) return bad(res, 'Şablon bulunamadı', 404);
+    if (method === 'GET') return ok(res, { sablon: sablonCevabi(me, s) });
+    if (!sablonDuzenleyebilir(me, s)) return bad(res, 'Bu şablonu yalnızca açan kişi ya da müdür değiştirebilir', 403);
+
+    if (method === 'POST' && segs[4] === 'delete') {
+      /* Grafik aynı şablonla yapılmış sınavları yan yana koyar: kullanılmış
+         şablon silinirse öğrencilerin grafiği boşalır. */
+      const adet = await depo.sinavlar.sablonunSinavSayisi(s.id);
+      if (adet) return bad(res, 'Bu şablonla yapılmış ' + adet + ' sınav var; öğrenci grafikleri bozulmasın diye silinemez. Adını ya da değer alanlarını değiştirebilirsin.');
+      await depo.sinavlar.sablonSil(s.id);
+      return ok(res);
+    }
+    if (method === 'POST' && !segs[4]) {
+      const name = clean(body.name, 60) || s.name;
+      const d = olcumleriDogrula(body.olcumler);
+      if (d.hata) return bad(res, d.hata);
+      if (name !== s.name && (await depo.sinavlar.sablonlar(me.schoolId)).some(x => x.name === name)) {
+        return bad(res, 'Bu adla bir şablon zaten var');
+      }
+      return ok(res, { sablon: sablonCevabi(me, await depo.sinavlar.sablonGuncelle(s.id, name, d.olcumler)) });
+    }
+    return;
+  }
+
+  /* ================= sınavlar ================= */
+  if (!alt && method === 'GET') {
+    const liste = await yilSuz(me, await depo.sinavlar.ogretmenin(me.id));
+    const grupAdlari = new Map((await depo.sinavlar.ogretmeninGruplari(me.id)).map(g => [g.id, g.name]));
+    return ok(res, {
+      exams: liste.map(e => ({
+        id: e.id, name: e.name, tarih: e.tarih, subject: e.subject,
+        groupId: e.groupId, groupName: grupAdlari.get(e.groupId) || '',
+        templateId: e.templateId, templateName: e.templateName,
+        olcumSayisi: e.olcumler.length, graded: Object.keys(e.grades).length
+      }))
+    });
+  }
+
+  if (!alt && method === 'POST') {
+    const name = clean(body.name, 100);
+    if (!name) return bad(res, 'Sınav adı gerekli');
+    if (!yetkiVarMi(me, 'sinav.olustur')) return bad(res, 'Sınav açma yetkin yok', 403);
+
+    /* Grup isteğe bağlı; gruptaysa etki oranı şart. */
+    let g = null, weight = null;
+    const grupId = clean(body.groupId, 60);
+    if (grupId) {
+      g = await depo.sinavlar.grupBul(grupId);
+      if (!g || g.teacherId !== me.id) return bad(res, 'Sınav grubu bulunamadı');
+      weight = ondalik(body.weight);
+      if (weight === null || weight <= 0 || weight > 100) return bad(res, 'Etki oranı 0\'dan büyük, en fazla 100 olmalı');
+    }
+
+    /* Ölçümler: şablondan, elle girilen listeden ya da hazır "Yazılı (0-100)". */
+    let sablon = null, olcumler;
+    const sablonId = clean(body.templateId, 60);
+    if (sablonId) {
+      sablon = await depo.sinavlar.sablonBul(sablonId);
+      if (!sablon || sablon.schoolId !== me.schoolId) return bad(res, 'Şablon bulunamadı');
+      olcumler = sablon.olcumler;
+    } else if (Array.isArray(body.olcumler)) {
+      const d = olcumleriDogrula(body.olcumler);
+      if (d.hata) return bad(res, d.hata);
+      olcumler = d.olcumler;
+    } else {
+      sablon = await hazirSablon(me, clean(body.hazir, 20) || 'yazili');
+      if (!sablon) return bad(res, 'Hazır şablon bulunamadı');
+      olcumler = sablon.olcumler;
+    }
+
+    const tarih = body.tarih ? tarihDogrula(body.tarih) : bugun();
+    if (!tarih) return bad(res, 'Tarih geçersiz');
+
+    const ders = g ? g.subject : (me.role === 'teacher' ? me.branch : (clean(body.subject, 60) || branchOf(me)));
+    if (!yetkiVarMi(me, 'sinav.olustur', { ders })) return bad(res, ders + ' dersinde sınav açma yetkin yok', 403);
+    const e = await depo.sinavlar.ekle({
+      id: uid('e'), schoolId: me.schoolId, groupId: g ? g.id : '', templateId: sablon ? sablon.id : '',
+      teacherId: me.id, subject: ders,
+      name, tarih, weight, yilId: await yilDamgasi(me), createdAt: now()
+    }, olcumler);
+    return ok(res, { exam: e });
+  }
+
+  const e = await depo.sinavlar.bul(alt);
+  if (!e) return bad(res, 'Sınav bulunamadı', 404);
+  if (e.teacherId !== me.id) return bad(res, 'Yetkin yok', 403);
+
+  if (method === 'GET') {
+    const [ogrenciler, siniflar, degerler] = await Promise.all([
+      ogretmeninOgrencileri(me), ogretmeninSiniflari(me), depo.sinavlar.degerleri(e.id)
+    ]);
+    const sinifAdi = new Map(siniflar.map(c => [c.id, c.name]));
+    const ana = anaOlcum(e);
+    const g = e.groupId ? await depo.sinavlar.grupBul(e.groupId) : null;
+    return ok(res, {
+      exam: Object.assign({}, e, { groupName: g ? g.name : '' }),
+      students: ogrenciler.map(s => {
+        const d = {};
+        for (const o of e.olcumler) {
+          const v = degerler[o.id] ? degerler[o.id][s.id] : undefined;
+          d[o.kod] = v === undefined ? null : v;
+        }
+        return {
+          id: s.id, fullName: s.fullName, classId: s.classId, className: sinifAdi.get(s.classId) || '',
+          grade: ana ? d[ana.kod] : null,
+          degerler: d
+        };
+      })
+    });
+  }
+
+  /* Değer girişi. İki biçim:
+       { grades: { ogrenciId: 85 } }                       ana ölçüm (eski biçim)
+       { degerler: { ogrenciId: { D: 18, Y: 2 } } }        ölçüm koduyla
+     Boş değer kaydı siler. Aralık dışı ya da sayı olmayan değer yazılmaz,
+     cevapta "atlanan" olarak döner. */
+  if (method === 'POST' && segs[3] === 'grades') {
+    if (!yetkiVarMi(me, 'sinav.not-gir', { ders: e.subject })) return bad(res, 'Not girme yetkin yok', 403);
+    /* Rolde sınıf kapsamı varsa yalnızca o sınıfların öğrencileri. */
+    const izinli = new Set((await ogretmeninOgrencileri(me))
+      .filter(s => yetkiVarMi(me, 'sinav.not-gir', { ders: e.subject, sinif: s.classId })).map(s => s.id));
+    const olcumKod = new Map(e.olcumler.map(o => [o.kod, o]));
+    const ana = anaOlcum(e);
+    const yazilacak = [];
+    const hatalar = [];
+    const degisen = new Set();
+
+    const isle = (ogrenciId, o, v) => {
+      if (!izinli.has(ogrenciId) || !o) return;
+      if (v === null || v === '' || v === undefined) {
+        yazilacak.push({ olcumId: o.id, ogrenciId, deger: null });
+        return;
+      }
+      const n = ondalik(v);
+      if (n === null || n < Number(o.alt) || n > Number(o.ust)) {
+        hatalar.push(o.ad + ': ' + String(v).slice(0, 20) + ' (' + o.alt + ' ile ' + o.ust + ' arası olmalı)');
+        return;
+      }
+      yazilacak.push({ olcumId: o.id, ogrenciId, deger: yuvarla(n, 3) });
+      degisen.add(ogrenciId);
+    };
+
+    const grades = body.grades && typeof body.grades === 'object' ? body.grades : {};
+    for (const sid in grades) isle(sid, ana, grades[sid]);
+    const gelen = body.degerler && typeof body.degerler === 'object' ? body.degerler : {};
+    for (const sid in gelen) {
+      const satir = gelen[sid];
+      if (!satir || typeof satir !== 'object') continue;
+      for (const kod in satir) isle(sid, olcumKod.get(kod), satir[kod]);
+    }
+
+    await depo.sinavlar.degerleriYaz(yazilacak);
+    /* Sonuç öğrenciye yalnızca ilk girildiğinde bildirilir; öğretmen bir
+       değeri düzeltince ya da yeni alan ekleyince yeniden bildirim gitmez. */
+    const ilk = await depo.genel.ilkKezOlanlar(Array.from(degisen).map(sid => 'sinav:' + e.id + ':' + sid));
+    await topluBildir(Array.from(degisen).filter(sid => ilk.has('sinav:' + e.id + ':' + sid)),
+      (e.subject ? e.subject + ' dersinden ' : '') + '"' + e.name + '" sınavının sonucu açıklandı.', '#/sinavlarim');
+    return ok(res, { exam: await depo.sinavlar.bul(e.id), atlanan: hatalar.length, hatalar: hatalar.slice(0, 5) });
+  }
+
+  /* Ölçümleri düzenle: "+ Yeni değer ekle", ad ve aralık değiştirme, silme. */
+  if (method === 'POST' && segs[3] === 'olcumler') {
+    if (!yetkiVarMi(me, 'sinav.olustur', { ders: e.subject })) return bad(res, 'Sınav düzenleme yetkin yok', 403);
+    const d = olcumleriDogrula(body.olcumler);
+    if (d.hata) return bad(res, d.hata);
+    const mevcut = new Set(e.olcumler.map(o => o.id));
+    for (const o of d.olcumler) {
+      if (o.id && !mevcut.has(o.id)) o.id = '';
+      if (o.id) {
+        const disarida = await depo.sinavlar.aralikDisi(o.id, o.alt, o.ust);
+        if (disarida) {
+          return bad(res, '"' + o.ad + '" için girilmiş ' + disarida + ' değer yeni aralığın dışında kalıyor');
+        }
+      }
+    }
+    return ok(res, { exam: await depo.sinavlar.olcumleriYaz(e.id, d.olcumler) });
+  }
+
+  if (method === 'POST' && segs[3] === 'delete') {
+    if (!yetkiVarMi(me, 'sinav.olustur', { ders: e.subject })) return bad(res, 'Sınav silme yetkin yok', 403);
+    await depo.sinavlar.sil(e.id);
+    return ok(res);
+  }
+}
+
