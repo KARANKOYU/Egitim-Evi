@@ -48,3 +48,16 @@ async function dosyayaYaz(hedef) {
   fs.renameSync(hedef + '.tmp', hedef);
 }
 
+async function yedekAl(elle) {
+  try {
+    const ad = yedekAdi(new Date());
+    const hedef = path.join(YEDEK_KLASOR, elle ? 'yedek-elle-' + ad.slice('yedek-'.length) : ad);
+    await dosyayaYaz(hedef);
+    yedekTemizle();
+    return { ad: path.basename(hedef), boyut: fs.statSync(hedef).size };
+  } catch (e) {
+    console.error('Yedek alınamadı:', e.message);
+    return { hata: e.message };
+  }
+}
+
