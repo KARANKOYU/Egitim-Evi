@@ -19,6 +19,13 @@
 .svg-grafik .sutun.belirsiz { fill: var(--cizgi-koyu); }
 .svg-grafik .sutun-grup:hover .sutun { opacity: .85; }
 
+/* çizgi ve bant */
+.svg-grafik .cizgi { fill: none; stroke: var(--ana); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.svg-grafik .nokta { fill: var(--kart); stroke: var(--ana); stroke-width: 2.6; }
+.svg-grafik .bant { fill: var(--mavi-zemin); opacity: .75; }
+.svg-grafik .bant-ort { fill: none; stroke: var(--mavi); stroke-width: 1.3; stroke-dasharray: 5 4; opacity: .8; }
+.svg-grafik .bant-tek { stroke: var(--mavi); stroke-width: 10; stroke-linecap: round; opacity: .25; }
+
 /* Sütunlar aşağıdan yukarı hafifçe büyür; hareket azaltılmışsa hiç oynamaz. */
 @media (prefers-reduced-motion: no-preference) {
   .svg-grafik .sutun { transform-box: fill-box; transform-origin: 50% 100%; animation: sutunBuyu .55s var(--egri) both; }
