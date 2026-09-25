@@ -1,3 +1,11 @@
 /* Grafikler (SVG), sınav değer tablosu, şablon düzenleyici,
    açılmamış ödev vurgusu. Renkler 00-temel.css değişkenlerinden. */
 
+/* Sütunlar aşağıdan yukarı hafifçe büyür; hareket azaltılmışsa hiç oynamaz. */
+@media (prefers-reduced-motion: no-preference) {
+  .svg-grafik .sutun { transform-box: fill-box; transform-origin: 50% 100%; animation: sutunBuyu .55s var(--egri) both; }
+  .svg-grafik .cizgi { stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: cizgiCiz .9s var(--egri) forwards; }
+}
+@keyframes sutunBuyu { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes cizgiCiz { to { stroke-dashoffset: 0; } }
+
