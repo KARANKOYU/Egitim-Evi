@@ -155,3 +155,17 @@ SAYFALAR['veli-devamsizlik'] = function () {
   });
 };
 
+/* ---- VELİ: ilerleyiş ---- */
+SAYFALAR['veli-ilerleyis'] = function () {
+  if (!veliCocuklar().length) return veliCocukYok('İLERLEYİŞ');
+  return cocuklarIcin('/progress').then(function (r) {
+    var h = hero('İLERLEYİŞ', 'Çocuk çocuk ödev başarısı ve sınav ortalamaları.');
+    h += veliCocukSeridi();
+    for (var i = 0; i < r.length; i++) {
+      h += '<h3 class="sb">' + esc(r[i].cocuk.fullName) + '</h3>';
+      h += ilerleyisKartlari(r[i].veri);
+    }
+    yaz(h);
+    ilerleyisGrafikleriniYukle(r.map(function (x) { return x.veri.student.id; }));
+  });
+};
