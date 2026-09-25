@@ -474,3 +474,13 @@ EYLEMLER['sinav-deger-kaydet'] = function (el, id) {
   })['catch'](function (e) { el.disabled = false; mesajGoster('sinavMesaj', 'hata', e.message); });
 };
 
+EYLEMLER['sinav-olcum-duzenle'] = function (el, id) {
+  var e = S.acikSinav && S.acikSinav.exam;
+  if (!e) return;
+  return modalAc('Değer alanları',
+    olcumDuzenleyici(e.olcumler) +
+    '<div class="hint">Bir alanı silersen o alana girilmiş değerler de silinir.</div><div id="mHata"></div>',
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="sinav-olcum-kaydet" data-id="' + esc(id) + '">Kaydet</button>');
+};
+
