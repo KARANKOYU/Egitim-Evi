@@ -17,3 +17,34 @@ function bildirimleriYenile() {
 }
 document.addEventListener('visibilitychange', function () { if (!document.hidden) bildirimleriYenile(); });
 
+/* Bildirime tıklayınca ilgili sayfa açılır ("Yeni ödev" -> Ödevler). */
+EYLEMLER['bildirim-git'] = function (el) {
+  var p = adrestenParca(el.getAttribute('data-link'));
+  $('bildirimPanel').innerHTML = '';
+  if (!p || !SAYFALAR[p.sayfa]) return;
+  if (p.cocuk) S.adresCocuk = p.cocuk;   // velinin bildirimi: o çocuğun sayfası
+  git(p.sayfa);
+};
+
+function bildirimPaneliAcKapa() {
+  var p = $('bildirimPanel');
+  if (p.innerHTML) { p.innerHTML = ''; return; }
+  var list = S._bildirimler || [];
+  var h = '<div class="panel">';
+  if (!list.length) h += '<div style="padding:22px;text-align:center;color:var(--soluk)">Bildirim yok.</div>';
+  for (var i = 0; i < list.length; i++) {
+    var link = adrestenParca(list[i].link) ? list[i].link : '';
+    h += '<div class="bildirim ' + (list[i].read ? '' : 'yeni') + (link ? ' tikla' : '') + '"' +
+      (link ? ' data-act="bildirim-git" data-link="' + esc(link) + '" role="button" tabindex="0"' : '') + '>' +
+      esc(list[i].text) + '<div class="z">' + tarihSaat(list[i].createdAt) + '</div></div>';
+  }
+  p.innerHTML = h + '</div>';
+  if (S.unread > 0) {
+    api('/notifications/read', 'POST').then(function () {
+      S.unread = 0;
+      $('bildirimRozet').style.display = 'none';
+      for (var i = 0; i < (S._bildirimler || []).length; i++) S._bildirimler[i].read = true;
+    })['catch'](function () { });
+  }
+}
+
