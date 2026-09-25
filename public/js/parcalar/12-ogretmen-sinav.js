@@ -247,3 +247,69 @@ EYLEMLER['olcum-sil'] = function (el) {
   el.closest('.olcum-satir').remove();
 };
 
+EYLEMLER['sablon-hazir'] = function (el) {
+  return api('/exams/sablonlar', 'POST', { hazir: el.getAttribute('data-val') })
+    .then(function () { return SAYFALAR['ogr-sinavlar'](); })['catch'](hataGoster);
+};
+
+function sablonModal(s) {
+  return modalAc(s ? 'Şablonu düzenle' : 'Yeni şablon',
+    '<div class="field"><label for="mAd">Şablon adı</label><input type="text" id="mAd" maxlength="60" ' +
+    'placeholder="Yazılı (0-100)" value="' + esc(s ? s.name : '') + '"></div>' +
+    olcumDuzenleyici(s ? s.olcumler : [{ ad: 'Puan', alt: 0, ust: 100, ana: true }]) +
+    (s ? '<div class="hint">Değişiklik yalnızca bundan sonra açılan sınavlara uygulanır; eski sınavlar olduğu gibi kalır.</div>' : '') +
+    '<div id="mHata"></div>',
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="sablon-kaydet"' + (s ? ' data-id="' + esc(s.id) + '"' : '') + '>Kaydet</button>');
+}
+
+EYLEMLER['sablon-yeni'] = function () { return sablonModal(null); };
+EYLEMLER['sablon-duzenle'] = function (el, id) {
+  var s = (S.sablonlar || []).filter(function (x) { return x.id === id; })[0];
+  if (s) return sablonModal(s);
+};
+EYLEMLER['sablon-kaydet'] = function (el, id) {
+  return api('/exams/sablonlar' + (id ? '/' + id : ''), 'POST', { name: $('mAd').value, olcumler: olcumleriTopla() })
+    .then(function () { modalKapat(); return SAYFALAR['ogr-sinavlar'](); })
+    ['catch'](function (e) { mesajGoster('mHata', 'hata', e.message); });
+};
+EYLEMLER['sablon-sil'] = function (el, id) {
+  if (!confirm('Şablon silinsin mi? Bu şablonla açılmış sınavlar değerleriyle birlikte kalır.')) return;
+  return api('/exams/sablonlar/' + id + '/delete', 'POST')
+    .then(function () { return SAYFALAR['ogr-sinavlar'](); })['catch'](hataGoster);
+};
+
+/* ---------- Yeni sınav ---------- */
+EYLEMLER['sinav-yeni'] = function (el, grupId) {
+  return Promise.all([api('/exams/sablonlar'), api('/examgroups')]).then(function (r) {
+    var sablonlar = r[0].sablonlar, hazir = r[0].hazir, gruplar = r[1].groups;
+    var bugun = new Date();
+    var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+    var bugunMetin = bugun.getFullYear() + '-' + p(bugun.getMonth() + 1) + '-' + p(bugun.getDate());
+
+    var sec = '';
+    for (var i = 0; i < sablonlar.length; i++) {
+      sec += '<option value="' + esc(sablonlar[i].id) + '">' + esc(sablonlar[i].name) + '</option>';
+    }
+    for (var j = 0; j < hazir.length; j++) {
+      sec += '<option value="hazir:' + esc(hazir[j].anahtar) + '">' + esc(hazir[j].name) + ' (hazır)</option>';
+    }
+    var grup = '<option value="">Grupsuz</option>';
+    for (var k = 0; k < gruplar.length; k++) {
+      grup += '<option value="' + esc(gruplar[k].id) + '"' + (gruplar[k].id === grupId ? ' selected' : '') + '>' +
+        esc(gruplar[k].name) + '</option>';
+    }
+    return modalAc('Yeni sınav',
+      '<div class="field"><label for="mAd">Sınav adı</label><input type="text" id="mAd" maxlength="100" placeholder="1. Yazılı"></div>' +
+      '<div class="field"><label for="mTarih">Tarih</label><input type="date" id="mTarih" value="' + bugunMetin + '"></div>' +
+      '<div class="field"><label for="mSablon">Şablon</label><select id="mSablon">' + sec + '</select>' +
+      '<div class="hint">Değer alanlarını şablon belirler. Sonradan sınava yeni alan da ekleyebilirsin.</div></div>' +
+      '<div class="field"><label for="mGrup">Grup</label><select id="mGrup">' + grup + '</select></div>' +
+      '<div class="field"><label for="mAgirlik">Etki oranı (%)</label><input type="text" inputmode="decimal" id="mAgirlik" value="50">' +
+      '<div class="hint">Yalnızca bir gruba eklersen kullanılır: sınavın grup ortalamasındaki ağırlığı.</div></div>' +
+      '<div id="mHata"></div>',
+      '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+      '<button class="btn" data-act="sinav-kaydet">Aç ve değer gir</button>');
+  })['catch'](hataGoster);
+};
+
