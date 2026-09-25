@@ -13,3 +13,23 @@
 .gosterge i.g-bant { background: var(--mavi-zemin); border: 1px solid var(--mavi); }
 .gosterge i.g-ort { background: none; border-top: 2px dashed var(--mavi); height: 0; border-radius: 0; }
 
+/* ================= sınav grafiği kutusu ================= */
+/* Veri gelmeden önce yer tutucu aynı yüksekliği ayırır: sayfa kaymaz. */
+.sinav-grafik .yer-tutucu {
+  min-height: 300px;
+  border-radius: var(--r-kucuk);
+  background: linear-gradient(90deg, var(--zemin) 0%, var(--cizgi) 50%, var(--zemin) 100%);
+  background-size: 200% 100%;
+  animation: yerTutucu 1.4s ease-in-out infinite;
+}
+@keyframes yerTutucu { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .sinav-grafik .yer-tutucu { animation: none; } }
+.sg-araclar, .sg-alt { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sg-araclar { margin-bottom: 6px; }
+.sg-alt { margin-top: 6px; }
+.sg-sablon-ad { font-weight: 700; color: var(--soluk); font-size: 13.5px; }
+.sg-cizim { min-height: 240px; }
+.sg-bos { color: var(--soluk); padding: 18px 0 6px; }
+table.t td.sayi, table.t th.sayi { text-align: right; font-variant-numeric: tabular-nums; }
+table.t td.sayi.ana { font-weight: 700; color: var(--ana); }
+
