@@ -41,3 +41,10 @@ function yedekTemizle() {
   }
 }
 
+async function dosyayaYaz(hedef) {
+  const veri = await disaAktar();
+  fs.mkdirSync(YEDEK_KLASOR, { recursive: true });
+  fs.writeFileSync(hedef + '.tmp', JSON.stringify(veri), 'utf8');
+  fs.renameSync(hedef + '.tmp', hedef);
+}
+
