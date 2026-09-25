@@ -1,0 +1,351 @@
+<title>Eğitim Evi Yapım Günlüğü</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --kagit: #FBFAF9;
+    --kart: #FFFFFF;
+    --murekkep: #1A1416;
+    --soluk: #6E6164;
+    --cizgi: #E8E1E0;
+    --cizgi-ince: #F1EBEA;
+    --ana: #C02B30;
+    --ana-koyu: #8F1D21;
+    --ana-sis: #FDF2F2;
+    --kod-zemin: #F5F1F0;
+    --yesil: #15803D;
+    --golge: 0 1px 2px rgba(26, 20, 22, .05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --kagit: #151114;
+      --kart: #1D1719;
+      --murekkep: #EFE9EA;
+      --soluk: #A0918F;
+      --cizgi: #322A2C;
+      --cizgi-ince: #262022;
+      --ana: #EC6167;
+      --ana-koyu: #F08D91;
+      --ana-sis: #2A1A1C;
+      --kod-zemin: #221B1D;
+      --yesil: #4ADE80;
+      --golge: 0 1px 2px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --kagit: #151114;
+    --kart: #1D1719;
+    --murekkep: #EFE9EA;
+    --soluk: #A0918F;
+    --cizgi: #322A2C;
+    --cizgi-ince: #262022;
+    --ana: #EC6167;
+    --ana-koyu: #F08D91;
+    --ana-sis: #2A1A1C;
+    --kod-zemin: #221B1D;
+    --yesil: #4ADE80;
+    --golge: 0 1px 2px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--kagit);
+    color: var(--murekkep);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16.5px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sar { max-width: 780px; margin: 0 auto; padding: 0 24px 120px; }
+
+  /* ---------- başlık ---------- */
+  .tepe {
+    padding: 76px 0 40px;
+    border-bottom: 2px solid var(--murekkep);
+    margin-bottom: 44px;
+  }
+  .etiket {
+    font-size: 12px; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ana);
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: clamp(38px, 7vw, 62px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  .ozet {
+    font-size: 19px; color: var(--soluk); margin: 0; max-width: 34em;
+    line-height: 1.6;
+  }
+
+  .kunye {
+    display: flex; flex-wrap: wrap; gap: 26px;
+    margin-top: 34px; padding-top: 24px;
+    border-top: 1px solid var(--cizgi-ince);
+  }
+  .kunye div { min-width: 82px; }
+  .kunye .sayi {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 27px; font-weight: 600; line-height: 1;
+    font-variant-numeric: tabular-nums;
+    display: block; margin-bottom: 5px;
+  }
+  .kunye .ad {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--soluk); font-weight: 500;
+  }
+
+  /* ---------- içindekiler ---------- */
+  .icindekiler {
+    background: var(--kart); border: 1px solid var(--cizgi);
+    border-radius: 14px; padding: 22px 26px; margin-bottom: 56px;
+    box-shadow: var(--golge);
+  }
+  .icindekiler h2 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .11em;
+    color: var(--soluk); margin: 0 0 14px; font-weight: 600;
+    border: 0; padding: 0;
+  }
+  .icindekiler ol { margin: 0; padding: 0; list-style: none; counter-reset: ic; }
+  .icindekiler li { counter-increment: ic; margin-bottom: 3px; }
+  .icindekiler a {
+    color: var(--murekkep); text-decoration: none; font-size: 15px;
+    display: flex; gap: 12px; padding: 4px 0;
+    border-bottom: 1px solid transparent;
+  }
+  .icindekiler a::before {
+    content: counter(ic, decimal-leading-zero);
+    color: var(--ana); font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px; flex: 0 0 26px; padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .icindekiler a:hover { color: var(--ana); }
+
+  /* ---------- bölümler ---------- */
+  section { margin-bottom: 62px; scroll-margin-top: 24px; }
+
+  h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600; font-size: clamp(25px, 4vw, 32px);
+    line-height: 1.15; letter-spacing: -0.018em;
+    margin: 0 0 20px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--cizgi);
+    text-wrap: balance;
+  }
+  h2 .no {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px; color: var(--ana); font-weight: 500;
+    display: block; margin-bottom: 9px; letter-spacing: .06em;
+  }
+  h3 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 17.5px; font-weight: 600; margin: 34px 0 11px;
+    letter-spacing: -0.005em;
+  }
+  p { margin: 0 0 17px; }
+  a { color: var(--ana); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  ul, ol { margin: 0 0 18px; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--ana); }
+
+  strong { font-weight: 600; }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .875em; background: var(--kod-zemin);
+    padding: 2px 6px; border-radius: 5px;
+    border: 1px solid var(--cizgi-ince);
+  }
+  pre {
+    background: var(--kod-zemin); border: 1px solid var(--cizgi);
+    border-radius: 11px; padding: 17px 19px; overflow-x: auto;
+    margin: 0 0 20px; line-height: 1.58;
+  }
+  pre code {
+    background: none; border: 0; padding: 0; font-size: 13.5px;
+    color: var(--murekkep);
+  }
+
+  /* ---------- vurgu kutusu ---------- */
+  .not {
+    border-left: 3px solid var(--ana);
+    background: var(--ana-sis);
+    padding: 16px 20px; border-radius: 0 11px 11px 0;
+    margin: 24px 0;
+  }
+  .not p:last-child { margin-bottom: 0; }
+  .not .bas {
+    font-weight: 600; color: var(--ana-koyu);
+    display: block; margin-bottom: 5px; font-size: 15px;
+  }
+
+  /* ---------- tablo ---------- */
+  .tablo-kap { overflow-x: auto; margin: 0 0 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th {
+    text-align: left; padding: 10px 13px 10px 0;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--soluk); font-weight: 600;
+    border-bottom: 1.5px solid var(--cizgi);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 13px 11px 0; border-bottom: 1px solid var(--cizgi-ince);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td code { font-size: 12.5px; }
+  .sayisal { font-variant-numeric: tabular-nums; text-align: right; padding-right: 0; }
+
+  /* ---------- parça listesi ---------- */
+  .parca {
+    border: 1px solid var(--cizgi); border-radius: 13px;
+    padding: 20px 23px; margin-bottom: 16px; background: var(--kart);
+    box-shadow: var(--golge);
+  }
+  .parca h3 { margin-top: 0; display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; }
+  .parca h3 .dosya {
+    font-family: "IBM Plex Mono", monospace; font-size: 12.5px;
+    color: var(--soluk); font-weight: 400;
+  }
+  .parca p:last-child { margin-bottom: 0; }
+
+  /* ---------- alt bilgi ---------- */
+  footer {
+    margin-top: 76px; padding-top: 26px;
+    border-top: 2px solid var(--murekkep);
+    font-size: 14px; color: var(--soluk);
+  }
+  footer p { margin-bottom: 8px; }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .sar { padding: 0 18px 80px; }
+    .tepe { padding-top: 48px; }
+    .kunye { gap: 18px; }
+  }
+</style>
+
+<div class="sar">
+
+  <header class="tepe">
+    <div class="etiket">Yapım günlüğü · Ağustos 2026</div>
+    <h1>Eğitim Evi nasıl yapıldı</h1>
+    <p class="ozet">
+      Bir okul yönetim portalını, tek bir dış paket kullanmadan, sıfırdan
+      yazmanın hikâyesi. Neyi kendimiz yazdık, nereden veri çektik, hangi
+      standartlara baktık.
+    </p>
+
+    <div class="kunye">
+      <div><span class="sayi">0</span><span class="ad">npm paketi</span></div>
+      <div><span class="sayi">11.969</span><span class="ad">satır JS</span></div>
+      <div><span class="sayi">84</span><span class="ad">API ucu</span></div>
+      <div><span class="sayi">371</span><span class="ad">test</span></div>
+      <div><span class="sayi">67.661</span><span class="ad">okul kaydı</span></div>
+    </div>
+  </header>
+
+  <nav class="icindekiler">
+    <h2>İçindekiler</h2>
+    <ol>
+      <li><a href="#ne">Sistem ne yapıyor</a></li>
+      <li><a href="#karar">Temel karar: sıfır bağımlılık</a></li>
+      <li><a href="#mimari">Mimari</a></li>
+      <li><a href="#kendi">Kendi yazdığımız parçalar</a></li>
+      <li><a href="#veri">Okul verisini nereden aldık</a></li>
+      <li><a href="#guvenlik">Güvenlik</a></li>
+      <li><a href="#standart">Başvurduğumuz standartlar</a></li>
+      <li><a href="#model">Veri modeli</a></li>
+      <li><a href="#test">Test yaklaşımı</a></li>
+      <li><a href="#yapmadik">Neyi neden yapmadık</a></li>
+    </ol>
+  </nav>
+
+  <section id="ne">
+    <h2><span class="no">Bölüm 01</span>Sistem ne yapıyor</h2>
+    <p>
+      Eğitim Evi, tek bir okulun günlük işini taşıyan bir web uygulaması.
+      Beş rol var: <strong>öğrenci, veli, öğretmen, müdür</strong> ve sistem
+      <strong>yöneticisi</strong>. Herkes aynı adrese giriyor, gördüğü ekran
+      rolüne göre değişiyor.
+    </p>
+    <p>
+      Müdür sınıfları açıyor, dersleri tanımlıyor, öğretmen atıyor, haftalık
+      ders programını işliyor. Öğretmen ödev veriyor, sınav notu giriyor,
+      yoklama alıyor. Öğrenci ödevlerini ve devamsızlığını görüyor. Veli
+      çocuğunun hesabına bir kodla bağlanıp aynı bilgilere erişiyor.
+    </p>
+    <p>
+      Üzerine şunlar geldi: okul içi mesajlaşma ve duyurular, aylık takvim,
+      Excel ile toplu hesap açma, otomatik yedekleme, işlem kaydı, özelleştirilebilir
+      roller ve zorunlu iki adımlı giriş.
+    </p>
+    <div class="not">
+      <span class="bas">Öğrenciye giden veliye de gider</span>
+      <p>
+        Sistemin en çok düşünülmüş kuralı bu. Bir öğrenciye mesaj gittiğinde,
+        yoklamada devamsız yazıldığında ya da ödevi sonuçlandığında velisi de
+        aynı bilgiyi alıyor. Veli, çocuğuna ne söylendiğini görebilmeli.
+      </p>
+    </div>
+  </section>
+
+  <section id="karar">
+    <h2><span class="no">Bölüm 02</span>Temel karar: sıfır bağımlılık</h2>
+    <p>
+      Projenin en belirleyici kararı en başta verildi: <strong>hiçbir npm paketi
+      kullanılmayacak.</strong> Ne Express, ne bir veritabanı sürücüsü, ne
+      React, ne de bir e-posta kütüphanesi. Yalnızca Node.js'in kendi içinde
+      gelen modüller.
+    </p>
+
+    <h3>Neden</h3>
+    <ul>
+      <li>
+        <strong>Saldırı yüzeyi.</strong> Ortalama bir Node projesi bağımlılık
+        ağacıyla birlikte binlerce paket çeker. Bunların herhangi birine sızan
+        biri, çocuk verisi tutan bir sisteme sızmış olur. Sıfır paket, sıfır
+        tedarik zinciri riski demek.
+      </li>
+      <li>
+        <strong>Ömür.</strong> Bu sistem bir okulda yıllarca çalışacak. Paketler
+        eskir, terk edilir, sürüm çakışır. Node'un yerleşik modülleri
+        eskimez.
+      </li>
+      <li>
+        <strong>Taşınabilirlik.</strong> Klasörü kopyala, <code>node server.js</code>
+        yaz, çalışır. Kurulum adımı yok.
+      </li>
+    </ul>
+
+    <h3>Bedeli</h3>
+    <p>
+      Bedeli, normalde hazır alacağın şeyleri kendin yazmak. Bu projede
+      elle yazılanlar: bir <strong>SMTP istemcisi</strong>, bir
+      <strong>Excel okuyucu/yazıcı</strong>, bir <strong>PNG üretici</strong>,
+      bir <strong>ZIP arşivleyici</strong> ve tüm arayüz katmanı. Toplam
+      bedel, yaklaşık 12 bin satır kod.
+    </p>
+    <p>
+      Kullanılan yerleşik modüller yalnız şunlar:
+      <code>http</code>, <code>fs</code>, <code>path</code>, <code>crypto</code>,
+      <code>net</code>, <code>tls</code>, <code>zlib</code>, <code>url</code>.
+    </p>
+  </section>
+
