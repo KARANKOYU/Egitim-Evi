@@ -280,3 +280,44 @@ async function ogrencininSerisi(ogrenciId, sablonId, okulId) {
   return { sinavlar, olcumler: Array.from(olcumler.values()).sort((a, b) => a.sira - b.sira) };
 }
 
+/* Gruba bağlı olmayan sınavlar: öğrencinin değeri olanlar, bütün ölçümleriyle. */
+async function ogrencininTekSinavlari(ogrenciId) {
+  const satirlar = await sorgu(
+    'SELECT s.id, s.ad, s.tarih, s.ders, s.okul_id, s.yil_id, sb.ad AS sablon_adi, t.ad_soyad AS ogretmen_adi, ' +
+    '       x.kod, x.ad AS olcum_adi, x.alt_sinir, x.ust_sinir, x.ana, x.sira, d.deger ' +
+    'FROM sinavlar s JOIN sinav_olcumleri x ON x.sinav_id = s.id ' +
+    'LEFT JOIN sinav_degerleri d ON d.olcum_id = x.id AND d.ogrenci_id = $1 ' +
+    'LEFT JOIN sinav_sablonlari sb ON sb.id = s.sablon_id LEFT JOIN kullanicilar t ON t.id = s.ogretmen_id ' +
+    'WHERE s.grup_id IS NULL AND EXISTS (SELECT 1 FROM sinav_olcumleri x2 JOIN sinav_degerleri d2 ' +
+    '      ON d2.olcum_id = x2.id WHERE x2.sinav_id = s.id AND d2.ogrenci_id = $1) ' +
+    'ORDER BY s.tarih DESC, s.olusturma DESC, x.sira', [ogrenciId]);
+  const liste = [];
+  for (const r of satirlar) {
+    let s = liste[liste.length - 1];
+    if (!s || s.id !== r.id) {
+      s = { id: r.id, name: r.ad, tarih: r.tarih, subject: r.ders, templateName: e.bos(r.sablon_adi),
+        teacherName: e.bos(r.ogretmen_adi), schoolId: r.okul_id, yilId: e.bos(r.yil_id), olcumler: [] };
+      liste.push(s);
+    }
+    s.olcumler.push({ kod: r.kod, ad: r.olcum_adi, alt: r.alt_sinir, ust: r.ust_sinir, ana: r.ana,
+      deger: r.deger === undefined ? null : r.deger });
+  }
+  return liste;
+}
+
+/* Öğrencinin girdiği sınavların şablonları (grafik seçicisi için). */
+async function ogrencininSablonlari(ogrenciId, okulId) {
+  return sorgu(
+    'SELECT sb.id, sb.ad FROM sinav_sablonlari sb WHERE EXISTS (' +
+    '  SELECT 1 FROM sinavlar s JOIN sinav_olcumleri x ON x.sinav_id = s.id ' +
+    '  JOIN sinav_degerleri d ON d.olcum_id = x.id WHERE s.sablon_id = sb.id AND d.ogrenci_id = $1 ' +
+    '  AND ($2::text IS NULL OR s.okul_id = $2)) ' +
+    'ORDER BY sb.ad' + tr(), [ogrenciId, okulId || null]);
+}
+
+module.exports = {
+  sablonlar, sablonBul, sablonEkle, sablonGuncelle, sablonSil, sablonunSinavSayisi,
+  grupBul, ogretmeninGruplari, grupEkle, grupSil,
+  bul, grubun, ogretmenin, ekle, sil, olcumleriYaz, aralikDisi, bantlar, degerleriYaz, degerleri,
+  ogrencininGruplari, ogrencininTekSinavlari, ogrencininSerisi, ogrencininSablonlari
+};
