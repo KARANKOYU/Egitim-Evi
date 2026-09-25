@@ -50,3 +50,9 @@ function cocuklarIcin(yol) {
   }));
 }
 
+function veliCocukYok(baslik) {
+  yaz(hero(baslik, '') + bosKutu('veli',
+    'Henüz çocuk eklenmedi. Çocuklarım sayfasından veli koduyla ekleyebilirsin.'));
+  return Promise.resolve();
+}
+
