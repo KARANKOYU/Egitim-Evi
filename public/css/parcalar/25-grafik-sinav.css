@@ -9,3 +9,7 @@
 @keyframes sutunBuyu { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes cizgiCiz { to { stroke-dashoffset: 0; } }
 
+.gosterge i.g-cizgi { background: var(--ana); height: 3px; border-radius: 2px; }
+.gosterge i.g-bant { background: var(--mavi-zemin); border: 1px solid var(--mavi); }
+.gosterge i.g-ort { background: none; border-top: 2px dashed var(--mavi); height: 0; border-radius: 0; }
+
