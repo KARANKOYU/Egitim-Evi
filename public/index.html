@@ -271,6 +271,101 @@
       </div>
     </div>
 
+    <!-- kayıt: yalnızca veli ve okulunu kaydedecek müdür. Öğrenci, öğretmen
+         ve servisçi hesabını okul açar. -->
+    <form id="formKayit" style="display:none" autocomplete="on" novalidate>
+      <div class="msg bilgi kayit-kimler"><b>Yetişkin hesabı:</b> veli, öğretmen ve okul müdürü içindir.
+        Öğrenci hesabını okul açar.</div>
+      <div class="field">
+        <span class="alan-baslik" id="kNeEtiket">Ne olarak kullanacaksın?</span>
+        <div class="ne-sec" role="radiogroup" aria-labelledby="kNeEtiket">
+          <label><input type="radio" name="kNe" value="cocuk" checked><span>Veli</span></label>
+          <label><input type="radio" name="kNe" value="ogretmen"><span>Öğretmen</span></label>
+          <label><input type="radio" name="kNe" value="okul"><span>Okul müdürü</span></label>
+        </div>
+        <div class="hint">Sonra değiştirebilirsin; bir hesap hem veli hem öğretmen olabilir.</div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="kAd">Ad</label>
+          <input type="text" id="kAd" required placeholder="Ad" autocomplete="given-name" maxlength="60">
+        </div>
+        <div class="field">
+          <label for="kSoyad">Soyad</label>
+          <input type="text" id="kSoyad" required placeholder="Soyad" autocomplete="family-name" maxlength="40">
+        </div>
+      </div>
+      <div class="field">
+        <label for="kKullaniciAdi">Kullanıcı adı</label>
+        <input type="text" id="kKullaniciAdi" required placeholder="kullanıcı adı" autocomplete="username"
+               autocapitalize="off" spellcheck="false" maxlength="30">
+        <div class="hint">Girişte e-posta yerine bunu da yazabilirsin. Harfle başlar; harf, rakam, nokta ve alt çizgi olabilir.</div>
+      </div>
+      <div class="field">
+        <label for="kEmail">E-posta</label>
+        <input type="email" id="kEmail" required placeholder="e-posta adresin" autocomplete="email"
+               autocapitalize="off" spellcheck="false">
+        <div class="hint">Hesabın, bu adrese gelen bağlantıya tıklayınca açılır. Her girişte de buraya bir kod gelir
+          (iki adımlı giriş).</div>
+      </div>
+      <div class="field">
+        <label for="kSifre">Şifre</label>
+        <input type="password" id="kSifre" required minlength="8" autocomplete="new-password"
+               aria-describedby="kSifreKural">
+        <ul class="sifre-kurallar" id="kSifreKural" aria-live="polite">
+          <li data-kural="uzun">En az 8 karakter</li>
+          <li data-kural="buyuk">Büyük harf</li>
+          <li data-kural="kucuk">Küçük harf</li>
+          <li data-kural="rakam">Rakam</li>
+          <li data-kural="ozel">Özel karakter (! ? . *)</li>
+        </ul>
+      </div>
+
+      <div class="field">
+        <label for="kTelefon">Telefon</label>
+        <input type="tel" id="kTelefon" required placeholder="0532 123 45 67"
+               inputmode="tel" autocomplete="tel" maxlength="20">
+      </div>
+
+      <div class="field">
+        <label for="kTc">T.C. kimlik no (isteğe bağlı)</label>
+        <input type="text" id="kTc" inputmode="numeric" maxlength="11" autocomplete="off"
+               spellcheck="false" placeholder="11 haneli">
+        <div class="hint">Zorunlu değil. Yazarsan yalnızca sen görürsün; ileride okulun
+          resmî kayıtla eşleştirmesi gerekirse kullanılır.</div>
+      </div>
+
+      <div class="field">
+        <label for="kAdres">Adres (isteğe bağlı)</label>
+        <textarea id="kAdres" rows="2" maxlength="200"
+                  placeholder="Mahalle, sokak, no — ulaşılabilecek açık adres"></textarea>
+      </div>
+
+      <div class="field bot-alan">
+        <label for="kBot">Robot değilim doğrulaması</label>
+        <div class="bot-satir">
+          <span class="bot-soru" id="kBotSoru">yükleniyor...</span>
+          <input type="number" id="kBot" inputmode="numeric" required
+                 autocomplete="off" placeholder="Cevap" aria-label="Doğrulama sorusunun cevabı">
+          <button type="button" class="btn gri kucuk" id="kBotYenile" title="Yeni soru">↻</button>
+        </div>
+        <div class="hint">Otomatik kayıt botlarını engellemek için soruyor.</div>
+      </div>
+
+      <div class="kvkk-alan">
+        <label class="onay">
+          <input type="checkbox" id="kKvkk" required>
+          <span><a href="/kvkk.html" target="_blank" rel="noopener">Aydınlatma metnini</a>
+          okudum, anladım ve kişisel verilerimin bu kapsamda işlenmesini kabul ediyorum.
+          <a href="/kosullar.html" target="_blank" rel="noopener">Kullanım koşullarını</a> kabul ediyorum.</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn full">Kayıt Ol</button>
+      <div class="hint kayit-sonrasi">Girişten sonra "Ekle" ile çocuğunu (veli kodu), okuluna öğretmen olarak katılmayı
+        (kendi kodun) ya da okulunu kaydetmeyi seçersin.</div>
+    </form>
+
   <footer class="site-alt">
     <div class="site-alt-ic">
       <div class="site-alt-marka"><b>Eğitim Evi</b><span>Okul portalı · 2026</span></div>
