@@ -455,3 +455,9 @@ async function sinavUclari(k) {
   }
 }
 
+module.exports = {
+  HAZIR_SABLONLAR,
+  olcumleriDogrula,
+  kodUret,
+  uclar
+};
