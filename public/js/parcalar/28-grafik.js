@@ -169,3 +169,81 @@ function sinavGrafigiYukle(ogrenciId) {
   });
 }
 
+function sinavGrafigiCiz(ogrenciId) {
+  var kutu = $('sg-' + ogrenciId);
+  var durum = S.sg[ogrenciId];
+  if (!kutu || !durum || !durum.veri) return;
+  var d = durum.veri;
+  var govde = kutu.querySelector('.sg-govde');
+  govde.classList.remove('yer-tutucu');
+
+  if (!d.sablonlar.length) {
+    govde.innerHTML = '<div class="sg-bos">Grafik, aynı şablonla yapılmış sınavları yan yana koyar. ' +
+      'Henüz şablonlu bir sınav sonucu yok.</div>';
+    return;
+  }
+
+  var ogr = ' data-id="' + esc(ogrenciId) + '"';
+  var h = '<div class="sg-araclar">';
+  /* Şablon seçimi: "Yazılı (0-100)", "LGS Denemesi" */
+  if (d.sablonlar.length > 1) {
+    h += '<div class="sekme-satir">';
+    for (var i = 0; i < d.sablonlar.length; i++) {
+      var sb = d.sablonlar[i];
+      h += '<button class="sekme kucuk' + (sb.id === d.sablonId ? ' secili' : '') + '" data-act="sg-sablon"' + ogr +
+        ' data-val="' + esc(sb.id) + '">' + esc(sb.name) + '</button>';
+    }
+    h += '</div>';
+  } else {
+    h += '<span class="sg-sablon-ad">' + esc(d.sablonlar[0].name) + '</span>';
+  }
+  h += '<div class="sekme-satir">' +
+    '<button class="sekme kucuk' + (durum.gorunum === 'grafik' ? ' secili' : '') + '" data-act="sg-gorunum"' + ogr + ' data-val="grafik">Grafik</button>' +
+    '<button class="sekme kucuk' + (durum.gorunum === 'liste' ? ' secili' : '') + '" data-act="sg-gorunum"' + ogr + ' data-val="liste">Liste</button>' +
+    '</div></div>';
+
+  var secili = d.olcumler.filter(function (o) { return o.kod === durum.olcum; })[0] || d.olcumler[0];
+
+  if (durum.gorunum === 'liste') {
+    h += '<div class="tablo-sar"><table class="t sg-tablo"><thead><tr><th>Tarih</th><th>Sınav</th>';
+    for (var a = 0; a < d.olcumler.length; a++) h += '<th class="sayi">' + esc(d.olcumler[a].ad) + '</th>';
+    h += '</tr></thead><tbody>';
+    for (var b = 0; b < d.sinavlar.length; b++) {
+      var sn = d.sinavlar[b];
+      h += '<tr><td>' + tarih(sn.tarih) + '</td><td>' + esc(sn.name) + '</td>';
+      for (var c = 0; c < d.olcumler.length; c++) {
+        var dv = sn.degerler[d.olcumler[c].kod];
+        h += '<td class="sayi' + (d.olcumler[c].ana ? ' ana' : '') + '">' + (dv === null || dv === undefined ? '-' : sayiTR(dv)) + '</td>';
+      }
+      h += '</tr>';
+    }
+    h += '</tbody></table></div>';
+  } else {
+    h += '<div class="sg-cizim">' + cizgiGrafik({
+      baslik: secili.ad + ' grafiği',
+      genislik: govde.clientWidth,
+      etiketler: d.sinavlar.map(function (s) { return { ust: tarih(s.tarih), alt: s.name }; }),
+      degerler: d.sinavlar.map(function (s) {
+        var v = s.degerler[secili.kod];
+        return v === undefined ? null : v;
+      }),
+      bant: durum.bant ? d.sinavlar.map(function (s) { return s.bant[secili.kod] || null; }) : null
+    }) + '</div>';
+    /* Ölçüm seçimi ve bant düğmesi grafiğin altında */
+    h += '<div class="sg-alt"><div class="sekme-satir">';
+    for (var k = 0; k < d.olcumler.length; k++) {
+      var o = d.olcumler[k];
+      h += '<button class="sekme kucuk' + (o.kod === secili.kod ? ' secili' : '') + '" data-act="sg-olcum"' + ogr +
+        ' data-val="' + esc(o.kod) + '">' + esc(o.ad) + '</button>';
+    }
+    h += '</div><button class="sekme kucuk' + (durum.bant ? ' secili' : '') + '" data-act="sg-bant"' + ogr + '>' +
+      'En düşük / en yüksek bandı</button></div>';
+    if (durum.bant) {
+      h += '<div class="gosterge"><span><i class="g-cizgi"></i>' + (S.viewStudentId || S.user.role !== 'student' ? 'Öğrencinin değeri' : 'Senin değerin') +
+        '</span><span><i class="g-bant"></i>Sınavı girenlerin en düşük - en yüksek aralığı</span>' +
+        '<span><i class="g-ort"></i>Ortalama</span></div>';
+    }
+  }
+  govde.innerHTML = h;
+}
+
