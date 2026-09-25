@@ -23,6 +23,45 @@ SAYFALAR.onaylar = function () {
   });
 };
 
+SAYFALAR.yedekler = function () {
+  return api('/admin/backups').then(function (d) {
+    var h = hero('YEDEKLEME', 'Tüm veri tek dosyada tutuluyor. Günde bir kez otomatik kopya alınır.');
+
+    h += '<div class="kart"><h3>Şimdi yedek al</h3>' +
+      '<div class="hint" style="margin-bottom:10px">Son ' + d.saklanan +
+      ' kopya saklanır, eskiler kendiliğinden silinir.</div>' +
+      '<button class="btn" data-act="yedek-al">Yedek al</button>' +
+      '<div id="yedekMesaj" style="margin-top:10px"></div></div>';
+
+    if (!d.yedekler.length) {
+      h += bosKutu('kutu', 'Henüz yedek yok. Sunucu açıldıktan kısa süre sonra ilki alınır.');
+      yaz(h);
+      return;
+    }
+
+    h += '<div class="kart"><h3>Yedekler (' + d.yedekler.length + ')</h3>';
+    for (var i = 0; i < d.yedekler.length; i++) {
+      var y = d.yedekler[i];
+      var elle = y.ad.indexOf('yedek-elle-') === 0, geriAlma = y.ad.indexOf('yedek-geri-alma-') === 0;
+      h += '<div class="satir" data-ara="' + esc(y.ad) + '">' +
+        '<div class="buyu"><div class="ad">' + esc(y.ad) +
+        (elle ? ' <span class="etiket">elle</span>' : '') + (geriAlma ? ' <span class="etiket">geri alma</span>' : '') + '</div>' +
+        '<div class="alt">' + tarihSaat(y.tarih) + ' · ' + boyutYaz(y.boyut) + '</div></div>' +
+        '<button class="btn kucuk ghost" data-act="yedek-indir" data-ad="' + esc(y.ad) + '">İndir</button>' +
+        '<button class="btn kucuk gri" data-act="yedek-geri" data-ad="' + esc(y.ad) + '">Geri yükle</button>' +
+        '<button class="btn kucuk tehlike" data-act="yedek-sil" data-ad="' + esc(y.ad) + '">Sil</button>' +
+        '</div>';
+    }
+    h += '</div>';
+
+    h += '<div class="msg bilgi">Geri yükleme her şeyi o ana döndürür — o yedekten ' +
+      'sonra yapılan bütün değişiklikler kaybolur. Yanlışlıkla yaparsan, geri yükleme ' +
+      'öncesi hâl otomatik olarak <b>yedek-geri-alma-…</b> adıyla saklanır.</div>';
+
+    yaz(h);
+  });
+};
+
 /* Dosya boyutu: 812 B, 34 KB, 2,4 MB (yedekler ve ödev dosyaları). */
 function boyutYaz(n) {
   if (n >= 1024 * 1024) return sayiTR(Math.round(n / 1024 / 1024 * 10) / 10) + ' MB';
