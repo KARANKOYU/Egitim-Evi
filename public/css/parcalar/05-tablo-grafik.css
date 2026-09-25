@@ -64,3 +64,6 @@ table.t input[type="number"], table.t input[type="text"] {
 .gosterge span { display: flex; align-items: center; gap: 5px; }
 .gosterge i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 
+/* çubuk (ortalama) */
+.cubuk { height: 9px; background: var(--zemin); border-radius: 999px; overflow: hidden; margin-top: 6px; }
+.cubuk i { display: block; height: 100%; background: var(--ana); border-radius: 999px; }
