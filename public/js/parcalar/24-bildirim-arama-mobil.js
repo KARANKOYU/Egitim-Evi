@@ -83,3 +83,10 @@ function menuDurumYaz(kapali) {
   try { localStorage.setItem('ee_menu', kapali ? '1' : '0'); } catch (e) { /* gizli sekmede yazılamaz */ }
 }
 
+function masaustuDaralt(kapali) {
+  document.body.classList.toggle('sidebar-kapali', kapali);
+  var hb = $('hamburger');
+  if (hb) hb.setAttribute('aria-expanded', kapali ? 'false' : 'true');
+  menuDurumYaz(kapali);
+}
+
