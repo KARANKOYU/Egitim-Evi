@@ -209,3 +209,21 @@ function girisBilgileriKarti(hs) {
     '<button class="btn" data-act="benim-bilgi-kaydet">Kaydet</button><div id="hMesaj" style="margin-top:10px"></div></div>';
 }
 
+EYLEMLER['benim-hesap-sil'] = function (el) {
+  var kutu = $('silSifre');
+  alanTemizle(kutu.closest('.field'));
+  if (!kutu.value) { alanHatasi(kutu, 'Mevcut şifreni yaz.'); kutu.focus(); return; }
+  if (!confirm('Hesabın ve bütün bilgilerin kalıcı olarak silinsin mi? Bu geri alınamaz.')) return;
+  dugmeBekle(el, 'Siliniyor...');
+  return api('/hesap/sil', 'POST', { sifre: kutu.value, onay: true }).then(function (d) {
+    return bildirimAboneligiBirak().then(function () {
+      cikisYap(true);
+      $('authMesaj').innerHTML = '<div class="msg iyi">' + esc(d.message) + '</div>';
+    });
+  })['catch'](function (e) {
+    dugmeBitir(el);
+    if (e.veri && e.veri.alan === 'sifre') { alanHatasi(kutu, e.message); kutu.focus(); }
+    else mesajGoster('silMesaj', 'hata', e.message);
+  });
+};
+
