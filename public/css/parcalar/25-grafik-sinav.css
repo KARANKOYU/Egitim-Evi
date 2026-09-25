@@ -89,3 +89,44 @@ table.t input.deger.hatali { border-color: var(--kirmizi); background: var(--kir
 .acilma-yazi.acilmadi { color: var(--turuncu-yazi); }
 .odev-aciklama { white-space: pre-wrap; margin-top: 12px; line-height: 1.6; }
 
+/* ================= ödev kontrolü =================
+   Üstte ödevin adı, altında konusu; öğrenciler alt alta, yanında sonuç kutusu. */
+.odev-bas { margin-bottom: 16px; }
+.odev-bas .odev-ad { font-family: var(--f-baslik); font-size: clamp(24px, 4vw, 32px); margin: 0 0 8px; text-wrap: balance; }
+.odev-bas .odev-konu { font-size: 15.5px; line-height: 1.55; white-space: pre-wrap; max-width: 72ch; }
+.odev-bas .odev-konu span {
+  display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--soluk); font-weight: 700; margin-bottom: 2px;
+}
+.odev-bas .odev-meta { margin-top: 8px; font-size: 13px; color: var(--soluk); }
+.ok-ust { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.ok-ust h3 { margin: 0; }
+.ok-satir { flex-wrap: nowrap; }
+.ok-sira { width: 26px; text-align: right; color: var(--soluk); font-variant-numeric: tabular-nums; font-size: 13px; flex: none; }
+.sonuc-kutu {
+  flex: none; width: 176px; padding: 9px 12px; border-radius: var(--r-kucuk);
+  border: 1.5px solid var(--cizgi-koyu); background: var(--kart); color: var(--yazi);
+  font: 600 14px var(--f-govde); cursor: pointer;
+  transition: border-color var(--sure-kisa), background var(--sure-kisa);
+}
+.sonuc-kutu:focus { outline: none; border-color: var(--ana); box-shadow: 0 0 0 4px var(--odak); }
+.sonuc-kutu[data-deger="yapti"] { background: var(--yesil-zemin); color: var(--yesil-yazi); border-color: var(--yesil); }
+.sonuc-kutu[data-deger="gec"] { background: var(--mavi-zemin); color: var(--mavi-yazi); border-color: var(--mavi); }
+.sonuc-kutu[data-deger="eksik"] { background: var(--turuncu-zemin); color: var(--turuncu-yazi); border-color: var(--turuncu); }
+.sonuc-kutu[data-deger="yapmadi"] { background: var(--kirmizi-zemin); color: var(--kirmizi-yazi); border-color: var(--kirmizi); }
+.sonuc-kutu[data-deger="izinli"] { background: var(--gri-zemin); color: var(--soluk); border-color: var(--cizgi-koyu); }
+.sonuc-kutu[data-deger="gelmedi"] { background: var(--bordo); color: var(--bordo-yazi); border-color: var(--bordo); }
+.sonuc-kutu option { background: var(--kart); color: var(--yazi); }
+.ok-sayim { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--cizgi); margin-top: 4px; }
+.ok-sayim:empty { display: none; }
+@media (max-width: 520px) {
+  .ok-satir { flex-wrap: wrap; }
+  .sonuc-kutu { margin-left: 38px; width: calc(100% - 38px); }
+}
+/* Çok sütunlu sınavda tablo yana kayarken öğrenci adı yerinde kalır. */
+.deger-tablo th:first-child, .deger-tablo td:first-child {
+  position: sticky; left: 0; z-index: 1; background: var(--kart); white-space: nowrap;
+}
+/* Ödev sütun grafiği: çizilene kadar yerini ayırır, sayfa kaymaz. */
+.odev-sutun { min-height: 250px; }
+.svg-grafik .eksen-yazi.kucuk { font-size: 10px; }   /* telefonda yan yana sütun adları birbirine değmesin */
