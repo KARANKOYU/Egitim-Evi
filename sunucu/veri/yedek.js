@@ -11,3 +11,7 @@ const path = require('path');
 const { DATA } = require('../yollar');
 const { iceAktar, disaAktar } = require('./json-aktarim');
 
+const YEDEK_KLASOR = path.join(DATA, 'yedek');
+const YEDEK_SAKLA = 14;                       // kaç kopya tutulsun
+const YEDEK_ARALIK_MS = 6 * 60 * 60 * 1000;   // 6 saatte bir kontrol
+
