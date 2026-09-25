@@ -60,3 +60,7 @@ table.t input[type="number"], table.t input[type="text"] {
 }
 .sutun-us { font-size: 12.5px; font-weight: 700; color: var(--ana); }
 
+.gosterge { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 12px; font-size: 12.5px; color: var(--soluk); }
+.gosterge span { display: flex; align-items: center; gap: 5px; }
+.gosterge i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
