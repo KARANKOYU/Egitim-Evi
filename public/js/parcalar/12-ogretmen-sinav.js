@@ -433,3 +433,15 @@ document.addEventListener('input', function (ev) {
   if (ev.target.classList && ev.target.classList.contains('deger')) degerKutusuDenetle(ev.target);
 });
 
+/* Enter: aynı sütunda alttaki görünür öğrenciye geç (Shift+Enter yukarı). */
+document.addEventListener('keydown', function (ev) {
+  var t = ev.target;
+  if (ev.key !== 'Enter' || !t.classList || !t.classList.contains('deger')) return;
+  ev.preventDefault();
+  var kod = t.getAttribute('data-kod');
+  var kutular = Array.prototype.filter.call(document.querySelectorAll('.deger[data-kod="' + kod + '"]'),
+    function (k) { return !k.closest('tr').classList.contains('gizli'); });
+  var sira = kutular.indexOf(t) + (ev.shiftKey ? -1 : 1);
+  if (kutular[sira]) { kutular[sira].focus(); kutular[sira].select(); }
+});
+
