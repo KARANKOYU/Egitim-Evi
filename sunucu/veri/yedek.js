@@ -69,3 +69,14 @@ function yedekGerekliMi() {
   return !son || (Date.now() - son) > 20 * 60 * 60 * 1000;
 }
 
+async function yedekKontrol() {
+  try {
+    if (yedekGerekliMi()) {
+      const r = await yedekAl(false);
+      if (r.ad) console.log('  Günlük yedek alındı: ' + r.ad);
+    }
+  } catch (e) {
+    console.error('Yedek kontrolü hatası:', e.message);
+  }
+}
+
