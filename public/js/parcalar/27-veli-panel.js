@@ -23,3 +23,20 @@ function veliSeciliCocuk() {
   return null;
 }
 
+function cocukRozet(c) {
+  return '<span class="cocuk-rozet">' + esc(c.fullName.split(' ')[0]) + '</span>';
+}
+
+/* Üst şerit: Hepsi · Zeynep · Burak */
+function veliCocukSeridi() {
+  var c = veliCocuklar();
+  if (c.length < 2) return '';
+  var h = '<div class="cocuk-seridi">' +
+    '<button class="sekme kucuk' + (S.veliCocuk ? '' : ' secili') + '" data-act="veli-cocuk" data-id="">Hepsi</button>';
+  for (var i = 0; i < c.length; i++) {
+    h += '<button class="sekme kucuk' + (S.veliCocuk === c[i].id ? ' secili' : '') +
+      '" data-act="veli-cocuk" data-id="' + esc(c[i].id) + '">' + esc(c[i].fullName) + '</button>';
+  }
+  return h + '</div>';
+}
+
