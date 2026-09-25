@@ -14,3 +14,9 @@ function kontrol(ad, sart, detay) {
 }
 const gun = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
+/* Kişinin bildirimlerinde metni içeren kaç tane var? */
+async function sayi(token, parca) {
+  const r = await iste('/api/notifications', 'GET', null, token);
+  return (r.body.notifications || []).filter(n => n.text.indexOf(parca) >= 0).length;
+}
+
