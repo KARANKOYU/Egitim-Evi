@@ -156,6 +156,15 @@ EYLEMLER['veli-bul'] = function (el, ogrenciId) {
   })['catch'](function (e) { $('hVeliSonuc').innerHTML = ''; alanHatasi(kutu, e.message); });
 };
 
+EYLEMLER['veli-bagla'] = function (el, ogrenciId) {
+  dugmeBekle(el, 'Bağlanıyor...');
+  return api('/school/veli-bagla', 'POST', { studentId: ogrenciId, veliId: el.getAttribute('data-veli') }).then(function (d) {
+    $('hVeliSonuc').innerHTML = '<div class="msg iyi">' + esc(d.message) + '</div>';
+    $('hVeliAra').value = '';
+    velileriYukle(ogrenciId);
+  })['catch'](function (e) { dugmeBitir(el); $('hVeliSonuc').innerHTML = '<div class="msg hata">' + esc(e.message) + '</div>'; });
+};
+
 /* Müdür bir öğrencinin portalını açar (veli görünümüyle aynı mantık) */
 function ogrenciPortalAc(studentId, ad) {
   S.viewStudentId = studentId;
