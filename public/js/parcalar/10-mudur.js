@@ -165,6 +165,13 @@ EYLEMLER['veli-bagla'] = function (el, ogrenciId) {
   })['catch'](function (e) { dugmeBitir(el); $('hVeliSonuc').innerHTML = '<div class="msg hata">' + esc(e.message) + '</div>'; });
 };
 
+EYLEMLER['veli-coz'] = function (el, ogrenciId) {
+  if (!confirm('Bu kişinin veli bağı kaldırılsın mı? Öğrencinin bilgilerini artık göremez.')) return;
+  el.disabled = true;
+  return api('/school/veli-coz', 'POST', { studentId: ogrenciId, veliId: el.getAttribute('data-veli') })
+    .then(function () { velileriYukle(ogrenciId); })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
 /* Müdür bir öğrencinin portalını açar (veli görünümüyle aynı mantık) */
 function ogrenciPortalAc(studentId, ad) {
   S.viewStudentId = studentId;
