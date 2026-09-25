@@ -405,6 +405,90 @@
     </div>
   </div>
 
+  <!-- 7 -->
+  <div class="bolum" id="b7">
+    <div class="bolum-baslik">
+      <span class="bolum-no">7</span>
+      <h2>Excel / CSV aktarım ve yedekleme</h2>
+      <span class="aciklama">şablon indir · doldur · yükle</span>
+    </div>
+    <div class="cerceve">
+      <div class="kart" style="margin-top:0">
+        <h3>Toplu öğrenci ekleme</h3>
+        <div class="hint" style="margin-bottom:12px">
+          Boş şablonu indir, Excel'de doldur, geri yükle. Şifreleri boş bırakırsan
+          sistem üretir ve listeyi sana verir.
+        </div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn ghost">Boş şablon indir (.xlsx)</button>
+          <button class="btn ghost">Boş şablon indir (.csv)</button>
+          <button class="btn">Dosya yükle</button>
+        </div>
+        <div class="tablo-sar">
+          <table class="t">
+            <thead><tr><th>ad_soyad</th><th>kullanici_adi</th><th>sifre</th><th>sinif</th><th>not</th></tr></thead>
+            <tbody>
+              <tr><td>Ayşe Demir</td><td>ayse.demir</td><td>(boş)</td><td>7-A</td><td>Şifreni öğretmeninden al</td></tr>
+              <tr><td>Burak Öztürk</td><td>burak.ozturk</td><td>Okul2026</td><td>7-A</td><td></td></tr>
+              <tr><td>Deniz Kara</td><td>deniz.kara</td><td>(boş)</td><td>8-B</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="msg bilgi" style="margin-top:12px">
+          Yükledikten sonra önizleme çıkar: <b>3 satır okundu, 3 yeni hesap, 0 hata.</b>
+          Onaylayınca hesaplar açılır.
+        </div>
+      </div>
+
+      <div class="kart">
+        <h3>Ders programı aktarımı</h3>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn ghost">Program şablonu indir</button>
+          <button class="btn ghost">Mevcut programı dışa aktar</button>
+          <button class="btn">Program yükle</button>
+        </div>
+        <div class="tablo-sar">
+          <table class="t">
+            <thead><tr><th>sinif</th><th>gun</th><th>baslangic</th><th>bitis</th><th>ders</th><th>ogretmen</th></tr></thead>
+            <tbody>
+              <tr><td>7-A</td><td>Pazartesi</td><td>09:20</td><td>10:00</td><td>Matematik</td><td>Ayşe Kaya</td></tr>
+              <tr><td>7-A</td><td>Pazartesi</td><td>10:10</td><td>10:50</td><td>Türkçe</td><td>Ali Yıldız</td></tr>
+              <tr><td>7-B</td><td>Salı</td><td>09:20</td><td>10:00</td><td>Fen Bilimleri</td><td>Ali Yıldız</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="kart">
+        <h3>Yedekleme</h3>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">Otomatik yedek</div>
+            <div class="alt">Her gece 03:00 · son 7 kopya saklanır</div>
+          </div>
+          <span class="etiket yesil">Açık</span>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">yedek-2026-08-29.json</div>
+            <div class="alt">2.4 MB · bugün 03:00</div>
+          </div>
+          <button class="btn kucuk ghost">İndir</button>
+          <button class="btn kucuk gri">Geri yükle</button>
+        </div>
+        <div class="satir">
+          <div class="buyu">
+            <div class="ad">yedek-2026-08-28.json</div>
+            <div class="alt">2.3 MB · dün 03:00</div>
+          </div>
+          <button class="btn kucuk ghost">İndir</button>
+          <button class="btn kucuk gri">Geri yükle</button>
+        </div>
+        <button class="btn" style="margin-top:12px">Şimdi yedek al</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 9 -->
   <div class="bolum" id="b9">
     <div class="bolum-baslik">
