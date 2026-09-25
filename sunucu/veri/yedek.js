@@ -80,3 +80,29 @@ async function yedekKontrol() {
   }
 }
 
+/* Geri yükleme: önce şimdiki hâl "geri-alma" yedeği olarak saklanır,
+   sonra seçilen yedek tek işlemde veritabanına yazılır. */
+async function yedekGeriYukle(ad) {
+  const guvenli = String(ad || '').replace(/[^a-zA-Z0-9._-]/g, '');
+  if (!/^yedek-.*\.json$/.test(guvenli)) return { hata: 'Geçersiz yedek adı' };
+  const kaynak = path.join(YEDEK_KLASOR, guvenli);
+  if (!fs.existsSync(kaynak)) return { hata: 'Yedek bulunamadı' };
+
+  let icerik;
+  try { icerik = JSON.parse(fs.readFileSync(kaynak, 'utf8')); }
+  catch (e) { return { hata: 'Yedek dosyası okunamadı: ' + e.message }; }
+  if (!icerik || !Array.isArray(icerik.users)) {
+    return { hata: 'Yedek geçerli görünmüyor (kullanıcı listesi yok)' };
+  }
+
+  try { await dosyayaYaz(path.join(YEDEK_KLASOR, 'yedek-geri-alma-' + yedekAdi(new Date()).slice('yedek-'.length))); }
+  catch (e) { /* kritik değil */ }
+
+  try {
+    const r = await iceAktar(icerik);
+    return { ad: guvenli, kullanici: r.kullanici, atlanan: r.atlanan };
+  } catch (e) {
+    return { hata: 'Geri yüklenemedi: ' + e.message };
+  }
+}
+
