@@ -34,3 +34,10 @@ function yedekListesi() {
     .sort((a, b) => b.tarih.localeCompare(a.tarih));
 }
 
+function yedekTemizle() {
+  const liste = yedekListesi();
+  for (let i = YEDEK_SAKLA; i < liste.length; i++) {
+    try { fs.unlinkSync(path.join(YEDEK_KLASOR, liste[i].ad)); } catch (e) { /* yoksay */ }
+  }
+}
+
