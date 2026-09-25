@@ -247,3 +247,22 @@ function sinavGrafigiCiz(ogrenciId) {
   govde.innerHTML = h;
 }
 
+EYLEMLER['sg-sablon'] = function (el, id) {
+  S.sg[id].sablon = el.getAttribute('data-val');
+  S.sg[id].olcum = '';
+  return sinavGrafigiYukle(id);
+};
+EYLEMLER['sg-olcum'] = function (el, id) {
+  S.sg[id].olcum = el.getAttribute('data-val');
+  sinavGrafigiCiz(id);
+};
+EYLEMLER['sg-bant'] = function (el, id) {
+  S.sg[id].bant = !S.sg[id].bant;
+  tercihYaz('sg_bant', S.sg[id].bant ? '1' : '0');
+  sinavGrafigiCiz(id);
+};
+EYLEMLER['sg-gorunum'] = function (el, id) {
+  S.sg[id].gorunum = el.getAttribute('data-val');
+  sinavGrafigiCiz(id);
+};
+
