@@ -40,3 +40,13 @@ function veliCocukSeridi() {
   return h + '</div>';
 }
 
+/* Her çocuk için aynı ucu çağırır: [{ cocuk, veri }] */
+function cocuklarIcin(yol) {
+  var secili = veliSeciliCocuk();
+  var liste = secili ? [secili] : veliCocuklar();
+  return Promise.all(liste.map(function (c) {
+    return api(yol + (yol.indexOf('?') >= 0 ? '&' : '?') + 'studentId=' + encodeURIComponent(c.id))
+      .then(function (d) { return { cocuk: c, veri: d }; });
+  }));
+}
+
