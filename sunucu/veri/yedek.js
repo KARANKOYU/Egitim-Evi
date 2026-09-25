@@ -61,3 +61,11 @@ async function yedekAl(elle) {
   }
 }
 
+/* Günde bir kez yeterli: son otomatik yedek 20 saatten eskiyse yenisini al. */
+function yedekGerekliMi() {
+  const liste = yedekListesi().filter(y => y.ad.indexOf('yedek-elle-') !== 0 && y.ad.indexOf('yedek-geri-alma-') !== 0);
+  if (!liste.length) return true;
+  const son = Date.parse(liste[0].tarih);
+  return !son || (Date.now() - son) > 20 * 60 * 60 * 1000;
+}
+
