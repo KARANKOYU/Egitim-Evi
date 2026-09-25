@@ -70,6 +70,16 @@ async function okulOgrencisi(me, id) {
   return st && st.role === 'student' && st.schoolId === me.schoolId ? st : null;
 }
 
+/* Veli olarak bağlanabilecek hesap: onaylı; okuldan bağımsız veli ya da
+   rolsüz (yetişkin) hesap, veya bu okulun kendi hesabıyla açılmış öğretmeni/
+   müdürü. Eşlenmiş öğretmen satırı bulunursa bağ yetişkin hesabına kurulur
+   (bkz. veliHesabi). */
+function veliOlabilir(me, u) {
+  if (!u || u.status !== 'approved' || u.anaHesapId) return false;
+  if (!u.role || u.role === 'parent') return true;
+  return (u.role === 'teacher' || u.role === 'principal') && u.schoolId === me.schoolId;
+}
+
 /* Aramada okul rolü satırı çıktıysa (okulun öğretmeni) velilik onun
    yetişkin hesabınındır. */
 async function veliHesabi(u) {
