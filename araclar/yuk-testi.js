@@ -77,3 +77,14 @@ async function iste(yol, anahtar, method, govde) {
   return { durum: r.status, ms, bayt: Buffer.byteLength(metin), govde: j };
 }
 
+(async () => {
+  try {
+    await doldur();
+    await olcumler();
+  } catch (e) {
+    console.error('HATA:', e.stack || e.message);
+    process.exitCode = 1;
+  } finally {
+    await baglanti.kapat();
+  }
+})();
