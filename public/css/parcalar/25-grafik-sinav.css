@@ -8,6 +8,17 @@
 .svg-grafik .eksen-yazi.soluk { opacity: .75; font-size: 11px; }
 .svg-grafik .deger-yazi { fill: var(--yazi); font: 700 12px var(--f-govde); font-variant-numeric: tabular-nums; }
 
+/* sütunlar: sonuç renkleri etiketlerle aynı aile */
+.svg-grafik .sutun { fill: var(--cizgi-koyu); }
+.svg-grafik .sutun.yapti { fill: var(--yesil); }
+.svg-grafik .sutun.gec { fill: var(--mavi); }
+.svg-grafik .sutun.eksik { fill: var(--turuncu); }
+.svg-grafik .sutun.yapmadi { fill: var(--kirmizi); }
+.svg-grafik .sutun.izinli { fill: var(--soluk); }
+.svg-grafik .sutun.gelmedi { fill: var(--bordo); }
+.svg-grafik .sutun.belirsiz { fill: var(--cizgi-koyu); }
+.svg-grafik .sutun-grup:hover .sutun { opacity: .85; }
+
 /* Sütunlar aşağıdan yukarı hafifçe büyür; hareket azaltılmışsa hiç oynamaz. */
 @media (prefers-reduced-motion: no-preference) {
   .svg-grafik .sutun { transform-box: fill-box; transform-origin: 50% 100%; animation: sutunBuyu .55s var(--egri) both; }
