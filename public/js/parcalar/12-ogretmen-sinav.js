@@ -445,3 +445,32 @@ document.addEventListener('keydown', function (ev) {
   if (kutular[sira]) { kutular[sira].focus(); kutular[sira].select(); }
 });
 
+EYLEMLER['sinav-deger-kaydet'] = function (el, id) {
+  var kutular = document.querySelectorAll('.deger-tablo .deger');
+  var degerler = {}, sayi = 0, hatali = 0;
+  for (var i = 0; i < kutular.length; i++) {
+    var k = kutular[i];
+    if (!degerKutusuDenetle(k)) { hatali++; continue; }
+    if (k.value.trim() === k.getAttribute('data-ilk')) continue;   // yalnızca değişenler gider
+    var ogr = k.getAttribute('data-ogr');
+    if (!degerler[ogr]) degerler[ogr] = {};
+    degerler[ogr][k.getAttribute('data-kod')] = k.value.trim() === '' ? null : k.value.trim();
+    sayi++;
+  }
+  if (hatali) return mesajGoster('sinavMesaj', 'hata', hatali + ' kutuda aralık dışı ya da sayı olmayan değer var (kırmızı). Önce onları düzelt.');
+  if (!sayi) return mesajGoster('sinavMesaj', 'bilgi', 'Değişiklik yok.');
+  el.disabled = true;
+  return api('/exams/' + id + '/grades', 'POST', { degerler: degerler }).then(function (d) {
+    el.disabled = false;
+    for (var j = 0; j < kutular.length; j++) {
+      kutular[j].setAttribute('data-ilk', kutular[j].value.trim());
+      kutular[j].classList.remove('degisti');
+    }
+    if (d.atlanan) {
+      mesajGoster('sinavMesaj', 'hata', d.atlanan + ' değer yazılmadı: ' + d.hatalar.join('; '));
+    } else {
+      mesajGoster('sinavMesaj', 'iyi', sayi + ' değer kaydedildi. Öğrencilere bildirim gitti.');
+    }
+  })['catch'](function (e) { el.disabled = false; mesajGoster('sinavMesaj', 'hata', e.message); });
+};
+
