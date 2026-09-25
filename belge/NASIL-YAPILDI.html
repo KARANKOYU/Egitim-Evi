@@ -668,3 +668,129 @@ il=7&ilce=0&start=0&length=100000&draw=1
     </p>
   </section>
 
+  <section id="standart">
+    <h2><span class="no">Bölüm 07</span>Başvurduğumuz standartlar</h2>
+    <p>
+      Hazır kütüphane kullanmayınca, biçimleri tanımlayan belgelere doğrudan
+      bakmak gerekti.
+    </p>
+    <div class="tablo-kap">
+      <table>
+        <thead>
+          <tr><th>Standart</th><th>Nerede kullanıldı</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RFC 5321 — SMTP</td><td>E-posta gönderimi: komut sırası, yanıt kodları</td></tr>
+          <tr><td>RFC 2047 — MIME encoded-word</td><td>Türkçe karakterli e-posta konu başlıkları</td></tr>
+          <tr><td>RFC 8314 — örtük TLS</td><td>465 portunda baştan şifreli bağlantı</td></tr>
+          <tr><td>PKWARE APPNOTE — ZIP</td><td>Excel dosyasının kabuğu</td></tr>
+          <tr><td>ECMA-376 — OOXML</td><td>Excel içindeki XML bölümleri</td></tr>
+          <tr><td>RFC 1951 — DEFLATE</td><td>Zip sıkıştırması (<code>zlib</code> üzerinden)</td></tr>
+          <tr><td>ISO 15948 — PNG</td><td>Uygulama simgelerinin üretimi</td></tr>
+          <tr><td>RFC 7914 — scrypt</td><td>Şifre saklama</td></tr>
+          <tr><td>W3C Web App Manifest</td><td>Telefona/masaüstüne kurulabilirlik</td></tr>
+          <tr><td>W3C Service Worker</td><td>Çevrimdışı çalışma</td></tr>
+          <tr><td>W3C Content Security Policy</td><td>Script kısıtlaması</td></tr>
+          <tr><td>KVKK — 6698 sayılı kanun</td><td>Aydınlatma metni ve onay akışı</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Buna ek olarak bir de <em>gözlemlenerek</em> çözülen protokol var:
+      MEB'in okul listesi ucu, DataTables kütüphanesinin sunucu tarafı istek
+      biçimini kullanıyor. Belgesi yok; tarayıcının gönderdiği istek yakalanıp
+      taklit edildi.
+    </p>
+  </section>
+
+  <section id="model">
+    <h2><span class="no">Bölüm 08</span>Veri modeli</h2>
+    <p>
+      Tümü <code>data/db.json</code> içinde, düz diziler hâlinde:
+    </p>
+    <div class="tablo-kap">
+      <table>
+        <thead>
+          <tr><th>Tablo</th><th>Ne tutuyor</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>users</code></td><td>Beş rolün tamamı; rol alanıyla ayrılıyor</td></tr>
+          <tr><td><code>schools</code></td><td>Kayıtlı okullar (MEB listesinden ya da elle)</td></tr>
+          <tr><td><code>classes</code> / <code>lessons</code></td><td>Sınıflar ve o sınıftaki dersler</td></tr>
+          <tr><td><code>schedule</code></td><td>Haftalık ders programı satırları</td></tr>
+          <tr><td><code>assignments</code></td><td>Ödevler; sonuçlar ödevin içinde</td></tr>
+          <tr><td><code>examGroups</code> / <code>exams</code></td><td>Sınav grupları ve ağırlıklı notlar</td></tr>
+          <tr><td><code>devamsizlik</code></td><td>Yalnızca devamsızlıklar — "geldi" kaydı tutulmuyor</td></tr>
+          <tr><td><code>mesajlar</code></td><td>Mesaj ve duyurular; alıcı listesi içinde</td></tr>
+          <tr><td><code>takvim</code></td><td>Okulun kendi etkinlik ve tatilleri</td></tr>
+          <tr><td><code>parentLinks</code></td><td>Veli–öğrenci bağlantısı</td></tr>
+          <tr><td><code>roles</code></td><td>Müdürün tanımladığı özel roller</td></tr>
+          <tr><td><code>islemKaydi</code></td><td>Geri alması zor işlemlerin kaydı</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      İki tasarım tercihi dikkat çekici. Birincisi, yoklamada
+      <strong>yalnızca devamsızlıklar saklanıyor</strong>: 500 öğrencilik bir
+      okulda günde 6 ders için "geldi" yazmak yılda milyonlarca gereksiz kayıt
+      demekti. İkincisi, <strong>okul listesi ayrı bir dosyada</strong> —
+      67 bin kayıt her yedeğe girmiyor, çünkü değişmiyor.
+    </p>
+  </section>
+
+  <section id="yapmadik">
+    <h2><span class="no">Bölüm 10</span>Neyi neden yapmadık</h2>
+
+    <h3>Veritabanı</h3>
+    <p>
+      Bir okul birkaç bin kayıt üretiyor. PostgreSQL kurmak, bağlantı havuzu
+      yönetmek ve göç betikleri yazmak bu ölçekte kazançtan çok yük. JSON
+      dosyası, veri belli bir boyutu aşana kadar daha hızlı ve çok daha basit.
+      Aşarsa değiştirilir — veri katmanı zaten tek bir yerde toplanmış durumda.
+    </p>
+
+    <h3>Arayüz çatısı</h3>
+    <p>
+      React ya da Vue, bu arayüzün karmaşıklığı için fazla. Sayfa sayısı belli,
+      durum yönetimi basit. Karşılığında derleme adımı, paket ağacı ve sürüm
+      bakımı gelirdi.
+    </p>
+
+    <h3>Gerçek CAPTCHA</h3>
+    <p>
+      reCAPTCHA her ziyaretçiyi Google'a tanıtırdı. Bir okul portalında,
+      üstelik çocuk verisiyle, buna değmez. Basit toplama sorusu otomatik
+      kayıt botlarını elemeye yetiyor; hedefli bir saldırıya karşı zaten hız
+      sınırı ve hesap kilidi var.
+    </p>
+
+    <h3>.exe ve .apk</h3>
+    <p>
+      İstenmişti, ama HTTPS'e geçildiğinde <strong>PWA bunu zaten
+      karşılıyor</strong>: telefonda "Ana ekrana ekle", masaüstünde tarayıcının
+      "Yükle" düğmesi. Simgeler, manifest ve servis işçisi hazır. Gerçek bir
+      <code>.apk</code> üretmek Android SDK kurulumu ve imzalama süreci
+      demekti — aynı sonuç için haftalarca iş.
+    </p>
+
+    <h3>Dinî bayramların hesaplanması</h3>
+    <p>
+      Takvimdeki sabit özel günler (23 Nisan, 15 Temmuz, 29 Ekim…) her yıl aynı
+      tarihte olduğu için doğrudan kodda. Ramazan ve Kurban Bayramı ise ay
+      takvimine göre kaydığı için <em>hesaplanmıyor</em>, tablodan okunuyor.
+      Hesaplamak mümkün ama Diyanet'in ilan ettiği tarihle her zaman
+      örtüşmeyebilir; bir okul takviminde yanlış tarih göstermektense tabloyu
+      yılda bir güncellemek daha doğru.
+    </p>
+  </section>
+
+  <footer>
+    <p><strong>Eğitim Evi</strong> — okul yönetim sistemi</p>
+    <p>
+      Node.js yerleşik modülleriyle, dış paket kullanmadan yazıldı.
+      11.969 satır JavaScript, 84 API ucu, 371 test.
+    </p>
+    <p>Yapım günlüğü · Ağustos 2026</p>
+  </footer>
+
+</div>
