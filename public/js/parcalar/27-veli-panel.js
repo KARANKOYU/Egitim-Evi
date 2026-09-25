@@ -110,3 +110,48 @@ function veliOdevListesi(list) {
   return h + '</div>';
 }
 
+/* ---- VELİ: devamsızlık ---- */
+SAYFALAR['veli-devamsizlik'] = function () {
+  if (!veliCocuklar().length) return veliCocukYok('DEVAMSIZLIK');
+  return cocuklarIcin('/devamsizlik/ogrenci').then(function (r) {
+    var h = hero('DEVAMSIZLIK', 'Çocuklarının derse katılım kayıtları.');
+    h += veliCocukSeridi();
+
+    /* Çocuk başına özet kartı */
+    h += '<div class="grid k3" style="margin-bottom:18px">';
+    for (var i = 0; i < r.length; i++) {
+      var d = r[i].veri;
+      h += '<div class="kart" style="margin:0"><h3>' + esc(r[i].cocuk.fullName) + '</h3>' +
+        '<div class="alt-sayim">' +
+        '<span><b>' + d.sayim.yok + '</b> gelmedi</span>' +
+        '<span><b>' + d.sayim.gec + '</b> geç geldi</span>' +
+        '<span><b>' + d.sayim.izinli + '</b> izinli</span></div></div>';
+    }
+    h += '</div>';
+
+    var kayitlar = [];
+    for (var k = 0; k < r.length; k++) {
+      var liste = r[k].veri.kayitlar || [];
+      for (var j = 0; j < liste.length; j++) { liste[j].cocuk = r[k].cocuk; kayitlar.push(liste[j]); }
+    }
+    kayitlar.sort(function (a, b) { return String(b.tarih).localeCompare(String(a.tarih)); });
+
+    if (!kayitlar.length) {
+      h += bosKutu('onay', 'Hiç devamsızlık kaydı yok. Böyle devam.');
+    } else {
+      h += '<div class="kart" style="padding:0">';
+      for (var m = 0; m < kayitlar.length; m++) {
+        var ky = kayitlar[m];
+        h += '<div class="satir">' + cocukRozet(ky.cocuk) +
+          '<div class="buyu"><div class="ad">' + esc(ky.ders || 'Ders') +
+          ' <span class="durum-etiket ' + esc(ky.durum) + '">' + esc(ky.durumAd) + '</span></div>' +
+          '<div class="alt">' + esc(ky.tarih) +
+          (ky.alan ? ' · ' + esc(ky.alan) : '') +
+          (ky.not ? ' · ' + esc(ky.not) : '') + '</div></div></div>';
+      }
+      h += '</div>';
+    }
+    yaz(h);
+  });
+};
+
