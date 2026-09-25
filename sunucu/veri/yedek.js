@@ -15,3 +15,9 @@ const YEDEK_KLASOR = path.join(DATA, 'yedek');
 const YEDEK_SAKLA = 14;                       // kaç kopya tutulsun
 const YEDEK_ARALIK_MS = 6 * 60 * 60 * 1000;   // 6 saatte bir kontrol
 
+function yedekAdi(d) {
+  const p2 = n => (n < 10 ? '0' : '') + n;
+  return 'yedek-' + d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) +
+    '_' + p2(d.getHours()) + p2(d.getMinutes()) + '.json';
+}
+
