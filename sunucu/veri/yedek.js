@@ -21,3 +21,16 @@ function yedekAdi(d) {
     '_' + p2(d.getHours()) + p2(d.getMinutes()) + '.json';
 }
 
+function yedekListesi() {
+  if (!fs.existsSync(YEDEK_KLASOR)) return [];
+  return fs.readdirSync(YEDEK_KLASOR)
+    .filter(f => /^yedek-.*\.json$/.test(f))
+    .map(f => {
+      const st = fs.statSync(path.join(YEDEK_KLASOR, f));
+      return { ad: f, boyut: st.size, tarih: st.mtime.toISOString() };
+    })
+    /* Yeniden eskiye, dosyanın yazıldığı ana göre (adına göre sıralanınca
+       "yedek-elle-..." adları otomatik yedeklerin önüne geçiyordu). */
+    .sort((a, b) => b.tarih.localeCompare(a.tarih));
+}
+
