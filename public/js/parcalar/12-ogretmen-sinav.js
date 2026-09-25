@@ -406,3 +406,26 @@ function sinavAc(id) {
   });
 }
 
+EYLEMLER['sinav-ac'] = function (el, id) { return sinavAc(id)['catch'](hataGoster); };
+
+EYLEMLER['sinav-sinif'] = function (el) {
+  S.sinavSinif = el.getAttribute('data-val');
+  var satirlar = document.querySelectorAll('.deger-tablo tbody tr');
+  for (var i = 0; i < satirlar.length; i++) {
+    satirlar[i].classList.toggle('gizli', !!S.sinavSinif && satirlar[i].getAttribute('data-sinif') !== S.sinavSinif);
+  }
+  var dugmeler = document.querySelectorAll('[data-act="sinav-sinif"]');
+  for (var j = 0; j < dugmeler.length; j++) dugmeler[j].classList.toggle('secili', dugmeler[j] === el);
+};
+
+/* Kutudaki değer geçerli mi? Geçersizse kırmızı, değiştiyse mavi kenar. */
+function degerKutusuDenetle(kutu) {
+  var v = sayiOku(kutu.value);
+  var alt = Number(kutu.getAttribute('data-alt')), ust = Number(kutu.getAttribute('data-ust'));
+  var hatali = v !== null && (isNaN(v) || v < alt || v > ust);
+  kutu.classList.toggle('hatali', hatali);
+  kutu.classList.toggle('degisti', !hatali && kutu.value.trim() !== kutu.getAttribute('data-ilk'));
+  kutu.title = hatali ? sayiTR(alt) + ' ile ' + sayiTR(ust) + ' arasında bir sayı yaz' : '';
+  return !hatali;
+}
+
