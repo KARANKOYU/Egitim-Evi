@@ -69,3 +69,4 @@ async function abonelikleriGeriYaz(liste) {
   }
 }
 
+module.exports = { TABLOLAR, iceAktar, disaAktar };
