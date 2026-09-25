@@ -48,3 +48,27 @@ function bildirimPaneliAcKapa() {
   }
 }
 
+/* ================= arama ================= */
+function araUygula() {
+  /* Sayfa kendi arama mantığını kurduysa (ör. ödevler) onu çalıştır. */
+  if (typeof S.araHook === 'function') { S.araHook(); return; }
+  var t = nrm($('araKutu') && $('araKutu').value || '');
+  var hedefler = document.querySelectorAll('#sayfa [data-ara]');
+  var gorunen = 0;
+  for (var i = 0; i < hedefler.length; i++) {
+    var el = hedefler[i];
+    var uyar = !t || nrm(el.getAttribute('data-ara') || '').indexOf(t) >= 0;
+    el.style.display = uyar ? '' : 'none';
+    if (uyar) gorunen++;
+  }
+  /* Arama hiçbir şeyi tutmadıysa kullanıcı boş sayfaya bakmasın. */
+  var uyari = $('araBos');
+  if (uyari) uyari.parentNode.removeChild(uyari);
+  if (t && hedefler.length && gorunen === 0) {
+    var d = document.createElement('div');
+    d.id = 'araBos';
+    d.innerHTML = bosKutu('ara', '"' + t + '" için sonuç bulunamadı.');
+    $('sayfa').appendChild(d);
+  }
+}
+
