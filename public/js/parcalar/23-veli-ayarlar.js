@@ -55,3 +55,7 @@ function dogumMetni(iso) {
   return Number(p[2]) + ' ' + AY_ADLARI[Number(p[1]) - 1] + ' ' + p[0] + (yas >= 0 ? ' (' + yas + ' yaşında)' : '');
 }
 
+function satirBilgi(etiket, deger) {
+  return '<div class="satir"><div class="buyu"><div class="alt">' + etiket + '</div><div class="ad">' + deger + '</div></div></div>';
+}
+
