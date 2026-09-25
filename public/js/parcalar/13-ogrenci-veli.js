@@ -100,6 +100,22 @@ function tekSinavKarti(d) {
   return h;
 }
 
+function grupOrtalamaKarti(d) {
+  var h = '<div class="kart"><h3>Sınav grubu ortalamaları</h3>';
+  if (!d.examGroups.length) h += '<div style="color:var(--soluk)">Henüz gruplu sınav yok.</div>';
+  else {
+    for (var k = 0; k < d.examGroups.length; k++) {
+      var g = d.examGroups[k];
+      h += '<div class="satir"><div class="buyu"><div class="ad">' + esc(g.name) + '</div>' +
+        '<div class="alt">' + esc(g.subject) + ' · ' + esc(g.teacherName) + ' · 100 üzerinden</div>' +
+        '<div class="cubuk"><i style="width:' + (g.average === null ? 0 : Math.max(0, Math.min(100, g.average))) + '%"></i></div></div>' +
+        '<span class="etiket ' + (g.average === null ? 'gri' : g.average >= 50 ? 'yesil' : 'kirmizi') + '">' +
+        (g.average === null ? 'Değer yok' : sayiTR(g.average, 2)) + '</span></div>';
+    }
+  }
+  return h + '</div>';
+}
+
 /* Sayfa çizildikten sonra her öğrencinin sınav grafiğini getirir. */
 function ilerleyisGrafikleriniYukle(ogrenciIdler) {
   odevGrafikleriniCiz();
