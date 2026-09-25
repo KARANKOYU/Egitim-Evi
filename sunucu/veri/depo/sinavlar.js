@@ -138,3 +138,82 @@ async function ekle(s, olcumler) {
   return bul(s.id);
 }
 
+async function sil(id) {
+  await calistir('DELETE FROM sinavlar WHERE id = $1', [id]);
+}
+
+/* Sınavın ölçümlerini verilen listeyle eşitler ("+ Yeni değer ekle").
+   id'si olan güncellenir, yenisi eklenir, listede olmayan silinir
+   (değerleri CASCADE ile gider). Geçici kod ataması, kod benzersizliği ve
+   tek ana ölçüm kuralı sıra değişirken ara adımda bozulmasın diye. */
+async function olcumleriYaz(sinavId, olcumler) {
+  await islem(async () => {
+    const mevcut = (await sorgu('SELECT id FROM sinav_olcumleri WHERE sinav_id = $1', [sinavId])).map(r => r.id);
+    const kalan = olcumler.filter(o => o.id && mevcut.indexOf(o.id) >= 0).map(o => o.id);
+    await calistir('DELETE FROM sinav_olcumleri WHERE sinav_id = $1 AND NOT (id = ANY($2::text[]))', [sinavId, kalan]);
+    await calistir("UPDATE sinav_olcumleri SET ana = false, kod = '~' || id WHERE sinav_id = $1", [sinavId]);
+    let sira = 0;
+    for (const o of olcumler) {
+      sira++;
+      if (o.id && kalan.indexOf(o.id) >= 0) {
+        await calistir('UPDATE sinav_olcumleri SET sira = $1, kod = $2, ad = $3, alt_sinir = $4, ust_sinir = $5, ana = $6 ' +
+          'WHERE id = $7 AND sinav_id = $8', [sira, o.kod, o.ad, o.alt, o.ust, !!o.ana, o.id, sinavId]);
+      } else {
+        await sorgu('INSERT INTO sinav_olcumleri (id, sinav_id, sira, kod, ad, alt_sinir, ust_sinir, ana) ' +
+          'VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', [uid('ol'), sinavId, sira, o.kod, o.ad, o.alt, o.ust, !!o.ana]);
+      }
+    }
+  });
+  return bul(sinavId);
+}
+
+/* Aralık daraltılırken dışarıda kalacak değer sayısı. */
+async function aralikDisi(olcumId, alt, ust) {
+  return (await tek('SELECT count(*) AS n FROM sinav_degerleri WHERE olcum_id = $1 AND (deger < $2 OR deger > $3)',
+    [olcumId, alt, ust])).n;
+}
+
+/* Grafik bantları: her sınavın her ölçümünde en düşük, en yüksek ve ortalama. */
+async function bantlar(sinavIdler) {
+  if (!sinavIdler.length) return {};
+  const satirlar = await sorgu(
+    'SELECT x.sinav_id, x.kod, min(d.deger) AS en_az, max(d.deger) AS en_cok, avg(d.deger)::float8 AS ort, ' +
+    '       count(*) AS sayi ' +
+    'FROM sinav_olcumleri x JOIN sinav_degerleri d ON d.olcum_id = x.id ' +
+    'WHERE x.sinav_id = ANY($1::text[]) GROUP BY x.sinav_id, x.kod', [sinavIdler]);
+  const sonuc = {};
+  for (const r of satirlar) {
+    if (!sonuc[r.sinav_id]) sonuc[r.sinav_id] = {};
+    sonuc[r.sinav_id][r.kod] = { alt: r.en_az, ust: r.en_cok, ort: Math.round(r.ort * 1000) / 1000, sayi: r.sayi };
+  }
+  return sonuc;
+}
+
+/* Değerleri yazar. degerler: [{ olcumId, ogrenciId, deger }]; deger null ise silinir.
+   Tek işlemde en fazla iki sorgu: 60 öğrenci x 7 alan = 420 değer tek tek
+   yazılınca 160 ms sürüyordu. */
+async function degerleriYaz(degerler) {
+  /* Aynı öğrenci-alan çifti iki kez geldiyse sonuncusu geçerli (toplu
+     upsert aynı satırı iki kez güncelleyemez). */
+  const son = new Map();
+  for (const d of degerler) son.set(d.olcumId + '|' + d.ogrenciId, d);
+  const tekil = Array.from(son.values());
+  const silinecek = tekil.filter(d => d.deger === null);
+  const yazilacak = tekil.filter(d => d.deger !== null);
+  await islem(async () => {
+    if (silinecek.length) {
+      await calistir(
+        'DELETE FROM sinav_degerleri d USING unnest($1::text[], $2::text[]) AS s(olcum, ogrenci) ' +
+        'WHERE d.olcum_id = s.olcum AND d.ogrenci_id = s.ogrenci',
+        [silinecek.map(d => d.olcumId), silinecek.map(d => d.ogrenciId)]);
+    }
+    if (yazilacak.length) {
+      await sorgu(
+        'INSERT INTO sinav_degerleri (olcum_id, ogrenci_id, deger) ' +
+        'SELECT * FROM unnest($1::text[], $2::text[], $3::numeric[]) ' +
+        'ON CONFLICT (olcum_id, ogrenci_id) DO UPDATE SET deger = EXCLUDED.deger',
+        [yazilacak.map(d => d.olcumId), yazilacak.map(d => d.ogrenciId), yazilacak.map(d => d.deger)]);
+    }
+  });
+}
+
