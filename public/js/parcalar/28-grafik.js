@@ -131,3 +131,41 @@ function odevGrafikleriniCiz() {
   }
 }
 
+/* Pencere boyu değişince (telefon yan çevrilince) grafikler yeni genişlikte. */
+var grafikBoyutZamani = null;
+window.addEventListener('resize', function () {
+  clearTimeout(grafikBoyutZamani);
+  grafikBoyutZamani = setTimeout(function () {
+    odevGrafikleriniCiz();
+    for (var id in S.sg) if ($('sg-' + id)) sinavGrafigiCiz(id);
+  }, 180);
+});
+
+/* ================= sınav grafiği kutusu =================
+   İlerleyiş ve sınavlar sayfasında öğrenci başına bir kutu. Sayfa önce
+   yer tutucuyla çizilir (yükseklik sabit, sayfa kaymaz), veri sonra gelir. */
+S.sg = S.sg || {};
+
+function sinavGrafigiKutusu(ogrenciId) {
+  return '<div class="kart sinav-grafik" id="sg-' + esc(ogrenciId) + '" data-ogrenci="' + esc(ogrenciId) + '">' +
+    '<h3>Sınav grafiği</h3><div class="sg-govde yer-tutucu"></div></div>';
+}
+
+function sinavGrafigiYukle(ogrenciId) {
+  var durum = S.sg[ogrenciId] || (S.sg[ogrenciId] = { bant: tercihOku('sg_bant', '1') === '1', gorunum: 'grafik' });
+  var yol = '/exams/grafik?ogrenci=' + encodeURIComponent(ogrenciId) +
+    (durum.sablon ? '&sablon=' + encodeURIComponent(durum.sablon) : '');
+  return api(yol).then(function (d) {
+    durum.veri = d;
+    durum.sablon = d.sablonId;
+    if (!durum.olcum || !d.olcumler.some(function (o) { return o.kod === durum.olcum; })) {
+      var ana = d.olcumler.filter(function (o) { return o.ana; })[0] || d.olcumler[0];
+      durum.olcum = ana ? ana.kod : '';
+    }
+    sinavGrafigiCiz(ogrenciId);
+  })['catch'](function (e) {
+    var kutu = $('sg-' + ogrenciId);
+    if (kutu) kutu.querySelector('.sg-govde').innerHTML = '<div class="msg hata">' + esc(e.message) + '</div>';
+  });
+}
+
