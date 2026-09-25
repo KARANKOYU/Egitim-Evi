@@ -39,6 +39,29 @@ const GOVDE_ILKORNEK = Object.freeze(Object.create(null, {
   [Symbol.toPrimitive]: { value: () => '' }
 }));
 
+function govdeTemizle(v, derinlik) {
+  derinlik = derinlik || 0;
+  /* NUL karakteri (\u0000) PostgreSQL metninde yasak: kalırsa sorgu hata
+     verir. Gelen her metinden baştan ayıklanır. */
+  if (typeof v === 'string') return v.indexOf('\u0000') >= 0 ? v.replace(/\u0000/g, '') : v;
+  if (derinlik > 6 || v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.slice(0, 500).map(x => govdeTemizle(x, derinlik + 1));
+  const temiz = Object.create(GOVDE_ILKORNEK);
+  for (const k of Object.keys(v)) {
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype' || k === 'toString' || k === 'valueOf') continue;
+    temiz[k] = govdeTemizle(v[k], derinlik + 1);
+  }
+  return temiz;
+}
+/* Veli kodu: 10 karakter, yalnızca büyük harf ve rakam; ekranda
+   "ABCDE-FGH23" diye iki parça gösterilir. Eskiden büyük/küçük harf ve
+   !@#$ gibi işaretler karışıktı, veli yazarken yanılıyordu. Büyük/küçük
+   harf, boşluk ve tire fark etmez (kodSade). Karışabilen karakterler
+   (0/O, 1/I) alfabede yok. 32^10 ≈ 1,1e15 olasılık; veli başına dakikada
+   5 deneme sınırıyla tahmin edilemez. */
+const KOD_ALFABE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const KOD_UZUNLUK = 10;
+
 /* Kullanıcının yazdığı kodu karşılaştırılacak hâle getirir. */
 function kodSade(kod) {
   return String(kod == null ? '' : kod).toLocaleUpperCase('tr').replace(/İ/g, 'I').replace(/[^A-Z0-9]/g, '');

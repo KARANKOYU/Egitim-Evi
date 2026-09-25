@@ -146,6 +146,11 @@ async function okuldaBosAd(ad, okulId) {
   for (let n = 2; ; n++) if (!await kullaniciAdiVarMi(kok + n, '', okulId)) return kok + n;
 }
 
+/* Rolsüz kişi veli kodu girince veli olur (yalnızca hâlâ rolsüzse). */
+async function rolsuzuVeliYap(id) {
+  return calistir("UPDATE kullanicilar SET rol = 'parent' WHERE id = $1 AND rol IS NULL", [id]);
+}
+
 /* T.C. no kullanılıyor mu? Ad alanı kuralı kullanıcı adındaki gibi. */
 async function tcVarMi(tc, haricId, okulId) {
   if (!tc) return false;
@@ -211,6 +216,25 @@ async function bagliMi(veliId, ogrenciId) {
 async function bagla(id, veliId, ogrenciId, zaman) {
   await sorgu('INSERT INTO veli_baglari (id, veli_id, ogrenci_id, olusturma) VALUES ($1, $2, $3, $4) ' +
     'ON CONFLICT (veli_id, ogrenci_id) DO NOTHING', [id, veliId, ogrenciId, zaman]);
+}
+
+/* Bağ çözülür. Veli yetişkin hesabıysa okulu kalan çocuklarından yeniden
+   hesaplanır (çocuk kalmadıysa boşalır): yoksa eski okulun "Veliler"
+   mesajlarını almaya, takvimini görmeye devam ederdi. Okulun öğretmeni ya da
+   müdürü olan eski usul hesabın okuluna dokunulmaz. */
+async function bagiCoz(veliId, ogrenciId) {
+  await islem(async () => {
+    await calistir('DELETE FROM veli_baglari WHERE veli_id = $1 AND ogrenci_id = $2', [veliId, ogrenciId]);
+    await calistir(
+      'UPDATE kullanicilar k SET okul_id = (SELECT o.okul_id FROM veli_baglari b JOIN kullanicilar o ON o.id = b.ogrenci_id ' +
+      '  WHERE b.veli_id = k.id ORDER BY b.olusturma LIMIT 1) ' +
+      "WHERE k.id = $1 AND k.ana_hesap_id IS NULL AND (k.rol IS NULL OR k.rol = 'parent')", [veliId]);
+    /* Son çocuğu da kaldırılan veli rolsüz yetişkin hesabına döner
+       (başlangıç ekranı açılır; boş veli menüsü hata vermez). */
+    await calistir(
+      "UPDATE kullanicilar k SET rol = NULL WHERE k.id = $1 AND k.ana_hesap_id IS NULL AND k.rol = 'parent' " +
+      'AND NOT EXISTS (SELECT 1 FROM veli_baglari b WHERE b.veli_id = k.id)', [veliId]);
+  });
 }
 
 /* Velinin ilk bağlandığı çocuğun okulu (okulu boş veliler için) */

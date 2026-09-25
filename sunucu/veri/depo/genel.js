@@ -33,6 +33,25 @@ async function takvimEkle(k) {
       e.yokIse(k.ekleyenId), e.yokIse(k.yilId), k.createdAt]);
 }
 
+async function takvimSil(id) {
+  await calistir('DELETE FROM takvim_etkinlikleri WHERE id = $1', [id]);
+}
+
+/* ================= bildirimler =================
+   Öğrenciye giden her bildirimin bir kopyası onaylı velilerine de gider;
+   başında hangi çocuk olduğu yazar ("Zeynep Şahin · ..."), dokununca velinin
+   o çocuğa ait sayfası açılır (#/veli-odevler?c=<öğrenci>). Birden çok
+   çocuklu velide her bildirim kendi çocuğunun adını taşır, karışmaz.
+   Aynı bildirimi zaten kendisi alan veliye (ör. öğrencilere ve velilere
+   giden mesaj) kopya gitmez. Veliye kendi metniyle ayrıca haber veren yerler
+   (devamsızlık, etüt yoklaması, servis, nakil) ve öğrencinin kendi
+   hatırlatıcıları { veliye: false } ile çağırır. */
+const VELI_SAYFASI = {
+  odevler: 'veli-odevler', devamsizligim: 'veli-devamsizlik', ilerleyisim: 'veli-ilerleyis',
+  sinavlarim: 'veli-ilerleyis', etutlerim: 'etutlerim', servis: 'servis', takvim: 'takvim',
+  kulupler: 'kulupler', yemek: 'yemek'
+};
+
 function veliBaglantisi(baglanti, ogrenciId) {
   const sayfa = String(baglanti || '').replace(/^#\/?/, '');
   return '#/' + (VELI_SAYFASI[sayfa] || 'cocuklarim') + '?c=' + ogrenciId;
