@@ -106,3 +106,7 @@ async function yedekGeriYukle(ad) {
   }
 }
 
+module.exports = {
+  YEDEK_KLASOR, YEDEK_SAKLA, YEDEK_ARALIK_MS,
+  yedekAdi, yedekListesi, yedekTemizle, yedekAl, yedekGerekliMi, yedekKontrol, yedekGeriYukle
+};
