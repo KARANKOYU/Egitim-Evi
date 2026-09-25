@@ -33,3 +33,63 @@ function guzelEksen(enAz, enCok, hedefAralik) {
   return { alt: alt, ust: ust, adim: adim, isaretler: isaretler };
 }
 
+/* Grafik, kutusunun gerçek genişliğinde çizilir (o.genislik, piksel):
+   SVG ölçeklenmez, yazılar telefonda da masaüstünde de 11-12 px kalır.
+   Genişlik bilinmiyorsa 640 varsayılır. */
+function grafikGenisligi(o) {
+  return Math.max(260, Math.round(o.genislik || 640));
+}
+
+/* Etiketi iki satıra böler (dar sütunlarda "Geç yaptı" -> "Geç" / "yaptı"). */
+function ikiSatir(x, y, metin, sinif, dar) {
+  var p = String(metin).split(' ');
+  if (!dar || p.length < 2) {
+    return '<text class="' + sinif + '" x="' + x + '" y="' + y + '" text-anchor="middle">' + esc(metin) + '</text>';
+  }
+  return '<text class="' + sinif + '" x="' + x + '" y="' + y + '" text-anchor="middle">' +
+    '<tspan x="' + x + '">' + esc(p[0]) + '</tspan>' +
+    '<tspan x="' + x + '" dy="13">' + esc(p.slice(1).join(' ')) + '</tspan></text>';
+}
+
+/* ================= sütun grafik =================
+   o = { kategoriler: [{ ad, deger, sinif }], baslik, genislik } */
+function sutunGrafik(o) {
+  var G = grafikGenisligi(o), Y = 250, sol = 40, sag = 8, ust = 24, alt = 44;
+  var liste = o.kategoriler;
+  var enCok = 0;
+  for (var i = 0; i < liste.length; i++) if (liste[i].deger > enCok) enCok = liste[i].deger;
+  var eksen = guzelEksen(0, Math.max(enCok, 1));
+  var cizimG = G - sol - sag, cizimY = Y - ust - alt;
+  var yKonum = function (v) { return ust + cizimY - (v - eksen.alt) / (eksen.ust - eksen.alt) * cizimY; };
+
+  var s = '<svg class="svg-grafik" viewBox="0 0 ' + G + ' ' + Y + '" role="img" aria-label="' +
+    esc(o.baslik || 'Sütun grafik') + ': ' +
+    esc(liste.map(function (k) { return k.ad + ' ' + k.deger; }).join(', ')) + '">';
+
+  for (var j = 0; j < eksen.isaretler.length; j++) {
+    var yv = yKonum(eksen.isaretler[j]);
+    s += '<line class="izgara" x1="' + sol + '" x2="' + (G - sag) + '" y1="' + yv + '" y2="' + yv + '"/>' +
+      '<text class="eksen-yazi" x="' + (sol - 8) + '" y="' + (yv + 4) + '" text-anchor="end">' +
+      sayiTR(eksen.isaretler[j]) + '</text>';
+  }
+
+  var bolme = cizimG / liste.length;
+  var genislik = Math.min(56, bolme * 0.62);
+  var dar = bolme < 78;   // telefonda iki kelimelik etiket iki satıra iner
+  for (var k = 0; k < liste.length; k++) {
+    var c = liste[k];
+    var x = sol + bolme * k + (bolme - genislik) / 2;
+    var orta = (x + genislik / 2).toFixed(1);
+    var yTepe = yKonum(c.deger);
+    var yuk = Math.max(0, ust + cizimY - yTepe);
+    s += '<g class="sutun-grup">' +
+      '<rect class="sutun ' + esc(c.sinif || '') + '" x="' + x.toFixed(1) + '" y="' + yTepe.toFixed(1) +
+      '" width="' + genislik.toFixed(1) + '" height="' + yuk.toFixed(1) + '" rx="5">' +
+      '<title>' + esc(c.ad) + ': ' + c.deger + '</title></rect>' +
+      '<text class="deger-yazi" x="' + orta + '" y="' + (yTepe - 6).toFixed(1) +
+      '" text-anchor="middle">' + c.deger + '</text>' +
+      ikiSatir(orta, Y - alt + 17, c.ad, 'eksen-yazi' + (bolme < 54 ? ' kucuk' : ''), dar) + '</g>';
+  }
+  return s + '</svg>';
+}
+
