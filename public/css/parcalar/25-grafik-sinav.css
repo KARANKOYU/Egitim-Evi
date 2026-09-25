@@ -38,6 +38,17 @@
 .gosterge i.g-bant { background: var(--mavi-zemin); border: 1px solid var(--mavi); }
 .gosterge i.g-ort { background: none; border-top: 2px dashed var(--mavi); height: 0; border-radius: 0; }
 
+/* ================= ödev grafiği kartı ================= */
+.grafik-bas { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.grafik-bas h3 { margin: 0; }
+.odev-grafik[data-gorunum="sonuc"] .g-ders,
+.odev-grafik[data-gorunum="ders"] .g-sonuc { display: none; }
+body.odev-grafik-kapali .odev-grafik .g-govde { display: none; }
+.gizle-dugme .goster-yazi { display: none; }
+body.odev-grafik-kapali .gizle-dugme .goster-yazi { display: inline; }
+body.odev-grafik-kapali .gizle-dugme .gizle-yazi { display: none; }
+.sutun-yigin i.gec { background: var(--mavi); }
+
 /* ================= sınav grafiği kutusu ================= */
 /* Veri gelmeden önce yer tutucu aynı yüksekliği ayırır: sayfa kaymaz. */
 .sinav-grafik .yer-tutucu {
