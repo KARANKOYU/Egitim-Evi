@@ -120,6 +120,42 @@ SAYFALAR['okul-ogrenciler'] = function () {
     });
 };
 
+/* Öğrencinin bağlı velileri (hesap penceresinde) */
+function velileriYukle(ogrenciId) {
+  return api('/school/ogrenci-velileri?studentId=' + encodeURIComponent(ogrenciId)).then(function (d) {
+    var kap = $('hVeliler');
+    if (!kap) return;
+    if (!d.veliler.length) { kap.innerHTML = '<div class="hint">Bağlı veli yok.</div>'; return; }
+    var h = '';
+    for (var i = 0; i < d.veliler.length; i++) {
+      var v = d.veliler[i];
+      h += '<div class="satir"><div class="buyu"><div class="ad">' + esc(v.fullName) + '</div>' +
+        '<div class="alt">' + esc(v.username) + (v.role && v.role !== 'parent' ? ' · ' + esc(ROL_AD[v.role] || '') : '') + '</div></div>' +
+        '<button class="btn kucuk gri" data-act="veli-coz" data-id="' + esc(ogrenciId) + '" data-veli="' + esc(v.id) + '">Kaldır</button></div>';
+    }
+    kap.innerHTML = h;
+  })['catch'](function (e) { if ($('hVeliler')) $('hVeliler').innerHTML = '<div class="hint">' + esc(e.message) + '</div>'; });
+}
+
+EYLEMLER['veli-bul'] = function (el, ogrenciId) {
+  var kutu = $('hVeliAra');
+  alanTemizle(kutu.closest('.field'));
+  var kimlik = kutu.value.trim();
+  if (!kimlik) { alanHatasi(kutu, 'Velinin T.C. kimlik numarasını ya da kullanıcı adını yaz.'); return; }
+  $('hVeliSonuc').innerHTML = '<div class="okul-bilgi">Aranıyor...</div>';
+  return api('/school/veli-bul?kimlik=' + encodeURIComponent(kimlik)).then(function (d) {
+    var k = d.kisi;
+    if (k.durum !== 'uygun') {
+      $('hVeliSonuc').innerHTML = '<div class="msg hata">Bu hesap veli olarak bağlanamaz (öğrenci ya da yönetici hesabı).</div>';
+      return;
+    }
+    $('hVeliSonuc').innerHTML = '<div class="kart" style="margin:6px 0 0"><div class="satir" style="border:0;padding:0">' +
+      '<div class="buyu"><div class="ad">' + esc(k.fullName) + '</div><div class="alt">' + esc(k.username) + '</div></div>' +
+      '<button class="btn kucuk" data-act="veli-bagla" data-id="' + esc(ogrenciId) + '" data-veli="' + esc(k.id) + '">Veli olarak bağla</button>' +
+      '</div></div>';
+  })['catch'](function (e) { $('hVeliSonuc').innerHTML = ''; alanHatasi(kutu, e.message); });
+};
+
 /* Müdür bir öğrencinin portalını açar (veli görünümüyle aynı mantık) */
 function ogrenciPortalAc(studentId, ad) {
   S.viewStudentId = studentId;
