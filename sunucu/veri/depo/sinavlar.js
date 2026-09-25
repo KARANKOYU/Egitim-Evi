@@ -68,3 +68,73 @@ async function sablonunSinavSayisi(id) {
   return r ? Number(r.n) : 0;
 }
 
+async function sablonSil(id) {
+  await calistir('DELETE FROM sinav_sablonlari WHERE id = $1', [id]);   // sınavlarda sablon_id NULL olur
+}
+
+/* ================= gruplar ================= */
+async function grupBul(id) {
+  if (!id) return null;
+  return e.sinavGrubu(await tek('SELECT * FROM sinav_gruplari WHERE id = $1', [id]));
+}
+
+/* Öğretmenin grupları, sınav sayısı ve ağırlık toplamıyla (GROUP BY). */
+async function ogretmeninGruplari(ogretmenId) {
+  const satirlar = await sorgu(
+    'SELECT g.*, count(s.id) AS sinav_sayisi, COALESCE(sum(s.agirlik), 0) AS agirlik_toplami ' +
+    'FROM sinav_gruplari g LEFT JOIN sinavlar s ON s.grup_id = g.id ' +
+    'WHERE g.ogretmen_id = $1 GROUP BY g.id ORDER BY g.ad' + tr(), [ogretmenId]);
+  return satirlar.map(r => Object.assign(e.sinavGrubu(r),
+    { _sinavSayisi: r.sinav_sayisi, _agirlikToplami: r.agirlik_toplami }));
+}
+
+async function grupEkle(g) {
+  await sorgu('INSERT INTO sinav_gruplari (id, okul_id, ogretmen_id, ders, ad, yil_id, olusturma) ' +
+    'VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    [g.id, g.schoolId, e.yokIse(g.teacherId), g.subject || '', g.name, e.yokIse(g.yilId), g.createdAt]);
+}
+
+async function grupSil(id) {
+  await calistir('DELETE FROM sinav_gruplari WHERE id = $1', [id]);   // sınavları CASCADE ile gider
+}
+
+/* ================= sınavlar ================= */
+const SINAV_SEC =
+  'SELECT s.*, sb.ad AS sablon_adi, ' +
+  "  COALESCE((SELECT json_agg(" + OLCUM_JSON + " ORDER BY x.sira) FROM sinav_olcumleri x WHERE x.sinav_id = s.id), '[]') AS olcumler, " +
+  "  COALESCE((SELECT json_object_agg(d.ogrenci_id, d.deger) FROM sinav_olcumleri x " +
+  '            JOIN sinav_degerleri d ON d.olcum_id = x.id WHERE x.sinav_id = s.id AND x.ana), ' + "'{}') AS notlar " +
+  'FROM sinavlar s LEFT JOIN sinav_sablonlari sb ON sb.id = s.sablon_id';
+
+async function bul(id) {
+  if (!id) return null;
+  return e.sinav(await tek(SINAV_SEC + ' WHERE s.id = $1', [id]));
+}
+
+async function grubun(grupId) {
+  return (await sorgu(SINAV_SEC + ' WHERE s.grup_id = $1 ORDER BY s.olusturma', [grupId])).map(e.sinav);
+}
+
+async function ogretmenin(ogretmenId) {
+  return (await sorgu(SINAV_SEC + ' WHERE s.ogretmen_id = $1 ORDER BY s.tarih DESC, s.olusturma DESC',
+    [ogretmenId])).map(e.sinav);
+}
+
+/* Yeni sınav; ölçümleri (şablondan kopya ya da tek "Puan") aynı işlemde. */
+async function ekle(s, olcumler) {
+  await islem(async () => {
+    await sorgu(
+      'INSERT INTO sinavlar (id, okul_id, grup_id, sablon_id, ogretmen_id, ders, ad, tarih, agirlik, yil_id, olusturma) ' +
+      'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+      [s.id, s.schoolId, e.yokIse(s.groupId), e.yokIse(s.templateId), e.yokIse(s.teacherId), s.subject || '',
+        s.name, s.tarih, s.weight === undefined ? null : s.weight, e.yokIse(s.yilId), s.createdAt]);
+    let sira = 0;
+    for (const o of olcumler) {
+      await sorgu('INSERT INTO sinav_olcumleri (id, sinav_id, sira, kod, ad, alt_sinir, ust_sinir, ana) ' +
+        'VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [uid('ol'), s.id, ++sira, o.kod, o.ad, o.alt, o.ust, !!o.ana]);
+    }
+  });
+  return bul(s.id);
+}
+
