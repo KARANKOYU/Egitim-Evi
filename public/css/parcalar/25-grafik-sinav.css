@@ -33,3 +33,24 @@
 table.t td.sayi, table.t th.sayi { text-align: right; font-variant-numeric: tabular-nums; }
 table.t td.sayi.ana { font-weight: 700; color: var(--ana); }
 
+/* ================= sınav değer tablosu ================= */
+.deger-tablo th small { display: block; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: .8; }
+.deger-tablo th.ana { color: var(--ana); }
+table.t input.deger {
+  width: 84px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--sure-kisa), background var(--sure-kisa);
+}
+table.t input.deger.degisti { border-color: var(--mavi); }
+table.t input.deger.hatali { border-color: var(--kirmizi); background: var(--kirmizi-zemin); }
+.deger-tablo tr.gizli { display: none; }
+.deger-tablo td.sinif-hucre { color: var(--soluk); font-size: 13px; white-space: nowrap; }
+.sinav-ust { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px; }
+.olcum-cipleri { display: flex; gap: 6px; flex-wrap: wrap; }
+.olcum-cip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--gri-zemin); color: var(--yazi); }
+.olcum-cip b { font-weight: 700; }
+.olcum-cip.ana { background: var(--ana-acik); color: var(--ana-koyu); }
+.sinav-alt { position: sticky; bottom: 0; display: flex; gap: 9px; flex-wrap: wrap; align-items: center;
+  padding: 12px 0; background: var(--zemin); z-index: 2; }
+
