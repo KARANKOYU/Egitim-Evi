@@ -1,0 +1,15 @@
+/* Tablolar ve sütun grafiği. */
+
+/* ================= tablo ================= */
+.tablo-sar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.t { width: 100%; border-collapse: collapse; min-width: 460px; }
+table.t th, table.t td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--cizgi); }
+table.t th { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--soluk); }
+table.t tr:last-child td { border-bottom: 0; }
+table.t input[type="number"], table.t input[type="text"] {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r-mini);
+}
+
