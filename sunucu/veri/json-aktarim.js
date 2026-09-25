@@ -36,3 +36,36 @@ const TABLOLAR = [
   'aile_cihazlari', 'aile_konumlari', 'aile_kullanim', 'aile_ayarlari', 'aile_sinirlari', 'aile_uyarilari'
 ];
 
+/* ---------- küçük doğrulayıcılar ---------- */
+const dizi = v => Array.isArray(v) ? v : [];
+const metin = (v, max) => String(v === null || v === undefined ? '' : v).slice(0, max || 10000);
+const gun = v => {
+  const s = String(v || '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s + 'T00:00:00Z')) ? s : null;
+};
+const saat = v => {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(v || ''));
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+  return (m[1].length === 1 ? '0' : '') + m[1] + ':' + m[2];
+};
+const dakika = s => { const p = s.split(':'); return Number(p[0]) * 60 + Number(p[1]); };
+const zaman = v => {
+  const t = Date.parse(v);
+  return isNaN(t) ? new Date().toISOString() : new Date(t).toISOString();
+};
+const secim = (v, liste, varsayilan) => liste.indexOf(v) >= 0 ? v : varsayilan;
+const sayi = v => (typeof v === 'number' && isFinite(v)) ? v : (isFinite(Number(v)) && v !== '' && v !== null ? Number(v) : null);
+
+/* Tablo ve sütun adları koddan gelir; yazici adları yine de doğrular. */
+const ekle = (tablo, satir) => yaz.ekle(tablo, satir);
+
+/* Geri yüklemeden sonra aboneliklerin sahibi hâlâ varsa geri yazılır. */
+async function abonelikleriGeriYaz(liste) {
+  for (const a of liste) {
+    await sorgu(
+      'INSERT INTO push_abonelikleri (id, kullanici_id, endpoint, p256dh, auth, olusturma, son_basari) ' +
+      'SELECT $1, $2, $3, $4, $5, $6, $7 WHERE EXISTS (SELECT 1 FROM kullanicilar WHERE id = $2) ON CONFLICT DO NOTHING',
+      [a.id, a.kullanici_id, a.endpoint, a.p256dh, a.auth, a.olusturma, a.son_basari]);
+  }
+}
+
