@@ -43,3 +43,15 @@ function cocukKartlari(list) {
   return h + '</div>';
 }
 
+/* ---- ayarlar ---- */
+/* "2011-03-12" -> "12 Mart 2011 (15 yaşında)" */
+function dogumMetni(iso) {
+  var p = String(iso || '').split('-');
+  if (p.length !== 3) return iso || '';
+  var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  var bugun = new Date();
+  var yas = bugun.getFullYear() - d.getFullYear();
+  if (bugun.getMonth() < d.getMonth() || (bugun.getMonth() === d.getMonth() && bugun.getDate() < d.getDate())) yas--;
+  return Number(p[2]) + ' ' + AY_ADLARI[Number(p[1]) - 1] + ' ' + p[0] + (yas >= 0 ? ' (' + yas + ' yaşında)' : '');
+}
+
