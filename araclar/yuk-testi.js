@@ -62,3 +62,18 @@ async function oturum(kullaniciId) {
   return anahtar;
 }
 
+async function iste(yol, anahtar, method, govde) {
+  const bas = process.hrtime.bigint();
+  const r = await fetch(BASE + yol, {
+    method: method || 'GET',
+    headers: Object.assign({ Authorization: 'Bearer ' + anahtar, 'Accept-Encoding': 'br, gzip' },
+      govde ? { 'Content-Type': 'application/json' } : {}),
+    body: govde ? JSON.stringify(govde) : undefined
+  });
+  const metin = await r.text();
+  const ms = Number(process.hrtime.bigint() - bas) / 1e6;
+  let j = null;
+  try { j = JSON.parse(metin); } catch (e) { /* yoksay */ }
+  return { durum: r.status, ms, bayt: Buffer.byteLength(metin), govde: j };
+}
+
