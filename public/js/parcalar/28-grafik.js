@@ -93,3 +93,41 @@ function sutunGrafik(o) {
   return s + '</svg>';
 }
 
+/* ================= ödev sonuç grafiği =================
+   Öğrencinin bütün ödevleri sonuca göre sayılır. Sonucu olmayanlar
+   (aktif ya da henüz değerlendirilmemiş) "Belirsiz". */
+var ODEV_GRAFIK_SIRA = ['yapti', 'gec', 'eksik', 'yapmadi', 'izinli', 'gelmedi', 'belirsiz'];
+var ODEV_GRAFIK_AD = {
+  yapti: 'Yaptı', gec: 'Geç yaptı', eksik: 'Eksik', yapmadi: 'Yapmadı',
+  izinli: 'İzinli', gelmedi: 'Gelmedi', belirsiz: 'Belirsiz'
+};
+
+/* Sayfaya önce sabit yükseklikte boş bir kutu konur; grafik, kutu sayfaya
+   yerleşip genişliği belli olunca odevGrafikleriniCiz() ile çizilir. */
+function odevSonucGrafigi(odevler) {
+  var sayim = {};
+  for (var i = 0; i < ODEV_GRAFIK_SIRA.length; i++) sayim[ODEV_GRAFIK_SIRA[i]] = 0;
+  for (var j = 0; j < odevler.length; j++) {
+    var r = odevler[j].result;
+    sayim[r && sayim[r] !== undefined ? r : 'belirsiz']++;
+  }
+  return '<div class="odev-sutun" data-sayim="' + esc(JSON.stringify(sayim)) + '"></div>';
+}
+
+/* Görünür her ödev grafiğini kutusunun genişliğinde çizer. Gizli kutu
+   (öbür sekmede ya da "Grafiği gizle") atlanır, görününce çizilir. */
+function odevGrafikleriniCiz() {
+  var kutular = document.querySelectorAll('.odev-sutun[data-sayim]');
+  for (var i = 0; i < kutular.length; i++) {
+    var k = kutular[i];
+    var w = Math.floor(k.clientWidth);
+    if (!w || String(w) === k.getAttribute('data-cizilen')) continue;
+    var sayim = JSON.parse(k.getAttribute('data-sayim'));
+    k.innerHTML = sutunGrafik({
+      baslik: 'Ödev sonuçları', genislik: w,
+      kategoriler: ODEV_GRAFIK_SIRA.map(function (a) { return { ad: ODEV_GRAFIK_AD[a], deger: sayim[a], sinif: a }; })
+    });
+    k.setAttribute('data-cizilen', String(w));
+  }
+}
+
