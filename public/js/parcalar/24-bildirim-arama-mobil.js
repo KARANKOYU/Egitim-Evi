@@ -72,3 +72,14 @@ function araUygula() {
   }
 }
 
+/* ================= mobil menü ================= */
+function sidebarAc() { $('sidebar').classList.add('acik'); $('sidebarPerde').classList.add('acik'); }
+function sidebarKapat() { $('sidebar').classList.remove('acik'); $('sidebarPerde').classList.remove('acik'); }
+
+/* 860px üstü masaüstü sayılır: menü kayan panel değil, yerinde daralıp genişler. */
+function masaustuMu() { return window.innerWidth > 860; }
+
+function menuDurumYaz(kapali) {
+  try { localStorage.setItem('ee_menu', kapali ? '1' : '0'); } catch (e) { /* gizli sekmede yazılamaz */ }
+}
+
