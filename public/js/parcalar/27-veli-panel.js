@@ -56,3 +56,30 @@ function veliCocukYok(baslik) {
   return Promise.resolve();
 }
 
+/* ---- VELİ: ödevler ---- */
+SAYFALAR['veli-odevler'] = function () {
+  if (!veliCocuklar().length) return veliCocukYok('ÖDEVLER');
+  return cocuklarIcin('/progress').then(function (r) {
+    var hepsi = [];
+    for (var i = 0; i < r.length; i++) {
+      var liste = r[i].veri.assignments || [];
+      for (var j = 0; j < liste.length; j++) { liste[j].cocuk = r[i].cocuk; hepsi.push(liste[j]); }
+    }
+    /* Teslim saati geçmiş ama henüz sonuçlanmamış ödev "aktif" sayılmaz. */
+    var aktif = hepsi.filter(function (a) { return a.status === 'active' && !teslimGecti(a.endAt, a.endTime); })
+      .sort(function (a, b) { return String(a.endAt || '').localeCompare(String(b.endAt || '')); });
+    var gecmis = hepsi.filter(function (a) { return a.status !== 'active' || teslimGecti(a.endAt, a.endTime); })
+      .sort(function (a, b) { return String(b.endAt || '').localeCompare(String(a.endAt || '')); });
+
+    var h = hero('ÖDEVLER', 'Çocuklarının bütün ödevleri bir arada; her satırda kimin olduğu yazar.');
+    h += veliCocukSeridi();
+    h += '<h3 class="sb">Aktif ödevler (' + aktif.length + ')</h3>';
+    h += aktif.length ? veliOdevListesi(aktif) : bosKutu('onay', 'Şu an açık ödev yok.');
+    if (gecmis.length) {
+      h += '<h3 class="sb">Geçmiş ödevler (' + gecmis.length + ')</h3>';
+      h += veliOdevListesi(gecmis.slice(0, 40));
+    }
+    yaz(h);
+  });
+};
+
