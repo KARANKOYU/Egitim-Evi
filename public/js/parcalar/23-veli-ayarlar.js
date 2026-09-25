@@ -183,3 +183,8 @@ function profilCiz(hs) {
   if ($('yorumKart')) yorumKartiniDoldur();
 }
 
+EYLEMLER['yorum-sil'] = function () {
+  if (!confirm('Yorumun silinsin mi?')) return;
+  return api('/yorumlar/sil', 'POST', {}).then(function () { yorumKartiniDoldur(); })['catch'](hataGoster);
+};
+
