@@ -9,3 +9,17 @@
 /* ---- VELİ: ortak yardımcılar ---- */
 function veliCocuklar() { return S.children || []; }
 
+/* Şu an seçili çocuk (şeritten). Hepsi seçiliyse null. */
+function veliSeciliCocuk() {
+  var c = veliCocuklar();
+  /* Bildirimden gelindiyse o çocuk seçilir (07-yonlendirme.js). */
+  if (S.adresCocuk) {
+    for (var j = 0; j < c.length; j++) if (c[j].id === S.adresCocuk) S.veliCocuk = S.adresCocuk;
+    S.adresCocuk = null;
+  }
+  if (!S.veliCocuk) return null;
+  for (var i = 0; i < c.length; i++) if (c[i].id === S.veliCocuk) return c[i];
+  S.veliCocuk = null;
+  return null;
+}
+
