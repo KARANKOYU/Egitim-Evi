@@ -266,3 +266,21 @@ EYLEMLER['sg-gorunum'] = function (el, id) {
   sinavGrafigiCiz(id);
 };
 
+/* ================= ödev grafiği kartı =================
+   İki görünüm: sonuçlara göre (sütunlar) ve derslere göre (yığılmış).
+   Görünüm değişimi yeniden istek atmaz; ikisi de sayfada hazırdır. */
+EYLEMLER['odev-grafik-sekme'] = function (el) {
+  var kart = el.closest('.odev-grafik');
+  var deger = el.getAttribute('data-val');
+  kart.setAttribute('data-gorunum', deger);
+  var dugmeler = kart.querySelectorAll('[data-act="odev-grafik-sekme"]');
+  for (var i = 0; i < dugmeler.length; i++) dugmeler[i].classList.toggle('secili', dugmeler[i] === el);
+  tercihYaz('odev_grafik_gorunum', deger);
+  odevGrafikleriniCiz();   // gizliyken çizilmemiş olabilir
+};
+EYLEMLER['odev-grafik-gizle'] = function (el) {
+  var kapali = !document.body.classList.contains('odev-grafik-kapali');
+  document.body.classList.toggle('odev-grafik-kapali', kapali);
+  tercihYaz('odev_grafik_kapali', kapali ? '1' : '0');
+  if (!kapali) odevGrafikleriniCiz();
+};
