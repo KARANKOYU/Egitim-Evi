@@ -54,3 +54,16 @@ table.t input.deger.hatali { border-color: var(--kirmizi); background: var(--kir
 .sinav-alt { position: sticky; bottom: 0; display: flex; gap: 9px; flex-wrap: wrap; align-items: center;
   padding: 12px 0; background: var(--zemin); z-index: 2; }
 
+/* ================= ölçüm (değer alanı) düzenleyici ================= */
+.olcum-liste { display: flex; flex-direction: column; gap: 8px; }
+.olcum-satir { display: grid; grid-template-columns: minmax(0, 1fr) 84px 84px auto auto; gap: 8px; align-items: center; }
+.olcum-satir input[type="text"] { width: 100%; }
+.olcum-satir .o-ana { display: flex; gap: 5px; align-items: center; font-size: 13px; color: var(--soluk); white-space: nowrap; }
+.olcum-baslik { display: grid; grid-template-columns: minmax(0, 1fr) 84px 84px auto auto; gap: 8px;
+  font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--soluk); }
+@media (max-width: 520px) {
+  .olcum-satir, .olcum-baslik { grid-template-columns: minmax(0, 1fr) 64px 64px auto; }
+  .olcum-satir .o-sil, .olcum-baslik .o-sil { grid-column: 4; }
+  .olcum-satir .o-ana { grid-column: 1 / -2; }
+}
+
