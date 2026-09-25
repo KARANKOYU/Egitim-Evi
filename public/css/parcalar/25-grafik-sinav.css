@@ -67,3 +67,7 @@ table.t input.deger.hatali { border-color: var(--kirmizi); background: var(--kir
   .olcum-satir .o-ana { grid-column: 1 / -2; }
 }
 
+/* ================= şablon kartları ================= */
+.sablon-kart .olcum-cipleri { margin: 8px 0 10px; }
+.hazir-sablon { border-style: dashed; }
+
