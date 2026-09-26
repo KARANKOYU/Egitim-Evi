@@ -119,3 +119,4 @@ async function okulAc(req, res, me, body) {
   });
 }
 
+module.exports = { okulAc };
