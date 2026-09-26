@@ -95,3 +95,38 @@ function hatirlaticiPenceresi(x) {
   $('hBaslik').focus();
 }
 
+EYLEMLER['hatirlatici-yeni'] = function () { hatirlaticiPenceresi(null); };
+EYLEMLER['hatirlatici-duzenle'] = function (el, id) {
+  var x = (S._hatirlaticilar || []).filter(function (h) { return h.id === id; })[0];
+  if (x) hatirlaticiPenceresi(x);
+};
+
+EYLEMLER['hatirlatici-kaydet'] = function (el, id) {
+  var g = {
+    baslik: $('hBaslik').value, aciklama: $('hAciklama').value,
+    siklik: (document.querySelector('input[name="hSiklik"]:checked') || {}).value || '',
+    tarih: $('hTarih').value, saat: $('hSaat').value, ayGunu: Number($('hAyGunu').value),
+    gunler: Array.prototype.map.call(document.querySelectorAll('.h-gun:checked'), function (c) { return Number(c.value); })
+  };
+  if (!String(g.baslik).trim()) { mesajGoster('hMesaj', 'hata', 'Başlık yaz.'); $('hBaslik').focus(); return; }
+  if (g.siklik === 'her-hafta' && !g.gunler.length) { mesajGoster('hMesaj', 'hata', 'Haftanın en az bir gününü seç.'); return; }
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/hatirlaticilar' + (id ? '/' + encodeURIComponent(id) : ''), 'POST', g).then(function (d) {
+    modalKapat();
+    return git('hatirlaticilar').then(function () { sayfaMesaji('iyi', d.message + (d.hatirlatici.sonraki ? ' İlk hatırlatma: ' + tarihSaat(d.hatirlatici.sonraki) + '.' : '')); });
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('hMesaj', 'hata', e.message); });
+};
+
+EYLEMLER['hatirlatici-durum'] = function (el, id) {
+  el.disabled = true;
+  return api('/hatirlaticilar/' + encodeURIComponent(id) + '/durum', 'POST', { aktif: el.getAttribute('data-aktif') === '1' })
+    .then(function (d) { return git('hatirlaticilar').then(function () { sayfaMesaji('iyi', d.message); }); })
+    ['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+EYLEMLER['hatirlatici-sil'] = function (el, id) {
+  if (!confirm('Hatırlatıcı silinsin mi?')) return;
+  el.disabled = true;
+  return api('/hatirlaticilar/' + encodeURIComponent(id) + '/sil', 'POST', {})
+    .then(function () { return git('hatirlaticilar'); })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
