@@ -1,0 +1,7 @@
+# Eğitim Evi site ayarları: ÖRNEK. Sunucuda data/config.yml olarak kopyala
+# ve doldur. data/config.yml depoya girmez (.gitignore).
+
+# Sayfaların altındaki "İletişim" satırı. Boş bırakılan görünmez.
+iletisim:
+  eposta: ""
+  telefon: ""
