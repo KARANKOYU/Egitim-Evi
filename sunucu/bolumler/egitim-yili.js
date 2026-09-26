@@ -159,3 +159,15 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = {
+  okulYillari,
+  aktifYil,
+  bakilanYil,
+  yilaAitMi,
+  yilSuz,
+  yilBilgisi,
+  bakisKisisi,
+  yilDamgasi,
+  arsivdeMi,
+  uclar
+};
