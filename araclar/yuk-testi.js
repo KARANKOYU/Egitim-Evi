@@ -55,6 +55,210 @@ async function toplu(tablo, sutunlar, satirlar) {
   return satirlar.length;
 }
 
+async function doldur() {
+  const vt = baglanti.veritabaniAdi();
+  if (!/_test$/.test(vt)) throw new Error('Yük testi yalnızca test veritabanında çalışır (şu an: ' + vt + ')');
+  const bos = (await baglanti.tek('SELECT count(*) AS n FROM okullar')).n;
+  if (bos) throw new Error('Test veritabanı boş değil: sunucuyu EE_DB_SIFIRLA=1 ile aç');
+
+  const t0 = Date.now();
+  const ozet = await hashPw("Test1234!");   // herkes aynı şifre, bir kez hesaplanır
+  const simdi = new Date().toISOString();
+  const okul = 'o_buyuk';
+  await toplu('okullar', ['id', 'meb_kodu', 'ad', 'il', 'ilce', 'tur', 'durum', 'olusturma'],
+    [{ id: okul, meb_kodu: '', ad: 'Yük Testi Ortaokulu', il: 'Ankara', ilce: 'Çankaya', tur: '', durum: 'approved', olusturma: simdi }]
+      .concat(Array.from({ length: KUCUK_OKUL }, (_, i) => ({
+        id: 'o_kucuk' + i, meb_kodu: '', ad: 'Küçük Okul ' + (i + 1), il: 'İzmir', ilce: 'Bornova', tur: '',
+        durum: 'approved', olusturma: simdi }))));
+
+  const kisi = [];
+  const kullanici = (id, eposta, ad, rol, ek) => Object.assign({
+    id, eposta, sifre_ozeti: ozet, ad_soyad: ad, rol, durum: 'approved', okul_id: okul,
+    kvkk_onay: true, kvkk_tarih: simdi, kvkk_surum: '1.2', olusturma: simdi
+  }, ek || {});
+  kisi.push(kullanici('u_mudur', 'mudur@yuk.test', 'Müdür Yük', 'principal', { brans: 'Müdür' }));
+  for (let i = 0; i < KUCUK_OKUL; i++) {
+    kisi.push(kullanici('u_kmudur' + i, 'mudur' + i + '@kucuk.test', 'Küçük Müdür ' + i, 'principal',
+      { okul_id: 'o_kucuk' + i, brans: 'Müdür' }));
+  }
+  const ogretmenler = [];
+  for (let i = 0; i < OGRETMEN; i++) {
+    const id = 'u_ogrt' + i;
+    ogretmenler.push({ id, brans: DERSLER[i % DERSLER.length] });
+    kisi.push(kullanici(id, 'ogretmen' + i + '@yuk.test', 'Öğretmen ' + i, 'teacher', { brans: DERSLER[i % DERSLER.length] }));
+  }
+
+  const siniflar = [];
+  for (let s = 0; s < SINIF; s++) siniflar.push({ id: 'c_' + s, okul_id: okul, ad: (5 + Math.floor(s / 6)) + '-' + 'ABCDEF'[s % 6], olusturma: simdi });
+  await toplu('siniflar', ['id', 'okul_id', 'ad', 'olusturma'], siniflar);
+
+  const ogrenciler = [];
+  for (let s = 0; s < SINIF; s++) {
+    for (let k = 0; k < SINIF_MEVCUT; k++) {
+      const id = 'u_ogr' + s + '_' + k;
+      ogrenciler.push({ id, sinif: 'c_' + s });
+      kisi.push(kullanici(id, 'ogr' + s + '_' + k + '@yuk.test', 'Öğrenci ' + s + '-' + k, 'student',
+        { sinif_id: 'c_' + s, veli_kodu: crypto.randomBytes(7).toString('hex') }));
+    }
+  }
+  const veliler = [];
+  for (let i = 0; i < 600; i++) {
+    const id = 'u_veli' + i;
+    veliler.push(id);
+    kisi.push(kullanici(id, 'veli' + i + '@yuk.test', 'Veli ' + i, 'parent', { okul_id: okul }));
+  }
+  await toplu('kullanicilar', Object.keys(kisi[0]).concat(['brans', 'sinif_id', 'veli_kodu']).filter((v, i, a) => a.indexOf(v) === i),
+    kisi.map(k => Object.assign({ brans: '', sinif_id: null, veli_kodu: '' }, k)));
+  await toplu('veli_baglari', ['id', 'veli_id', 'ogrenci_id', 'olusturma'],
+    veliler.map((v, i) => ({ id: 'pl_' + i, veli_id: v, ogrenci_id: ogrenciler[i].id, olusturma: simdi }))
+      .concat(veliler.slice(0, 120).map((v, i) => ({ id: 'pl2_' + i, veli_id: v, ogrenci_id: ogrenciler[600 + i].id, olusturma: simdi }))));
+
+  /* Dersler, öğretmenleri ve haftalık program */
+  const dersler = [], program = [];
+  const saatler = [['08:30', '09:10'], ['09:20', '10:00'], ['10:10', '10:50'], ['11:00', '11:40'], ['12:30', '13:10'], ['13:20', '14:00'], ['14:10', '14:50']];
+  for (let s = 0; s < SINIF; s++) {
+    DERSLER.forEach((konu, d) => {
+      const brans = ogretmenler.filter(o => o.brans === konu);
+      const ogretmen = brans[s % brans.length].id;
+      const id = 'd_' + s + '_' + d;
+      dersler.push({ id, okul_id: okul, sinif_id: 'c_' + s, konu, ogretmen_id: ogretmen, haftalik_saat: 4, olusturma: simdi });
+    });
+    for (let gun = 1; gun <= 5; gun++) {
+      for (let sa = 0; sa < 7; sa++) {
+        const d = (gun * 7 + sa + s) % DERSLER.length;
+        program.push({ id: 'p_' + s + '_' + gun + '_' + sa, okul_id: okul, sinif_id: 'c_' + s, ders_id: 'd_' + s + '_' + d,
+          gun, baslangic: saatler[sa][0], bitis: saatler[sa][1], olusturma: simdi });
+      }
+    }
+  }
+  await toplu('dersler', ['id', 'okul_id', 'sinif_id', 'konu', 'ogretmen_id', 'haftalik_saat', 'olusturma'], dersler);
+  await toplu('ders_programi', ['id', 'okul_id', 'sinif_id', 'ders_id', 'gun', 'baslangic', 'bitis', 'olusturma'], program);
+
+  /* Ödevler: ders başına 25, çoğu sonuçlanmış */
+  const odevler = [], odevOgr = [], odevSinif = [];
+  const sonuclar = ['yapti', 'yapti', 'yapti', 'gec', 'eksik', 'yapmadi', 'izinli', 'gelmedi'];
+  for (const d of dersler) {
+    const sinifOgr = ogrenciler.filter(o => o.sinif === d.sinif_id);
+    for (let n = 0; n < 25; n++) {
+      const id = say('a');
+      const bitis = gunOnce(200 - n * 8);
+      const bitmis = n < 22;
+      odevler.push({ id, okul_id: okul, ogretmen_id: d.ogretmen_id, ders: d.konu, baslik: d.konu + ' ödevi ' + (n + 1),
+        aciklama: 'Kitaptaki alıştırmalar ve konu tekrarı.', baslangic: gunOnce(207 - n * 8), bitis, bitis_saati: '12:00',
+        durum: bitmis ? 'finished' : 'active', olusturma: new Date(Date.now() - (207 - n * 8) * 86400000).toISOString(),
+        sonuclanma: bitmis ? simdi : null });
+      odevSinif.push({ odev_id: id, sinif_id: d.sinif_id });
+      sinifOgr.forEach((o, k) => odevOgr.push({ odev_id: id, ogrenci_id: o.id,
+        sonuc: bitmis ? sonuclar[(k + n) % sonuclar.length] : null,
+        acilma: (k + n) % 4 ? simdi : null }));
+    }
+  }
+  await toplu('odevler', ['id', 'okul_id', 'ogretmen_id', 'ders', 'baslik', 'aciklama', 'baslangic', 'bitis', 'bitis_saati', 'durum', 'olusturma', 'sonuclanma'], odevler);
+  await toplu('odev_siniflari', ['odev_id', 'sinif_id'], odevSinif);
+  await toplu('odev_ogrencileri', ['odev_id', 'ogrenci_id', 'sonuc', 'acilma'], odevOgr);
+
+  /* Sınavlar: her derste 2 grup, grupta 3 yazılı (0-100); 8. sınıflarda 8 LGS denemesi */
+  const gruplar = [], sinavlar = [], olcumler = [], degerler = [];
+  for (const d of dersler) {
+    const sinifOgr = ogrenciler.filter(o => o.sinif === d.sinif_id);
+    for (let g = 0; g < 2; g++) {
+      const gid = say('g');
+      gruplar.push({ id: gid, okul_id: okul, ogretmen_id: d.ogretmen_id, ders: d.konu, ad: 'Dönem ' + (g + 1), olusturma: simdi });
+      for (let y = 0; y < 3; y++) {
+        const eid = say('e'), oid = say('ol');
+        sinavlar.push({ id: eid, okul_id: okul, grup_id: gid, ogretmen_id: d.ogretmen_id, ders: d.konu, ad: (y + 1) + '. Yazılı',
+          tarih: gunOnce(190 - g * 90 - y * 25), agirlik: y === 2 ? 40 : 30, olusturma: simdi });
+        olcumler.push({ id: oid, sinav_id: eid, sira: 1, kod: 'P', ad: 'Puan', alt_sinir: 0, ust_sinir: 100, ana: true });
+        sinifOgr.forEach((o, k) => degerler.push({ olcum_id: oid, ogrenci_id: o.id, deger: 45 + ((k * 7 + y * 11 + g * 5) % 55) + 0.5 }));
+      }
+    }
+  }
+  for (let s = 18; s < SINIF; s++) {       // 8. sınıflar
+    const sinifOgr = ogrenciler.filter(o => o.sinif === 'c_' + s);
+    const ogretmen = dersler.find(d => d.sinif_id === 'c_' + s && d.konu === 'Matematik').ogretmen_id;
+    for (let n = 0; n < 8; n++) {
+      const eid = say('e');
+      sinavlar.push({ id: eid, okul_id: okul, grup_id: null, ogretmen_id: ogretmen, ders: 'Matematik', ad: 'LGS Deneme ' + (n + 1),
+        tarih: gunOnce(210 - n * 25), agirlik: null, olusturma: simdi });
+      ['TR', 'MAT', 'FEN', 'INK', 'DIN', 'ING', 'LGS'].forEach((kod, i) => {
+        const oid = say('ol');
+        const ust = kod === 'LGS' ? 500 : (i < 3 ? 20 : 10);
+        olcumler.push({ id: oid, sinav_id: eid, sira: i + 1, kod, ad: kod + (kod === 'LGS' ? ' Puanı' : ' Net'),
+          alt_sinir: kod === 'LGS' ? 100 : -5, ust_sinir: ust, ana: kod === 'LGS' });
+        sinifOgr.forEach((o, k) => degerler.push({ olcum_id: oid, ogrenci_id: o.id,
+          deger: kod === 'LGS' ? 300 + ((k * 13 + n * 17) % 190) + 0.161 : ((k + n + i) % ust) }));
+      });
+    }
+  }
+  await toplu('sinav_gruplari', ['id', 'okul_id', 'ogretmen_id', 'ders', 'ad', 'olusturma'], gruplar);
+  await toplu('sinavlar', ['id', 'okul_id', 'grup_id', 'ogretmen_id', 'ders', 'ad', 'tarih', 'agirlik', 'olusturma'], sinavlar);
+  await toplu('sinav_olcumleri', ['id', 'sinav_id', 'sira', 'kod', 'ad', 'alt_sinir', 'ust_sinir', 'ana'], olcumler);
+  await toplu('sinav_degerleri', ['olcum_id', 'ogrenci_id', 'deger'], degerler);
+
+  /* Devamsızlık: 150 okul günü, her gün her derste öğrencilerin ~%3'ü */
+  const devam = [];
+  for (let gun = 0; gun < 150; gun++) {
+    const tarih = gunOnce(gun + 1);
+    for (let s = 0; s < SINIF; s++) {
+      for (let k = 0; k < SINIF_MEVCUT; k++) {
+        if ((gun * 31 + s * 7 + k * 13) % 33 !== 0) continue;
+        devam.push({ id: say('dv'), okul_id: okul, sinif_id: 'c_' + s, ders_id: 'd_' + s + '_' + (gun % DERSLER.length),
+          ogrenci_id: 'u_ogr' + s + '_' + k, tarih, durum: ['yok', 'gec', 'izinli'][(gun + k) % 3], aciklama: '',
+          alan_id: dersler[s * DERSLER.length].ogretmen_id, olusturma: simdi });
+      }
+    }
+  }
+  await toplu('devamsizlik', ['id', 'okul_id', 'sinif_id', 'ders_id', 'ogrenci_id', 'tarih', 'durum', 'aciklama', 'alan_id', 'olusturma'], devam);
+
+  /* Mesajlar: 20 okul duyurusu (herkese), 400 sınıf mesajı (öğrenci + veli) */
+  const mesajlar = [], alicilar = [];
+  const herkes = kisi.filter(k => k.okul_id === okul && k.id !== 'u_mudur');
+  for (let i = 0; i < 20; i++) {
+    const id = say('m');
+    mesajlar.push({ id, okul_id: okul, gonderen_id: 'u_mudur', tur: 'duyuru', konu: 'Duyuru ' + (i + 1),
+      govde: 'Okulumuzda bu hafta yapılacak etkinlikler hakkında bilgilendirme.', hedef_ozet: 'Tüm okul', tarih: gunOnce(150 - i * 7) + 'T09:00:00Z' });
+    herkes.forEach(k => alicilar.push({ mesaj_id: id, alici_id: k.id, ogrenci_id: null }));
+  }
+  const veliOf = new Map();
+  veliler.forEach((v, i) => veliOf.set(ogrenciler[i].id, v));
+  for (let i = 0; i < 400; i++) {
+    const d = dersler[i % dersler.length];
+    const id = say('m');
+    mesajlar.push({ id, okul_id: okul, gonderen_id: d.ogretmen_id, tur: 'mesaj', konu: d.konu + ' dersi hakkında',
+      govde: 'Yarınki derse kitaplarınızı getirin.', hedef_ozet: 'Sınıf', tarih: gunOnce(140 - (i % 140)) + 'T15:00:00Z' });
+    ogrenciler.filter(o => o.sinif === d.sinif_id).forEach(o => {
+      alicilar.push({ mesaj_id: id, alici_id: o.id, ogrenci_id: null });
+      if (veliOf.has(o.id)) alicilar.push({ mesaj_id: id, alici_id: veliOf.get(o.id), ogrenci_id: o.id });
+    });
+  }
+  await toplu('mesajlar', ['id', 'okul_id', 'gonderen_id', 'tur', 'konu', 'govde', 'hedef_ozet', 'tarih'], mesajlar);
+  await toplu('mesaj_alicilari', ['mesaj_id', 'alici_id', 'ogrenci_id'], alicilar);
+
+  /* Bildirimler: kişi başı 200 (öğrenciler ve öğretmenler), çoğu okunmuş */
+  const bildirim = [];
+  for (const k of kisi.filter(x => x.okul_id === okul && x.rol !== 'parent')) {
+    for (let n = 0; n < 200; n++) {
+      bildirim.push({ id: say('n'), kullanici_id: k.id, metin: 'Yeni ödev: Matematik ödevi ' + n, baglanti: '#/odevler',
+        okundu: n > 3, olusturma: new Date(Date.now() - n * 3600 * 1000 * 20).toISOString() });
+    }
+  }
+  await toplu('bildirimler', ['id', 'kullanici_id', 'metin', 'baglanti', 'okundu', 'olusturma'], bildirim);
+
+  await toplu('takvim_etkinlikleri', ['id', 'okul_id', 'tarih', 'bitis', 'baslik', 'tur', 'aciklama', 'olusturma'],
+    Array.from({ length: 60 }, (_, i) => ({ id: say('tk'), okul_id: okul, tarih: gunOnce(180 - i * 4), bitis: gunOnce(180 - i * 4),
+      baslik: 'Etkinlik ' + i, tur: ['etkinlik', 'sinav', 'toplanti', 'tatil'][i % 4], aciklama: '', olusturma: simdi })));
+  await toplu('islem_kaydi', ['id', 'okul_id', 'kullanici_id', 'kullanici_ad', 'kullanici_rol', 'islem', 'detay', 'tarih'],
+    Array.from({ length: 3000 }, (_, i) => ({ id: say('ik'), okul_id: okul, kullanici_id: 'u_mudur', kullanici_ad: 'Müdür Yük',
+      kullanici_rol: 'principal', islem: 'hesap.acildi', detay: 'Öğrenci ' + i, tarih: simdi })));
+
+  await baglanti.sorgu('ANALYZE');   // sorgu planlayıcı gerçek sayılarla çalışsın
+  const say2 = async t => (await baglanti.tek('SELECT count(*) AS n FROM ' + t)).n;
+  console.log('Doldurma ' + ((Date.now() - t0) / 1000).toFixed(1) + ' sn: ' +
+    (await say2('kullanicilar')) + ' kişi, ' + (await say2('odev_ogrencileri')) + ' öğrenci-ödev, ' +
+    (await say2('sinav_degerleri')) + ' sınav değeri, ' + (await say2('devamsizlik')) + ' devamsızlık, ' +
+    (await say2('mesaj_alicilari')) + ' mesaj alıcısı, ' + (await say2('bildirimler')) + ' bildirim');
+}
+
 /* Ölçüm için oturum: 2 adımlı giriş yerine doğrudan oturum açılır. */
 async function oturum(kullaniciId) {
   const anahtar = crypto.randomBytes(24).toString('hex');
