@@ -18,6 +18,90 @@ function adBol(tam) {
   return { ad: p.slice(0, -1).join(' '), soyad: p[p.length - 1] };
 }
 
+/* Pencerenin alanları. h: düzenlenen hesap (yoksa yeni). */
+function hesapAlanlari(rol, h) {
+  var yeni = !h;
+  h = h || {};
+  var ad = adBol(h.fullName);
+  var f = '<div class="row2">' +
+    '<div class="field"><label for="hfAd">Ad</label>' +
+    '<input type="text" id="hfAd" maxlength="60" autocomplete="off" value="' + esc(ad.ad) + '"></div>' +
+    '<div class="field"><label for="hfSoyad">Soyad</label>' +
+    '<input type="text" id="hfSoyad" maxlength="40" autocomplete="off" value="' + esc(ad.soyad) + '"></div></div>' +
+    '<div class="field"><label for="hfTc">T.C. kimlik no</label>' +
+    '<input type="text" id="hfTc" inputmode="numeric" maxlength="11" autocomplete="off" spellcheck="false" ' +
+    'value="' + esc(h.tc || '') + '" placeholder="11 haneli">' +
+    '<div class="hint">Yalnızca okul yönetimi görür; öğretmenler ve öğrenciler görmez.</div></div>' +
+    '<div class="field"><label for="hfKadi">Kullanıcı adı</label>' +
+    '<input type="text" id="hfKadi" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
+    'value="' + esc(h.username || '') + '" placeholder="' + (yeni ? 'Boş bırakırsan T.C. no olur' : '') + '">' +
+    '<div class="hint">Harfle başlar; harf, rakam, nokta ve alt çizgi. Okulun içinde tek olmalı.</div></div>';
+  if (yeni) {
+    f += '<div class="field"><label for="hfSifre">Şifre</label>' +
+      '<input type="text" id="hfSifre" autocomplete="off" spellcheck="false" placeholder="Boş bırakırsan T.C. no olur">' +
+      '<div class="hint">Boşsa şifre T.C. kimlik no olur ve kişi ilk girişte kendi şifresini belirlemeden devam edemez.</div></div>';
+  }
+  f += '<div class="field"><label for="hfEposta">E-posta (isteğe bağlı)</label>' +
+    '<input type="email" id="hfEposta" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
+    'value="' + esc(h.email || '') + '"' + (h.olusturan === 'kendisi' ? ' disabled' : '') + '>' +
+    (h.olusturan === 'kendisi' ? '<div class="hint">Bu hesabı kişi kendisi açtı; e-postasını yalnızca kendisi değiştirebilir.</div>'
+      : '<div class="hint">Yazılırsa giriş kodu ve şifre sıfırlama bağlantısı oraya gider.</div>') + '</div>' +
+    '<div class="field"><label for="hfDogumGun">Doğum tarihi (isteğe bağlı)</label>' +
+    tarihSecici('hfDogum', h.dogum || '', { enKucukYas: rol === 'student' ? 3 : 17 }) +
+    (rol === 'student' && yeni ? '<div class="hint">Başka okuldan gelen öğrencide gerekli: T.C. no ile doğum tarihi ' +
+      'önceki kaydıyla eşleşirse yeni hesap açılmaz, öğrencinin hesabı okuluna taşınır.</div>' : '') + '</div>';
+
+  if (rol === 'student') {
+    var siniflar = S._sinifListe || [];
+    f += '<div class="row2"><div class="field"><label for="hfSinif">Sınıf</label><select id="hfSinif">' +
+      '<option value="">— sınıfsız —</option>';
+    for (var i = 0; i < siniflar.length; i++) {
+      f += '<option value="' + esc(siniflar[i].id) + '"' + (h.classId === siniflar[i].id ? ' selected' : '') + '>' +
+        esc(siniflar[i].name) + '</option>';
+    }
+    f += '</select></div>' +
+      '<div class="field"><label for="hfOkulNo">Okul no (isteğe bağlı)</label>' +
+      '<input type="text" id="hfOkulNo" maxlength="20" autocomplete="off" value="' + esc(h.okulNo || '') + '"></div></div>';
+  } else {
+    f += '<div class="field"><label for="hfTelefon">Telefon (isteğe bağlı)</label>' +
+      '<input type="tel" id="hfTelefon" inputmode="tel" maxlength="20" autocomplete="off" ' +
+      'value="' + esc(h.telefon || '') + '">' +
+      (rol === 'servisci' ? '<div class="hint">Servisteki öğrencilerin velileri bu numarayı görür.</div>' : '') + '</div>';
+  }
+  if (rol === 'teacher') {
+    var dersler = (S.meta && S.meta.subjects) || [];
+    f += '<div class="field"><label for="hfBrans">Branş (isteğe bağlı)</label><select id="hfBrans">' +
+      '<option value="">— belirtme —</option>';
+    for (var j = 0; j < dersler.length; j++) {
+      f += '<option value="' + esc(dersler[j]) + '"' + (h.brans === dersler[j] ? ' selected' : '') + '>' + esc(dersler[j]) + '</option>';
+    }
+    f += '</select></div>';
+  }
+  f += '<div class="field"><label for="hfAdres">Adres (isteğe bağlı)</label>' +
+    '<textarea id="hfAdres" rows="2" maxlength="200">' + esc(h.adres || '') + '</textarea></div>';
+  if (rol === 'student') {
+    f += '<div class="field"><label for="hfNot">Yönetim notu (isteğe bağlı)</label>' +
+      '<textarea id="hfNot" rows="2" maxlength="300">' + esc(h.not || '') + '</textarea>' +
+      '<div class="hint">Yalnızca okul yönetimi görür.</div></div>';
+  }
+  return f;
+}
+
+/* Penceredeki alanlardan gövde. */
+function hesapGovdesi(rol) {
+  var v = function (id) { return $(id) ? $(id).value : undefined; };
+  var g = {
+    ad: v('hfAd'), soyad: v('hfSoyad'), tc: (v('hfTc') || '').replace(/\s/g, ''),
+    kullaniciAdi: (v('hfKadi') || '').trim().toLowerCase(), eposta: $('hfEposta') && !$('hfEposta').disabled ? v('hfEposta').trim() : undefined,
+    dogum: v('hfDogum'), adres: v('hfAdres')
+  };
+  if ($('hfSifre')) g.sifre = v('hfSifre');
+  if (rol === 'student') { g.classId = v('hfSinif'); g.okulNo = v('hfOkulNo'); g.not = v('hfNot'); }
+  else g.telefon = telefonOku($('hfTelefon'));
+  if (rol === 'teacher') g.brans = v('hfBrans');
+  return g;
+}
+
 /* Sunucuya gitmeden önce: zorunlu alanlar ve biçim. mevcut: düzenlenen hesap
    (kullanıcı adı eski T.C. no olarak kalmışsa ve değiştirilmiyorsa engellenmez). */
 function hesapDenetle(g, yeni, mevcut) {
@@ -42,6 +126,22 @@ function hesapDenetle(g, yeni, mevcut) {
   return true;
 }
 
+/* ---------------- yeni hesap ---------------- */
+function hesapYeniModal(rol) {
+  var r = HESAP_ROL[rol];
+  if (!r || rol === 'teacher') return Promise.resolve();
+  var yukle = rol === 'student' && !S._sinifListe
+    ? api('/school/classes').then(function (d) { S._sinifListe = d.classes; })['catch'](function () { S._sinifListe = []; })
+    : Promise.resolve();
+  return yukle.then(function () {
+    modalAc(r.yeni, hesapAlanlari(rol, null) + '<div id="hesapMesaj" style="margin-top:9px"></div>',
+      '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+      '<button class="btn" data-act="hesap-ac-kaydet" data-rol="' + rol + '">Hesabı aç</button>');
+    hesapTcBagla();
+    $('hfAd').focus();
+  });
+}
+
 /* T.C. kutusu yalnızca rakam alır; kullanıcı adı yazılırken küçük harfe döner. */
 function hesapTcBagla() {
   if ($('hfTc')) $('hfTc').addEventListener('input', function () {
@@ -57,6 +157,60 @@ function hesapTcBagla() {
 EYLEMLER['hesap-yeni'] = function (el) {
   return hesapYeniModal(el.getAttribute('data-rol'))['catch'](hataGoster);
 };
+
+EYLEMLER['hesap-ac-kaydet'] = function (el) {
+  var rol = el.getAttribute('data-rol');
+  var g = hesapGovdesi(rol);
+  g.rol = rol;
+  if (!hesapDenetle(g, true)) return;
+  dugmeBekle(el, 'Açılıyor...');
+  return api('/school/hesap-ac', 'POST', g).then(function (d) {
+    var k = d.hesap;
+    if (k.nakil) return nakilSonucu(d, rol);
+    /* Şifre yalnızca burada, bir kez gösterilir. */
+    var sifreSatiri = k.varsayilanSifre
+      ? '<div class="satir"><div class="buyu"><div class="alt">Şifre</div>' +
+        '<div class="ad">T.C. kimlik numarası</div>' +
+        '<div class="alt">İlk girişte kendi şifresini belirleyecek.</div></div></div>'
+      : '<div class="satir"><div class="buyu"><div class="alt">Şifre</div>' +
+        '<div class="kod-goster">' + esc(g.sifre) + '</div></div>' +
+        '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(g.sifre) + '">Kopyala</button></div>';
+    modalAc('Hesap açıldı',
+      '<div class="msg iyi">' + esc(d.message) + '</div>' +
+      '<div class="satir"><div class="buyu"><div class="alt">Kullanıcı adı</div>' +
+      '<div class="ad">' + esc(k.username) + '</div></div>' +
+      '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(k.username) + '">Kopyala</button></div>' +
+      sifreSatiri +
+      (S.user.schoolSlug ? '<div class="satir"><div class="buyu"><div class="alt">Giriş adresi</div>' +
+        '<div class="ad">' + esc(location.host + '/' + S.user.schoolSlug) + '</div></div></div>' : '') +
+      (k.code ? '<div class="satir"><div class="buyu"><div class="alt">Veli kodu</div>' +
+        '<div class="kod-goster">' + esc(kodBicimle(k.code)) + '</div></div>' +
+        '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(kodBicimle(k.code)) + '">Kopyala</button></div>' : '') +
+      (k.varsayilanSifre ? '' : '<div class="hint">Bu şifre bir daha gösterilemez; şimdi kişiye ilet.</div>'),
+      '<button class="btn ghost" data-act="hesap-yeni" data-rol="' + esc(rol) + '">Bir tane daha aç</button>' +
+      '<button class="btn" data-act="hesap-bitti" data-rol="' + esc(rol) + '">Tamam</button>');
+  })['catch'](function (e) {
+    dugmeBitir(el);
+    /* T.C. başka okuldaki bir öğrencinin: doğum tarihiyle doğrulanınca taşınır. */
+    if (e.veri && e.veri.nakil === 'dogum' && $('hfDogumGun')) alanHatasi('hfDogumGun', 'Doğum tarihini seç.');
+    mesajGoster('hesapMesaj', 'hata', e.message);
+  });
+};
+
+/* Başka okuldan gelen öğrenci: yeni hesap açılmadı, var olanı bu okula taşındı.
+   Şifresi kendisinde; burada gösterilecek şifre yok. */
+function nakilSonucu(d, rol) {
+  var k = d.hesap;
+  modalAc('Öğrenci okuluna taşındı',
+    '<div class="msg iyi">' + esc(d.message) + '</div>' +
+    '<div class="satir"><div class="buyu"><div class="alt">Kullanıcı adı</div>' +
+    '<div class="ad">' + esc(k.username) + '</div></div>' +
+    '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(k.username) + '">Kopyala</button></div>' +
+    '<div class="hint">Önceki okulundaki ödev, not ve devamsızlık kayıtları o okulda kalır; sen görmezsin. ' +
+    'Öğrenci ve velisi eğitim yılı seçicisinden bakabilir.</div>',
+    '<button class="btn ghost" data-act="hesap-yeni" data-rol="' + esc(rol) + '">Bir tane daha ekle</button>' +
+    '<button class="btn" data-act="hesap-bitti" data-rol="' + esc(rol) + '">Tamam</button>');
+}
 
 /* Kendi hesabıyla eklenmiş öğretmen: adı, e-postası, şifresi kendisinin.
    Okul yalnızca branşını değiştirir ya da onu okuldan çıkarır. */

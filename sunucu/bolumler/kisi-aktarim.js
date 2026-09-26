@@ -203,6 +203,174 @@ async function disa(me) {
   return xlsx.yaz([sayfa('ogrenci', 'student'), sayfa('servisci', 'servisci')]);
 }
 
+/* ---------------- içe aktarım ---------------- */
+async function iceAktar(k) {
+  const { req, res, me, body } = k;
+  const b64 = typeof body.dosya === 'string' ? body.dosya : '';
+  if (!b64) return bad(res, 'Dosya seçilmedi');
+  if (b64.length > DOSYA_SINIR) return bad(res, 'Dosya çok büyük. Listeyi bölüp iki dosya hâlinde yükle.');
+  const ham = Buffer.from(b64, 'base64');
+  if (ham.length < 2) return bad(res, 'Dosya boş');
+  /* Tür seçilmediyse ve sayfa adı "Sayfa1" gibi genelse dosya adından
+     anlaşılır (öğrenci.ods, ogretmenler.xlsx...). */
+  const turIpucu = TURLER[clean(body.tur, 20)] ? clean(body.tur, 20)
+    : sayfaTuru(clean(body.dosyaAdi, 120).replace(/\.[a-z0-9]{1,5}$/i, ''));
+
+  let bolumler;
+  try { bolumler = cozumle(tabloOku(ham, clean(body.dosyaAdi, 120)), turIpucu); }
+  catch (e) { return bad(res, e.message); }
+  if (!bolumler.length) {
+    return bad(res, 'Dosyada okunacak liste bulunamadı. Sayfa adı "Öğrenciler" ya da "Servisçiler" olmalı; ' +
+      'değilse yüklerken listenin kimlere ait olduğunu seç.');
+  }
+
+  const rapor = [];
+  const hazir = [];      // açılacak hesaplar
+  const guncel = [];     // güncellenecek mevcut hesaplar
+  const acilacakSinif = new Map();   // anahtar -> ad
+  const [siniflar, servisler] = await Promise.all([
+    depo.siniflar.okulun(me.schoolId), depo.okulHayati.okulunServisleri(me.schoolId)]);
+  const sinifBul = ad => siniflar.find(c => aktarim.anahtarla(c.name) === aktarim.anahtarla(ad));
+  const dosya = { tc: new Map(), kadi: new Map(), eposta: new Map(), no: new Map() };
+
+  for (const b of bolumler) {
+    if (!TURLER[b.tur]) {
+      rapor.push({ sayfa: b.sayfa, tur: b.tur, satir: b.bas + 1, ad: '', durum: 'hata', mesaj: OGRETMEN_SAYFASI });
+      continue;
+    }
+    const rol = TURLER[b.tur].rol;
+    const ek = (satir, ad, durum, mesaj) => rapor.push({ sayfa: b.sayfa, tur: b.tur, satir, ad, durum, mesaj });
+    const eksikBaslik = [];
+    if (b.harita.ad === undefined && b.harita.adSoyad === undefined) eksikBaslik.push('Ad', 'Soyad');
+    if (b.harita.tc === undefined) eksikBaslik.push('T.C. Kimlik No');
+    if (eksikBaslik.length) {
+      ek(b.bas + 1, '', 'hata', 'Başlık satırında şu sütunlar bulunamadı: ' + eksikBaslik.join(', ') +
+        '. Boş şablonu indirip onun üzerine yazman en kolayı.');
+      continue;
+    }
+    if (!yetkiVarMi(me, YETKI[rol].ac)) { ek(b.bas + 1, '', 'hata', ROL_AD[rol] + ' hesabı açma yetkin yok'); continue; }
+
+    for (let i = b.bas + 1; i < b.satirlar.length; i++) {
+      const satir = b.satirlar[i] || [];
+      if (!satir.some(x => metinYap(x).trim())) continue;
+      const no = i + 1;
+      const g = satirAlanlari(b, satir);
+      const adGoster = ((g.ad || '') + ' ' + (g.soyad || '')).trim();
+      const sorunlar = [];
+
+      /* Sınıf (öğrenci) */
+      if (rol === 'student' && (g.seviye || g.sube)) {
+        const ad = sinifAdi(g.seviye, g.sube);
+        const c = sinifBul(ad);
+        if (c) g.sinifId = c.id;
+        else if (!yetkiVarMi(me, 'sinif.yonet')) sorunlar.push('"' + ad + '" sınıfı yok ve sınıf açma yetkin yok');
+        /* Yeni açılan sınıf hiçbir rol kapsamında olamaz: kapsamlı yerleştirme
+           yetkisiyle yeni sınıfa öğrenci konmaz. */
+        else if (!yetkiVarMi(me, 'ogrenci.yerlestir', { sinif: '(yeni)' })) sorunlar.push('Yeni sınıfa öğrenci yerleştirme yetkin yok');
+        else { acilacakSinif.set(aktarim.anahtarla(ad), ad); g._yeniSinif = ad; }
+      }
+      /* Servis (servisçi) */
+      if (rol === 'servisci' && g.servis) {
+        const a = aktarim.anahtarla(g.servis);
+        const s = servisler.find(x => aktarim.anahtarla(x.ad) === a || (x.plaka && aktarim.anahtarla(x.plaka) === a));
+        if (!s) sorunlar.push('"' + g.servis + '" adında ya da plakasında bir servis yok');
+        else g._servisId = s.id;
+      }
+      delete g.servis;
+
+      /* Okulda aynı T.C. no ile hesap var mı: varsa güncellenir. */
+      const tc = normTc(g.tc);
+      const mevcut = tc ? await depo.kullanicilar.tcIle(tc, me.schoolId) : null;
+      if (mevcut && mevcut.role !== rol) sorunlar.push('Bu T.C. no okulda ' + (ROL_AD[mevcut.role] || 'başka bir') + ' hesabında kayıtlı');
+
+      if (mevcut && mevcut.role === rol && !sorunlar.length) {
+        if (!yetkiVarMi(me, YETKI[rol].duzenle)) { ek(no, adGoster, 'hata', 'Bu kişi zaten kayıtlı; düzenleme yetkin yok'); continue; }
+        /* Güncellemede yalnızca dolu gelen yer bilgileri yazılır; ad, kullanıcı
+           adı, şifre ve e-postaya dokunulmaz. */
+        const gu = {};
+        for (const k2 of ['dogum', 'adres', 'telefon', 'okulNo', 'brans', 'rolId']) if (g[k2]) gu[k2] = g[k2];
+        if (g.sinifId) gu.sinifId = g.sinifId;
+        const s = await hesapDogrula(me, rol, gu, mevcut, dosya);
+        if (s.sorunlar.length) { ek(no, adGoster, 'hata', s.sorunlar.join('; ')); continue; }
+        if (dosya.tc.has(tc)) { ek(no, adGoster, 'hata', 'Bu T.C. no dosyada ' + dosya.tc.get(tc) + '. satırda da var'); continue; }
+        dosya.tc.set(tc, no);
+        if (s.d.okulNo) dosya.no.set(s.d.okulNo, no);
+        guncel.push({ u: mevcut, d: s.d, yeniSinif: g._yeniSinif, servisId: g._servisId });
+        /* Yalnızca gerçekten değişecek olanlar yazılır. */
+        const neler = [g._yeniSinif || (s.d.classId && s.d.classId !== (mevcut.classId || '')
+          ? siniflar.find(c => c.id === s.d.classId).name : ''),
+        s.d.okulNo && s.d.okulNo !== (mevcut.okulNo || '') ? 'okul no' : '',
+        s.d.address && s.d.address !== (mevcut.address || '') ? 'adres' : '',
+        s.d.phone && s.d.phone !== (mevcut.phone || '') ? 'telefon' : '',
+        s.d.dogum && s.d.dogum !== (mevcut.dogum || '') ? 'doğum tarihi' : ''].filter(Boolean);
+        ek(no, mevcut.fullName, 'guncel', 'Zaten kayıtlı' + (neler.length ? ' — güncellenecek: ' + neler.join(', ') : ' — değişiklik yok'));
+        continue;
+      }
+
+      const yeniSinif = g._yeniSinif, servisId = g._servisId;
+      delete g._yeniSinif; delete g._servisId;
+      const s = await hesapDogrula(me, rol, g, null, dosya);
+      const hepsi = sorunlar.concat(s.sorunlar);
+      if (hepsi.length) { ek(no, adGoster, 'hata', hepsi.join('; ')); continue; }
+      dosya.tc.set(s.d.tc, no);
+      dosya.kadi.set(s.d.username, no);
+      if (s.d.email) dosya.eposta.set(s.d.email, no);
+      if (s.d.okulNo) dosya.no.set(s.d.okulNo, no);
+      hazir.push({ rol, s, yeniSinif, servisId, satir: no, sayfa: b.sayfa });
+      ek(no, s.d.fullName, 'hazir', ROL_AD[rol] + ' hesabı açılacak' +
+        (rol === 'student' ? (yeniSinif ? ' — ' + yeniSinif + ' (yeni sınıf)' : g.sinifId ? ' — ' + siniflar.find(c => c.id === g.sinifId).name : ' — sınıfsız') : '') +
+        (s.varsayilanSifre ? ' · giriş T.C. no ile' : ''));
+    }
+  }
+
+  const ozet = {
+    hazir: hazir.length, guncel: guncel.length, hatali: rapor.filter(r => r.durum === 'hata').length,
+    yeniSiniflar: [...acilacakSinif.values()], sinir: SATIR_SINIR,
+    rapor: rapor.sort((a, b) => (a.sayfa > b.sayfa ? 1 : a.sayfa < b.sayfa ? -1 : a.satir - b.satir))
+  };
+  if (!body.uygula) return ok(res, Object.assign({ onizleme: true }, ozet));
+
+  if (!hazir.length && !guncel.length) return bad(res, 'Açılacak ya da güncellenecek hesap yok — satırların hepsi hatalı.');
+  if (hazir.length + guncel.length > SATIR_SINIR) {
+    return bad(res, 'Tek seferde en fazla ' + SATIR_SINIR + ' kişi işlenebilir. Dosyada ' + (hazir.length + guncel.length) + ' geçerli satır var.');
+  }
+  if (!hizSinir('kisiAktarim:' + me.schoolId, 20, 60 * 60 * 1000)) return bad(res, 'Bu saat içinde çok fazla aktarım yapıldı.', 429);
+
+  const ozetler = await hashPwToplu(hazir.map(h => h.s.sifre));
+  const acilan = await islem(async () => {
+    /* Yeni sınıflar */
+    const sinifId = new Map();
+    for (const [anahtar, ad] of acilacakSinif) {
+      const c = { id: uid('c'), schoolId: me.schoolId, name: ad, createdAt: now() };
+      await depo.siniflar.ekle(c);
+      sinifId.set(anahtar, c.id);
+    }
+    const liste = [];
+    for (let i = 0; i < hazir.length; i++) {
+      const h = hazir[i];
+      if (h.yeniSinif) h.s.d.classId = sinifId.get(aktarim.anahtarla(h.yeniSinif));
+      const u = await hesapNesnesi(me, h.rol, h.s, ozetler[i]);
+      await depo.kullanicilar.ekle(u);
+      if (h.servisId) await depo.okulHayati.servisSoforYaz(h.servisId, me.schoolId, u.id);
+      const sinifAdiBul = id => ((siniflar.find(c => c.id === id) || {}).name || '');
+      liste.push({ ad: u.fullName, rol: h.rol, sinif: h.yeniSinif || (u.classId ? sinifAdiBul(u.classId) : ''), kullaniciAdi: u.username,
+        sifre: h.s.varsayilanSifre ? '' : h.s.sifre, tcIle: h.s.varsayilanSifre, veliKodu: u.code || '' });
+    }
+    for (const gu of guncel) {
+      if (gu.yeniSinif) gu.d.classId = sinifId.get(aktarim.anahtarla(gu.yeniSinif));
+      if (Object.keys(gu.d).length) await depo.kullanicilar.guncelle(gu.u.id, gu.d);
+      if (gu.servisId) await depo.okulHayati.servisSoforYaz(gu.servisId, me.schoolId, gu.u.id);
+    }
+    return liste;
+  });
+  await islemYaz(me, 'hesap.toplu-acildi', acilan.length + ' hesap açıldı, ' + guncel.length + ' güncellendi', req);
+  res.setHeader('Cache-Control', 'no-store');
+  return ok(res, {
+    uygulandi: true, acilan: acilan.length, guncellenen: guncel.length, hesaplar: acilan,
+    message: acilan.length + ' hesap açıldı' + (guncel.length ? ', ' + guncel.length + ' hesap güncellendi' : '') + '.'
+  });
+}
+
 /* ---- uçlar ---- */
 async function uclar(k, sub) {
   const { res, me, body, q, method } = k;

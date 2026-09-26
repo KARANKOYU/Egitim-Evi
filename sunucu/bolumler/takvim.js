@@ -84,6 +84,21 @@ async function takvimHedefi(me, istenenId) {
   return st;
 }
 
+/* Takvime düşen ödevler: öğrencinin gözünden onunkiler; öğretmenin
+   verdikleri; müdürde okulun hepsi. Yalnızca [bas, bit] arasında bitenler
+   ve öğrenci listesi olmadan gelir (müdürün takvimi okulun bütün ödevlerini
+   yüklüyordu: bir yıllık okulda 700 ms). Bakılan eğitim yılına göre süzülür. */
+async function takvimOdevleri(me, hedef, bas, bit) {
+  let kapsam = null;
+  if (hedef) kapsam = { ogrenciId: hedef.id };
+  else if (me.role === 'teacher') kapsam = { ogretmenId: me.id };
+  else if (me.role === 'principal') kapsam = { okulId: me.schoolId };
+  if (!kapsam) return [];
+  if (depo.ozellikler.kapaliMi(hedef ? hedef.schoolId : me.schoolId, 'odev')) return [];   // ödevler okulda kapalı
+  /* Veli çocuğunun gözünden (çocuğun okulu ve yılı) bakar. */
+  return yilSuz(hedef ? bakisKisisi(me, hedef) : me, await depo.odevler.takvimIcin(kapsam, bas, bit));
+}
+
 /* Takvime düşen ders saatleri: öğrencinin sınıfının ya da öğretmenin kendi programı. */
 async function takvimProgrami(me, hedef, gun) {
   if (hedef && hedef.classId) return depo.siniflar.sinifinProgrami(hedef.classId, gun);
