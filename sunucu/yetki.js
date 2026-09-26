@@ -27,6 +27,80 @@ function pub(u) {
   };
 }
 
+/* ============ yetkiler ve roller ============
+   Her öğretmen okulun hazır "Öğretmen" rolünün yetkilerine sahiptir; müdür
+   bu rolün yetkilerini açıp kapatabilir (rol yoksa OGRETMEN_VARSAYILAN).
+   Müdür ayrıca kendi rollerini tanımlar (ör. "Müdür Yardımcısı", "Etüt
+   Sorumlusu"), yetkilerini tek tek seçer ve bir öğretmene verir; o
+   öğretmenin yetkileri iki rolün birleşimidir.
+
+   Müdürün kendisi bütün yetkilere sahiptir ve bu değiştirilemez — okulda
+   her şeyi yapabilen en az bir kişi kalmalı. */
+
+const YETKILER = [
+  { grup: 'Ders ve program', liste: [
+    { k: 'derse-atanabilir', ad: 'Derse öğretmen olarak atanabilir',
+      kapsam: ['ders'], aciklama: 'Hangi derslere atanabileceğini seç.' },
+    { k: 'program.duzenle', ad: 'Ders programını düzenler', kapsam: ['sinif'] },
+    { k: 'ders.yonet', ad: 'Sınıfa ders ekler ve çıkarır', kapsam: ['sinif'] },
+    { k: 'ders.ogretmen-ata', ad: 'Derse öğretmen atar', kapsam: ['ders', 'sinif'] }
+  ]},
+  { grup: 'Sınıf ve öğrenci', liste: [
+    { k: 'sinif.yonet', ad: 'Sınıf açar ve siler' },
+    { k: 'ogrenci.yerlestir', ad: 'Öğrenciyi sınıfa yerleştirir', kapsam: ['sinif'] },
+    { k: 'ogrenci.hesap-ac', ad: 'Öğrenci hesabı açar ve okula öğrenci ekler' },
+    { k: 'ogrenci.duzenle', ad: 'Öğrenci bilgilerini düzenler' },
+    { k: 'ogrenci.sifre', ad: 'Öğrenci şifresi sıfırlar',
+      aciklama: 'Hassas yetki — dikkatli ver.' },
+    { k: 'ogrenci.portal', ad: 'Öğrenci portalına girer',
+      aciklama: 'Öğrencinin gördüğü ekranı birebir açar.' }
+  ]},
+  { grup: 'Öğretmenler', liste: [
+    { k: 'ogretmen.onayla', ad: 'Okula öğretmen ekler, başvuru onaylar' },
+    { k: 'ogretmen.duzenle', ad: 'Öğretmen bilgisi ve branşını düzenler' },
+    { k: 'ogretmen.cikar', ad: 'Öğretmeni okuldan çıkarır' }
+  ]},
+  { grup: 'Ödev ve sınav', liste: [
+    { k: 'odev.ver', ad: 'Ödev verir', kapsam: ['ders', 'sinif'] },
+    { k: 'odev.sonuclandir', ad: 'Ödev sonuçlandırır', kapsam: ['ders'] },
+    { k: 'sinav.olustur', ad: 'Sınav oluşturur', kapsam: ['ders', 'sinif'] },
+    { k: 'sinav.not-gir', ad: 'Sınav notu girer', kapsam: ['ders', 'sinif'] },
+    { k: 'ogretmen.sonuclar', ad: 'Girdiği sınıfların öğrenci sonuçlarını görür',
+      aciklama: 'Sınıflarım bölümü: sınıf, öğrenci, verdiği ödevler ve öğrencinin sınav sonuçları.' }
+  ]},
+  { grup: 'Devamsızlık', liste: [
+    { k: 'devamsizlik.al', ad: 'Yoklama alır', kapsam: ['ders', 'sinif'] },
+    { k: 'devamsizlik.gor', ad: 'Okulun tüm devamsızlığını görür' }
+  ]},
+  { grup: 'Etüt', liste: [
+    { k: 'etut.yonet', ad: 'Etüt açar; gününü, saatini, öğretmenini ve öğrencilerini düzenler' },
+    { k: 'etut.yoklama', ad: 'Bütün etütlerde yoklama alır',
+      aciklama: 'Etüdün öğretmeni kendi etüdünde bu yetki olmadan da yoklama alır.' }
+  ]},
+  { grup: 'Mesajlaşma', liste: [
+    { k: 'mesaj.toplu', ad: 'Sınıfa veya gruba toplu mesaj atar' },
+    { k: 'mesaj.herkese', ad: 'Okuldaki herkese mesaj atar' }
+  ]},
+  { grup: 'Okul hayatı', liste: [
+    { k: 'yemek.yonet', ad: 'Yemek listesini düzenler' },
+    { k: 'servis.yonet', ad: 'Servisleri ve servis öğrencilerini düzenler',
+      aciklama: 'Şoför telefonlarını ve öğrencilerin durağını görür.' },
+    { k: 'kulup.yonet', ad: 'Kulüp açar, danışman ve üyeleri düzenler' }
+  ]},
+  { grup: 'Yönetim', liste: [
+    { k: 'rol.yonet', ad: 'Rol oluşturur ve düzenler',
+      aciklama: 'Bu yetkiyi verdiğin kişi başkalarına yetki dağıtabilir.' },
+    { k: 'islem-kaydi.gor', ad: 'İşlem kaydını görür' },
+    { k: 'takvim.yonet', ad: 'Okul takvimine etkinlik ve tatil ekler' },
+    { k: 'yil.yonet', ad: 'Eğitim yılı açar ve değiştirir',
+      aciklama: 'Yeni yıl açınca eski yılın kayıtları arşive düşer.' },
+    { k: 'aktarim.yap', ad: 'Excel ile içe ve dışa aktarım yapar',
+      aciklama: 'Öğrenci listesi ve ders programını Excel dosyasıyla toplu işler.' },
+    { k: 'okul.sayfa', ad: 'Okulun giriş sayfasını düzenler',
+      aciklama: 'Kapak ve logo fotoğrafı, tanıtım yazısı, renkler ve kısıtlı CSS. Sayfa herkese açıktır.' }
+  ]}
+];
+
 /* Düz liste: doğrulama için */
 const TUM_YETKILER = YETKILER.reduce((a, g) => a.concat(g.liste.map(x => x.k)), []);
 
@@ -97,6 +171,15 @@ function kullaniciYetkileri(u) {
   return temel;
 }
 
+/* Ek rolün bir yetki için tanımladığı ders/sınıf kapsamı. Rolde tanım
+   yoksa null ("hepsi"). */
+function yetkiKapsami(u, izin) {
+  if (!u || u.role !== 'teacher' || !u.customRoleId) return null;
+  const r = u._rol || null;
+  if (!r || r.schoolId !== u.schoolId || !r.kapsam) return null;
+  return r.kapsam[izin] || null;
+}
+
 /* Kapsam bağlama uyuyor mu? Kapsam yoksa (null) her şeye uyar. */
 function kapsamUyar(k, baglam) {
   if (!k || !baglam) return true;
@@ -110,6 +193,10 @@ function kapsamUyar(k, baglam) {
   }
   return true;
 }
+
+/* Öğretmenin yetkileri iki rolün birleşimi: izin hazır Öğretmen rolünde
+   açıksa ek rolün kapsamı onu daraltmaz. */
+const temelRoldeMi = (u, izin) => u.role === 'teacher' && (u._ogretmenYetkileri || OGRETMEN_VARSAYILAN).indexOf(izin) >= 0;
 
 /* baglam: { ders: 'Matematik', sinif: 'c_...' } — verilmezse sadece
    yetkinin açık olup olmadığına bakılır. */

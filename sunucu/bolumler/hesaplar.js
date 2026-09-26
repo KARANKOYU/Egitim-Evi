@@ -199,6 +199,33 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
   return { sorunlar, d, sifre, varsayilanSifre };
 }
 
+/* Yeni hesap nesnesi (doğrulanmış alanlardan). */
+async function hesapNesnesi(me, rol, s, ozet) {
+  const u = Object.assign({
+    id: uid('u'), role: rol, status: 'approved', schoolId: me.schoolId,
+    city: me.city || '', district: me.district || '', address: '', email: '',
+    createdBy: me.id, okulActi: true, createdAt: now(), sifreDegismeli: s.varsayilanSifre
+  }, s.d, { pass: ozet });
+  if (rol === 'student') u.code = await yeniKod();
+  if (rol === 'teacher' && !u.branch) u.branch = '';
+  return u;
+}
+
+/* Hesabı düzenleyecek kişinin yetkisi var mı; hesap bu okulun mu?
+   Hiçbir rol için yetkisi olmayan kişi hesabı aramadan 403 alır (var olup
+   olmadığını da öğrenmesin). rol verilirse yalnızca o roldeki hesap. */
+async function yonetilenHesap(me, id, islemAdi, rol) {
+  const roller = rol ? [rol] : Object.keys(YETKI);
+  if (!roller.some(r => YETKI[r][islemAdi] && yetkiVarMi(me, YETKI[r][islemAdi]))) return { hata: 'Bu işlem için yetkin yok', kod: 403 };
+  const u = await depo.kullanicilar.bul(clean(id, 60));
+  if (u && rol && u.role !== rol) return { hata: 'Hesap bulunamadı', kod: 404 };
+  if (!u || u.schoolId !== me.schoolId || !YETKI[u.role]) return { hata: 'Hesap bulunamadı', kod: 404 };
+  const izin = YETKI[u.role][islemAdi];
+  if (!izin || !yetkiVarMi(me, izin)) return { hata: 'Bu işlem için yetkin yok', kod: 403 };
+  if (u.role === 'student' && !ogrenciKapsamindaMi(me, izin, u.classId)) return { hata: 'Bu sınıfın öğrencisi için yetkin yok', kod: 403 };
+  return { u };
+}
+
 /* Düzenleme penceresine giden görünüm: T.C. no dahil (okul yönetimi). */
 function hesapGorunumu(u, sinifAdi) {
   return {
