@@ -190,6 +190,57 @@ function profilCiz(hs) {
   if ($('yorumKart')) yorumKartiniDoldur();
 }
 
+/* ---- açılış sayfasına yorum ---- */
+var YORUM = { yildiz: 0 };
+
+function yorumKartiniDoldur() {
+  api('/yorumlar/benim').then(function (d) {
+    if (!d.yazabilir) { $('yorumIcerik').textContent = d.neden; return; }
+    var y = d.yorum;
+    YORUM.yildiz = y ? y.yildiz : 5;
+    var h = '<p class="hint" style="margin-top:0">Açılış sayfasında <b>' + esc(d.adKisa) + ' · ' + esc(d.rol) + '</b> olarak görünür; ' +
+      'adın tam yazılmaz. Küfür, hakaret ve internet adresi kabul edilmez.</p>' +
+      (y && y.gizli ? '<div class="msg uyari">Yorumun sistem yöneticisi tarafından gizlendi; açılışta görünmüyor.</div>' : '') +
+      '<div class="field"><label>Yıldız</label><div class="yildiz-sec" id="yorumYildiz" role="radiogroup" aria-label="Yıldız">' +
+      [0, 1, 2, 3, 4, 5].map(function (n) {
+        return '<button type="button" class="yildiz-sec-btn" data-act="yorum-yildiz" data-id="' + n + '" role="radio" ' +
+          'aria-label="' + n + ' yıldız">' + (n ? ik('yildiz') : '0') + '</button>';
+      }).join('') + '</div></div>' +
+      '<div class="field"><label for="yorumMetin">Yorumun</label>' +
+      '<textarea id="yorumMetin" rows="3" maxlength="500">' + esc(y ? y.metin : '') + '</textarea>' +
+      '<div class="hint"><span id="yorumSayac"></span></div></div>' +
+      '<div class="dugme-satir"><button class="btn" data-act="yorum-kaydet">' + (y ? 'Yorumu güncelle' : 'Yorumu gönder') + '</button>' +
+      (y ? '<button class="btn gri" data-act="yorum-sil">Yorumu sil</button>' : '') + '</div>' +
+      '<div id="yorumMesaj" style="margin-top:10px"></div>';
+    $('yorumIcerik').className = '';
+    $('yorumIcerik').innerHTML = h;
+    yorumYildizCiz();
+    var sayac = function () { $('yorumSayac').textContent = $('yorumMetin').value.length + ' / 500'; };
+    $('yorumMetin').addEventListener('input', sayac);
+    sayac();
+  })['catch'](function (e) { $('yorumIcerik').textContent = e.message; });
+}
+
+function yorumYildizCiz() {
+  var d = document.querySelectorAll('#yorumYildiz .yildiz-sec-btn');
+  for (var i = 0; i < d.length; i++) {
+    var n = Number(d[i].getAttribute('data-id'));
+    d[i].classList.toggle('dolu', n > 0 && n <= YORUM.yildiz);
+    d[i].classList.toggle('secili', n === YORUM.yildiz);
+    d[i].setAttribute('aria-checked', n === YORUM.yildiz ? 'true' : 'false');
+  }
+}
+
+EYLEMLER['yorum-yildiz'] = function (el, n) { YORUM.yildiz = Number(n); yorumYildizCiz(); };
+
+EYLEMLER['yorum-kaydet'] = function (el) {
+  dugmeBekle(el, 'Gönderiliyor...');
+  return api('/yorumlar', 'POST', { yildiz: YORUM.yildiz, metin: $('yorumMetin').value }).then(function (d) {
+    dugmeBitir(el);
+    mesajGoster('yorumMesaj', 'iyi', d.message);
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('yorumMesaj', 'hata', e.message); });
+};
+
 EYLEMLER['yorum-sil'] = function () {
   if (!confirm('Yorumun silinsin mi?')) return;
   return api('/yorumlar/sil', 'POST', {}).then(function () { yorumKartiniDoldur(); })['catch'](hataGoster);

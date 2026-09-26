@@ -246,3 +246,31 @@ EYLEMLER['odev-oku'] = function (el, id) {
   }
 };
 
+SAYFALAR.sinavlarim = function () {
+  return api('/progress' + hedefOgrenci()).then(function (d) {
+    var h = hero('SINAVLAR', S.viewStudentId ? S.viewStudentName + ' adına görüntülüyorsun.' : 'Sınav sonuçların, grafiğin ve ortalamaların.');
+    if (!d.examGroups.length && !(d.exams || []).length) { yaz(h + bosKutu('sinav', 'Henüz sınav sonucun yok.')); return; }
+    h += sinavGrafigiKutusu(d.student.id) + tekSinavKarti(d);
+    for (var i = 0; i < d.examGroups.length; i++) {
+      var g = d.examGroups[i];
+      h += '<div class="kart" data-ara="' + esc(g.name + ' ' + g.subject) + '"><h3>' + esc(g.name) + '</h3>' +
+        '<div style="color:var(--soluk);font-size:13px;margin-bottom:10px">' + esc(g.subject) + ' · ' + esc(g.teacherName) + '</div>' +
+        '<div class="tablo-sar"><table class="t"><thead><tr><th>Sınav</th><th>Etki</th><th>Not</th></tr></thead><tbody>';
+      for (var j = 0; j < g.exams.length; j++) {
+        var e = g.exams[j];
+        h += '<tr><td>' + esc(e.name) + '</td><td>%' + sayiTR(e.weight) + '</td><td><b>' +
+          (e.grade === null || e.grade === undefined ? '<span style="color:var(--soluk)">-</span>'
+            : sayiTR(e.grade) + (Number(e.ust) !== 100 || Number(e.alt) !== 0 ? ' <small style="color:var(--soluk)">/ ' + sayiTR(e.ust) + '</small>' : '')) +
+          '</b></td></tr>';
+      }
+      h += '</tbody></table></div>' +
+        '<div class="satir" style="border-top:2px solid var(--cizgi);margin-top:6px">' +
+        '<div class="buyu"><b>Grup ortalaması</b> <span class="hint">100 üzerinden</span>' +
+        '<div class="cubuk"><i style="width:' + (g.average === null ? 0 : Math.max(0, Math.min(100, g.average))) + '%"></i></div></div>' +
+        '<span class="etiket ' + (g.average === null ? 'gri' : g.average >= 50 ? 'yesil' : 'kirmizi') + '">' +
+        (g.average === null ? 'Değer yok' : sayiTR(g.average, 2)) + '</span></div></div>';
+    }
+    yaz(h);
+    ilerleyisGrafikleriniYukle([d.student.id]);
+  });
+};

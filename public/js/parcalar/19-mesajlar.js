@@ -248,6 +248,10 @@ function okumaListeCiz() {
   $('okumaListe').innerHTML = h;
 }
 
+function okumaSekme(k, ad) {
+  return '<button class="sekme kucuk' + (okumaDurum.filtre === k ? ' secili' : '') + '" data-act="okuma-filtre" data-filtre="' + k + '">' + ad + '</button>';
+}
+
 EYLEMLER['okuma-filtre'] = function (el) { okumaDurum.filtre = el.getAttribute('data-filtre'); okumaCiz(); };
 EYLEMLER['okuma-rol'] = function (el) {
   var r = el.getAttribute('data-rol');

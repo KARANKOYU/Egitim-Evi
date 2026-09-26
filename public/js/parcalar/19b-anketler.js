@@ -143,6 +143,17 @@ EYLEMLER['anket-sonuc'] = function (el, id) {
   })['catch'](hataGoster);
 };
 
+function anketSekme(k, ad) {
+  return '<button class="sekme kucuk' + (anketKatilim.filtre === k ? ' secili' : '') + '" data-act="anket-filtre" data-filtre="' + k + '">' + ad + '</button>';
+}
+
+EYLEMLER['anket-filtre'] = function (el) {
+  anketKatilim.filtre = el.getAttribute('data-filtre');
+  var sekmeler = el.parentNode.querySelectorAll('.sekme');
+  for (var i = 0; i < sekmeler.length; i++) sekmeler[i].classList.toggle('secili', sekmeler[i] === el);
+  anketListeCiz();
+};
+
 function anketListeCiz() {
   var q = nrm(anketKatilim.ara);
   var liste = anketKatilim.veri.filter(function (k) {
