@@ -268,3 +268,4 @@ async function uclar(k) {
   return false;
 }
 
+module.exports = { uclar, anaHesap };
