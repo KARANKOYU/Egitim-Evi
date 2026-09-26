@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#d62839">
+<meta name="theme-color" content="#15181d" media="(prefers-color-scheme: dark)">
+<script src="/js/tema.js"></script>
+<script src="/js/belge.js" defer></script>
+<meta name="robots" content="noindex">
+<title>Okul bulunamadı · Eğitim Evi</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="icon" href="/simge-192.png">
+<style>
+  .belge { max-width: 760px; margin: 0 auto; padding: 40px 22px 80px; }
+  .belge-ust { border-bottom: 1px solid var(--cizgi); padding-bottom: 22px; margin-bottom: 30px; }
+  .belge-ust .marka {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; color: var(--ana); margin-bottom: 18px;
+  }
+  .belge-ust .marka svg { width: 26px; height: 26px; }
+  .belge h1 { font-size: 27px; margin: 0 0 8px; letter-spacing: -.4px; }
+  .belge .alt { color: var(--soluk); font-size: 14px; }
+  .belge h2 {
+    font-size: 17px; margin: 34px 0 10px; padding-top: 4px;
+    color: var(--yazi);
+  }
+  .belge p, .belge li { line-height: 1.7; color: var(--yazi); }
+  .belge p { margin: 0 0 12px; }
+  .belge ul { margin: 0 0 14px; padding-left: 22px; }
+  .belge li { margin-bottom: 6px; }
+  .belge table { width: 100%; border-collapse: collapse; margin: 6px 0 16px; font-size: 14px; }
+  .belge th, .belge td {
+    text-align: left; padding: 9px 11px; border-bottom: 1px solid var(--cizgi);
+    vertical-align: top;
+  }
+  .belge th { color: var(--soluk); font-size: 13px; font-weight: 600; }
+  .belge .kutu {
+    background: var(--ana-acik); border: 1px solid var(--ana-cizgi);
+    border-radius: var(--r-kucuk); padding: 15px 17px; margin: 18px 0;
+  }
+  .belge .kutu p:last-child { margin-bottom: 0; }
+  .belge .geri { display: inline-block; margin-top: 34px; }
+  .belge footer {
+    margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--cizgi);
+    color: var(--soluk); font-size: 13px;
+  }
+  /* ---- bulunamadı sayfası ---- */
+  .bulunamadi { min-height: calc(100vh - 260px); display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; padding-top: 60px; padding-bottom: 60px; }
+  .bulunamadi .kod { font-family: var(--f-baslik); font-size: clamp(72px, 16vw, 132px); line-height: 1; font-weight: 700;
+    color: var(--ana-cizgi); letter-spacing: -2px; }
+  .bulunamadi h1 { font-size: 30px; margin: 10px 0 10px; }
+  .bulunamadi p { color: var(--soluk); max-width: 520px; margin: 0 auto 8px; }
+  .bulunamadi .dugmeler { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 22px; }
+</style>
+</head>
+<body>
+<div class="dis">
+  <header class="site-ust">
+    <div class="site-ust-ic">
+      <a class="site-marka" href="/"><span class="mark"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M10 21v-5h4v5"/><path d="M9.5 11h5"/></svg></span><span>Eğitim Evi</span></a>
+      <div class="site-hesap">
+        <a class="btn kucuk" href="/login">Giriş</a>
+        <a class="btn kucuk ghost" href="/signup">Kayıt ol</a>
+      </div>
+      <nav class="site-menu" aria-label="Site">
+        <a class="site-uygulama" id="sUygulama" href="/indir" title="Eğitim Evi'ni telefonuna indir (Android ve iPhone)"><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7.5 11 4.5 4.5 4.5-4.5"/><path d="M4 20h16"/></svg><span>İndir</span></a>
+        <button type="button" class="site-tema tema-dugme" data-act="tema-degis" title="Koyu ya da açık görünüm" aria-label="Koyu ya da açık görünüm"><svg class="ikon tema-ay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg><svg class="ikon tema-gunes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+        <a href="/hakkinda">Hakkında</a>
+        <a href="/sss">SSS</a>
+        <div class="yapimci-kutu">
+          <button type="button" class="site-yapimci" id="btnYapimcilar" data-act="yapimcilar" aria-expanded="false" aria-controls="yapimciListe"><svg class="gh" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>Yapımcılar</span></button>
+          <div class="yapimci-liste" id="yapimciListe" hidden>
+            <ul class="yapimci-satirlar" data-yapimcilar>
+              <li><a href="https://github.com/KARANKOYU" target="_blank" rel="noopener"><svg class="gh" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>KARANKOYU</span></a></li>
+            </ul>
+            <a class="yapimci-depo" href="https://github.com/KARANKOYU/Egitim-Evi" target="_blank" rel="noopener">Projenin GitHub sayfası</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
+<main class="belge bulunamadi">
+  <div class="kod" aria-hidden="true">404</div>
+  <h1>Okul bulunamadı</h1>
+  <p id="okulYok">Bu adreste bir okul yok.</p>
+  <p>Adresi yanlış yazmış olabilirsin ya da okulun adresi değişmiş olabilir. Okulunu adıyla arayabilirsin.</p>
+  <div class="dugmeler">
+    <a class="btn" href="/">Ana sayfaya dön</a>
+    <a class="btn ghost" href="/login">Okulunu ara</a>
+  </div>
+</main>
+  <footer class="site-alt">
+    <div class="site-alt-ic">
+      <div class="site-alt-marka"><b>Eğitim Evi</b><span>Okul portalı · 2026</span></div>
+      <a class="site-github" href="https://github.com/KARANKOYU/Egitim-Evi" target="_blank" rel="noopener"
+         title="Kaynak kodu GitHub'da"><svg class="gh" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>Kaynak kodu</span></a>
+      <nav class="site-alt-menu" aria-label="Alt bağlantılar">
+        <a href="/hakkinda">Hakkında</a>
+        <a href="/sss">SSS</a>
+        <a href="/kosullar.html">Kullanım koşulları</a>
+        <a href="/kvkk.html">Aydınlatma metni</a>
+        <span class="site-iletisim" id="sIletisim"></span>
+      </nav>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

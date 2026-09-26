@@ -251,11 +251,26 @@ const PARCA_KLASORLERI = [path.join(PUB, 'js', 'parcalar'), path.join(PUB, 'css'
    kayıt (/signup, /kayit), Hakkında (/about), SSS (/faq) ve okul sayfası (/school/<okul>).
    Bunların dışında dosyası olmayan her adres "Sayfa bulunamadı" (404) olur. */
 const UYGULAMA_YOLLARI = new Set(['', 'index.html', 'login', 'giris', 'signup', 'kayit', 'hakkinda', 'about', 'sss', 'faq']);
-const OKUL_YOLU = /^school\/[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
+const OKUL_YOLU = /^school\/([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)$/;
+
+function sadeYol(rel) { return String(rel).replace(/^\/+|\/+$/g, '').toLowerCase(); }
 
 function uygulamaYoluMu(rel) {
-  const y = String(rel).replace(/^\/+|\/+$/g, '').toLowerCase();
+  const y = sadeYol(rel);
   return UYGULAMA_YOLLARI.has(y) || OKUL_YOLU.test(y);
+}
+
+/* /school/<okul>: okul gerçekten var mı (yalnız onaylı okul). Sonuç 30 saniye
+   bellekte kalır; veritabanına ulaşılamazsa uygulama açılır (sayfa kendisi söyler). */
+const okulOnbellek = new Map();   // kısa ad -> { var, zaman }
+async function okulVarMi(kisa) {
+  const k = okulOnbellek.get(kisa);
+  if (k && Date.now() - k.zaman < 30 * 1000) return k.var;
+  const { depo } = require('./veri');
+  const var_ = !!(await depo.okullar.kisaAdla(kisa));
+  if (okulOnbellek.size > 2000) okulOnbellek.clear();
+  okulOnbellek.set(kisa, { var: var_, zaman: Date.now() });
+  return var_;
 }
 
 function serveStatic(req, res, urlPath) {
@@ -281,17 +296,23 @@ function serveStatic(req, res, urlPath) {
     return res.end('Bulunamadı');
   }
   statikOku(full, (err, kayit) => {
-    /* Dosya yoksa: uygulamanın adresiyse kabuğu (index.html), değilse
-       "Sayfa bulunamadı" sayfasını 404 koduyla döndür. */
+    /* Dosya yoksa: uygulamanın adresiyse kabuğu (index.html); okul adresi ama
+       böyle bir okul yoksa "Okul bulunamadı"; başka her şey "Sayfa bulunamadı" (404). */
     if (err) {
-      const bulunamadi = !uygulamaYoluMu(rel);
-      return statikOku(path.join(PUB, bulunamadi ? '404.html' : 'index.html'), (e2, kabuk) => {
+      const gonder = (dosya, durum) => statikOku(path.join(PUB, dosya), (e2, kabuk) => {
         if (e2) {
           res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
           return res.end('Bulunamadı');
         }
-        htmlSurumle(kabuk, k => statikGonder(req, res, k, bulunamadi ? 404 : 0));
+        htmlSurumle(kabuk, k => statikGonder(req, res, k, durum));
       });
+      const okul = OKUL_YOLU.exec(sadeYol(rel));
+      if (okul) {
+        return okulVarMi(okul[1])
+          .then(var_ => (var_ ? gonder('index.html', 0) : gonder('okul-bulunamadi.html', 404)))
+          .catch(() => gonder('index.html', 0));
+      }
+      return uygulamaYoluMu(rel) ? gonder('index.html', 0) : gonder('404.html', 404);
     }
     if (kayit.tur.indexOf('text/html') === 0) return htmlSurumle(kayit, k => statikGonder(req, res, k));
     statikGonder(req, res, kayit);

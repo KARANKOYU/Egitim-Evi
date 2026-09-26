@@ -38,6 +38,15 @@
     });
   }
 
+  /* "Okul bulunamadı" sayfası: adreste yazılan okul adı gösterilir (metin olarak). */
+  var okulYok = document.getElementById('okulYok');
+  var okulAdi = /^\/school\/([^\/]+)\/?$/i.exec(location.pathname);
+  if (okulYok && okulAdi) {
+    var ad = okulAdi[1];
+    try { ad = decodeURIComponent(ad); } catch (e) { /* olduğu gibi */ }
+    okulYok.textContent = '"' + ad.slice(0, 60) + '" adresinde bir okul yok.';
+  }
+
   /* Yapımcı listesi sunucudaki yapimcilar.json'dan gelir; gelmezse sayfadaki
      hazır satır (proje sahibi) kalır. */
   var yerler = document.querySelectorAll('[data-yapimcilar]');

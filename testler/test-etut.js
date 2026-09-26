@@ -199,6 +199,9 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
     /Ana sayfaya dön/.test(olmayan.metin), olmayan.durum);
   const eskiBicim = await sayfa('/test-ortaokulu');
   kontrol('okul yalnızca /school/ altında: /<okul> artık 404', eskiBicim.durum === 404, eskiBicim.durum);
+  const okulYok = await sayfa('/school/boyle-bir-okul-yok');
+  kontrol('olmayan okul 404 ve "Okul bulunamadı"', okulYok.durum === 404 && /Okul bulunamadı/.test(okulYok.metin) &&
+    /Ana sayfaya dön/.test(okulYok.metin), okulYok.durum);
   const acilmayan = [];
   for (const y of ['/giris', '/kayit', '/login', '/signup', '/about', '/faq', '/hakkinda', '/sss', '/school/test-ortaokulu', '/school/test-ortaokulu/']) {
     const s = await sayfa(y);
