@@ -20,8 +20,11 @@ SAYFALAR['okul-ayarlari'] = function () {
   return api('/school/adres').then(function (d) {
     okulAyar.veri = d;
     var tam = location.host + '/' + d.kisaAd;
-    var h = hero('OKUL ADRESİ VE KONUMU', d.ad);
-    h += '<div class="kart"><h3>Okulun giriş adresi</h3>' +
+    /* Okulun giriş adresini yalnızca müdür seçer; "Okulun haritadaki yerini ayarlar"
+       yetkisi olan (ör. Kodlayıcı) yalnızca konumu görür. */
+    var mudur = S.user.role === 'principal';
+    var h = hero(mudur ? 'OKUL ADRESİ VE KONUMU' : 'OKULUN KONUMU', d.ad);
+    if (mudur) h += '<div class="kart"><h3>Okulun giriş adresi</h3>' +
       '<p class="hint" style="margin-top:0">Öğrenci, öğretmen ve servisçiler bu adresten girer. Aynı kullanıcı adı başka ' +
       'okulda da olabilir; girişte okul bu adresten anlaşılır.</p>' +
       (d.kisaAd ? '<div class="satir" style="border:0;padding:0 0 12px"><div class="buyu"><div class="ad adres-goster">' + esc(tam) + '</div></div>' +
@@ -42,7 +45,7 @@ SAYFALAR['okul-ayarlari'] = function () {
       '<div id="oaKonumMesaj" style="margin-top:9px"></div></div>';
     yaz(h);
 
-    $('oaKisa').addEventListener('input', function () {
+    if ($('oaKisa')) $('oaKisa').addEventListener('input', function () {
       var y = aramaSadeTR(this.value.replace(/-/g, ' ')).replace(/ /g, '-');
       if (/[-\s]$/.test(this.value) && y) y += '-';
       if (y !== this.value) this.value = y;

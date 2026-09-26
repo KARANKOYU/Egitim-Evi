@@ -737,7 +737,7 @@ ve her öğrencinin portalını açar.
 | **Etüt** | Etüt açar ve düzenler · Bütün etütlerde yoklama alır |
 | **Mesajlaşma** | Sınıfa/gruba toplu mesaj ve anket · Herkese mesaj |
 | **Okul hayatı** | Yemek listesini düzenler · Servisleri düzenler · Kulüp açar ve düzenler |
-| **Yönetim** | Rol oluşturur · İşlem kaydını görür · Takvim · Eğitim yılı · Excel/CSV aktarım · Okul sayfası |
+| **Yönetim** | Rol oluşturur · İşlem kaydını görür · Takvim · Eğitim yılı · Excel/CSV aktarım · Okul sayfası · Okulun haritadaki yerini ayarlar |
 
 ### Ders ve sınıf daraltması
 
@@ -1145,6 +1145,11 @@ durağıyla servise yazar. Bir öğrenci tek serviste olur (başkasına yazılı
 yalnızca o servisteki öğrenciye, velisine ve yönetime gider.
 
 **Servis haritası ve canlı konum:**
+
+- Haritanın üstünde üç düğme: **Okula git**, **Eve git**, **Servisi takip et** (açıkken araç
+  her yenilenişte haritanın ortasında kalır). Okulun yerini müdür ya da **Okulun haritadaki
+  yerini ayarlar** yetkisi verilen kişi (hazır şablon **Kodlayıcı**'da açık) **Okulun Konumu**
+  sayfasından seçer; okulun giriş adresini yine yalnızca müdür değiştirir.
 
 - **Servisçi** telefonundan okulun adresine girer; **Seferlerim** sayfasında "Okula gidiş"
   ya da "Eve dönüş" seferini başlatır. Telefonun konumu birkaç saniyede bir (araç

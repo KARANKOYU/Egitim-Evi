@@ -97,7 +97,9 @@ const YETKILER = [
     { k: 'aktarim.yap', ad: 'Excel ile içe ve dışa aktarım yapar',
       aciklama: 'Öğrenci listesi ve ders programını Excel dosyasıyla toplu işler.' },
     { k: 'okul.sayfa', ad: 'Okulun giriş sayfasını düzenler',
-      aciklama: 'Kapak ve logo fotoğrafı, tanıtım yazısı, renkler ve kısıtlı CSS. Sayfa herkese açıktır.' }
+      aciklama: 'Kapak ve logo fotoğrafı, tanıtım yazısı, renkler ve kısıtlı CSS. Sayfa herkese açıktır.' },
+    { k: 'okul.konum', ad: 'Okulun haritadaki yerini ayarlar',
+      aciklama: 'Servis haritasında ve velinin haritasında okul işareti buraya konur. Okulun giriş adresini yine müdür seçer.' }
   ]}
 ];
 
@@ -121,7 +123,7 @@ const ROL_SABLONLARI = [
   { ad: 'Servis Sorumlusu', yetkiler: ['servis.yonet'] },
   { ad: 'Kulüp Danışmanı', yetkiler: ['kulup.yonet'] },
   { ad: 'Zümre Başkanı', yetkiler: ['sinav.olustur', 'mesaj.toplu'] },
-  { ad: 'Kodlayıcı', yetkiler: ['okul.sayfa'] }
+  { ad: 'Kodlayıcı', yetkiler: ['okul.sayfa', 'okul.konum'] }
 ];
 
 const roleById = id => depo.roller.bul(id);

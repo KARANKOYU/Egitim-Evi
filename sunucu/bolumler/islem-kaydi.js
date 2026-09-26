@@ -54,6 +54,7 @@ const ISLEM_AD = {
   'ogretmen.eklendi': 'Öğretmen kodla okula eklendi',
   'ogretmen.ayrildi': 'Öğretmen okuldan ayrıldı',
   'okul.adres': 'Okulun adresi değişti',
+  'okul.konum': 'Okulun haritadaki yeri değişti',
   'hesap.eposta': 'Hesabın e-postası değişti',
   'hesap.bilgi': 'Hesap bilgileri değişti',
   'ogrenci.nakil': 'Öğrenci başka okuldan nakil geldi',

@@ -94,7 +94,9 @@ function servisHaritasiCiz(sigdir) {
   var arac = d.sefer && d.sefer.konum;
   if (arac) isaretler.push({ tur: 'servis', enlem: arac.enlem, boylam: arac.boylam, etiket: (d.servis && d.servis.plaka) || 'Servis' });
   servisHarita.h.isaretler(isaretler);
-  if (sigdir) servisHarita.h.sigdir();
+  /* "Servisi takip et" açıksa araç her yenilenişte haritanın ortasında kalır. */
+  if (servisHarita.takip && arac && !servisHarita.secimAcik) servisHarita.h.merkezle(arac);
+  else if (sigdir) servisHarita.h.sigdir();
 
   var h = '';
   if (servisHarita.secimAcik) {
@@ -107,6 +109,18 @@ function servisHaritasiCiz(sigdir) {
     $(kapId + 'Bilgi').innerHTML = h;
     return;
   }
+
+  /* Üç düğme: okula git, eve git, servisi takip et (haritayı oraya götürür). */
+  var git = '';
+  if (d.okul && d.okul.enlem !== null && d.okul.enlem !== undefined) {
+    git += '<button type="button" class="btn kucuk ghost" data-act="harita-okula">' + ik('okul') + 'Okula git</button>';
+  }
+  if (d.ev) git += '<button type="button" class="btn kucuk ghost" data-act="harita-eve">' + ik('ev') + 'Eve git</button>';
+  if (arac) {
+    git += '<button type="button" class="btn kucuk' + (servisHarita.takip ? '' : ' ghost') + '" data-act="harita-servis" aria-pressed="' +
+      (servisHarita.takip ? 'true' : 'false') + '">' + ik('servis') + (servisHarita.takip ? 'Servis takipte' : 'Servisi takip et') + '</button>';
+  }
+  if (git) h += '<div class="dugme-satir harita-git">' + git + '</div>';
 
   if (!d.servis) {
     h += '<div class="hint">' + esc(d.ogrenci) + ' bir servise kayıtlı değil.</div>';
@@ -406,4 +420,27 @@ EYLEMLER['sefer-bitir'] = function (el, seferId) {
     if (S._sefer && S._sefer.id === seferId) seferiDurdur();
     return git(S.page).then(function () { sayfaMesaji('iyi', d.message); });
   })['catch'](function (e) { dugmeBitir(el); hataGoster(e); });
+};
+
+/* ---- haritada okula / eve git, servisi takip et ---- */
+EYLEMLER['harita-okula'] = function () {
+  var d = servisHarita.veri;
+  if (!d || !d.okul || !servisHarita.h) return;
+  servisHarita.takip = false;
+  servisHarita.h.merkezle(d.okul, 17);
+  servisHaritasiCiz(false);
+};
+EYLEMLER['harita-eve'] = function () {
+  var d = servisHarita.veri;
+  if (!d || !d.ev || !servisHarita.h) return;
+  servisHarita.takip = false;
+  servisHarita.h.merkezle(d.ev, 17);
+  servisHaritasiCiz(false);
+};
+EYLEMLER['harita-servis'] = function () {
+  var d = servisHarita.veri, arac = d && d.sefer && d.sefer.konum;
+  if (!arac || !servisHarita.h) return;
+  servisHarita.takip = !servisHarita.takip;
+  if (servisHarita.takip) servisHarita.h.merkezle(arac, 16);
+  servisHaritasiCiz(false);
 };

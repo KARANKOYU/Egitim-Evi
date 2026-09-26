@@ -483,7 +483,7 @@ async function uclar(k, sub) {
 
   /* ---------- okul adresi (egitimevi.org/<kısa ad>) ---------- */
   if (sub === 'adres' && method === 'GET') {
-    if (me.role !== 'principal') return bad(res, 'Okul adresini müdür belirler', 403);
+    if (me.role !== 'principal' && !yetkiVarMi(me, 'okul.konum')) return bad(res, 'Okul adresini müdür belirler', 403);
     const o = await depo.okullar.bul(me.schoolId);
     return ok(res, { kisaAd: o ? o.kisaAd : '', ad: o ? o.name : '', enlem: o ? o.enlem : null, boylam: o ? o.boylam : null });
   }
@@ -507,7 +507,7 @@ async function uclar(k, sub) {
 
   /* Okulun konumu (servis haritasındaki okul işareti): müdür haritadan seçer. */
   if (sub === 'konum' && method === 'POST') {
-    if (me.role !== 'principal') return bad(res, 'Okulun konumunu müdür belirler', 403);
+    if (!yetkiVarMi(me, 'okul.konum')) return bad(res, 'Okulun konumunu müdür ya da yetki verdiği kişi belirler', 403);
     if (body.sil === true) {
       await depo.okullar.konumYaz(me.schoolId, null, null);
       return ok(res, { message: 'Okulun konumu silindi.' });
@@ -517,6 +517,7 @@ async function uclar(k, sub) {
       return bad(res, 'Konum anlaşılmadı. Haritada okulun olduğu yere dokun.');
     }
     await depo.okullar.konumYaz(me.schoolId, Math.round(en * 1e6) / 1e6, Math.round(boy * 1e6) / 1e6);
+    await islemYaz(me, 'okul.konum', Math.round(en * 1e4) / 1e4 + ', ' + Math.round(boy * 1e4) / 1e4, req);
     return ok(res, { message: 'Okulun konumu kaydedildi.' });
   }
 

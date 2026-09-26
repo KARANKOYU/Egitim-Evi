@@ -68,7 +68,8 @@ function jpegExifli(gizli) {
 
   const yetkiler = await iste('/api/school/permissions', 'GET', null, M);
   const sablon = (yetkiler.body.sablonlar || []).find(s => s.ad === 'Kodlayıcı');
-  kontrol('Kodlayici sablonu var, yalnizca okul.sayfa', !!sablon && sablon.yetkiler.length === 1 && sablon.yetkiler[0] === 'okul.sayfa', J(sablon));
+  kontrol('Kodlayici sablonu var, yalnizca okul.sayfa ve okul.konum', !!sablon &&
+    sablon.yetkiler.slice().sort().join(',') === 'okul.konum,okul.sayfa', J(sablon));
   const rol = await iste('/api/school/role', 'POST', { name: 'Kodlayıcı ' + z, permissions: ['okul.sayfa'] }, M);
   const ata = await iste('/api/school/role-assign', 'POST', { userId: mat.user.id, roleId: rol.body.role && rol.body.role.id }, M);
   kontrol('mudur Kodlayici rolunu ogretmene verdi', rol.status === 200 && ata.status === 200, J(ata.body));

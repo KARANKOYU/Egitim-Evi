@@ -145,6 +145,7 @@ function navTanim() {
     if (yetkim('islem-kaydi.gor')) ek.push({ k: 'islem-kaydi', g: 'belge', ad: 'İşlem Kaydı' });
     if (yetkim('servis.yonet')) ek.push({ k: 'servis', g: 'servis', ad: 'Servisler' });
     if (yetkim('okul.sayfa')) ek.push({ k: 'okul-sayfasi', g: 'okul', ad: 'Okul Sayfası' });
+    if (yetkim('okul.konum')) ek.push({ k: 'okul-ayarlari', g: 'harita', ad: 'Okulun Konumu' });
 
     if (ek.length) {
       m.push({ ayrac: 1 });

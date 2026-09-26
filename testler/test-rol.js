@@ -99,6 +99,27 @@ function kontrol(ad, sart, detay) {
     JSON.stringify(ogrt4.user.yetkiler));
   kontrol('varsayilan yetkiler duruyor', (ogrt4.user.yetkiler || []).indexOf('odev.ver') >= 0);
 
+  console.log('=== 8b) OKULUN KONUMU YETKISI (okul.konum) ===');
+  const konumRol = await iste('/api/school/role', 'POST', { name: 'Harita Sorumlusu', permissions: ['okul.konum'] }, T);
+  kontrol('okul.konum yetkili rol olusturuldu', konumRol.status === 200 && konumRol.body.role.permissions[0] === 'okul.konum',
+    JSON.stringify(konumRol.body).slice(0, 120));
+  const yetkisiz = await girisYap('fen@test.com', 'Test1234!');
+  const kY = await iste('/api/school/konum', 'POST', { enlem: 39.9, boylam: 32.85 }, yetkisiz.token);
+  const aY = await iste('/api/school/adres', 'GET', null, yetkisiz.token);
+  kontrol('yetkisiz ogretmen okulun konumunu ayarlayamaz', kY.status === 403 && aY.status === 403, kY.status + ' ' + aY.status);
+  await iste('/api/school/role-assign', 'POST', { userId: hedef.id, roleId: konumRol.body.role.id }, T);
+  const konumcu = await girisYap('mat@test.com', 'Test1234!');
+  const kK = await iste('/api/school/konum', 'POST', { enlem: 39.92077, boylam: 32.85411 }, konumcu.token);
+  const aK = await iste('/api/school/adres', 'GET', null, konumcu.token);
+  kontrol('yetkili ogretmen konumu kaydediyor ve goruyor', kK.status === 200 && aK.status === 200 && aK.body.enlem === 39.92077,
+    kK.status + ' ' + JSON.stringify(aK.body));
+  const adresDener = await iste('/api/school/adres', 'POST', { kisaAd: 'baska-adres' }, konumcu.token);
+  kontrol('konum yetkisi okulun giris adresini degistirmiyor', adresDener.status === 403, 'status ' + adresDener.status);
+  const kayit = await iste('/api/islem-kaydi?islem=okul.konum', 'GET', null, T);
+  kontrol('konum degisikligi islem kaydina dusuyor', kayit.status === 200 && (kayit.body.kayitlar || []).length > 0,
+    kayit.status + ' ' + JSON.stringify(kayit.body).slice(0, 120));
+  await iste('/api/school/role-delete', 'POST', { roleId: konumRol.body.role.id }, T);
+
   console.log('=== 9) MUDUR HER ZAMAN TAM YETKILI ===');
   kontrol('mudurun butun yetkileri var', (mudur.user.yetkiler || []).length === tumYetki.length,
     (mudur.user.yetkiler || []).length + ' / ' + tumYetki.length);
