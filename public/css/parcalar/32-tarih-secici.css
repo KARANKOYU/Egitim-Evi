@@ -9,7 +9,8 @@
 .tarih-dugme .tarih-simge { margin-left: auto; display: inline-flex; padding-left: 10px; border-left: 1px solid var(--cizgi); }
 .tarih-dugme .ikon { width: 18px; height: 18px; color: var(--ana); flex: 0 0 auto; }
 .tarih-gun { color: var(--soluk); font-size: 13.5px; }
-.tarih-yazi.bos { color: var(--soluk); }
+.tarih-bos { color: var(--soluk); }
+.tarih-kutu.saga { left: auto; right: 0; }
 /* Başlama ve son tarihin altında saat listesi (K12net'teki gibi alt alta) */
 .odev-tarihler .saat-sec { margin-top: 8px; width: 100%; }
 .zorunlu { color: var(--ana); }

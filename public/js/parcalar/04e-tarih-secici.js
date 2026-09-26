@@ -26,7 +26,7 @@ function tsBugun() { return tsIso(new Date()); }
 function tsKisa(iso) { var p = String(iso).split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
 function tsDugmeYazi(iso) {
   return iso ? '<span class="tarih-yazi">' + tsKisa(iso) + '</span><span class="tarih-gun">' + gunAdi(iso) + '</span>'
-    : '<span class="tarih-yazi bos">gg.aa.yyyy</span>';
+    : '<span class="tarih-yazi tarih-bos">gg.aa.yyyy</span>';
 }
 
 function tarihAlani(id, deger, sec) {
@@ -107,6 +107,9 @@ EYLEMLER['tarih-ac'] = function (el, id) {
   kutu.setAttribute('aria-label', 'Tarih seç');
   el.parentNode.appendChild(kutu);
   tsCiz(true);
+  /* Sağda yer yoksa (ör. pencerenin sağ sütunu) takvim alanın sağ kenarına hizalanır. */
+  var r = kutu.getBoundingClientRect(), sinir = el.closest('.modal') || document.documentElement;
+  if (r.right > Math.min(window.innerWidth, sinir.getBoundingClientRect().right) - 8) kutu.classList.add('saga');
 };
 
 function tsHafta(d) {
