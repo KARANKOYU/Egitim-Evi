@@ -1477,3 +1477,117 @@ eğitim evi/
     └── ornekler/              ← seçilmiş kombinasyonların görüntüleri
 ```
 
+### Ön yüz nasıl tek dosya oluyor?
+
+`public/js/parcalar/` ve `public/css/parcalar/` altındaki dosyalar geliştirirken ayrı
+durur; sunucu bunları ad sırasıyla birleştirip `/js/app.js` ve `/css/style.css` olarak
+sunar, bir parça değişince yeniden okur. Derleyici, paket, kurulum yok.
+
+Tarayıcıya giden dosyada **yorumlar yoktur** (`sunucu/yardimci/kucult.js`): dizgi ve
+düzenli ifade içindeki `//`, `/*` işaretlerine dokunmayan küçük bir ayrıştırıcı yorumları
+atar, sonuç derlenip denetlenir; derlenmezse yorumlu hâli gider (uygulama asla bozulmaz).
+Güvenlik buna dayanmaz, bütün kurallar sunucuda. Geliştirirken hatanın hangi parçadan
+geldiğini görmek için sunucuyu `EE_ACIK_KAYNAK=1` ile başlat: yorumlar ve
+`/* ==== parcalar/... ==== */` işaretleri kalır. Tarayıcının geliştirici konsolunda
+kullanıcıya "Dur!" uyarısı çıkar (biri ona kod yapıştırtmaya çalışıyorsa).
+
+---
+
+## Görünüm: açık/koyu tema ve yazı tipleri
+
+- **Ayarlar → Görünüm**: Sistem · Açık · Koyu. Seçim hem tarayıcıda hem hesapta saklanır;
+  telefondan girince de aynı gelir. "Sistem" işletim sisteminin ayarına uyar.
+- Üst şeritte (giriş yapmadan da) ve uygulamanın üst çubuğunda **ay / güneş** düğmesi:
+  açık görünümde ay (koyuya geç), koyuda güneş (açığa geç). Girişliyse seçim hesaba da yazılır.
+- Bütün renkler `public/css/parcalar/00-temel.css` içinde değişkendir; başka dosyada sabit
+  renk yoktur. Koyu temada marka rengi açılmış hâliyle kullanılır (koyu zeminde titremesin).
+- Yazı tipleri: başlıklarda **Newsreader**, gövdede **IBM Plex Sans**; kodlarda sistem
+  eş genişlikli fontu. Dosyalar `public/yazitipi/` altında, dışarıya istek gitmez.
+  Toplam 248 KB, bir kez iner, sonra tarayıcı bir yıl önbellekte tutar.
+- Hareket: sayfa içeriği sırayla belirir, kartlar üstüne gelince hafif kalkar. İşletim
+  sisteminde "hareketi azalt" açıksa hepsi kapanır.
+- Profil fotoğrafı yok: her kişinin yanında adının **baş harfleri** yuvarlak içinde
+  durur (menüde, mesajlarda, listelerde). Renk kişiye göre sabittir; fotoğraf
+  yüklenmediği için saklanacak kişisel görsel de yoktur.
+
+---
+
+## Kayıt kuralları
+
+- **E-posta onayı.** Yetişkin hesabı açan kişiye "hesap açma isteği aldık, açmak
+  istiyorsan bağlantıya tıkla" e-postası gider; hesap **ancak bağlantıya tıklanınca**
+  açılır (bağlantı 24 saat geçerli). Böylece başkasının adresiyle ya da olmayan bir
+  adresle hesap açılamaz. E-posta ayarlıysa adresin alan adının gerçekten e-posta alıp
+  almadığına (MX kaydı) da bakılır. Aynı adrese saatte en fazla 3 bağlantı gider.
+  E-posta değiştirirken de yeni adrese onay bağlantısı gider; tıklanana kadar eski adres geçerlidir.
+- **Şifre.** Yetişkin hesaplarında (veli, öğretmen, müdür, yönetici) en az 8 karakter;
+  en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter (`!`, `?`, `*`, `.`
+  gibi). Öğrenci ve servisçi hesaplarında en az 8 karakter, harf ve rakam. Yazarken
+  kurallar tek tek işaretlenir.
+- **Telefon** ülke koduyla yazılır: kutunun solundan ülke seçilir (+90 Türkiye hazır),
+  numara o ülkenin düzenine göre gruplanır (`+90 532 123 45 67`). Sunucu uluslararası
+  biçimde (E.164, `+905321234567`) saklar; eski `0532...` kayıtlar 015 şema dosyasıyla çevrildi.
+- **Doğum tarihi** kayıtta ve Ayarlar'da alınır; öğrencide zorunlu, diğer rollerde isteğe
+  bağlı. Gelecek tarih, olmayan gün (30 Şubat) ve 1920 öncesi reddedilir.
+- **Okul müdürü 18 yaşından büyük olmalı.** Okul başvurusunda doğum tarihi istenir
+  (hesapta yoksa) ve "bu okulun yöneticisiyim, bilgilerim doğru" beyanı işaretlenir.
+  İnternette yaş kanıtlanamaz; asıl denetim yöneticinin onayıdır: yönetici başvuranın
+  yaşını, hesabın ne zaman açıldığını, e-postasını ve telefonunu görür. Şakasına art arda
+  başvuruya karşı: hesap başına tek bekleyen başvuru, aynı bağlantıdan günde en fazla 20
+  başvuru, e-postası onaylanmamış hesap zaten yok.
+
+---
+
+## Veli paneli
+
+Veli çocuğunun portalına girmeden de her şeyi görür: **Ödevler**, **Devamsızlık**,
+**İlerleyiş** ve **Takvim** bütün çocuklar için tek listede gelir, her satırın başında
+hangi çocuğun olduğu yazar. Üstteki şeritten tek çocuğa daraltılır. Öğrenciye gönderilen
+her mesaj velisine de düşer; mesajda "Zeynep için" notu görünür. Eski yol da duruyor:
+Çocuklarım → çocuğun kartı → portalı.
+
+---
+
+## Hız
+
+- Sunucu API'si 1–1,5 ms cevap verir; `localhost` için IPv4+IPv6 birlikte dinlenir
+  (yalnızca IPv4 dinlenince tarayıcı önce IPv6'yı deneyip ~200 ms bekliyordu).
+- Betik ve stil adresleri kendi sürümünü taşır (`/js/app.js?v=…`): tarayıcı bir yıl
+  saklar, dosya değişince adres değişir. İkinci açılışta yalnızca HTML sorulur.
+- Yazı tipi ve simgeler de bir yıl önbellekte; arayüz kodu brotli ile 229 KB → 53 KB.
+
+---
+
+## Testler ve denetimler
+
+```
+bash testler/tumtest.sh
+```
+
+Her paketten önce ayrı bir test sunucusu (3200 portu, kendi veri klasörü) açılır;
+gerçek veriye dokunulmaz. Denetim betikleri de aynı klasörde; değişiklikten sonra
+çalıştırmakta yarar var:
+
+```
+node testler/yetki-denetimi.js     # sunucu açıkken (EE_BASE=http://localhost:3200)
+node testler/girdi-denetimi.js     # sunucu açıkken
+node testler/yazim-denetimi.js     # sunucusuz
+node testler/buton-denetimi.js     # sunucusuz
+```
+
+---
+
+## Depo ve gizli bilgiler
+
+Depo herkese açıktır; **`data/` asla girmez** (`.gitignore`): veritabanı bağlantısı,
+e-posta şifresi, iletişim bilgileri (`config.yml`), yedekler, yüklenen dosyalar ve
+telefon bildirimi anahtarı sunucuda kalır. Commit atmadan önce `git status` çıktısında
+`data/` görünmediğini kontrol et.
+
+---
+
+## Henüz eklenmeyenler
+
+- Eğitim Evi Aile için iPhone sürümü (Apple'ın Screen Time izni gerekir) ve Google Play'de yayın.
+- Tanıtım sayfası, arama motoru ve bağlantı önizlemesi (internete çıkınca)
+- Canlı ders, kitap kurdu, yılın öğrencisi (sonra ele alınacak)
