@@ -233,6 +233,28 @@ EYLEMLER['kulup-sil'] = function (el, id) {
 /* Üye listesi: danışman ve yönetim; çıkar ve ara-ekle. */
 EYLEMLER['kulup-uyeler'] = function (el, id) { return kulupUyeleriAc(id, ''); };
 
+function kulupUyeleriAc(id, ara) {
+  return api('/kulupler/uyeler?id=' + encodeURIComponent(id)).then(function (d) {
+    S.kulupUye = { id: id, adaylar: d.adaylar };
+    var h = '<div class="alt" style="margin-bottom:8px">' + d.uyeler.length + (d.kulup.kontenjan ? ' / ' + d.kulup.kontenjan : '') + ' üye</div>' +
+      '<div class="okuma-liste" style="max-height:220px">';
+    for (var i = 0; i < d.uyeler.length; i++) {
+      var u = d.uyeler[i];
+      h += '<div class="alici-satir"><div class="buyu">' + esc(u.ad) + ' <span class="alt">' + esc(u.sinif) + '</span></div>' +
+        '<button class="btn kucuk gri" data-act="kulup-uye-cikar" data-id="' + esc(u.id) + '">Çıkar</button></div>';
+    }
+    if (!d.uyeler.length) h += '<div class="hint" style="padding:8px 0">Henüz üye yok.</div>';
+    h += '</div><div class="field" style="margin-top:14px"><label for="kuAra">Üye ekle</label>' +
+      '<input type="text" id="kuAra" class="ara-kutu" placeholder="Öğrenci adı ya da sınıf" autocomplete="off"></div>' +
+      '<div class="secim-kutu" id="kuAdaylar"></div><div id="kuuMesaj"></div>';
+    modalAc(d.kulup.ad + ' — Üyeler', h, '<button class="btn gri" data-act="modal-kapat">Kapat</button>');
+    $('kuAra').value = ara || '';
+    $('kuAra').oninput = kulupAdayCiz;
+    kulupAdayCiz();
+    if (ara) $('kuAra').focus();
+  })['catch'](hataGoster);
+}
+
 function kulupAdayCiz() {
   var q = nrm($('kuAra').value), h = '', n = 0;
   if (!q) { $('kuAdaylar').innerHTML = '<div class="hint">Eklemek için ad yaz.</div>'; return; }
