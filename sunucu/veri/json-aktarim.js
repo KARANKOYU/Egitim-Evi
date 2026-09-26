@@ -664,4 +664,120 @@ async function abonelikleriGeriYaz(liste) {
   }
 }
 
+/* ================================================================== */
+async function disaAktar() {
+  const tum = async tablo => sorgu('SELECT * FROM ' + yaz.adDogrula(tablo));
+  const [okullar, yillar, siniflar, rolSatir, rolYetki, rolKapsam, kullanicilar, engeller, baglar,
+    dersler, program, odevler, odevSinif, odevOgr, sablonlar, sablonOlcum, gruplar, sinavlar, sinavOlcum,
+    degerler, devam, mesajlar, alicilar, okumalar, takvim, bildirimler, oturumlar, hatirlatmalar, islemler,
+    anketSatir, anketSecenek, anketHedef, anketOy, yemekler, servisSatir, servisOgr, kulupSatir, kulupUye, dosyalar,
+    evKonum, etutSatir, etutOgr, etutYok, okulSayfaSatir, okulFotoSatir, yorumSatir, gecmisSatir, ozellikSatir, hatirlaticiSatir, hatirlaticiGunSatir] =
+    await Promise.all(TABLOLAR.map(tum));
+
+  const grupla = (liste, alan) => {
+    const h = new Map();
+    for (const r of liste) { if (!h.has(r[alan])) h.set(r[alan], []); h.get(r[alan]).push(r); }
+    return h;
+  };
+  const yetkiH = grupla(rolYetki, 'rol_id'), kapsamH = grupla(rolKapsam, 'rol_id');
+  const engelH = grupla(engeller, 'kullanici_id');
+  const odevSinifH = grupla(odevSinif, 'odev_id'), odevOgrH = grupla(odevOgr, 'odev_id');
+  const sablonOlcumH = grupla(sablonOlcum, 'sablon_id'), sinavOlcumH = grupla(sinavOlcum, 'sinav_id');
+  const degerH = grupla(degerler, 'olcum_id');
+  const aliciH = grupla(alicilar, 'mesaj_id'), okumaH = grupla(okumalar, 'mesaj_id');
+  const olcumNesne = o => ({ id: o.id, kod: o.kod, ad: o.ad, alt: o.alt_sinir, ust: o.ust_sinir, ana: o.ana, sira: o.sira });
+  const secenekH = grupla(anketSecenek, 'anket_id'), hedefH = grupla(anketHedef, 'anket_id'), oyH = grupla(anketOy, 'anket_id');
+  const servisOgrH = grupla(servisOgr, 'servis_id'), kulupUyeH = grupla(kulupUye, 'kulup_id');
+  const etutOgrH = grupla(etutOgr, 'etut_id');
+  const saatYazi = v => String(v || '').slice(0, 5);
+  const gunYazi = v => v instanceof Date
+    ? v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0')
+    : String(v || '').slice(0, 10);
+
+  return {
+    _surum: 2,
+    _alindi: new Date().toISOString(),
+    schools: okullar.map(e.okul),
+    egitimYillari: yillar.map(e.yil),
+    classes: siniflar.map(e.sinif),
+    roles: rolSatir.map(r => {
+      const o = e.rol(r, (yetkiH.get(r.id) || []).map(y => y.yetki), kapsamH.get(r.id) || []);
+      return o;
+    }),
+    users: kullanicilar.map(r => {
+      const u = e.kullanici(r);
+      u.mesajAyar.engelli = (engelH.get(r.id) || []).map(x => x.engellenen_id);
+      return u;
+    }),
+    parentLinks: baglar.map(b => ({ id: b.id, parentId: b.veli_id, studentId: b.ogrenci_id, createdAt: b.olusturma })),
+    lessons: dersler.map(e.ders),
+    schedule: program.map(e.program),
+    assignments: odevler.map(o => {
+      const ogr = odevOgrH.get(o.id) || [];
+      return Object.assign(e.odev(Object.assign({}, o, {
+        ogrenci_idler: ogr.map(x => x.ogrenci_id),
+        sonuclar: Object.fromEntries(ogr.filter(x => x.sonuc).map(x => [x.ogrenci_id, x.sonuc])),
+        acilmalar: Object.fromEntries(ogr.filter(x => x.acilma).map(x => [x.ogrenci_id, x.acilma])),
+        sinif_idler: (odevSinifH.get(o.id) || []).map(x => x.sinif_id)
+      })), { yildizlar: ogr.filter(x => x.yildiz).map(x => x.ogrenci_id) });
+    }),
+    sinavSablonlari: sablonlar.map(s => ({ id: s.id, schoolId: s.okul_id, createdBy: e.bos(s.olusturan_id),
+      name: s.ad, createdAt: s.olusturma, olcumler: (sablonOlcumH.get(s.id) || []).map(olcumNesne) })),
+    examGroups: gruplar.map(e.sinavGrubu),
+    exams: sinavlar.map(x => {
+      const olc = (sinavOlcumH.get(x.id) || []).sort((a, b) => a.sira - b.sira);
+      const ana = olc.find(o => o.ana);
+      const degerlerNesne = {};
+      for (const o of olc) degerlerNesne[o.id] = Object.fromEntries((degerH.get(o.id) || []).map(d => [d.ogrenci_id, d.deger]));
+      const s = e.sinav(Object.assign({}, x, { olcumler: olc.map(olcumNesne), notlar: ana ? degerlerNesne[ana.id] : {} }));
+      s.degerler = degerlerNesne;
+      return s;
+    }),
+    devamsizlik: devam.map(e.devamsizlik),
+    mesajlar: mesajlar.map(m => e.mesaj(Object.assign({}, m, {
+      alicilar: (aliciH.get(m.id) || []).map(a => ({ id: a.alici_id, ogrenciId: a.ogrenci_id })),
+      okuyanlar: (okumaH.get(m.id) || []).map(o => o.kullanici_id)
+    }))),
+    takvim: takvim.map(e.takvim),
+    notifications: bildirimler.map(e.bildirim),
+    oturumlar: Object.fromEntries(oturumlar.map(o => [o.anahtar_ozeti, { userId: o.kullanici_id, createdAt: o.olusturma }])),
+    hatirlatmalar: Object.fromEntries(hatirlatmalar.map(h => [h.anahtar, Date.parse(h.gonderilme)])),
+    islemKaydi: islemler.map(e.islemKaydi),
+    anketler: anketSatir.map(a => ({ id: a.id, okulId: a.okul_id, olusturanId: a.olusturan_id, soru: a.soru, aciklama: a.aciklama,
+      hedefOzet: a.hedef_ozet, gizli: a.gizli, bitis: a.bitis, kapandi: a.kapandi, olusturma: a.olusturma,
+      secenekler: (secenekH.get(a.id) || []).sort((x, y) => x.sira - y.sira).map(s => ({ id: s.id, metin: s.metin })),
+      hedefler: (hedefH.get(a.id) || []).map(h => h.kullanici_id),
+      oylar: (oyH.get(a.id) || []).map(o => ({ kullaniciId: o.kullanici_id, secenekId: o.secenek_id, tarih: o.tarih })) })),
+    yemekListesi: yemekler.map(y => ({ okulId: y.okul_id, tarih: y.tarih, menu: y.menu, kalori: y.kalori })),
+    evKonumlari: evKonum.map(k => ({ ogrenciId: k.ogrenci_id, enlem: k.enlem, boylam: k.boylam, girenId: k.giren_id,
+      guncelleme: k.guncelleme })),
+    servisler: servisSatir.map(s => ({ id: s.id, okulId: s.okul_id, ad: s.ad, plaka: s.plaka, sofor: s.sofor, soforTel: s.sofor_tel,
+      soforId: s.sofor_id,
+      rehber: s.rehber, rehberTel: s.rehber_tel, sabah: s.sabah, aksam: s.aksam, guzergah: s.guzergah, olusturma: s.olusturma,
+      ogrenciler: (servisOgrH.get(s.id) || []).map(o => ({ id: o.ogrenci_id, durak: o.durak })) })),
+    kulupler: kulupSatir.map(u => ({ id: u.id, okulId: u.okul_id, ad: u.ad, aciklama: u.aciklama, danismanId: u.danisman_id,
+      kontenjan: u.kontenjan, basvuruAcik: u.basvuru_acik, gunSaat: u.gun_saat, olusturma: u.olusturma,
+      uyeler: (kulupUyeH.get(u.id) || []).map(m => ({ id: m.ogrenci_id, tarih: m.tarih })) })),
+    odevDosyalari: dosyalar.map(d => ({ id: d.id, odevId: d.odev_id, ogrenciId: d.ogrenci_id, ad: d.ad, boyut: Number(d.boyut),
+      crc32: Number(d.crc32), sha256: d.sha256, yuklenme: d.yuklenme })),
+    etutler: etutSatir.map(x => ({ id: x.id, okulId: x.okul_id, ad: x.ad, gun: x.gun, baslangic: saatYazi(x.baslangic),
+      bitis: saatYazi(x.bitis), yer: x.yer, ogretmenId: x.ogretmen_id, olusturma: x.olusturma,
+      ogrenciler: (etutOgrH.get(x.id) || []).map(o => o.ogrenci_id) })),
+    etutYoklamalari: etutYok.map(y => ({ etutId: y.etut_id, tarih: gunYazi(y.tarih), ogrenciId: y.ogrenci_id, durum: y.durum,
+      alanId: y.alan_id, guncelleme: y.guncelleme })),
+    okulSayfalari: okulSayfaSatir.map(s => ({ okulId: s.okul_id, tanitim: s.tanitim, ayarlar: s.ayarlar || {}, css: s.css,
+      guncelleyenId: s.guncelleyen_id, guncelleme: s.guncelleme })),
+    okulFotolari: okulFotoSatir.map(f => ({ id: f.id, okulId: f.okul_id, yer: f.yer, tur: f.tur, boyut: Number(f.boyut),
+      aciklama: f.aciklama, olusturma: f.olusturma })),
+    yorumlar: yorumSatir.map(y => ({ id: y.id, hesapId: y.hesap_id, yildiz: y.yildiz, metin: y.metin, adKisa: y.ad_kisa,
+      rol: y.rol, gizli: y.gizli, olusturma: y.olusturma, guncelleme: y.guncelleme })),
+    ogrenciGecmisi: gecmisSatir.map(g => ({ id: g.id, ogrenciId: g.ogrenci_id, okulId: g.okul_id, yilId: g.yil_id,
+      okulAdi: g.okul_adi, yilAdi: g.yil_adi, sinifAdi: g.sinif_adi, ayrilis: g.ayrilis })),
+    kapaliOzellikler: ozellikSatir.map(o => ({ okulId: o.okul_id, ozellik: o.ozellik, kapatanId: o.kapatan_id, kapanma: o.kapanma })),
+    hatirlaticilar: hatirlaticiSatir.map(h => ({ id: h.id, kullaniciId: h.kullanici_id, baslik: h.baslik, aciklama: h.aciklama,
+      siklik: h.siklik, tarih: gunYazi(h.tarih), saat: saatYazi(h.saat), ayGunu: h.ay_gunu, aktif: h.aktif, sonGonderim: h.son_gonderim,
+      olusturma: h.olusturma, gunler: hatirlaticiGunSatir.filter(g => g.hatirlatici_id === h.id).map(g => g.gun) }))
+  };
+}
+
 module.exports = { TABLOLAR, iceAktar, disaAktar };
