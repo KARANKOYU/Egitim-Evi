@@ -318,6 +318,370 @@ const bekleJs = ms => `await new Promise(r => setTimeout(r, ${ms}));`;
 const okulRolu = (rol, kisa) => k => { const r = k.roller.find(x => x.rol === rol && x.okulKisaAd === kisa); return r && { tur: 'rol', id: r.id }; };
 const veliRolu = ad => k => { const c = k.cocuklar.find(x => x.ad.indexOf(ad) === 0); return c && { tur: 'veli', id: c.id }; };
 
+const ROLLER = [
+  {
+    ad: 'mudur', baslik: 'Müdür', eposta: 'mudur@test.com', sifre: 'Test1234!', gec: okulRolu('principal', 'test-ortaokulu'),
+    adimlar: [
+      { ad: 'Ana sayfa', git: 'ana' },
+      { ad: 'Hesap değiştir (müdür ve veli, tek hesap)', git: 'kisilikler' },
+      { ad: 'Takvim (okul etkinlikleri)', git: 'takvim' },
+      { ad: 'Takvime etkinlik ekleme', git: 'takvim', tam: false, eylem: `__tikla('[data-act="takvim-etkinlik-ekle"]')` },
+      { ad: 'Mesajlar', git: 'mesajlar' },
+      { ad: 'Gönderilenler — okundu sayıları', git: 'mesajlar', eylem: `__tikla('[data-act="mesaj-kutu"][data-kutu="giden"]')` },
+      { ad: 'Duyuru okundu bilgisi', git: 'mesajlar', tam: false,
+        eylem: `__tikla('[data-act="mesaj-kutu"][data-kutu="giden"]'); ${bekleJs(900)} __tikla('[data-act="mesaj-ac"]'); ${bekleJs(900)}` },
+      { ad: 'Yeni duyuru penceresi', git: 'mesajlar', tam: false, eylem: `__tikla('[data-act="mesaj-yeni"]')` },
+      { ad: 'Öğretmenler', git: 'ogretmenler' },
+      { ad: 'Öğretmeni kodla ekleme penceresi', git: 'ogretmenler', tam: false, eylem: `__tikla('[data-act="ogretmen-kodla"]')` },
+      { ad: 'Öğrenciler', git: 'okul-ogrenciler' },
+      { ad: 'Yeni öğrenci hesabı penceresi', git: 'okul-ogrenciler', tam: false, eylem: `__tikla('[data-act="hesap-yeni"][data-rol="student"]')` },
+      { ad: 'Öğrenci ekle — başka okulda kayıtlı T.C.: doğum tarihi isteniyor (nakil)', git: 'okul-ogrenciler', tam: false,
+        eylem: `__tikla('[data-act="hesap-yeni"][data-rol="student"]'); ${bekleJs(700)} __yaz('#hfAd', 'Elif'); __yaz('#hfSoyad', 'Göçmen'); __yaz('#hfTc', '${NAKIL_TC}'); __tikla('[data-act="hesap-ac-kaydet"]'); ${bekleJs(1500)}` },
+      { ad: 'Öğrenci hesabını düzenleme penceresi', git: 'okul-ogrenciler', tam: false, eylem: `__tikla('[data-act="hesap-duzenle"]')` },
+      { ad: 'Bildirim paneli', git: 'ana', tam: false, eylem: `__tikla('#btnBildirim')` },
+      { ad: 'Giriş bilgisi dağıt penceresi', git: 'okul-ogrenciler', tam: false, eylem: `__tikla('[data-act="giris-bilgisi-ac"]')` },
+      { ad: 'Sınıflar', git: 'siniflar' },
+      { ad: 'Sınıfın dersleri', git: 'siniflar', eylem: `__tikla('[data-act="sinif-dersler"]')` },
+      { ad: 'Ders programı (çakışma uyarısıyla)', git: 'program' },
+      { ad: 'Ders programı — haftalık', git: 'program', eylem: `__tikla('[data-act="program-gorunum"]', 'Hafta')` },
+      { ad: 'Ders programı — çakışma listesi', git: 'program', eylem: `__tikla('[data-act="cakisma-ac"]')` },
+      { ad: 'Ders saati ekleme penceresi', git: 'program', tam: false, eylem: `__tikla('[data-act="saat-ekle"]')` },
+      { ad: 'Ders saatini düzenleme penceresi', git: 'program', tam: false,
+        eylem: `var s = document.getElementById('pSinif'); if (s) { for (var i = 0; i < s.options.length; i++) if (/7-A/.test(s.options[i].text)) s.selectedIndex = i;
+          s.dispatchEvent(new Event('change', { bubbles: true })); } ${bekleJs(1200)}
+          __tikla('[data-act="program-gorunum"]', 'Hafta'); ${bekleJs(900)} __tikla('[data-act="saat-duzenle"]')` },
+      { ad: 'Roller ve yetkiler (hazır Öğretmen rolü)', git: 'roller' },
+      { ad: 'Yeni rol — hazır şablon: Kodlayıcı', git: 'roller', tam: false,
+        eylem: `__tikla('[data-act="rol-yeni"]'); ${bekleJs(600)} var s = document.getElementById('rSablon'); if (s) { for (var i = 0; i < s.options.length; i++) if (/Kodlay/.test(s.options[i].text)) s.selectedIndex = i; s.dispatchEvent(new Event('change', { bubbles: true })); }` },
+      { ad: 'Rolü düzenleme penceresi (yetkiler, ders/sınıf daraltması)', git: 'roller', tam: false, eylem: `__tikla('[data-act="rol-duzenle"]')` },
+      { ad: 'Özel rol: Nöbetçi Öğretmen — yetkiler tek tek, yoklama yalnızca 7-A ve 7-B', git: 'roller', tam: false,
+        eylem: `__tikla('[data-act="rol-yeni"]'); ${bekleJs(600)} __yaz('#rAd', 'Nöbetçi Öğretmen');
+          ['devamsizlik.al', 'etut.yoklama', 'mesaj.toplu'].forEach(function (k) { var c = document.querySelector('.yetki-kutu[value="' + k + '"]'); if (c && !c.checked) c.click(); });
+          ${bekleJs(300)} var t = document.querySelector('.kapsam-tumu[data-izin="devamsizlik.al"][data-tur="sinif"]'); if (t && t.checked) t.click(); ${bekleJs(200)}
+          Array.prototype.forEach.call(document.querySelectorAll('.kapsam-oge[data-izin="devamsizlik.al"]'), function (o) { var y = o.parentNode.textContent; if ((/7-A|7-B/).test(y) && !o.checked) o.click(); });
+          var a = document.querySelector('.kapsam-alan[data-izin="devamsizlik.al"]'); if (a) a.scrollIntoView({ block: 'center' });` },
+      { ad: 'Özel rol kaydedildi (rol listesinde yetkileri ve daraltmasıyla)', git: 'roller',
+        eylem: `__tikla('[data-act="rol-yeni"]'); ${bekleJs(600)} __yaz('#rAd', 'Nöbetçi Öğretmen');
+          ['devamsizlik.al', 'etut.yoklama', 'mesaj.toplu'].forEach(function (k) { var c = document.querySelector('.yetki-kutu[value="' + k + '"]'); if (c && !c.checked) c.click(); });
+          ${bekleJs(300)} var t = document.querySelector('.kapsam-tumu[data-izin="devamsizlik.al"][data-tur="sinif"]'); if (t && t.checked) t.click(); ${bekleJs(200)}
+          Array.prototype.forEach.call(document.querySelectorAll('.kapsam-oge[data-izin="devamsizlik.al"]'), function (o) { var y = o.parentNode.textContent; if ((/7-A|7-B/).test(y) && !o.checked) o.click(); });
+          __tikla('[data-act="rol-kaydet"]'); ${bekleJs(1200)}` },
+      { ad: 'Eğitim yılı', git: 'egitim-yili' },
+      { ad: 'Özellikler (okulda kullanılmayan bölümü kapat)', git: 'ozellikler' },
+      { ad: 'Özellikler — etüt kapatılıyor (kaydetmeden önce)', git: 'ozellikler', tam: false,
+        eylem: `var k = document.getElementById('oz-etut'); if (!k) throw new Error('etüt anahtarı yok'); k.click();` },
+      { ad: 'Devamsızlık özeti', git: 'devamsizlik' },
+      { ad: 'Etütler', git: 'etutler' },
+      { ad: 'Etüt düzenleme penceresi', git: 'etutler', tam: false, eylem: `__tikla('[data-act="etut-duzenle"]')` },
+      { ad: 'Yeni etüt penceresi', git: 'etutler', tam: false, eylem: `__tikla('[data-act="etut-yeni"]')` },
+      { ad: 'Etüdün öğrencileri', git: 'etutler', tam: false, eylem: `__tikla('[data-act="etut-ogrenciler"]')` },
+      { ad: 'Ders ödevleri', git: 'ders-odevleri' },
+      { ad: 'Ders ödevleri — bir ders açık (ödevler, kim verdi)', git: 'ders-odevleri', eylem: `__tikla('[data-act="ders-dal"]')` },
+      { ad: 'Sınavlar — şablonlar', git: 'ogr-sinavlar', eylem: `__tikla('[data-act="sinav-sekme"][data-val="sablonlar"]')` },
+      { ad: 'Yemek listesi', git: 'yemek' },
+      { ad: 'Yemek listesi — düzenleme', git: 'yemek', tam: false, eylem: `__tikla('[data-act="yemek-duzenle"]')` },
+      { ad: 'Servisler', git: 'servis' },
+      { ad: 'Servis düzenleme penceresi', git: 'servis', tam: false, eylem: `__tikla('[data-act="servis-duzenle"]')` },
+      { ad: 'Servise öğrenci ekleme', git: 'servis', tam: false, eylem: `__tikla('[data-act="servis-ogrenci-ac"]')` },
+      { ad: 'Kulüpler', git: 'kulupler' },
+      { ad: 'Yeni kulüp penceresi', git: 'kulupler', tam: false, eylem: `__tikla('[data-act="kulup-duzenle"]')` },
+      { ad: 'Anketler (sonuçlar)', git: 'anketler' },
+      { ad: 'Yeni anket penceresi', git: 'anketler', tam: false, eylem: `__tikla('[data-act="anket-yeni"]')` },
+      { ad: 'Anketin ayrıntısı (kim ne oyladı, gizliyse gizli)', git: 'anketler', tam: false, eylem: `__tikla('[data-act="anket-sonuc"]')` },
+      { ad: 'Excel aktarım', git: 'aktarim' },
+      { ad: 'İçeri aktarma — öğrenci listesi (.csv) seçildi', git: 'aktarim',
+        eylem: `var l = document.getElementById('aktarimListe'); if (l) { l.value = 'ogrenci'; l.dispatchEvent(new Event('change', { bubbles: true })); }
+          var satirlar = [['Ali', 'Demir', '7', 'A', '41', '14.03.2013'], ['Ayşe', 'Yılmaz', '7', 'B', '42', '02.11.2012'],
+            ['Can', 'Öztürk', '8', 'A', '43', '21.06.2012'], ['Derin', 'Arslan', '6', 'A', '44', '09.01.2014']];
+          var csv = 'Ad;Soyad;T.C. Kimlik No;Sınıf (1-12);Şube;Okul No;Doğum tarihi (gg.aa.yyyy)\\n' +
+            satirlar.map(function (r) { return [r[0], r[1], __tc(), r[2], r[3], r[4], r[5]].join(';'); }).join('\\n') +
+            '\\nEmre;Kaya;12345678;7;A;45;31.02.2013\\n';
+          __dosyaVer('#aktarimDosya', 'yeni-ogrenciler.csv', csv, 'text/csv'); ${bekleJs(1200)}` },
+      { ad: 'İçeri aktarma — kontrol: açılacak hesaplar ve hatalı satır (henüz kaydedilmedi)', git: 'aktarim',
+        eylem: `__tikla('[data-act="aktarim-yukle"]'); ${bekleJs(1800)}` },
+      { ad: 'İçeri aktarma — uygulandı: açılan hesaplar, kullanıcı adları ve giriş mektupları', git: 'aktarim',
+        eylem: `window.confirm = function () { return true; }; __tikla('[data-act="aktarim-uygula"]'); ${bekleJs(2500)}` },
+      { ad: 'Dışarı aktarma (Excel listeleri)', git: 'aktarim', eylem: `__tikla('[data-act="aktarim-yon"][data-yon="disa"]'); ${bekleJs(600)}` },
+      { ad: 'İşlem kaydı', git: 'islem-kaydi' },
+      { ad: 'Okul adresi ve konumu', git: 'okul-ayarlari' },
+      { ad: 'Okul sayfası (düzenleme ve önizleme)', git: 'okul-sayfasi' },
+      { ad: 'Okul sayfası — kısıtlı CSS, atılan kısımlar', git: 'okul-sayfasi',
+        eylem: `var d = document.querySelector('.os-css'); if (d) d.open = true; __yaz('#osCss', '.os-baslik { color: #0a6f79; position: fixed; }\\n.os-kutu { background: url(https://kotu.example/x.png); }\\n.auth-card { display: none; }'); __tikla('[data-act="os-css-onizle"]'); ${bekleJs(900)}` },
+      { ad: 'Ayarlar', git: 'profil' }
+    ],
+    son: [{ ad: 'Öğrencinin portalı — şablonlu sınav grafiği (müdür gözünden)', git: 'okul-ogrenciler',
+      eylem: `__satirdaTikla('Zeynep', '[data-act="ogrenci-portal"]'); ${bekleJs(1200)} var n = document.querySelector('[data-nav="sinavlarim"]'); if (!n) throw new Error('portal açılmadı'); n.click(); ${bekleJs(1500)}` }],
+    koyu: ['ana|Ana sayfa (koyu)|', 'program|Ders programı (koyu)|', 'okul-sayfasi|Okul sayfası (koyu)|', 'etutler|Etütler (koyu)|'],
+    telefon: ['ana|Ana sayfa (telefon)|', 'program|Ders programı (telefon)|', 'kisilikler|Hesap değiştir (telefon)|',
+      'okul-sayfasi|Okul sayfası (telefon)|', 'etutler|Etütler (telefon)|']
+  },
+  {
+    /* Aynı hesap: Test Ortaokulu müdürü ve Burak'ın velisi. */
+    ad: 'mudur-veli', baslik: 'Müdür aynı zamanda veli', eposta: 'mudur@test.com', sifre: 'Test1234!', gec: veliRolu('Burak'),
+    adimlar: [
+      { ad: 'Hesap değiştir: veli olarak açık', git: 'kisilikler' },
+      { ad: 'Ana sayfa (veli)', git: 'ana' },
+      { ad: 'Ödevler (çocuğun)', git: 'veli-odevler' },
+      { ad: 'Devamsızlık', git: 'veli-devamsizlik' },
+      { ad: 'İlerleyiş', git: 'veli-ilerleyis' },
+      { ad: 'Etütler', git: 'etutlerim' },
+      { ad: 'Servis', git: 'servis' }
+    ],
+    telefon: ['kisilikler|Hesap değiştir (telefon)|', 'veli-odevler|Ödevler (telefon)|']
+  },
+  {
+    ad: 'ogretmen', baslik: 'Öğretmen', eposta: 'mat@test.com', sifre: 'Test1234!', gec: okulRolu('teacher', 'test-ortaokulu'),
+    adimlar: [
+      { ad: 'Ana sayfa', git: 'ana' },
+      { ad: 'Hesap değiştir (iki okulda öğretmen)', git: 'kisilikler' },
+      { ad: 'Öğretmen kodum (Ekle penceresi)', git: 'kisilikler', tam: false,
+        eylem: `__tikla('[data-act="kisilik-ekle"]'); ${bekleJs(500)} __tikla('[data-act="ekle-sec"][data-tur="ogretmen"]')` },
+      { ad: 'Takvim', git: 'takvim' },
+      { ad: 'Takvim — gün ayrıntısı', git: 'takvim', eylem: `__tikla('[data-act="takvim-gun"].bugun, [data-act="takvim-gun"]')` },
+      { ad: 'Mesajlar', git: 'mesajlar' },
+      { ad: 'Gönderilen mesaj (düzenlendi)', git: 'mesajlar',
+        eylem: `__tikla('[data-act="mesaj-kutu"][data-kutu="giden"]'); ${bekleJs(900)} __tikla('[data-act="mesaj-ac"]', 'Yarınki matematik')` },
+      { ad: 'Mesajı düzeltme penceresi', git: 'mesajlar', tam: false,
+        eylem: `__tikla('[data-act="mesaj-kutu"][data-kutu="giden"]'); ${bekleJs(900)} __tikla('[data-act="mesaj-ac"]', 'Yarınki matematik'); ${bekleJs(900)} __tikla('[data-act="mesaj-duzelt"]')` },
+      { ad: 'Yeni mesaj', git: 'mesajlar', eylem: `__tikla('[data-act="mesaj-yeni"]')` },
+      { ad: 'Ders programım (bugünün dersinde "Şu an — yoklama al")', git: 'programim' },
+      { ad: 'Ders programından yoklama: Geldi · Gelmedi izinli · Gelmedi izinsiz', git: 'programim', tam: false,
+        eylem: `__tikla('[data-act="program-yoklama"]'); ${bekleJs(1200)} var d = document.querySelectorAll('.py-dugme.yok'); if (d[0]) d[0].click(); var i = document.querySelectorAll('.py-dugme.izinli'); if (i[1]) i[1].click();` },
+      { ad: 'Yoklama kaydedildi (gelmeyenin velisine bildirim)', git: 'programim',
+        eylem: `__tikla('[data-act="program-yoklama"]'); ${bekleJs(1200)} var d = document.querySelectorAll('.py-dugme.yok'); if (d[0]) d[0].click(); ${bekleJs(200)} __tikla('[data-act="py-kaydet"]'); ${bekleJs(1200)}` },
+      { ad: 'Sınıflarım (ders verdiğim sınıflar ve öğrenciler)', git: 'siniflarim',
+        eylem: `${bekleJs(600)} __tikla('[data-act="snf-sinif"]', '7-B'); ${bekleJs(1000)}` },
+      { ad: 'Sınıflarım — öğrencinin ödevleri (yaptı mı) ve sınav sonuçları', git: 'siniflarim', tam: false,
+        eylem: `${bekleJs(600)} __tikla('[data-act="snf-sinif"]', '7-B'); ${bekleJs(1000)} __tikla('[data-act="snf-ogrenci"]', 'Zeynep'); ${bekleJs(1200)}` },
+      { ad: 'Ödevler', git: 'ogr-odevler' },
+      { ad: 'Ödevler — süzgeç: sonuçlananlar', git: 'ogr-odevler', eylem: `__yaz('#fDurum', 'sonuclandi')` },
+      { ad: 'Yeni ödev penceresi (ekler: sürükle-bırak)', git: 'ogr-odevler', eylem: `__tikla('[data-act="odev-yeni"]')`, tam: false },
+      { ad: 'Yeni ödev — son tarih takvimi (hafta numarası, Bugün · Temizle · Tamam)', git: 'ogr-odevler', tam: false,
+        eylem: `__tikla('[data-act="odev-yeni"]'); ${bekleJs(1200)} __tikla('#mBitDugme'); ${bekleJs(1200)}` },
+      { ad: 'Yeni mesaj — ekler kutusu', git: 'mesajlar', tam: false, eylem: `__tikla('[data-act="mesaj-yeni"]')` },
+      { ad: 'Yeni mesaj — iki dosya sürükleyip bırakıldı', git: 'mesajlar', tam: false,
+        eylem: `__tikla('[data-act="mesaj-yeni"]'); ${bekleJs(700)} __yaz('#mKonu', 'Müze gezisi'); var b = document.querySelector('#modalKok .ek-birak'); if (!b) throw new Error('ek kutusu yok'); var dt = new DataTransfer(); var pdf = new Uint8Array(180000); pdf.set([37, 80, 68, 70, 45, 49, 46, 52, 10]); dt.items.add(new File([pdf], 'Gezi izin formu.pdf', { type: 'application/pdf' })); var jpg = new Uint8Array(420000); jpg.set([255, 216, 255, 224]); dt.items.add(new File([jpg], 'Sınıf fotoğrafı.jpg', { type: 'image/jpeg' })); b.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })); ${bekleJs(2500)}` },
+      { ad: 'Yeni ödev — ek dosyayla', git: 'ogr-odevler', tam: false,
+        eylem: `__tikla('[data-act="odev-yeni"]'); ${bekleJs(900)} var b = document.querySelector('#modalKok .ek-birak'); if (!b) throw new Error('ek kutusu yok'); var dt = new DataTransfer(); var pdf = new Uint8Array(180000); pdf.set([37, 80, 68, 70, 45, 49, 46, 52, 10]); dt.items.add(new File([pdf], 'Gezi izin formu.pdf', { type: 'application/pdf' })); var jpg = new Uint8Array(420000); jpg.set([255, 216, 255, 224]); dt.items.add(new File([jpg], 'Sınıf fotoğrafı.jpg', { type: 'image/jpeg' })); b.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })); ${bekleJs(2500)}` },
+      { ad: 'Ödev kontrolü (sonuçlanmış, 6 sonuç türü)', git: 'ogr-odevler', eylem: `__satirdaTikla('Kesirler alıştırması', '[data-act="odev-ac"]')` },
+      { ad: 'Sonuçlanmış ödevi düzenleme penceresi', git: 'ogr-odevler', tam: false,
+        eylem: `__satirdaTikla('Kesirler alıştırması', '[data-act="odev-ac"]'); ${bekleJs(900)} __tikla('[data-act="odev-duzelt"]')` },
+      { ad: 'Ödev kontrolü (aktif, açıldı / açılmadı)', git: 'ogr-odevler', eylem: `__satirdaTikla('Geometri problemleri', '[data-act="odev-ac"]')` },
+      { ad: 'Ödev kontrolü — öğrencinin altında "3 ek"', git: 'ogr-odevler', eylem: `__satirdaTikla('Oran orantı', '[data-act="odev-ac"]'); ${bekleJs(1500)}` },
+      { ad: 'Öğrencinin ekleri: simge ve MB (hiçbiri kendiliğinden inmez)', git: 'ogr-odevler', tam: false,
+        eylem: `__satirdaTikla('Oran orantı', '[data-act="odev-ac"]'); ${bekleJs(1500)} __tikla('[data-act="teslim-ogrenci"]'); ${bekleJs(900)}` },
+      { ad: 'Fotoğrafa tıklayınca burada açılır', git: 'ogr-odevler', tam: false,
+        eylem: `__satirdaTikla('Oran orantı', '[data-act="odev-ac"]'); ${bekleJs(1500)} __tikla('[data-act="teslim-ogrenci"]'); ${bekleJs(900)} __tikla('.teslim-oge.resim'); ${bekleJs(1500)}` },
+      { ad: 'Videoya tıklayınca oynatıcı açılır', git: 'ogr-odevler', tam: false,
+        eylem: `__satirdaTikla('Oran orantı', '[data-act="odev-ac"]'); ${bekleJs(1500)} __tikla('[data-act="teslim-ogrenci"]'); ${bekleJs(900)} __tikla('.teslim-oge.video'); ${bekleJs(1500)}` },
+      { ad: 'Ödev kontrolü — seçilmemişlerin hepsi: Yaptı', git: 'ogr-odevler',
+        eylem: `__satirdaTikla('Denklem çalışması', '[data-act="odev-ac"]'); ${bekleJs(900)} __yaz('.sonuc-kutu', 'gec', 1); __yaz('.sonuc-kutu', 'izinli', 2); __tikla('[data-act="sonuc-hepsi"]')` },
+      { ad: 'Sınavlar', git: 'ogr-sinavlar', eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]')` },
+      { ad: 'Şablondan sınav: LGS (7 alan, virgüllü)', git: 'ogr-sinavlar',
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]'); ${bekleJs(900)} __satirdaTikla('LGS Deneme 5', '[data-act="sinav-ac"]')` },
+      { ad: 'Şablondan sınav: Test (doğru / yanlış / net)', git: 'ogr-sinavlar',
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]'); ${bekleJs(900)} __satirdaTikla('Üslü Sayılar Testi', '[data-act="sinav-ac"]')` },
+      { ad: 'Şablondan sınav: Yazılı (0-100)', git: 'ogr-sinavlar',
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]'); ${bekleJs(900)} __satirdaTikla('Matematik 2. Yazılı', '[data-act="sinav-ac"]')` },
+      { ad: 'Değer tablosu — hatalı değer kırmızı, değişen mavi', git: 'ogr-sinavlar',
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]'); ${bekleJs(900)} __satirdaTikla('LGS Deneme 5', '[data-act="sinav-ac"]'); ${bekleJs(1200)} __yaz('.deger[data-kod="LGS"]', '612'); __yaz('.deger[data-kod="TR"]', '17,5', 1); __tikla('[data-act="sinav-deger-kaydet"]')` },
+      { ad: 'Değer alanları — + Yeni değer ekle', git: 'ogr-sinavlar', tam: false,
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]'); ${bekleJs(900)} __satirdaTikla('Üslü Sayılar Testi', '[data-act="sinav-ac"]'); ${bekleJs(1200)} __tikla('[data-act="sinav-olcum-duzenle"]'); __tikla('[data-act="olcum-ekle"]'); __yaz('#olcumListe .o-ad', 'Boş', 3)` },
+      { ad: 'Yeni sınav penceresi (şablon seçimi)', git: 'ogr-sinavlar', tam: false,
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]'); ${bekleJs(900)} __tikla('[data-act="sinav-yeni"]')` },
+      { ad: 'Sınav grupları', git: 'ogr-sinavlar', eylem: `__tikla('[data-act="sinav-sekme"][data-val="gruplar"]')` },
+      { ad: 'Yeni sınav grubu penceresi', git: 'ogr-sinavlar', tam: false,
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="gruplar"]'); ${bekleJs(900)} __tikla('[data-act="grup-yeni"]')` },
+      { ad: 'Grup ortalamaları (100 üzerinden)', git: 'ogr-sinavlar',
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="gruplar"]'); ${bekleJs(900)} __tikla('[data-act="grup-ac"]')` },
+      { ad: 'Şablonlar (Yazılı, Test, LGS, kendi şablonu)', git: 'ogr-sinavlar', eylem: `__tikla('[data-act="sinav-sekme"][data-val="sablonlar"]')` },
+      { ad: 'Yeni şablon penceresi', git: 'ogr-sinavlar', tam: false,
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sablonlar"]'); ${bekleJs(900)} __tikla('[data-act="sablon-yeni"]'); __tikla('[data-act="olcum-ekle"]'); __tikla('[data-act="olcum-ekle"]'); __yaz('#olcumListe .o-ad', 'Doğru', 1); __yaz('#olcumListe .o-ad', 'Yanlış', 2); __yaz('#mAd', 'Kısa Sınav (10 soru)')` },
+      { ad: 'Şablonu düzenleme penceresi', git: 'ogr-sinavlar', tam: false,
+        eylem: `__tikla('[data-act="sinav-sekme"][data-val="sablonlar"]'); ${bekleJs(900)} __tikla('[data-act="sablon-duzenle"]')` },
+      { ad: 'Yoklama — ders seçimi', git: 'yoklama' },
+      { ad: 'Yoklama ekranı', git: 'yoklama', eylem: `__tikla('[data-act="yoklama-ders"]')` },
+      { ad: 'Etütler', git: 'etutler' },
+      { ad: 'Etüt yoklaması (geldi / izinli / izinsiz)', git: 'etutler', eylem: `__tikla('[data-act="etut-yoklama-ac"]')` },
+      { ad: 'Anketler', git: 'anketler' },
+      { ad: 'Yemek listesi', git: 'yemek' },
+      { ad: 'Kulüpler (danışmanı olduğu)', git: 'kulupler' },
+      { ad: 'Hatırlatıcılar (öğretmen)', git: 'hatirlaticilar' },
+      { ad: 'Ayarlar', git: 'profil' }
+    ],
+    koyu: ['ogr-odevler|Ödev kontrolü (koyu)|__satirdaTikla(\'Kesirler alıştırması\', \'[data-act="odev-ac"]\')',
+      'ogr-sinavlar|Değer tablosu (koyu)|__tikla(\'[data-act="sinav-sekme"][data-val="sinavlar"]\'); ' + bekleJs(900) + ' __satirdaTikla(\'LGS Deneme 5\', \'[data-act="sinav-ac"]\')',
+      'ana|Ana sayfa (koyu)|'],
+    telefon: [{ git: 'ogr-odevler', ad: 'Yeni ödev — takvim (telefon)', tam: false,
+        eylem: `__tikla('[data-act="odev-yeni"]'); ${bekleJs(1200)} __tikla('#mBitDugme'); ${bekleJs(1200)}` },
+      'ogr-odevler|Ödev kontrolü (telefon)|__satirdaTikla(\'Kesirler alıştırması\', \'[data-act="odev-ac"]\')',
+      'ogr-sinavlar|Değer tablosu (telefon)|__tikla(\'[data-act="sinav-sekme"][data-val="sinavlar"]\'); ' + bekleJs(900) + ' __satirdaTikla(\'LGS Deneme 5\', \'[data-act="sinav-ac"]\')',
+      'yoklama|Yoklama (telefon)|__tikla(\'[data-act="yoklama-ders"]\')',
+      'etutler|Etüt yoklaması (telefon)|__tikla(\'[data-act="etut-yoklama-ac"]\')']
+  },
+  {
+    /* Aynı öğretmen, yöneticinin açtığı ikinci okulda. */
+    ad: 'ogretmen-ikinci-okul', baslik: 'Öğretmen — ikinci okulu', eposta: 'mat@test.com', sifre: 'Test1234!',
+    gec: okulRolu('teacher', 'deneme-anadolu'),
+    adimlar: [
+      { ad: 'Ana sayfa (Deneme Anadolu Lisesi)', git: 'ana' },
+      { ad: 'Hesap değiştir: ikinci okulda', git: 'kisilikler' },
+      { ad: 'Ödevler (bu okulun)', git: 'ogr-odevler' }
+    ]
+  },
+  {
+    /* Müdür ödev ve etüdü kapatınca öğretmenin gördüğü (turdan sonra yeniden açılır). */
+    ad: 'ozellik-kapali', baslik: 'Okul ödev ve etüdü kapatınca (öğretmen)', eposta: 'mat@test.com', sifre: 'Test1234!',
+    gec: okulRolu('teacher', 'test-ortaokulu'),
+    once: () => ozellikYaz(['odev', 'etut']),
+    sonra: () => ozellikYaz([]),
+    adimlar: [
+      { ad: 'Ana sayfa (Ödevler kutucuğu yok)', git: 'ana' },
+      { ad: 'Kapalı bölümün adresi açılınca', git: 'ogr-odevler', eylem: `location.hash = '#/ogr-odevler'; ${bekleJs(600)}` }
+    ],
+    telefon: ['ana|Menü (telefon)|document.getElementById(\'hamburger\').click();']
+  },
+  {
+    /* Test Ortaokulu'ndan nakil gelen öğrenci: eski okulun kayıtları yıl seçicide. */
+    ad: 'nakil-ogrenci', baslik: 'Nakil gelen öğrenci', eposta: HESAPLAR.nakil.kullanici, sifre: HESAPLAR.nakil.sifre,
+    okul: 'deneme-anadolu',
+    adimlar: [
+      { ad: 'Ana sayfa (yeni okul)', git: 'ana' },
+      { ad: 'Ödevler (yeni okulda, eski okulun ödevi yok)', git: 'odevler' },
+      { ad: 'Yıl seçici — önceki okullar', git: 'odevler', tam: false,
+        eylem: `var s = document.getElementById('yilSec'); if (!s) throw new Error('yıl seçici yok'); s.focus(); s.size = s.options.length;` },
+      { ad: 'Önceki okulun ödevleri (salt okunur)', git: 'odevler',
+        eylem: `var s = document.getElementById('yilSec'); var o = s && s.querySelector('optgroup option'); if (!o) throw new Error('önceki okul seçeneği yok'); s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); ${bekleJs(1500)}` },
+      { ad: 'Önceki okulun sınav notu', git: 'sinavlarim' },
+      { ad: 'Şimdiki okula dönüş', git: 'odevler',
+        eylem: `var s = document.getElementById('yilSec'); var o = s && s.querySelector('option:not(optgroup option)'); if (o) { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); } ${bekleJs(1500)}` }
+    ],
+    telefon: ['odevler|Ödevler — yıl seçici (telefon)|']
+  },
+  {
+    ad: 'ogrenci', baslik: 'Öğrenci', eposta: 'ogrenci1@test.com', sifre: 'Test1234!',
+    adimlar: [
+      { ad: 'Ana sayfa', git: 'ana' },
+      { ad: 'Takvim', git: 'takvim' },
+      { ad: 'Mesajlar', git: 'mesajlar' },
+      { ad: 'Duyuru okuma', git: 'mesajlar', eylem: `__tikla('[data-act="mesaj-ac"]', 'Veli toplantısı')` },
+      { ad: 'Düzeltilmiş mesaj (düzenlendi yazar)', git: 'mesajlar', eylem: `__tikla('[data-act="mesaj-ac"]', 'Yarınki matematik')` },
+      { ad: 'Ekli mesaj (belge ve resim, silinme günü)', git: 'mesajlar', eylem: `__tikla('[data-act="mesaj-ac"]', 'Müze gezisi')` },
+      { ad: 'Ders programı', git: 'programim' },
+      { ad: 'Ödevler (üstte ödev serisi; açılmamışlar turuncu, yıldızlı ödev)', git: 'odevler' },
+      { ad: 'Ödevler — süzgeç: yıldızlı', git: 'odevler', eylem: `__yaz('#fYildiz', 'var')` },
+      { ad: 'Ödevler — süzgeç: açılmamış', git: 'odevler', eylem: `__yaz('#fDurum', 'acilmadi')` },
+      { ad: 'Ödevler — süzgeç: geç yaptı', git: 'odevler', eylem: `__yaz('#fDurum', 'gec')` },
+      { ad: 'Sınavlarım (grafik + şablonlu sınavlar)', git: 'sinavlarim' },
+      { ad: 'Sınav grafiği — başka değer (Matematik Net)', git: 'sinavlarim', eylem: `${bekleJs(800)} __tikla('[data-act="sg-olcum"]', 'Matematik Net')` },
+      { ad: 'Sınav grafiği — liste görünümü', git: 'sinavlarim', eylem: `${bekleJs(800)} __tikla('[data-act="sg-gorunum"][data-val="liste"]')` },
+      { ad: 'İlerleyişim (ödev sonuç grafiği)', git: 'ilerleyisim' },
+      { ad: 'İlerleyişim — derslere göre', git: 'ilerleyisim', eylem: `__tikla('[data-act="odev-grafik-sekme"][data-val="ders"]')` },
+      { ad: 'Devamsızlığım', git: 'devamsizligim' },
+      { ad: 'Etütlerim (yoklama sonuçları)', git: 'etutlerim' },
+      { ad: 'Anketler (oy verildi)', git: 'anketler' },
+      { ad: 'Hatırlatıcılar (haftalık, her gün, bir kez, ayda bir)', git: 'hatirlaticilar' },
+      { ad: 'Yeni hatırlatıcı — haftanın günleri ve saat', git: 'hatirlaticilar', tam: false,
+        eylem: `__tikla('[data-act="hatirlatici-yeni"]'); ${bekleJs(500)} __yaz('#hBaslik', 'Matematik etüdüne git'); document.querySelector('.h-gun[value="4"]').click();` },
+      { ad: 'Yeni hatırlatıcı — ayda bir', git: 'hatirlaticilar', tam: false,
+        eylem: `__tikla('[data-act="hatirlatici-yeni"]'); ${bekleJs(500)} __yaz('#hBaslik', 'Servis ücreti'); document.querySelector('input[name="hSiklik"][value="her-ay"]').click();` },
+      { ad: 'Yemek listesi', git: 'yemek' },
+      { ad: 'Servisim (harita, durak)', git: 'servis' },
+      { ad: 'Kulüpler (üye)', git: 'kulupler' },
+      { ad: 'Ayarlar (veli kodu)', git: 'profil' }
+    ],
+    koyu: ['ilerleyisim|İlerleyişim (koyu)|', 'odevler|Ödevler (koyu)|', 'sinavlarim|Sınavlarım (koyu)|'],
+    telefon: ['ana|Ana sayfa (telefon)|', 'odevler|Ödevler (telefon, yıldızlar)|', 'ilerleyisim|İlerleyişim (telefon)|',
+      'sinavlarim|Sınavlarım (telefon)|', 'etutlerim|Etütlerim (telefon)|'],
+    /* En sona: ödevi açmak onu "açıldı" yapar, önceki fotoğraflarda turuncu kalsın */
+    son: [{ ad: 'Ödev ayrıntısı (açılınca turuncu kalkar)', git: 'odevler', tam: false, eylem: `__tikla('.satir.acilmadi')` },
+      { ad: 'Ödevler — açtıktan sonra', git: 'odevler' },
+      { ad: 'Ödevin ekleri (silinme günüyle)', git: 'odevler', tam: false, eylem: `__tikla('[data-act="odev-oku"]', 'Oran orantı')` }]
+  },
+  {
+    ad: 'veli', baslik: 'Veli (iki çocuk)', eposta: HESAPLAR.veli.eposta, sifre: HESAPLAR.veli.sifre,
+    adimlar: [
+      { ad: 'Hesap seçimi (iki çocuk)', git: 'kisilikler' },
+      { ad: 'Çocuğumun telefonu: konum, ekran süresi, sınırlar (Eğitim Evi Aile)', git: 'aile' },
+      { ad: 'Bildirimler (her bildirimin başında hangi çocuk olduğu yazar)', git: 'ana', tam: false, eylem: `__tikla('#btnBildirim'); ${bekleJs(800)}` },
+      { ad: 'Ana sayfa', git: 'ana' },
+      { ad: 'Çocuklarım', git: 'cocuklarim' },
+      { ad: 'Ödevler (iki çocuk, kimin olduğu yazar)', git: 'veli-odevler' },
+      { ad: 'Ödevler — tek çocuk', git: 'veli-odevler', eylem: `__tikla('[data-act="veli-cocuk"]', 'Zeynep')` },
+      { ad: 'Devamsızlık', git: 'veli-devamsizlik', eylem: `__tikla('[data-act="veli-cocuk"]', 'Hepsi')` },
+      { ad: 'İlerleyiş (çocuk çocuk grafikler)', git: 'veli-ilerleyis' },
+      { ad: 'Etütler', git: 'etutlerim' },
+      { ad: 'Mesajlar', git: 'mesajlar' },
+      { ad: 'Takvim', git: 'takvim' },
+      { ad: 'Anketler', git: 'anketler' },
+      { ad: 'Yemek listesi', git: 'yemek' },
+      { ad: 'Servis', git: 'servis' },
+      { ad: 'Kulüpler', git: 'kulupler' },
+      { ad: 'Ayarlar (hesap bilgisi, telefon ülke kodu)', git: 'profil' }
+    ],
+    son: [{ ad: 'Çocuğun kartına tıklayınca portalı (ödevleri, notları)', git: 'cocuklarim', eylem: `__tikla('[data-act="cocuk-ac"]'); ${bekleJs(1500)}` }],
+    koyu: ['veli-ilerleyis|İlerleyiş (koyu)|'],
+    telefon: ['kisilikler|Hesap seçimi (telefon)|', 'veli-odevler|Ödevler (telefon)|', 'veli-ilerleyis|İlerleyiş (telefon)|']
+  },
+  {
+    ad: 'servisci', baslik: 'Servisçi', eposta: HESAPLAR.servisci.kullanici, sifre: HESAPLAR.servisci.sifre, okul: 'test-ortaokulu',
+    adimlar: [
+      { ad: 'Ana sayfa', git: 'ana' },
+      { ad: 'Servisim (öğrenciler, duraklar)', git: 'servis' },
+      { ad: 'Mesajlar', git: 'mesajlar' }
+    ],
+    telefon: ['ana|Ana sayfa (telefon)|', 'servis|Servisim (telefon)|']
+  },
+  {
+    /* Kaydolmuş, henüz hiçbir rolü olmayan yetişkin (zengin-veri.js: Kemal Arslan). */
+    ad: 'rolsuz', baslik: 'Yeni yetişkin hesabı', eposta: 'kemal.arslan', sifre: 'Ogretmen2026!',
+    adimlar: [
+      { ad: 'Başlangıç: nasıl devam edeceksin?', git: 'kisilikler' },
+      { ad: 'Ekle penceresi', git: 'kisilikler', tam: false, eylem: `__tikla('[data-act="kisilik-ekle"]')` },
+      { ad: 'Ekle — çocuğumu ekle (veli kodu)', git: 'kisilikler', tam: false,
+        eylem: `__tikla('[data-act="kisilik-ekle"]'); ${bekleJs(500)} __tikla('[data-act="ekle-sec"][data-tur="cocuk"]')` },
+      { ad: 'Ekle — okulumu kaydet: yazım hatalı arama', git: 'kisilikler', tam: false,
+        eylem: `__tikla('[data-act="kisilik-ekle"]'); ${bekleJs(500)} __tikla('[data-act="ekle-sec"][data-tur="okul"]'); ${bekleJs(900)} __yaz('#bOkulAra', 'ataturk ortaoklu cankaya'); ${bekleJs(1500)}` },
+      { ad: 'Ayarlar', git: 'profil' }
+    ],
+    koyu: ['kisilikler|Başlangıç (koyu)|'],
+    telefon: ['kisilikler|Başlangıç (telefon)|']
+  },
+  {
+    /* Yöneticinin açtığı okulun müdürü, ilk giriş: kendi şifresini belirlemeden giremez. */
+    ad: 'yeni-mudur', baslik: 'Yöneticinin açtığı okulun müdürü', eposta: HESAPLAR.yeniMudur.eposta,
+    sifre: HESAPLAR.yeniMudur.ilkSifre, pencereli: true,
+    adimlar: [
+      { ad: 'İlk giriş — önce aydınlatma metni onayı', tam: false, pencereKalsin: true },
+      { ad: 'Onaydan sonra — kendi şifreni belirle', tam: false, pencereKalsin: true,
+        eylem: `var k = document.getElementById('kvkkYeniKutu'); if (k) { k.checked = true; __tikla('[data-act="kvkk-onayla"]'); } ${bekleJs(1500)}` },
+      { ad: 'Şifre kuralları işaretleniyor', tam: false, pencereKalsin: true, eylem: `__yaz('#zYeni', 'Selin2026')` }
+    ]
+  },
+  {
+    ad: 'admin', baslik: 'Yönetici', eposta: 'admin@egitimevi.com', sifre: 'admin123',
+    adimlar: [
+      { ad: 'Ana sayfa', git: 'ana' },
+      { ad: 'Onay bekleyenler (yaş, hesap tarihi, telefon)', git: 'onaylar' },
+      { ad: 'Müdürler', git: 'mudurler' },
+      { ad: 'Okullar', git: 'okullar' },
+      { ad: 'Okul aç penceresi', git: 'okullar', tam: false, eylem: `__tikla('[data-act="admin-okul-ac"]')` },
+      { ad: 'Okul aç — okul seçildi, adres önerildi, rastgele şifre', git: 'okullar', tam: false,
+        eylem: `__tikla('[data-act="admin-okul-ac"]'); ${bekleJs(700)} __yaz('#bIl', 'Ankara'); ${bekleJs(700)} __yaz('#bOkulAra', 'cumhuriyet ortaoklu'); ${bekleJs(1500)} __tikla('#bOkulSonuc [data-okul-id]'); ${bekleJs(300)} document.getElementById('aoKisa').dispatchEvent(new Event('focus')); __yaz('#aoEposta', 'yeni.mudur@okul.test'); __yaz('#aoAd', 'Deniz'); __yaz('#aoSoyad', 'Aydın'); __yaz('#aoKadi', 'deniz.aydin'); __tikla('[data-act="admin-sifre-uret"]')` },
+      { ad: 'Yedekler (elle yedek alındı)', git: 'yedekler', eylem: `__tikla('[data-act="yedek-al"]')` },
+      { ad: 'Açılış sayfası yorumları (gizle / göster)', git: 'yorumlar' },
+      { ad: 'İşlem kaydı', git: 'islem-kaydi' },
+      { ad: 'Ayarlar', git: 'profil' }
+    ],
+    son: [
+      { ad: 'Üstteki ay düğmesi — koyu görünüme geçti', git: 'ana', tema: 'serbest', eylem: `__tikla('#btnTema')` },
+      { ad: 'Güneş düğmesi — açık görünüme döndü', git: 'ana', tema: 'serbest', eylem: `__tikla('#btnTema')` }
+    ],
+    koyu: ['ana|Ana sayfa (koyu)|', 'okullar|Okullar (koyu)|'],
+    telefon: ['onaylar|Onay bekleyenler (telefon)|']
+  }
+];
+
 /* Giriş yapmamış ziyaretçinin sayfaları. */
 const DIS_ADIMLAR = [
   { ad: 'Açılış', url: '/' },
