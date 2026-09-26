@@ -57,6 +57,27 @@ const kisaAdYaz = (id, kisa) => calistir('UPDATE okullar SET kisa_ad = $2 WHERE 
 
 const kisaAdsizlar = () => sorgu("SELECT id, ad, ilce FROM okullar WHERE kisa_ad IS NULL AND durum <> 'rejected' ORDER BY olusturma");
 
+/* Ana sayfadaki okul arama: onaylı ve adresi olan okullar. Ad Türkçe
+   karakterden bağımsız karşılaştırılır (çağıran taraf süzer). */
+const adresliOkullar = () => sorgu(
+  "SELECT id, ad, il, ilce, kisa_ad FROM okullar WHERE durum = 'approved' AND kisa_ad IS NOT NULL ORDER BY ad" + tr());
+
+const konumYaz = (id, enlem, boylam) =>
+  calistir('UPDATE okullar SET enlem = $2, boylam = $3 WHERE id = $1', [id, enlem, boylam]);
+
+/* Yönetici paneli: her okulun müdürü ve sayıları, tek sorguda. */
+async function genelBakis() {
+  const satirlar = await sorgu(
+    'SELECT o.*, ' +
+    "  (SELECT ad_soyad FROM kullanicilar WHERE okul_id = o.id AND rol = 'principal' LIMIT 1) AS mudur_adi, " +
+    "  (SELECT count(*) FROM kullanicilar WHERE okul_id = o.id AND rol = 'student') AS ogrenci, " +
+    "  (SELECT count(*) FROM kullanicilar WHERE okul_id = o.id AND rol = 'teacher' AND durum = 'approved') AS ogretmen " +
+    'FROM okullar o ORDER BY o.olusturma');
+  return satirlar.map(r => Object.assign(e.okul(r), {
+    _mudur: r.mudur_adi || '', _ogrenci: r.ogrenci, _ogretmen: r.ogretmen
+  }));
+}
+
 /* ---------------- eğitim yılları ---------------- */
 async function yillari(okulId) {
   return (await sorgu('SELECT * FROM egitim_yillari WHERE okul_id = $1 ORDER BY ad DESC', [okulId])).map(e.yil);

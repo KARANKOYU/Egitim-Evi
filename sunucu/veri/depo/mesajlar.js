@@ -4,6 +4,18 @@
 const { sorgu, tek, calistir, islem } = require('../baglanti');
 const e = require('../esleme');
 
+/* Alıcılar ve okuyanlar mesajla birlikte json olarak toplanır; gönderenin
+   ve (veli kopyasında) çocuğun adı da JOIN ile gelir. */
+const SEC =
+  'SELECT m.*, g.ad_soyad AS gonderen_adi, g.rol AS gonderen_rol, ' +
+  "  COALESCE((SELECT json_agg(json_build_object('id', a.alici_id, 'ogrenciId', a.ogrenci_id, " +
+  "          'ad', ka.ad_soyad, 'rol', ka.rol, 'ogrenciAdi', ko.ad_soyad) ORDER BY a.id) " +
+  '     FROM mesaj_alicilari a JOIN kullanicilar ka ON ka.id = a.alici_id ' +
+  "     LEFT JOIN kullanicilar ko ON ko.id = a.ogrenci_id WHERE a.mesaj_id = m.id), '[]') AS alicilar, " +
+  "  COALESCE((SELECT json_agg(o.kullanici_id) FROM mesaj_okumalari o WHERE o.mesaj_id = m.id), '[]') AS okuyanlar " +
+  'FROM mesajlar m LEFT JOIN kullanicilar g ON g.id = m.gonderen_id';
+const YENI_ONCE = ' ORDER BY m.tarih DESC';
+
 function nesne(r) {
   if (!r) return null;
   const m = e.mesaj(r);

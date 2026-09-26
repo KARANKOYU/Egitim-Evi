@@ -100,6 +100,24 @@ async function yildizlilari(ogrenciId) {
   return new Set(satirlar.map(s => s.odev_id));
 }
 
+/* ---------- hafif sorgular: öğrenci listesi taşımayan ---------- */
+
+/* Takvim ve gün ayrıntısı için: tarih aralığında bitenler, öğrenci listesi
+   ve sonuçlar olmadan. kapsam: { ogrenciId } | { ogretmenId } | { okulId } */
+async function takvimIcin(kapsam, bas, bit) {
+  let kosul, p;
+  if (kapsam.ogrenciId) { kosul = 'o.id IN (SELECT odev_id FROM odev_ogrencileri WHERE ogrenci_id = $1)'; p = kapsam.ogrenciId; }
+  else if (kapsam.ogretmenId) { kosul = 'o.ogretmen_id = $1'; p = kapsam.ogretmenId; }
+  else { kosul = 'o.okul_id = $1'; p = kapsam.okulId; }
+  const satirlar = await sorgu(
+    'SELECT o.id, o.ders, o.baslik, o.aciklama, o.bitis, o.bitis_saati, o.durum, o.yil_id FROM odevler o ' +
+    'WHERE ' + kosul + ' AND o.bitis BETWEEN $2::date AND $3::date ORDER BY o.bitis, o.bitis_saati', [p, bas, bit]);
+  return satirlar.map(r => ({
+    id: r.id, subject: r.ders, title: r.baslik, description: r.aciklama, endAt: e.bos(r.bitis),
+    endTime: r.bitis_saati, status: r.durum, yilId: e.bos(r.yil_id)
+  }));
+}
+
 /* Müdürün "Ders ödevleri" listesi: her ders için ödevlerin yalnızca durumu
    (sayılar istemcide değil sunucuda çıkarılır). Ödev, verildiği sınıfla
    (odev_siniflari) ve ders adıyla derse bağlanır. */

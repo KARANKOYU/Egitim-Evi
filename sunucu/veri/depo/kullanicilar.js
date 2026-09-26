@@ -38,6 +38,16 @@ async function bir(kosul, parametreler) {
   return liste[0] || null;
 }
 
+/* ---------------- ad alanları ----------------
+   Okul hesapları (müdür, öğretmen, öğrenci, servisçi) okula aittir: kullanıcı
+   adı ve T.C. no okul içinde benzersizdir. Veli, yönetici ve rolsüz hesaplar
+   okuldan bağımsızdır, kendi aralarında benzersizdir (009 şema dosyası). */
+const OKUL_HESABI = "k.rol IN ('principal', 'teacher', 'student', 'servisci')";
+const GENEL_HESAP = "(k.rol IS NULL OR k.rol IN ('admin', 'parent'))";
+/* Okul rolü satırları (yetişkin hesabına bağlı öğretmen/müdür) girişte aranmaz:
+   giriş yetişkin hesabıyla yapılır, rol sonra seçilir (012 şema dosyası). */
+const GIRIS = ' AND k.ana_hesap_id IS NULL';
+
 /* ---------------- tek kullanıcı ---------------- */
 const bul = id => id ? bir('k.id = $1', [id]) : Promise.resolve(null);
 const epostayla = eposta => eposta ? bir('k.eposta = $1', [eposta]) : Promise.resolve(null);
@@ -94,6 +104,42 @@ const rolleri = anaId => coklu('k.ana_hesap_id = $1', [anaId], ' ORDER BY k.olus
 const eslesmeKoduyla = kod => !kod ? Promise.resolve(null)
   : bir("k.eslesme_kodu = $1 AND k.ana_hesap_id IS NULL AND (k.rol IS NULL OR k.rol = 'parent')", [kod]);
 const eslesmeKoduYaz = (id, kod) => calistir('UPDATE kullanicilar SET eslesme_kodu = $2 WHERE id = $1', [id, kod]);
+
+/* Ad, soyad ve telefon değişince okul rolü satırları da güncellenir
+   (okuldaki listelerde yetişkinin güncel adı görünsün). */
+const rolSatirlariniGuncelle = (anaId, ad, telefon) => calistir(
+  'UPDATE kullanicilar SET ad_soyad = $2, telefon = $3 WHERE ana_hesap_id = $1', [anaId, ad, telefon]);
+
+/* Aydınlatma metni onayı rol satırlarına da yazılır. */
+const rolSatirlarinaKvkk = (anaId, kvkk) => calistir(
+  'UPDATE kullanicilar SET kvkk_onay = true, kvkk_tarih = $2, kvkk_surum = $3 WHERE ana_hesap_id = $1',
+  [anaId, kvkk.tarih, kvkk.surum]);
+
+/* Okul rolünü bırakma / kaldırma: yalnızca bu yetişkinin bu satırı. */
+const rolSatiriniSil = (id, anaId) => calistir('DELETE FROM kullanicilar WHERE id = $1 AND ana_hesap_id = $2', [id, anaId]);
+/* kod: kodSade'den geçmiş hâli (büyük harf, yalnızca harf ve rakam). */
+const kodlaOgrenci = kod => bir("k.rol = 'student' AND k.veli_kodu = $1", [kod]);
+const okulunMuduru = okulId =>
+  bir("k.rol = 'principal' AND k.okul_id = $1 AND k.durum = 'approved'", [okulId]);
+
+/* Okulun (onaylı ya da bekleyen) müdürü var mı? Müdürü kaldırılmış okula
+   yeni müdür başvurabilsin diye bakılır. */
+const okulunMuduruVarMi = async okulId =>
+  !!(await tek("SELECT 1 FROM kullanicilar WHERE rol = 'principal' AND okul_id = $1", [okulId]));
+
+/* Okulda müdür dışında kimse var mı (öğretmen, öğrenci, servisçi)? */
+const okuldaKimseVarMi = async okulId =>
+  !!(await tek("SELECT 1 FROM kullanicilar WHERE okul_id = $1 AND rol <> 'principal' LIMIT 1", [okulId]));
+
+/* Bekleyen müdür başvurusunu onaylar; başvuru bu arada geri çekildiyse ya da
+   karara bağlandıysa hiçbir şey yapmaz ve false döner. */
+const basvuruyuOnayla = async id =>
+  (await calistir("UPDATE kullanicilar SET durum = 'approved' WHERE id = $1 AND rol = 'principal' AND durum = 'pending'", [id])) === 1;
+
+async function epostaVarMi(eposta, haricId) {
+  if (!eposta) return false;
+  return !!(await tek('SELECT 1 FROM kullanicilar WHERE eposta = $1 AND id <> $2', [eposta, haricId || '']));
+}
 
 /* Kullanıcı adı alınmış mı? okulId verilirse o okulun ad alanında, verilmezse
    okuldan bağımsız hesaplarda bakılır. */
@@ -209,6 +255,61 @@ async function okulun(okulId, secim) {
   if (secim.durum) { p.push(secim.durum); kosul.push('k.durum = $' + p.length); }
   if (secim.sinifsiz) kosul.push('k.sinif_id IS NULL');
   return coklu(kosul.join(' AND '), p);
+}
+
+const sinifOgrencileri = sinifId =>
+  coklu("k.rol = 'student' AND k.sinif_id = $1", [sinifId]);
+
+/* Bir öğretmenin öğrencileri: ders verdiği sınıflardaki bütün öğrenciler.
+   Öğretmen-öğrenci ilişkisi YALNIZCA derslerden türer. Aynı okul şartı ayrıca
+   aranır: okuldan ayrılmış birinin derste kalmış eski bağı başka okuldan
+   o öğrencilere kapı açmasın. */
+const ogretmeninOgrencileri = ogretmenId =>
+  coklu("k.rol = 'student' AND k.sinif_id IN (SELECT sinif_id FROM dersler WHERE ogretmen_id = $1) " +
+    'AND k.okul_id = (SELECT okul_id FROM kullanicilar WHERE id = $1)', [ogretmenId]);
+
+/* Bir öğrencinin öğretmenleri: sınıfındaki derslere atanmış, aynı okuldaki onaylı öğretmenler. */
+const ogrencininOgretmenleri = ogrenciId =>
+  coklu("k.durum = 'approved' AND k.id IN (" +
+    'SELECT d.ogretmen_id FROM dersler d JOIN kullanicilar s ON s.sinif_id = d.sinif_id ' +
+    'WHERE s.id = $1 AND d.ogretmen_id IS NOT NULL) ' +
+    'AND k.okul_id = (SELECT okul_id FROM kullanicilar WHERE id = $1)', [ogrenciId]);
+
+const adminler = () => coklu("k.rol = 'admin'", []);
+const bekleyenMudurler = () => coklu("k.rol = 'principal' AND k.durum = 'pending'", []);
+
+/* Yönetici paneli: bütün müdürler ve okullarındaki öğretmen/öğrenci sayısı. */
+async function mudurlerSayimli() {
+  return sorgu(
+    'SELECT k.id, k.ad_soyad, k.kullanici_adi, coalesce(k.eposta, a.eposta) AS eposta, k.durum, k.il, k.ilce, k.olusturma, ' +
+    '       o.ad AS okul_adi, o.durum AS okul_durum, ' +
+    "       (SELECT count(*) FROM kullanicilar t WHERE t.okul_id = k.okul_id AND t.rol = 'teacher') AS ogretmen, " +
+    "       (SELECT count(*) FROM kullanicilar s WHERE s.okul_id = k.okul_id AND s.rol = 'student') AS ogrenci " +
+    'FROM kullanicilar k LEFT JOIN okullar o ON o.id = k.okul_id LEFT JOIN kullanicilar a ON a.id = k.ana_hesap_id ' +
+    "WHERE k.rol = 'principal' ORDER BY k.ad_soyad" + tr());
+}
+
+/* Müdürün ana sayfası: okulun sayıları tek sorguda. */
+async function okulSayimlari(okulId) {
+  return tek(
+    "SELECT count(*) FILTER (WHERE rol = 'student') AS ogrenci, " +
+    "count(*) FILTER (WHERE rol = 'student' AND sinif_id IS NULL) AS sinifsiz, " +
+    "count(*) FILTER (WHERE rol = 'teacher' AND durum = 'approved') AS ogretmen, " +
+    "count(*) FILTER (WHERE rol = 'teacher' AND durum = 'pending') AS bekleyen, " +
+    '(SELECT count(*) FROM siniflar WHERE okul_id = $1) AS sinif ' +
+    'FROM kullanicilar WHERE okul_id = $1', [okulId]);
+}
+
+/* Yönetici paneli sayaçları: tek sorguda. */
+async function sayimlar() {
+  return tek(
+    "SELECT (SELECT count(*) FROM okullar WHERE durum = 'approved') AS okul, " +
+    "count(*) FILTER (WHERE rol = 'principal' AND durum = 'approved') AS mudur, " +
+    "count(*) FILTER (WHERE rol = 'teacher' AND durum = 'approved') AS ogretmen, " +
+    "count(*) FILTER (WHERE rol = 'student') AS ogrenci, " +
+    "count(*) FILTER (WHERE rol = 'parent') AS veli, " +
+    "count(*) FILTER (WHERE rol = 'principal' AND durum = 'pending') AS bekleyen " +
+    'FROM kullanicilar');
 }
 
 /* ---------------- yazma ---------------- */

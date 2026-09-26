@@ -181,6 +181,17 @@ async function hatirlatmaTemizle(gun) {
   return calistir('DELETE FROM hatirlatmalar WHERE gonderilme < now() - make_interval(days => $1)', [gun]);
 }
 
+/* ================= açılış sayfası rakamları ================= */
+/* Onaylı okul sayısı ve kişi sayısı. Kişi: okul rol satırları (aynı
+   yetişkinin öğretmenliği, müdürlüğü) ve yönetici sayılmaz. */
+async function siteSayilari() {
+  const [okul] = await sorgu("SELECT count(*)::int AS n FROM okullar WHERE durum = 'approved'");
+  const [kisi] = await sorgu(
+    "SELECT count(*)::int AS n FROM kullanicilar WHERE ana_hesap_id IS NULL AND durum = 'approved' " +
+    "AND (rol IS NULL OR rol <> 'admin')");
+  return { okul: okul.n, kisi: kisi.n };
+}
+
 module.exports = {
   siteSayilari,
   takvimBul, takvimAraligi, takvimEkle, takvimSil,
