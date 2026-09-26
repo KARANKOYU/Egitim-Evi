@@ -344,6 +344,22 @@ SAYFALAR.seferim = function () {
   });
 };
 
+function seferBenCiz(sigdir) {
+  var d = seferHarita.veri;
+  if (!d || !seferHarita.h || !$('seferHaritaAlan')) return;
+  var l = [];
+  if (d.okul && d.okul.enlem !== null && d.okul.enlem !== undefined) l.push({ tur: 'okul', enlem: d.okul.enlem, boylam: d.okul.boylam, etiket: 'Okul' });
+  for (var i = 0; i < d.servisler.length; i++) {
+    for (var j = 0; j < d.servisler[i].ogrenciler.length; j++) {
+      var o = d.servisler[i].ogrenciler[j];
+      if (o.ev) l.push({ tur: 'ev', enlem: o.ev.enlem, boylam: o.ev.boylam, etiket: o.ad.split(' ')[0] });
+    }
+  }
+  if (S._sefer && S._sefer.son) l.push({ tur: 'ben', enlem: S._sefer.son.enlem, boylam: S._sefer.son.boylam, etiket: 'Sen' });
+  seferHarita.h.isaretler(l);
+  if (sigdir) seferHarita.h.sigdir();
+}
+
 function seferDurumCiz() {
   var sf = S._sefer;
   var kutular = document.querySelectorAll('.sefer-durum');

@@ -135,6 +135,39 @@ function gunlereBol(hucreler) {
   return gunler;
 }
 
+/* Haftanın ders sıraları. Saatleri kesişen dersler aynı sıraya düşer; böylece
+   günler hizalanır, o sırada dersi olmayan gün "[boş]" gösterir. Günlerin zil
+   saatleri biraz farklı olsa da (cuma kısa gün gibi) aynı sıra korunur. */
+function dakika(s) {
+  var p = String(s || '').split(':');
+  return (+p[0] || 0) * 60 + (+p[1] || 0);
+}
+function dersSiralari(hucreler) {
+  var aralik = [];
+  for (var i = 0; i < hucreler.length; i++) aralik.push([dakika(hucreler[i].start), dakika(hucreler[i].end)]);
+  aralik.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+  var siralar = [];
+  for (var j = 0; j < aralik.length; j++) {
+    var son = siralar[siralar.length - 1];
+    if (son && aralik[j][0] < son.bit) son.bit = Math.max(son.bit, aralik[j][1]);
+    else siralar.push({ bas: aralik[j][0], bit: aralik[j][1] });
+  }
+  return siralar;
+}
+/* Bir günün derslerini sıralara yerleştirir: her sıra için ders listesi. */
+function siralaraYerlestir(siralar, liste) {
+  var yer = [];
+  for (var i = 0; i < siralar.length; i++) yer.push([]);
+  for (var j = 0; j < liste.length; j++) {
+    var b = dakika(liste[j].start);
+    for (var k = 0; k < siralar.length; k++) {
+      if (b >= siralar[k].bas && b < siralar[k].bit) { yer[k].push(liste[j]); break; }
+    }
+  }
+  return yer;
+}
+var BOS_DERS = '[boş]';
+
 /* Çakışan kayıtların kimlik listesi */
 function cakisanKimlikler(d) {
   var carp = {};

@@ -93,6 +93,101 @@ function sutunGrafik(o) {
   return s + '</svg>';
 }
 
+/* ================= çizgi grafik =================
+   o = {
+     etiketler: [{ ust: '10.09.2026', alt: 'LGS Deneme 1' }],
+     degerler: [490.161, null, 455.5],          // öğrencinin değeri (yoksa null)
+     bant: [{ alt, ust, ort }] | null,          // aynı sınavdaki en düşük / en yüksek
+     baslik, genislik
+   } */
+function cizgiGrafik(o) {
+  var G = grafikGenisligi(o), Y = 290, sol = 48, sag = 10, ust = 26, alt = 52;
+  var n = o.etiketler.length;
+  var tum = [];
+  for (var i = 0; i < n; i++) {
+    if (o.degerler[i] !== null && o.degerler[i] !== undefined) tum.push(Number(o.degerler[i]));
+    if (o.bant && o.bant[i]) { tum.push(Number(o.bant[i].alt)); tum.push(Number(o.bant[i].ust)); }
+  }
+  if (!tum.length) tum = [0, 1];
+  var enAz = Math.min.apply(null, tum), enCok = Math.max.apply(null, tum);
+  /* Üstte değer yazısına yer kalsın: en büyük değer eksenin tepesine yapışmasın. */
+  var eksen = guzelEksen(enAz, enCok + (enCok - enAz || Math.abs(enCok) || 1) * 0.08, 5);
+  var cizimG = G - sol - sag, cizimY = Y - ust - alt;
+  /* Noktalar kenardan içeride: ilk değer sol eksen yazısına, son tarih sağ kenara taşmasın. */
+  var ic = Math.min(44, cizimG * 0.09);
+  var aralik = n > 1 ? (cizimG - 2 * ic) / (n - 1) : cizimG;
+  var xKonum = function (i) { return n === 1 ? sol + cizimG / 2 : sol + ic + aralik * i; };
+  var yKonum = function (v) { return ust + cizimY - (v - eksen.alt) / (eksen.ust - eksen.alt) * cizimY; };
+  /* Dar ekranda: tarih "17.06" olur, ad sığacak kadar kısalır, sıkışırsa bir atlanır. */
+  var kisaTarih = aralik < 84;
+  var adSiniri = Math.max(4, Math.floor(aralik / 7));
+  var atla = aralik < 40 ? 2 : 1;
+
+  var s = '<svg class="svg-grafik" viewBox="0 0 ' + G + ' ' + Y + '" role="img" aria-label="' +
+    esc(o.baslik || 'Çizgi grafik') + '">';
+
+  for (var j = 0; j < eksen.isaretler.length; j++) {
+    var yv = yKonum(eksen.isaretler[j]);
+    s += '<line class="izgara" x1="' + sol + '" x2="' + (G - sag) + '" y1="' + yv + '" y2="' + yv + '"/>' +
+      '<text class="eksen-yazi" x="' + (sol - 8) + '" y="' + (yv + 4) + '" text-anchor="end">' +
+      sayiTR(eksen.isaretler[j]) + '</text>';
+  }
+
+  /* Bant: en düşük ile en yüksek arası gölgeli alan, ortası kesik çizgi */
+  if (o.bant) {
+    var ustKenar = [], altKenar = [], ortCizgi = [];
+    for (var b = 0; b < n; b++) {
+      var bt = o.bant[b];
+      if (!bt) continue;
+      ustKenar.push(xKonum(b).toFixed(1) + ',' + yKonum(bt.ust).toFixed(1));
+      altKenar.unshift(xKonum(b).toFixed(1) + ',' + yKonum(bt.alt).toFixed(1));
+      ortCizgi.push(xKonum(b).toFixed(1) + ',' + yKonum(bt.ort).toFixed(1));
+    }
+    if (ustKenar.length > 1) {
+      s += '<polygon class="bant" points="' + ustKenar.concat(altKenar).join(' ') + '"/>' +
+        '<polyline class="bant-ort" points="' + ortCizgi.join(' ') + '"/>';
+    } else if (ustKenar.length === 1) {
+      var tek = ustKenar[0].split(','), tekAlt = altKenar[0].split(',');
+      s += '<line class="bant-tek" x1="' + tek[0] + '" x2="' + tek[0] + '" y1="' + tek[1] + '" y2="' + tekAlt[1] + '"/>';
+    }
+  }
+
+  /* Öğrencinin çizgisi: değeri olmayan sınavda kesilir */
+  var parca = [], yol = '';
+  for (var k = 0; k <= n; k++) {
+    var v = k < n ? o.degerler[k] : null;
+    if (v !== null && v !== undefined) { parca.push(xKonum(k).toFixed(1) + ',' + yKonum(Number(v)).toFixed(1)); continue; }
+    if (parca.length > 1) yol += '<polyline class="cizgi" points="' + parca.join(' ') + '"/>';
+    parca = [];
+  }
+  s += yol;
+
+  for (var m = 0; m < n; m++) {
+    var x = xKonum(m);
+    var e = o.etiketler[m];
+    if (m % atla === 0 || m === n - 1) {
+      var tarihYazi = kisaTarih ? String(e.ust).slice(0, 5) : e.ust;
+      var adYazi = e.alt.length > adSiniri ? e.alt.slice(0, adSiniri - 1) + '…' : e.alt;
+      s += '<text class="eksen-yazi" x="' + x.toFixed(1) + '" y="' + (Y - alt + 18) + '" text-anchor="middle">' +
+        esc(tarihYazi) + '</text>' +
+        '<text class="eksen-yazi soluk" x="' + x.toFixed(1) + '" y="' + (Y - alt + 33) + '" text-anchor="middle">' +
+        esc(adYazi) + '</text>';
+    }
+    var dv = o.degerler[m];
+    if (dv === null || dv === undefined) continue;
+    var yNok = yKonum(Number(dv));
+    /* Değer yazısı noktanın üstünde; tepeye çok yakınsa altına iner. */
+    var yYazi = yNok - 11 < ust - 6 ? yNok + 20 : yNok - 11;
+    s += '<circle class="nokta" cx="' + x.toFixed(1) + '" cy="' + yNok.toFixed(1) + '" r="4.5">' +
+      '<title>' + esc(e.alt) + ' (' + esc(e.ust) + '): ' + sayiTR(dv) +
+      (o.bant && o.bant[m] ? ' · en düşük ' + sayiTR(o.bant[m].alt) + ', en yüksek ' + sayiTR(o.bant[m].ust) : '') +
+      '</title></circle>' +
+      '<text class="deger-yazi" x="' + x.toFixed(1) + '" y="' + yYazi.toFixed(1) + '" text-anchor="middle">' +
+      sayiTR(dv, aralik < 60 ? 1 : 2) + '</text>';
+  }
+  return s + '</svg>';
+}
+
 /* ================= ödev sonuç grafiği =================
    Öğrencinin bütün ödevleri sonuca göre sayılır. Sonucu olmayanlar
    (aktif ya da henüz değerlendirilmemiş) "Belirsiz". */
