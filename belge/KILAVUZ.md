@@ -279,3 +279,259 @@ kez sözlüğe konur, aranan kelime okullarla değil sözlükle karşılaştır�
 
 Bir okula **yalnızca bir müdür** kaydolabilir; ikincisi reddedilir.
 
+### Liste nerede?
+
+Liste `data/okullar.json` dosyasındadır ve **depoda yer almaz**. MEB'in açık okul
+arama servislerinden (`meb.gov.tr`, özel okullar için `ookgm.meb.gov.tr`) bir kez
+çekildi; çeken araç da yalnızca kurulumu yapan bilgisayarda durur.
+
+Sunucuya kurarken dosyayı ayrıca kopyala (belge/SUNUCUYA-KURULUM.md). Dosya yoksa
+sistem yine çalışır; yalnızca müdür kaydında okul listeden aranamaz, adı elle yazılır.
+
+---
+
+## Hesap türleri ve onay zinciri
+
+İki tür hesap var:
+
+- **Yetişkin hesabı**: veli, öğretmen ve müdür kendisi açar (**Hesap Aç**). Tek hesap,
+  birden çok rol: A okulunda öğretmen, B okulunda müdür, çocuğunun velisi olabilir.
+- **Okulun açtığı hesap**: öğrenci ve servisçi kaydolmaz, hesabını okul açar (tek
+  tek ya da dosyadan toplu).
+
+| Kim | Nasıl | Kim onaylar |
+|---|---|---|
+| **Müdür** | Yetişkin hesabıyla **Ekle → Okulumu kaydet** (MEB listesinden) | **Admin (sen)** |
+| **Öğretmen** | Yetişkin hesabıyla **Ekle → Öğretmen olarak katıl**: kişisel kodunu müdüre verir; müdür **Öğretmenler → Kodla ekle** ile kodu girer, maskeli adı ("Ay** Yı****") görüp ekler | Gerekmez |
+| **Veli** | Yetişkin hesabıyla **Ekle → Çocuğumu ekle** (veli kodu); ya da okul, velinin T.C. no'su veya kullanıcı adıyla bağlar | Gerekmez |
+| **Öğrenci** | Müdür (ya da yetkili) **Öğrenciler → Öğrenci ekle** ya da dosyayla açar | Gerekmez |
+| **Servisçi** | Müdür (ya da servis yetkilisi) **Servisler → Servisçi ekle** ya da dosyayla açar | Gerekmez |
+
+**Rol seçimi.** Yetişkin girişten sonra rolleri alt alta görür: *Öğretmen — okul adı*,
+*Müdür — okul adı*, *Veli — çocuğun adı*. Birini seçip devam eder; menüdeki **Hesap
+değiştir** ile aralarında geçer. Tek rolü varsa doğrudan o açılır. Sağdaki **Ekle**
+yeni rol açar. Rol değişince yeni oturum açılır, eskisi kapanır; her şeyi sunucu denetler.
+
+**Öğretmen kodu** tek kullanımlıktır: bir okul öğretmeni eklediği an kod yenilenir,
+başkası görse de kullanamaz. Öğretmen **Yeni kod üret** ile eskisini geçersiz kılabilir.
+Bir hesap en fazla 10 okula öğretmen olarak eklenebilir; bir okulda yalnızca tek rolü olur.
+
+**Bırakma ve silme.** Öğretmen **Hesap değiştir → Okuldan ayrıl** der; bekleyen okul
+başvurusu geri çekilebilir. **Ayarlar → Hesabımı sil** yetişkin hesabını, çocuk bağlarını
+ve öğretmenlik rollerini siler (KVKK silme hakkı); onaylı bir okulun müdürü önce
+müdürlüğü devretmelidir. Verilen ödev ve notlar okulda kalır; ayrılan öğretmenin
+açık ödevlerini müdür **Ödevler** sayfasından sonuçlandırır.
+
+Okulun gördüğü: öğretmenin adı, telefonu, okuldaki kullanıcı adı ve branşı. E-postası,
+şifresi ve T.C. no'su yetişkin hesabındadır; okul bunları görmez, değiştiremez. Okul
+yalnızca branşı düzenler ya da öğretmeni okuldan çıkarır.
+
+Okulun açtığı hesapta **ad, soyad ve T.C. kimlik no** zorunludur. Kullanıcı adı boş
+bırakılırsa T.C. no, şifre boş bırakılırsa yine T.C. no olur; kişi ilk girişte **kendi
+şifresini belirlemeden** hiçbir şey yapamaz (sunucu da bu durumdaki her isteği reddeder).
+Yeni şifre eskisiyle aynı olamaz, T.C. no'yu ya da kullanıcı adını içeremez.
+
+Kullanıcı adı ve T.C. no **okul içinde** tektir: iki okulda aynı "ayse.kaya" olabilir.
+Öğrencide T.C. no **bütün sistemde** tektir: öğrenci hesabı okula değil kişiye aittir
+(aşağıda "Öğrenci nakli").
+Bu yüzden öğrenci, öğretmen ve servisçi **okulunun adresinden** girer (aşağıda
+"Okul adresi"). E-posta her yerde tektir. T.C. no'yu kişinin kendisi ve okul yönetimi
+görür; öğretmenler ve öğrenciler görmez.
+
+Bir kişi **hem öğretmen (ya da müdür) hem veli** olabilir: çocuğu yetişkin hesabına
+bağlanır, rol seçiminde *Veli — çocuğun adı* satırı çıkar.
+
+### Açılış sayfası, giriş ve site ayarları
+
+Giriş yapmamış ziyaretçi şu sayfaları görür; hepsinde aynı üst şerit (sol
+üstte **Giriş** ve **Kayıt ol**, sağda **Hakkında** ve **Yapımcılar**) ve alt
+bilgi (ortada GitHub'daki kaynak koduna bağlantı) vardır. **Yapımcılar**'a
+basınca projede emeği geçenlerin listesi açılır; liste depodaki
+`yapimcilar.json` dosyasındadır, projeye katılan kendini oraya ekler:
+
+```json
+[
+  { "ad": "KARANKOYU", "github": "KARANKOYU", "katki": "Proje sahibi" }
+]
+```
+
+| Adres | Sayfa |
+|---|---|
+| `/` | Eğitim Evi nedir, neler var, kimin için; okul, kişi ve **şu an açık** sayısı |
+| `/hakkinda` | Proje, bilgilerin nerede tutulduğu, nasıl yapıldığı, yapımcılar, iletişim |
+| `/login` | Giriş; öğrenci ve servisçi için "okulunu seç" (seçince okulun sayfasına gider) |
+| `/signup` | Yetişkin hesabı açma |
+| `/okulun-adi` | Okulun giriş sayfası (aşağıda) |
+
+"Şu an açık": son 5 dakikada uygulamaya istek gönderen farklı kişi sayısı;
+yalnızca sayı tutulur, kimin açık olduğu tutulmaz. Rakamlar dakikada bir
+yenilenir (`/api/site`).
+
+**Yorumlar.** Açılış sayfasının altında kullanıcı yorumları durur (0-5 yıldız ve
+en fazla 500 harf). Yalnızca **yetişkinler** yazar: rolü (öğretmen, müdür) ya da
+çocuğu olan hesap; öğrenci ve servisçi yazamaz. Hesap başına tek yorum olur,
+kişi onu düzeltip silebilir. Yazanın adı kısaltılarak görünür: *Ayşe Kaya* →
+"Ay. Ka.", iki isimliyse isimlerin baş harfi: *Ayşe Nur Kaya* → "A. N. Ka.".
+Uygunsuz kelime süzgeci depodaki `badwordsfilter.json` listesine bakar:
+büyük/küçük harf, Türkçe harf, harf uzatma ("salaaak") ve harf aralarına
+konan boşluk/nokta ("a p t a l") fark etmez. İnternet adresi de kabul edilmez.
+Yönetici **Yorumlar** sayfasından bir yorumu gizler ya da yeniden gösterir.
+
+**İletişim bilgileri kodda değil**, sunucudaki `data/config.yml` dosyasındadır
+(depoya girmez; örneği `belge/config.ornek.yml`). Dosyaya e-posta ve telefon
+yazılınca en geç 30 saniyede Hakkında sayfasına ve alt bilgiye eklenir; boş
+alan görünmez. E-posta sayfanın HTML kaynağında düz yazı olarak durmaz
+(adres toplayan botlar için), tarayıcıda kurulur.
+
+```yaml
+iletisim:
+  eposta: ""
+  telefon: ""
+```
+
+### Okul adresi (egitimevi.org/okulun-adi)
+
+Her okulun kendi adresi vardır: `egitimevi.org/doruk-koleji` gibi. Okul onaylanınca
+adından bir adres önerilir; müdür **Okul Adresi ve Konumu** sayfasından kendisi
+değiştirir (küçük harf, rakam, tire; 3–40 karakter; sitenin kendi sayfa adları alınamaz).
+Adres değişince eski adres çalışmaz.
+
+- Okul adresi açılış sayfasında tanıtılmaz. Öğrenci `/login` sayfasında okulunu seçer, okulun
+  sayfasına gider; müdür okulun bağlantısını dağıtabilir. Son girilen okul bu tarayıcıda hatırlanır.
+- **Okul sayfası** (`egitimevi.org/doruk-koleji`): giriş kartının üstünde okulun kendi
+  tanıtımı (aşağıda); giriş o okulun içinde aranır (kullanıcı adı, T.C. no ya da e-posta).
+  Veli de buradan girebilir.
+- Okulsuz girişte aynı kullanıcı adı birden çok okulda varsa sunucu "önce okulunu seç" der.
+- Girişten sonra adres çubuğu kişinin okuluna döner; sayfa yenilenince aynı okulda kalır.
+
+**Okul sayfasını düzenleme.** Müdür ya da **okul.sayfa** yetkisi verilen kişi (hazır rol
+şablonu: **Kodlayıcı**) menüdeki **Okul Sayfası**'ndan düzenler; sağda canlı önizleme vardır.
+
+| Ne | Nasıl |
+|---|---|
+| Fotoğraflar | Kapak, logo ve en fazla 8 galeri fotoğrafı; PNG, JPEG ya da WebP, en fazla 3 MB |
+| Tanıtım yazısı | Düz metin, en fazla 1500 karakter; paragraflar boş satırla ayrılır |
+| Görünüm | Ana renk, zemin, yazı rengi; okul adının boyu ve yeri; kapak yüksekliği; sayfa genişliği; galeride yan yana kaç fotoğraf |
+| Kendi CSS'i | İsteğe bağlı, kısıtlı (aşağıda) |
+
+Sayfa serbest kod değildir: HTML ve betik (JavaScript) yazılamaz, yapı sabittir.
+Güvenlik için:
+
+- **CSS kısıtlı.** Yalnızca sayfanın parçaları seçilebilir (`.os-kutu`, `.os-kapak`,
+  `.os-ust`, `.os-logo`, `.os-baslik`, `.os-yer`, `.os-tanitim`, `.os-galeri`, `.os-foto`;
+  yanında `:hover`, `:first-child`, `:last-child`, `:nth-child()`). Renk, yazı, boşluk,
+  çerçeve, köşe, gölge, boyut (sınırlı), flex/grid gibi özellikler kullanılabilir.
+  `url()`, `@import` ve bütün @ kuralları, `position`, `z-index`, `transform`, `content`,
+  eksi boşluk, ters bölü ve başka seçiciler atılır; kişiye neyin neden atıldığı söylenir
+  (`sunucu/yardimci/css-temizle.js`). Kalan kurallar yalnızca sayfanın içine uygulanır;
+  sayfanın kutusu `contain: paint` ile dışına, giriş kartının üstüne hiçbir şey çizemez.
+  Kişinin yazdığı CSS olduğu gibi saklanır, sayfaya giderken her seferinde yeniden temizlenir.
+- **Fotoğrafın türü** adından değil ilk baytlarından anlaşılır; SVG hiç kabul edilmez.
+  Çekildiği yerin konumu, tarih ve cihaz bilgisi (EXIF/XMP, PNG yazıları) kaydetmeden
+  önce silinir; JPEG'de yalnızca yön bilgisi kalır (`sunucu/yardimci/resim.js`).
+- Değişiklikler **İşlem Kaydı**'na yazılır. Sayfa herkese açıktır; öğrencilerin yüzü
+  görünen fotoğraflar için veli izni okulun sorumluluğundadır.
+
+### Sistemi ilk kez kurma sırası
+
+1. `admin@egitimevi.com` ile gir.
+2. Müdür adayı yetişkin hesabı açsın, **Ekle → Okulumu kaydet** ile başvursun.
+3. Admin panelinde **Onay Bekleyenler** → Onayla. Okul artık aramada görünür.
+4. Müdür **Okul Adresi ve Konumu** sayfasında adresi ve okulun haritadaki yerini seçer.
+5. Müdür öğrenci ve servisçi hesaplarını açar: tek tek ya da **Excel Aktarım** ile
+   (iki sayfalı şablon ya da kendi XLS/ODS/CSV/TXT listesi). Olmayan sınıflar açılır.
+   Öğretmenler yetişkin hesabı açıp kodlarını verir; müdür **Öğretmenler → Kodla ekle**.
+6. Müdür dersleri açar, derslere öğretmen atar, servisleri kurar.
+7. Öğretmen artık ödev verebilir ve sınav açabilir.
+> 81 il hazır tanımlı.
+
+---
+
+## Sınıflar ve ders programı
+
+Bu bölümü **müdür** yönetir.
+
+### Sınıflar
+
+**Sınıflar** sayfasından sınıf açılır (`7-A`, `8-C` gibi). Her sınıf kartında
+kaç öğrenci ve kaç ders olduğu, öğretmeni atanmamış ders varsa uyarısı görünür.
+
+- **Öğrenciler** butonu → okuldaki tüm öğrencileri listeler, her birinin sınıfı
+  açılır listeden değiştirilir
+- **Dersler** butonu → sınıfa ders eklenir, her derse **haftalık saat** ve
+  **öğretmen** atanır
+- **Ders programı** butonu → doğrudan o sınıfın programını açar
+- **Sil** → sınıf silinir; öğrenciler sınıfsız kalır, dersleri ve programı temizlenir
+  (öğrenci hesapları silinmez)
+
+Sınıfa yerleştirilmemiş öğrenci varsa sayfanın üstünde uyarı çıkar.
+
+### Ders programı
+
+**Ders Programı** sayfasında sınıf seçilir. İki görünüm var, üstteki
+**Gün / Hafta** düğmesiyle geçilir. Tercih hatırlanır.
+
+**Gün görünümü** — ekranda tek gün. Dersler yan yana sütunlar hâlinde:
+*Ders 1, Ders 2, Ders 3…* Her sütunda saat aralığı, ders adı, öğretmen ve
+Düzenle/Sil düğmeleri. Sonda kesikli **+ Ders ekle**.
+
+- `‹ önceki gün` / `sonraki gün ›` ile gezilir
+- Üstteki şeritte her günün ders sayısı yazar — hangi gün dolu, tek bakışta
+- Bugün işaretli; devam eden ders **şimdi** etiketiyle çerçevelenir
+- Ekran genişledikçe sütunlar yayılır, daraldıkça alt alta iner
+
+**Hafta görünümü** — günler satır, ders sıraları sütun. Her hücrede yine
+tam detay: saat, ders, öğretmen. Satır sonundaki **+** ile o güne ders eklenir.
+
+Saatleri okulunun zil düzenine göre serbestçe yazarsın; sabit ders saati
+kutusu yok. Bir ders haftada istediğin kadar saate konabilir.
+
+### Çakışma uyarısı
+
+Bir öğretmen aynı gün ve saatte iki farklı sınıfa düşerse sistem uyarır:
+
+- Yerleştirme anında kırmızı uyarı çıkar
+- Sayfanın üstünde çakışma listesi durur: *"Ayşe Kaya — Pazartesi 1. ders: 7-A Matematik ↔ 8-C Türkçe"*
+- Çakışan ders satırı kırmızı ve ⚠️ işaretli görünür
+- Saatler **kesişirse** çakışmadır; bitişik saatler (10:00 biten ile 10:00 başlayan) çakışma sayılmaz
+- Öğretmen kendi programında da uyarıyı görür, çakışan iki dersi birlikte okur
+
+### Kim ne görür
+
+| Rol | Görünüm |
+|---|---|
+| **Müdür** | Tüm sınıfların programını düzenler |
+| **Öğretmen** | *Ders Programım* — kendi haftalık programı, hangi sınıfa girdiği, ders yükü |
+| **Öğrenci** | *Ders Programı* — kendi sınıfının programı, hangi derse hangi öğretmen |
+| **Veli** | Çocuğunun sınıf programı |
+
+---
+
+## Hesap yönetimi
+
+### Hesap açma (öğrenci, servisçi)
+
+İki rol de aynı pencereyi kullanır: ad, soyad, T.C. no (zorunlu); kullanıcı adı, şifre,
+e-posta, doğum tarihi, adres (isteğe bağlı); öğrencide sınıf ve okul no, servisçide
+telefon. Kaydedince kullanıcı adı, şifre (ya da "T.C.
+kimlik numarası"), okulun giriş adresi ve öğrencinin veli kodu **bir kez** gösterilir.
+
+### Öğrenci nakli (başka okuldan gelen öğrenci)
+
+Öğrenci hesabı kişiye aittir; okul değiştirince yeni hesap açılmaz. Yeni okul
+**Öğrenci ekle**'de öğrencinin T.C. no'sunu yazar:
+
+- T.C. no başka okulda kayıtlı bir öğrencinin ise pencere **doğum tarihini** de ister.
+  T.C. no ile doğum tarihi eski kayıtla eşleşirse hesap bu okula taşınır;
+  eşleşmezse eklenmez. Yanlış doğum tarihi denemesi kişi başına saatte 10 ile sınırlı.
+- Öğrencinin kullanıcı adı (yeni okulda boşsa), şifresi, veli kodu ve velileri aynı kalır.
+  Velinin "okulu" da (duyuru ve takvim) yeni okula geçer.
+- Eski okulun ödev, not, devamsızlık ve etüt yoklamaları **o okulun kaydı** olarak
+  kalır: yeni okul görmez, eski okul da öğrenciyi artık göremez. Öğrenci eski okulun
+  etüt, kulüp ve servis listelerinden çıkar.
+- Öğrenci ve velisi üstteki **eğitim yılı** seçicisinde eski okulun dönemlerini
+  "2025-2026 · Eski Okul · 6-A" diye görür; seçince eski kayıtlar salt okunur açılır.
+- Excel ile toplu aktarımda başka okuldaki T.C. no hata olarak gösterilir; o öğrenci
+  doğum tarihiyle tek tek eklenir.
+- Eski okulun müdürüne, öğrenciye ve velilere bildirim gider; işlem kayda geçer.
+
