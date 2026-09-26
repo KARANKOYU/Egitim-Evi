@@ -38,3 +38,60 @@ function indir(url) {
   });
 }
 
+(async () => {
+  fs.mkdirSync(HEDEF, { recursive: true });
+  const cssParcalari = [
+    '/* Yazı tipleri — kendi sunucumuzdan gelir, dışarıya istek gitmez.',
+    '   Dosyalar araclar/yazitipi-indir.js ile üretildi; elle düzenlenmez.',
+    '   font-display: swap -> yazı önce sistem fontuyla anında görünür, dosya',
+    '   gelince değişir; yavaş bağlantıda boş ekran olmaz. */',
+    ''
+  ];
+  let toplam = 0;
+
+  for (const aile of AILELER) {
+    const css = (await indir('https://fonts.googleapis.com/css2?family=' + aile.sorgu + '&display=swap')).toString('utf8');
+    /* Her @font-face bloğunu ayrıştır: alt küme yorumu, kalınlık, adres, unicode-range.
+       Değişken yazı tipinde Google 400 ve 700 için AYNI dosyayı verir; o dosya
+       bir kez indirilir ve tek @font-face'e kalınlık aralığı (400 700) yazılır.
+       Yoksa tarayıcı aynı dosyayı iki farklı adla iki kez indirir. */
+    const dosyalar = new Map();   // url -> { altKume, kalinliklar, aralik }
+    const bloklar = css.split('/* ').slice(1);
+    for (const blok of bloklar) {
+      const altKume = blok.slice(0, blok.indexOf(' */')).trim();
+      if (ALT_KUMELER.indexOf(altKume) < 0) continue;
+      const kalinlik = (blok.match(/font-weight:\s*([^;]+);/) || [])[1].trim();
+      const stil = (blok.match(/font-style:\s*([^;]+);/) || [])[1].trim();
+      const url = (blok.match(/url\(([^)]+)\)/) || [])[1];
+      const aralik = (blok.match(/unicode-range:\s*([^;]+);/) || [])[1].trim();
+      if (stil !== 'normal' || !url) continue;
+      if (!dosyalar.has(url)) dosyalar.set(url, { altKume, kalinliklar: [], aralik });
+      dosyalar.get(url).kalinliklar.push(...kalinlik.split(/\s+/).map(Number));
+    }
+
+    for (const [url, d] of dosyalar) {
+      const enAz = Math.min(...d.kalinliklar), enCok = Math.max(...d.kalinliklar);
+      const kalinlik = enAz === enCok ? String(enAz) : enAz + ' ' + enCok;
+      const dosyaAdi = aile.dosya + '-' + kalinlik.replace(/\s+/g, '-') + '-' + d.altKume + '.woff2';
+      const veri = await indir(url);
+      fs.writeFileSync(path.join(HEDEF, dosyaAdi), veri);
+      toplam += veri.length;
+      console.log('  ' + dosyaAdi.padEnd(40) + Math.round(veri.length / 1024) + ' KB');
+
+      cssParcalari.push(
+        '@font-face {',
+        "  font-family: '" + aile.ad + "';",
+        '  font-style: normal;',
+        '  font-weight: ' + kalinlik + ';',
+        '  font-display: swap;',
+        "  src: url('/yazitipi/" + dosyaAdi + "') format('woff2');",
+        '  unicode-range: ' + d.aralik + ';',
+        '}', ''
+      );
+    }
+  }
+
+  fs.writeFileSync(CSS_CIKTI, cssParcalari.join('\n'), 'utf8');
+  console.log('\n  toplam ' + Math.round(toplam / 1024) + ' KB -> ' + HEDEF);
+  console.log('  CSS -> ' + CSS_CIKTI);
+})().catch(e => { console.error('HATA:', e.message); process.exit(1); });
