@@ -172,3 +172,13 @@ function nrm(s) {
   return out.toLowerCase().trim();
 }
 
+var SONUC = {
+  yapti: { ad: 'Yaptı', renk: 'yesil' },
+  gec: { ad: 'Geç yaptı', renk: 'mavi' },
+  yapmadi: { ad: 'Yapmadı', renk: 'kirmizi' },
+  eksik: { ad: 'Eksik', renk: 'turuncu' },
+  izinli: { ad: 'Gelmedi (izinli)', renk: 'gri' },
+  gelmedi: { ad: 'Gelmedi (izinsiz)', renk: 'bordo' }
+};
+
+var ROL_AD = { student: 'Öğrenci', parent: 'Veli', teacher: 'Öğretmen', principal: 'Müdür', admin: 'Yönetici', servisci: 'Servisçi' };

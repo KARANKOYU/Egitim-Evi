@@ -1,0 +1,70 @@
+/* Çizgi ikonların boyut ve hizaları. */
+
+/* ===================================================================
+   ÇİZGİ İKONLAR
+   Emoji yerine kullanılır; bulunduğu yerin rengini ve yazı boyutunu alır.
+   =================================================================== */
+.ikon {
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 auto;
+  vertical-align: -0.18em;
+  display: inline-block;
+}
+.ikon.buyuk { width: 2.4em; height: 2.4em; }
+
+/* Menü bağlantıları: ikon + yazı */
+.navlink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.navlink .ikon { width: 18px; height: 18px; opacity: .8; }
+.navlink.on .ikon { opacity: 1; }
+
+/* Üst çubuk düğmeleri */
+.iconbtn { display: inline-flex; align-items: center; gap: 6px; }
+.iconbtn .ikon { width: 19px; height: 19px; }
+
+/* Kutucuklardaki filigran ikon */
+.kutucuk .kutucuk-ikon .ikon { width: 62px; height: 62px; stroke-width: 1.4; }
+
+/* Boş durum kutusu */
+.bos { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.bos .ikon { opacity: .35; }
+
+/* Satır başlarındaki küçük ikonlar */
+.satir .ad .ikon { margin-right: 7px; opacity: .6; }
+
+/* Uyarı kutularındaki ikon */
+.msg .ikon { margin-right: 6px; vertical-align: -0.2em; }
+
+/* Marka ve giriş kartı logosu — boyut yüzde değil, sabit verilmeli;
+   yoksa SVG kabın tamamını kaplayıp devleşiyor. */
+.auth-logo .mark {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto;
+  border-radius: var(--r);
+  background: var(--ana-acik);
+}
+.auth-logo .mark .ikon { width: 34px; height: 34px; color: var(--ana); }
+.brand .mark { display: inline-flex; align-items: center; }
+.brand .mark .ikon { width: 21px; height: 21px; color: var(--ana); }
+.kod-simge .ikon { width: 40px; height: 40px; color: var(--ana); }
+
+/* Baş harfli yuvarlak (profil fotoğrafı yerine; avatar() çizer). */
+.avatar {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--av, var(--ana)); color: #fff;
+  font-size: 13.5px; font-weight: 700; letter-spacing: .02em; line-height: 1;
+  font-variant-numeric: normal; user-select: none;
+}
+.avatar.kucuk { width: 28px; height: 28px; font-size: 11.5px; }
+.avatar.buyuk { width: 56px; height: 56px; font-size: 20px; }
+.satir > .avatar { margin-right: 2px; }
+.iconbtn .avatar { width: 26px; height: 26px; font-size: 11px; }
