@@ -89,3 +89,10 @@ EYLEMLER['okul-konum-kaydet'] = function (el) {
   })['catch'](function (e) { dugmeBitir(el); mesajGoster('oaKonumMesaj', 'hata', e.message); });
 };
 
+EYLEMLER['okul-konum-sil'] = function (el) {
+  if (!confirm('Okulun haritadaki konumu silinsin mi?')) return;
+  el.disabled = true;
+  return api('/school/konum', 'POST', { sil: true }).then(function (d) {
+    return git('okul-ayarlari').then(function () { sayfaMesaji('iyi', d.message); });
+  })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
