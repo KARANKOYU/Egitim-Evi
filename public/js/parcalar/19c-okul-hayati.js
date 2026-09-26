@@ -73,6 +73,16 @@ EYLEMLER['yemek-duzenle'] = function () {
     '<button class="btn gri" data-act="modal-kapat">Vazgeç</button><button class="btn" data-act="yemek-kaydet">Kaydet</button>');
 };
 
+EYLEMLER['yemek-kaydet'] = function (el) {
+  var menuler = document.querySelectorAll('.yMenu'), kaloriler = document.querySelectorAll('.yKalori'), gunler = [];
+  for (var i = 0; i < menuler.length; i++) {
+    gunler.push({ tarih: menuler[i].getAttribute('data-tarih'), menu: menuler[i].value, kalori: kaloriler[i].value });
+  }
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/yemek', 'POST', { gunler: gunler }).then(function () { modalKapat(); return SAYFALAR.yemek(); })
+    ['catch'](function (e) { dugmeBitir(el); mesajGoster('yMesaj', 'hata', e.message); });
+};
+
 /* ================= servis ================= */
 function telBaglanti(tel) {
   return tel ? '<a href="tel:' + esc(telefonNorm(tel)) + '">' + esc(telefonGoster(tel)) + '</a>' : '';

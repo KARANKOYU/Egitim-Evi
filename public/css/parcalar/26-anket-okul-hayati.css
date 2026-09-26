@@ -31,6 +31,20 @@
 .anket-sonuc .cubuk { margin-top: 4px; }
 .anket-sonuc.benim .cubuk i { background: var(--yesil); }
 
+/* ===== yemek listesi ===== */
+.hafta-gezgin { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+.hafta-gezgin b { font-variant-numeric: tabular-nums; text-align: center; }
+.yemek-hafta { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.yemek-gun {
+  background: var(--kart); border: 1.5px solid var(--cizgi); border-radius: var(--r);
+  padding: 13px 14px;
+}
+.yemek-gun.bugun { border-color: var(--ana); box-shadow: 0 0 0 3px var(--ana-acik); }
+.yemek-gun-ust { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.yemek-gun-ust span { font-size: 12.5px; color: var(--soluk); }
+.yemek-gun ul { margin: 0 0 6px; padding-left: 18px; line-height: 1.6; font-size: 14px; }
+.yemek-duzen { display: grid; grid-template-columns: 1fr 96px; gap: 10px; align-items: start; }
+
 /* ===== kulüpler ===== */
 .kulup-dugmeler { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .kulup-dugmeler:empty { display: none; }
