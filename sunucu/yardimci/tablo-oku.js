@@ -43,6 +43,40 @@ function ozellik(ozn, ad) {
   return m ? xlsx.xmlCoz(m[1]) : '';
 }
 
+/* ---------------- CSV ---------------- */
+
+function csvOku(buf) {
+  const s = metinCoz(buf);
+  const ilk = s.split(/\r?\n/, 1)[0] || '';
+  /* Ayırıcı: başlık satırında en çok geçen (Türkçe Excel ";" kullanır). */
+  const say = ch => ilk.split(ch).length - 1;
+  const ayirici = [';', '\t', ','].reduce((a, b) => (say(b) > say(a) ? b : a), ',');
+  const satirlar = [];
+  let satir = [], hucre = '', tirnak = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (tirnak) {
+      if (ch === '"') {
+        if (s[i + 1] === '"') { hucre += '"'; i++; } else tirnak = false;
+      } else hucre += ch;
+      continue;
+    }
+    if (ch === '"' && hucre === '') { tirnak = true; continue; }
+    if (ch === ayirici) { if (satir.length < EN_FAZLA_SUTUN) satir.push(hucre); hucre = ''; continue; }
+    if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && s[i + 1] === '\n') i++;
+      if (satir.length < EN_FAZLA_SUTUN) satir.push(hucre);
+      satirlar.push(satir);
+      satir = []; hucre = '';
+      if (satirlar.length >= EN_FAZLA_SATIR) break;
+      continue;
+    }
+    hucre += ch;
+  }
+  if (hucre !== '' || satir.length) { satir.push(hucre); satirlar.push(satir); }
+  return [{ ad: 'Liste', satirlar: satirlar.map(r => r.map(x => x.trim())) }];
+}
+
 /* ---------------- TXT: alt alta isim listesi ----------------
    Her satır bir kişi: "Ahmet Sami Yılmaz" ya da "Ahmet Yılmaz 12345678901".
    Baştaki sıra numarası ("1." "12)") atılır, satırdaki 11 haneli sayı T.C.

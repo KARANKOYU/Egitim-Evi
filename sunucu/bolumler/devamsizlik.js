@@ -65,6 +65,25 @@ function yoklamaMetni(ogrenci, l, tarih, saat, durum) {
   };
 }
 
+/* Devamsızlık bildirimi: öğrenciye ve onaylı velilerine, tek sorguda.
+   liste: [{ ogrenci, metin }] */
+async function devamsizlikBildir(liste) {
+  if (!liste.length) return;
+  const veliler = await depo.kullanicilar.veliHaritasi(liste.map(b => b.ogrenci.id));
+  const giden = [];
+  for (const b of liste) {
+    giden.push({ kime: b.ogrenci.id, metin: b.metin, baglanti: '#/devamsizligim' });
+    if (b.veliMetni) {
+      for (const vid of veliler.get(b.ogrenci.id) || []) giden.push({ kime: vid, metin: b.veliMetni, baglanti: '#/cocuklarim' });
+      continue;
+    }
+    for (const vid of veliler.get(b.ogrenci.id) || []) {
+      giden.push({ kime: vid, metin: b.ogrenci.fullName + ' — ' + b.metin, baglanti: '#/cocuklarim' });
+    }
+  }
+  await depo.genel.cokluBildir(giden, { veliye: false });   // veliye kendi metni yukarıda
+}
+
 /* Veli çocuğuna bakabilir mi? */
 const veliBakabilir = (me, st) => me.role !== 'student' && depo.kullanicilar.bagliMi(me.id, st.id);
 

@@ -99,3 +99,84 @@ function sifrele(icerik, p256dh, auth, test) {
   return Buffer.concat([baslik, asAcik, govde]);
 }
 
+/* RFC 8292: VAPID kimliği (ES256 imzalı kısa ömürlü JWT). */
+function vapidBasligi(endpoint) {
+  const a = anahtarlar();
+  const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const konu = (ayarlar.site && ayarlar.site.adres) || 'https://egitimevi.org';
+  const girdi = b64({ typ: 'JWT', alg: 'ES256' }) + '.' +
+    b64({ aud: new URL(endpoint).origin, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: konu });
+  const imza = crypto.sign('sha256', Buffer.from(girdi), { key: a.gizli, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+  return 'vapid t=' + girdi + '.' + imza + ', k=' + a.acik;
+}
+
+function tekGonder(abonelik, icerik) {
+  return new Promise(resolve => {
+    let govde;
+    try { govde = sifrele(Buffer.from(JSON.stringify(icerik), 'utf8'), abonelik.p256dh, abonelik.auth); }
+    catch (e) { return resolve(0); }
+    const istek = https.request(abonelik.endpoint, {
+      method: 'POST', timeout: 10000,
+      headers: {
+        'Content-Type': 'application/octet-stream', 'Content-Encoding': 'aes128gcm', 'Content-Length': govde.length,
+        TTL: '86400', Urgency: 'high', Authorization: vapidBasligi(abonelik.endpoint)
+      }
+    }, cevap => { cevap.resume(); resolve(cevap.statusCode || 0); });
+    istek.on('timeout', () => istek.destroy());
+    istek.on('error', () => resolve(0));
+    istek.end(govde);
+  });
+}
+
+/* ---- kuyruk ---- */
+const kuyruk = [];
+let suren = 0;
+/* Testlerde (EE_PUSH_GONDERME=0) dışarıya istek atılmaz. */
+const GONDERIM_KAPALI = process.env.EE_PUSH_GONDERME === '0';
+function sirayaAl(abonelik, icerik) {
+  if (GONDERIM_KAPALI || kuyruk.length >= KUYRUK_SINIRI) return;
+  kuyruk.push({ abonelik, icerik });
+  isle();
+}
+function isle() {
+  while (suren < ES_ZAMAN && kuyruk.length) {
+    const is = kuyruk.shift();
+    suren++;
+    tekGonder(is.abonelik, is.icerik).then(async kod => {
+      try {
+        if (kod === 404 || kod === 410) await depo.push.gecersizSil(is.abonelik.id);
+        else if (kod >= 200 && kod < 300) await depo.push.basariYaz(is.abonelik.id);
+      } catch (e) { /* bildirim ikinci planda; hata işi durdurmaz */ }
+    }).finally(() => { suren--; isle(); });
+  }
+}
+
+/* Bildirim yazılınca: kişinin abonelikleri varsa telefonuna gönderilir. */
+async function bildirimGeldi(liste) {
+  const kisiler = [...new Set(liste.map(b => b.kime))];
+  let abonelikler;
+  try { abonelikler = await depo.push.abonelikler(kisiler); } catch (e) { return; }
+  if (!abonelikler.length) return;
+  const kisininki = new Map();
+  for (const a of abonelikler) {
+    if (!kisininki.has(a.alici)) kisininki.set(a.alici, []);
+    kisininki.get(a.alici).push(a);
+  }
+  for (const b of liste) {
+    /* Kişi başına dakikada en fazla 20 telefon bildirimi (toplu duyuru yağmuru olmasın). */
+    const aboneler = kisininki.get(b.kime);
+    if (!aboneler || !hizSinir('pushKisi:' + b.kime, 20, 60 * 1000)) continue;
+    for (const a of aboneler) {
+      const baglanti = String(b.baglanti || '').indexOf('#/') === 0 ? b.baglanti : '#/ana';
+      /* ?k=: bildirim hangi rolüne geldiyse uygulama açılınca o role geçilir. */
+      sirayaAl(a, { t: 'Eğitim Evi', b: String(b.metin || '').slice(0, 300),
+        u: (a.kisa_ad ? '/' + a.kisa_ad : '') + '/?k=' + encodeURIComponent(b.kime) + baglanti });
+    }
+  }
+}
+
+function baslat() {
+  depo.genel.olaylar.on('bildirim', liste => { bildirimGeldi(liste).catch(() => {}); });
+}
+
+module.exports = { baslat, anahtarlar, adresGecerli, anahtarGecerli, sifrele, vapidBasligi };

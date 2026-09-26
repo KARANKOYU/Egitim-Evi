@@ -133,6 +133,86 @@ function basliklariEsle(satir, sutunlar) {
   return harita;
 }
 
+/* ============ çözümleme ============ */
+
+/* Dosyadaki ilk sayfayı okur, satırları anahtarlı nesnelere çevirir.
+   Dönen hatalar biçimle ilgilidir; iş kuralları çağırana ait. */
+function coz(tur, sayfalar) {
+  const sutunlar = SUTUNLAR[tur];
+  if (!sutunlar) throw new Error('Bilinmeyen aktarım türü.');
+
+  /* Açıklama sayfasını atla: veriyi başlıkları eşleşen ilk sayfada ara. */
+  let satirlar = null;
+  let harita = null;
+  for (const sayfa of sayfalar) {
+    const s = sayfa.satirlar || [];
+    if (!s.length) continue;
+    const h = basliklariEsle(s[0], sutunlar);
+    const zorunluVar = sutunlar.filter(c => c.zorunlu)
+      .every(c => h[c.anahtar] !== undefined);
+    if (zorunluVar) { satirlar = s; harita = h; break; }
+  }
+
+  if (!satirlar) {
+    const eksikler = sutunlar.filter(c => c.zorunlu).map(c => c.baslik);
+    throw new Error('Başlık satırı bulunamadı. İlk satırda şu sütunlar olmalı: ' +
+      eksikler.join(', ') + '. Boş şablonu indirip onun üzerine yazman en kolayı.');
+  }
+
+  const kayitlar = [];
+  const hatalar = [];
+
+  for (let i = 1; i < satirlar.length; i++) {
+    const satir = satirlar[i] || [];
+    const noSatir = i + 1;   /* Excel'deki gerçek satır numarası */
+
+    const kayit = { satir: noSatir };
+    let doluMu = false;
+    for (const s of sutunlar) {
+      const idx = harita[s.anahtar];
+      const ham = idx === undefined ? '' : metin(satir[idx]);
+      kayit[s.anahtar] = ham;
+      if (ham) doluMu = true;
+    }
+    if (!doluMu) continue;   /* tamamen boş satırları sessizce atla */
+
+    const eksik = sutunlar.filter(s => s.zorunlu && !kayit[s.anahtar]);
+    if (eksik.length) {
+      hatalar.push({
+        satir: noSatir,
+        mesaj: eksik.map(s => s.baslik).join(' ve ') + ' boş'
+      });
+      continue;
+    }
+
+    if (tur === 'program') {
+      const g = gune(kayit.gun);
+      if (!g) {
+        hatalar.push({ satir: noSatir, mesaj: '"' + kayit.gun + '" bir gün adı değil' });
+        continue;
+      }
+      kayit.gunNo = g;
+
+      const bas = saate(kayit.baslangic);
+      const bit = saate(kayit.bitis);
+      if (!/^\d{2}:\d{2}$/.test(bas)) {
+        hatalar.push({ satir: noSatir, mesaj: 'Başlangıç saati anlaşılmadı: "' + kayit.baslangic + '"' });
+        continue;
+      }
+      if (!/^\d{2}:\d{2}$/.test(bit)) {
+        hatalar.push({ satir: noSatir, mesaj: 'Bitiş saati anlaşılmadı: "' + kayit.bitis + '"' });
+        continue;
+      }
+      kayit.baslangic = bas;
+      kayit.bitis = bit;
+    }
+
+    kayitlar.push(kayit);
+  }
+
+  return { kayitlar, hatalar, sutunlar };
+}
+
 /* ============ boş şablon ============ */
 
 const ANLATIM = {
