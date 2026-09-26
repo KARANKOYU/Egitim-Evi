@@ -122,6 +122,21 @@ async function girisYap(email, sifre, okul) {
   return adim2.body;
 }
 
+/* ---- kayıt ve okul hesapları ----
+   Kendisi kaydolan tek tür hesap yetişkin hesabıdır: müdür adayı okulunu
+   kaydeder (müdür rolü), veli kod girer, öğretmen eşleme kodunu okula verir.
+   Öğrenci ve servisçi hesabını okul açar. Araçlar ve testler aynı yoldan geçer. */
+
+/* Geçerli (algoritmaya uyan), rastgele T.C. kimlik no — testler ve deneme verisi için. */
+function tcUret() {
+  const d = [1 + Math.floor(Math.random() * 9)];
+  for (let i = 1; i < 9; i++) d.push(Math.floor(Math.random() * 10));
+  const tek = d[0] + d[2] + d[4] + d[6] + d[8], cift = d[1] + d[3] + d[5] + d[7];
+  d.push(((tek * 7 - cift) % 10 + 10) % 10);
+  d.push(d.reduce((a, b) => a + b, 0) % 10);
+  return d.join('');
+}
+
 /* Rolsüz yetişkin hesabı açar: kayıt olur, e-postadaki onay bağlantısına
    tıklar (hesap ancak o zaman açılır). g: { fullName, username, email, password, ... } */
 async function hesapAc(g) {
