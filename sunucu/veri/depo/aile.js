@@ -116,3 +116,7 @@ async function temizle() {
   await calistir("DELETE FROM aile_uyarilari WHERE gun < current_date - 7");
 }
 
+module.exports = {
+  SAKLAMA_GUN, cihazEkle, cihazOzetle, cihazGoruldu, cihazSil, cihazlari, ayar, sinirlari, ayarYaz,
+  konumEkle, sonKonumlar, kullanimYaz, kullanimlari, uyariIlkMi, temizle
+};
