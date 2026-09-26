@@ -292,3 +292,4 @@ class AramaDizini {
   }
 }
 
+module.exports = { AramaDizini, sade, uzaklik };

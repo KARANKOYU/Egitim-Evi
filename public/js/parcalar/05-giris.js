@@ -191,6 +191,33 @@ function aramaSadeTR(m) {
     .trim();
 }
 
+/* Aranan kelimelerin okul adında geçtiği yeri koyulaştırır. Sunucu hangi
+   kelimelerin tuttuğunu söylediyse (vurgu: adın boşlukla ayrılmış
+   kelimelerinin sırası) o kelimeler bütünüyle koyulaşır; yanlış yazılıp
+   düzeltilen kelime de böylece görünür. */
+function aramaVurgula(ad, kelimeler, vurgu) {
+  if (Array.isArray(vurgu)) {
+    var sira = -1;
+    return String(ad).split(/(\s+)/).map(function (parca) {
+      if (!parca || /^\s+$/.test(parca)) return esc(parca);
+      sira++;
+      return vurgu.indexOf(sira) >= 0 ? '<mark>' + esc(parca) + '</mark>' : esc(parca);
+    }).join('');
+  }
+  if (!kelimeler.length) return esc(ad);
+  return String(ad).split(/(\s+)/).map(function (parca) {
+    if (!parca || /^\s+$/.test(parca)) return esc(parca);
+    var sade = aramaSadeTR(parca);
+    for (var i = 0; i < kelimeler.length; i++) {
+      if (!kelimeler[i] || sade.indexOf(kelimeler[i]) !== 0) continue;
+      var bas = (/^[^0-9A-Za-zÀ-ɏ]*/.exec(parca) || [''])[0].length;
+      var son = Math.min(parca.length, bas + kelimeler[i].length);
+      return esc(parca.slice(0, bas)) + '<mark>' + esc(parca.slice(bas, son)) + '</mark>' + esc(parca.slice(son));
+    }
+    return esc(parca);
+  }).join('');
+}
+
 /* Düğme bir iş yaparken: basılamaz, üzerinde ne olduğu yazar. */
 function dugmeBekle(b, metin) {
   if (!b) return;

@@ -205,6 +205,46 @@ function okulAramaYap() {
   });
 }
 
+function okulSonuclari(d, sorgu, kelimeler, filtreler) {
+  var h = '';
+  if (!d.okullar.length) {
+    h = '<div class="okul-bilgi">' +
+      (sorgu ? '"' + esc(sorgu) + '" için ' : '') +
+      (filtreler.length ? esc(filtreler.join(' / ')) + ' içinde ' : '') + 'okul bulunamadı.';
+    if (filtreler.length) {
+      h += ' <button type="button" class="baglanti" data-act="okul-ara-genislet">Tüm Türkiye\'de ara</button>';
+    }
+    h += '<br>Okulun adından tek bir kelime yazmayı dene (ör. yalnızca "Cumhuriyet"). ' +
+      'Yine çıkmazsa aşağıdaki <b>Okulum listede yok</b> bölümüne adını yaz.</div>';
+    return h;
+  }
+  /* Yanlış yazılmış ya da bitişik kelime düzeltildiyse söylenir. */
+  if (d.duzeltme) {
+    h += '<div class="okul-bilgi okul-duzeltme">"' + esc(sorgu) + '" yerine <b>"' + esc(d.duzeltme) + '"</b> diye aradık.</div>';
+  }
+  if (d.yakin) {
+    h += '<div class="okul-bilgi">Yazdığın kelimelerin hepsini içeren okul ' +
+      (filtreler.length ? esc(filtreler.join(' / ')) + ' içinde ' : '') + 'yok.' +
+      (filtreler.length ? ' <button type="button" class="baglanti" data-act="okul-ara-genislet">Tüm Türkiye\'de ara</button>' : '') +
+      ' En yakın sonuçlar:</div>';
+  } else if (d.toplam > d.okullar.length) {
+    h += '<div class="okul-bilgi">' + d.toplam.toLocaleString('tr-TR') + ' sonuçtan ilk ' +
+      d.okullar.length + ' tanesi gösteriliyor. Bir kelime daha yazarak ya da il seçerek daraltabilirsin.</div>';
+  }
+  for (var i = 0; i < d.okullar.length; i++) {
+    var o = d.okullar[i];
+    h += '<button type="button" class="okul-satir" data-okul-id="' + esc(o.id) + '"' +
+      ' data-okul-ad="' + esc(o.ad) + '" data-okul-il="' + esc(o.il) + '"' +
+      ' data-okul-ilce="' + esc(o.ilce) + '" data-okul-tip="' + esc(o.tip) + '">' +
+      '<span class="ad">' + aramaVurgula(o.ad, kelimeler, o.vurgu) +
+      (o.ozel ? '<span class="ozel-rozet">Özel</span>' : '') + '</span>' +
+      '<span class="yer">' + esc(o.il) + ' / ' + esc(o.ilce) + ' · ' +
+      esc(o.resmiTur || o.tip) + '</span>' +
+      '</button>';
+  }
+  return h;
+}
+
 EYLEMLER['okul-ara-tekrar'] = function () { okulAramaBaslat(0); };
 EYLEMLER['okul-ara-genislet'] = function () {
   $('bIl').value = '';

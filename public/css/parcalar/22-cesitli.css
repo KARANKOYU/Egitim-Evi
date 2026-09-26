@@ -122,6 +122,20 @@
 .medya-oge { display: block; max-width: 100%; max-height: 70vh; }
 .medya-oge.ses { width: 100%; background: var(--kart); }
 
+/* Ödev serisi şeridi (öğrenci): iyi · uyarı · bozuk */
+.seri-serit { display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin-bottom: 16px;
+  border-radius: var(--r-kucuk); border: 1.5px solid var(--vurgu); background: var(--vurgu-acik); color: var(--vurgu-yazi); }
+.seri-serit.uyari { border-color: var(--turuncu); background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
+.seri-serit.bozuk { border-color: var(--cizgi-koyu); background: var(--gri-zemin); color: var(--yazi); }
+.seri-ikon { display: inline-flex; width: 44px; height: 44px; align-items: center; justify-content: center; flex: 0 0 auto;
+  border-radius: 50%; background: var(--kart); color: var(--turuncu); }
+.seri-ikon .ikon { width: 26px; height: 26px; }
+.seri-sayi { display: flex; flex-direction: column; align-items: center; line-height: 1.1; flex: 0 0 auto; }
+.seri-sayi b { font-family: var(--f-baslik); font-size: 30px; font-variant-numeric: tabular-nums; }
+.seri-sayi span { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.seri-yazi { font-weight: 600; font-size: 14.5px; line-height: 1.4; }
+.seri-yazi small { display: block; font-weight: 400; font-size: 12.5px; opacity: .85; margin-top: 2px; }
+
 /* Hatırlatıcı penceresi: sıklık ve gün seçimi yuvarlak düğmeler (içinde gerçek
    radyo/onay kutusu; klavye ve ekran okuyucu onu kullanır). */
 .secim-dugmeler { display: flex; flex-wrap: wrap; gap: 8px; }
