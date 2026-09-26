@@ -63,3 +63,20 @@ SAYFALAR['okul-ayarlari'] = function () {
   });
 };
 
+EYLEMLER['okul-adres-kaydet'] = function (el) {
+  var kutu = $('oaKisa');
+  alanTemizle(kutu.closest('.field'));
+  var kisa = kutu.value.trim().replace(/-+$/, '');
+  var sorun = okulAdresiSorunuTR(kisa);
+  if (sorun) { alanHatasi(kutu, sorun); return; }
+  if (okulAyar.veri && kisa === okulAyar.veri.kisaAd) { mesajGoster('oaMesaj', 'bilgi', 'Adres zaten bu.'); return; }
+  if (okulAyar.veri && okulAyar.veri.kisaAd &&
+      !confirm('Okulun adresi ' + location.host + '/' + kisa + ' olsun mu?\n\nEski adres (' + okulAyar.veri.kisaAd + ') çalışmaz olur.')) return;
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/school/adres', 'POST', { kisaAd: kisa }).then(function (d) {
+    S.user.schoolSlug = d.kisaAd;
+    okulYolunuAyarla();
+    return git('okul-ayarlari').then(function () { sayfaMesaji('iyi', d.message); });
+  })['catch'](function (e) { dugmeBitir(el); alanHatasi(kutu, e.message); });
+};
+
