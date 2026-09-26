@@ -1255,3 +1255,225 @@ ve sunucudan dışarı çıkmaz.
 
 ---
 
+## İnternete açma
+
+Uygulama LAN'da çalışacak şekilde tasarlandı ama internete de açılabilir.
+Alan adı + küçük bir VPS yeterli; adım adım anlatım **SUNUCUYA-KURULUM.md**
+dosyasında.
+
+Özetle: VPS kirala, alan adını IP'ye yönlendir, Node kur, uygulamayı kopyala,
+systemd servisi yap, önüne Caddy koy (HTTPS'i kendisi halleder).
+
+İnternete açınca `data/ayarlar.json` içinde iki şeyi ayarla:
+
+```json
+"site":  { "adres": "https://egitimevi.org" },
+"vekil": { "guven": true, "baslik": "x-forwarded-for" }
+```
+
+> **`vekil.guven` neden var?** Ters vekil arkasında her isteğin IP'si
+> `127.0.0.1` görünür; o hâlde bütün ziyaretçiler tek hız-sınırı sayacını
+> paylaşır ve koruma çöker. Bu ayar gerçek adresi vekilin başlığından okutur.
+> **Vekil arkasında değilken açma** — açıkken herkes başlığı uydurup sınırı aşar.
+
+İnternete açılınca uygulama olarak kurma, telefon bildirimi ve servisçinin konum
+göndermesi de çalışmaya başlar (üçü de HTTPS istiyor).
+
+### Yük ve saldırı koruması
+
+Uygulamanın kendi korumaları (vekil olmasa da çalışır):
+
+- IP başına dakikada 1500 API isteği, oturum başına 300; girişte kaba kuvvet kilidi ve bot sorusu.
+- Aynı anda en fazla 400 API isteği işlenir; olay döngüsü ortalama 150 ms'den fazla
+  gecikirse (sunucu boğuluyor) yeni API istekleri `503 Retry-After` ile geri çevrilir,
+  statik dosyalar ve açık işler sürer.
+- Gövdesi 30 saniyede gelmeyen istek kesilir (yavaş gönderim saldırısı); en fazla 1024
+  bağlantı, vekil yokken IP başına 256.
+- Dosya yüklemede okul başına aynı anda 20 yükleme ve en düşük hız sınırı.
+
+Bunlar tek sunucuyu korur; **gerçek DDoS'a** (binlerce makineden trafik) karşı sunucunun
+önüne **Cloudflare** (ücretsiz plan) koy: alan adının DNS'ini Cloudflare'e taşı, turuncu
+bulutu aç, SSL/TLS "Full (strict)", "Under Attack" modunu gerektiğinde aç, `/api/login`
+ve `/api/register` için hız kuralı ekle. O zaman `vekil.guven: true` ve
+`"baslik": "cf-connecting-ip"` yap. Ayrıntı **belge/SUNUCUYA-KURULUM.md**'de.
+
+---
+
+## Uyumluluk
+
+- Chrome, Firefox, Edge, Safari, Opera — hepsinde çalışır
+- Adres çubuğu sayfayı takip eder (`#/program` gibi) — tarayıcı geri tuşu
+  çalışır, sayfa yenilenince aynı yerde kalırsın
+- Telefon, tablet ve bilgisayar uyumlu — sol menü her ekranda ☰ butonuyla açılıp kapanır
+  (masaüstünde tercih hatırlanır)
+- **Reklam yok**, dış servis yok, internet bağlantısı gerekmez
+- Tek npm paketi `pg` (PostgreSQL sürücüsü); gerisi Node.js'in kendi kütüphaneleri
+
+---
+
+## Ekran görüntüleri
+
+`araclar/gezinti.js` her rolün bütün ekranlarını gerçek bir tarayıcıda gezer, özellikleri
+kullanır (pencereleri açar, süzgeç seçer, değer yazar) ve her adımın fotoğrafını çeker:
+açık tema, koyu tema ve telefon boyutu. Aynı sırada hata toplar (konsol hataları, 400+
+dönen istekler, yüklenirken kayma, bulunamayan düğmeler). Fotoğraflar JPEG; masaüstü 1,5
+kat, telefon 3 kat çözünürlükte (`EE_OLCEK=1` ile küçük çekilir).
+
+Çıktı depodaki `ekran-goruntuleri/` klasörüne yazılır: `index.html` ekranlarla kılavuzdur
+(önce müdürün gözünden bütün okul yönetimi, sonra her rol; her fotoğrafın altında ne
+gösterdiği anlatılır). Fotoğraflardaki bütün kişiler ve okullar test verisidir. Hata raporu
+(`hata-raporu.md`, adım başına API sayısı ve kayma) depoya girmeyen `testler/testdata/gezinti/`
+altına yazılır. Test sunucusu açıkken (tohum ve zengin veriyle):
+
+```
+export EE_BASE=http://localhost:3200 EE_LOG=testler/test-sunucu.log
+node araclar/zengin-veri.js      # dolu bir okul: sınıflar, program, ödevler, sınavlar
+node araclar/gorsel-veri.js      # çok rollü hesaplar, okul sayfası, etüt, servis, kulüp, anket
+node araclar/gezinti.js
+```
+
+Chrome ya da Edge'i başsız açar (DevTools protokolü); ayrı bir program kurmaya gerek yok.
+
+---
+
+## Test örneği çalıştırma
+
+Gerçek verine dokunmadan ayrı bir kopya çalıştırabilirsin:
+
+```
+EE_DATA=/tmp/egitimevi-test EE_ADMIN_SIFRE=admin123 PORT=3200 node sunucu/index.js
+```
+
+`EE_DATA` ayrı bir veri klasörü kullandırır, `PORT` farklı bir port açar.
+Bu örnekte e-posta ayarı olmayacağı için giriş kodları terminale yazılır.
+
+---
+
+## Dosyalar
+
+Kod ikiye ayrılır: **`sunucu/`** arka uç (Node.js, API, veri), **`public/`** ön yüz
+(tarayıcıda çalışan HTML/CSS/JS). Her dosyanın başında ne işe yaradığı yazar.
+
+```
+eğitim evi/
+├── ekran-goruntuleri/         ← ekranlarla kılavuz: index.html (müdürün gözünden her bölüm) ve fotoğraflar
+├── package.json               ← tek bağımlılık (pg) ve komutlar: start, veritabani-kur, eposta-ayarla, test
+├── server.js                  ← 3 satırlık kabuk: sunucu/index.js'i çağırır
+├── yapimcilar.json            ← "Yapımcılar" listesi (ad, GitHub kullanıcı adı, katkı)
+├── .gitignore                 ← data/ ve gizli dosyalar depoya girmez
+│
+├── sunucu/                    ← ARKA UÇ
+│   ├── index.js               ← giriş noktası: veriyi yükler, HTTP sunucuyu açar
+│   ├── api.js                 ← /api yönlendiricisi: isteği ilgili bölüme dağıtır
+│   ├── yollar.js              ← klasör yolları, port, dinleme adresi (EE_DATA, PORT, HOST)
+│   ├── ortak.js               ← sabitler ve küçük yardımcılar (ders listesi, iller, tarih, temizleme)
+│   ├── ayarlar.js             ← data/ayarlar.json (e-posta, site adresi, ters vekil)
+│   ├── veri/                  ← VERİ KATMANI (SQL yalnızca burada)
+│   │   ├── index.js           ← tek giriş noktası: depo, bildir, açılış, yedek
+│   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
+│   │   ├── sema.js            ← şema dosyalarını sırayla uygular
+│   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
+│   │   ├── sema/002...018     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
+│   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
+│   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
+│   │   │                        015 telefon ülke kodu, 016 e-posta onayı, 017 ödev yıldızı,
+│   │   │                        018 okul sayfası)
+│   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
+│   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
+│   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)
+│   │   ├── json-aktarim.js    ← eski db.json ve yedekler <-> veritabanı
+│   │   └── yedek.js           ← günlük yedek, geri yükleme
+│   ├── guvenlik.js            ← hız sınırı, kaba kuvvet kilidi, bot sorusu, 2FA, oturum
+│   ├── sifre.js               ← scrypt ile şifre özetleme
+│   ├── http.js                ← JSON cevap, gövde okuma, sıkıştırma, statik dosya, parça birleştirme
+│   ├── yetki.js               ← roller, yetkiler, kapsam, dışarı verilen kullanıcı görünümü
+│   ├── iliskiler.js           ← kim kimin öğretmeni; sınıf, ders, program yardımcıları
+│   ├── okullar.js             ← MEB okul listesi ve arama
+│   ├── hatirlatma.js          ← ders/ödev hatırlatma bildirimleri
+│   ├── push.js                ← telefon bildirimi: RFC 8291 şifreleme, VAPID, gönderim kuyruğu
+│   ├── site.js                ← /api/site: açılış sayfası rakamları, data/config.yml'deki iletişim
+│   ├── bolumler/              ← her bölüm kendi uçlarını sunar (uclar(k))
+│   │   ├── kayit.js           ← kayıt, giriş, şifre, profil, bildirimler
+│   │   ├── kisilik.js         ← yetişkin hesabı: rol seçimi, Ekle, öğretmen kodu, hesap bilgisi, hesabı sil
+│   │   ├── yonetici.js        ← /api/admin: onaylar, okullar, yedekler
+│   │   ├── yonetici-okul.js   ← /api/admin/okul-ac: yöneticinin okul açması
+│   │   ├── okul-sayfasi.js    ← /api/okul-sayfa, /api/okul-foto: okulun giriş sayfası
+│   │   ├── okul.js            ← /api/school: sınıf, ders, program, roller, ders programı Excel'i
+│   │   ├── hesaplar.js        ← /api/school: öğrenci/servisçi hesabı, öğretmeni kodla ekleme, veli bağlama, okul adresi
+│   │   ├── kisi-aktarim.js    ← /api/school: kişi listesi şablonu, içeri/dışarı aktarım, metinden Excel
+│   │   ├── okul-hayati.js     ← /api/yemek, /api/servis (harita, sefer, konum), /api/kulupler
+│   │   ├── anket.js           ← /api/anketler
+│   │   ├── odev-dosya.js      ← /api/odev-dosya: teslim dosyası yükleme ve indirme
+│   │   ├── push.js            ← /api/push: bildirim aboneliği
+│   │   ├── odev.js            ← /api/assignments
+│   │   ├── sinav.js           ← /api/examgroups, /api/exams
+│   │   ├── ilerleyis.js       ← /api/progress, /api/myschedule
+│   │   ├── veli.js            ← /api/parent
+│   │   ├── ogretmen.js        ← /api/teacher
+│   │   ├── egitim-yili.js     ← /api/egitim-yili
+│   │   ├── takvim.js          ← /api/takvim
+│   │   ├── islem-kaydi.js     ← /api/islem-kaydi
+│   │   ├── devamsizlik.js     ← /api/devamsizlik
+│   │   ├── etut.js            ← /api/etut: etüt açma, öğrencileri, yoklama
+│   │   └── mesaj.js           ← /api/mesajlar
+│   └── yardimci/
+│       ├── xlsx.js            ← Excel okuma/yazma (zip + XML, sıfır bağımlılık)
+│       ├── aktarim.js         ← Excel sütun eşleme ve doğrulama
+│       ├── tablo-oku.js       ← XLSX, XLS, ODS, CSV ve düz metin listesini okur
+│       ├── xls.js             ← eski Excel (.xls, 97-2003) okuyucu: birleşik belge + BIFF8
+│       ├── kucult.js          ← tarayıcıya giden JS/CSS'ten yorumları atar
+│       ├── css-temizle.js     ← okul sayfasının kısıtlı CSS'i: izinli seçici/özellik/değer
+│       ├── resim.js           ← fotoğraf türü (ilk baytlar) ve konum bilgisini silme
+│       └── eposta.js          ← SMTP istemcisi
+│
+├── public/                    ← ÖN YÜZ (tarayıcıya giden her şey)
+│   ├── index.html             ← giriş ekranı + uygulama iskeleti
+│   ├── kvkk.html              ← aydınlatma metni
+│   ├── manifest.json, sw.js   ← telefona kurulabilir uygulama (PWA)
+│   ├── js/tema.js             ← açık/koyu tema; sayfa çizilmeden önce çalışır
+│   ├── js/parcalar/           ← arayüz mantığı, 48 parça (00-durum ... 28-grafik; 04c-telefon, 19g-okul-sayfasi)
+│   ├── css/parcalar/          ← stiller, 33 parça (00-temel: renk/tema değişkenleri)
+│   └── yazitipi/              ← IBM Plex Sans ve Newsreader (woff2, kendi sunucumuzdan)
+│
+├── data/                      ← VERİ (depoya girmez)
+│   ├── ayarlar.json           ← veritabanı bağlantısı ve e-posta (SMTP) ayarları
+│   ├── push-anahtar.json      ← telefon bildirimi anahtar çifti (ilk açılışta üretilir; yedekle)
+│   ├── dosyalar/              ← ödev teslim dosyaları
+│   ├── okul-fotolari/         ← okul sayfalarının fotoğrafları (konum bilgisi silinmiş)
+│   ├── config.yml             ← sitenin iletişim bilgileri (örneği belge/config.ornek.yml)
+│   ├── okullar.json           ← 67.661 okulluk arama listesi (sunucuya ayrıca kopyalanır)
+│   └── yedek/                 ← günlük yedekler
+│
+├── araclar/                   ← yardımcı araçlar (elle çalıştırılır)
+│   ├── eposta-ayarla.js       ← e-posta kurulum sihirbazı
+│   ├── veritabani-kur.js      ← ilk kurulum: PostgreSQL kullanıcısı ve veritabanları
+│   ├── yazitipi-indir.js      ← yazı tiplerini indirir, @font-face üretir
+│   ├── gezinti.js             ← her rolün ekranlarını gerçek tarayıcıda gezer, fotoğraflar, hata toplar
+│   ├── tema-ornekleri.js      ← tema seçim sayfasının örnek görüntüleri
+│   ├── zengin-veri.js         ← ekran görüntüleri için dolu bir okul
+│   ├── gorsel-veri.js         ← ekran görüntüleri için ek veri: çok rollü hesaplar, okul sayfası, etüt, servis
+│   └── giris.js               ← araçların ortak giriş yardımcısı (2FA kodunu günlükten okur)
+│
+├── testler/                   ← TESTLER ve DENETİMLER
+│   ├── tumtest.sh             ← hepsini koşturur (1000'i aşkın test + 5 denetim), egitimevi_test üzerinde
+│   ├── test-*.js              ← paket paket uç testleri
+│   ├── test-ayarlari.js       ← testlere test veritabanı bağlantısını yazar
+│   ├── sql-denetimi.js        ← SQL metnine kullanıcı değeri karışıyor mu
+│   ├── yetki-denetimi.js      ← her uç × her rol: yetkisiz geçen var mı
+│   ├── girdi-denetimi.js      ← bozuk/kötü niyetli veriyle 500 var mı
+│   ├── yazim-denetimi.js      ← Türkçe yazım ve karaktersiz metin
+│   └── buton-denetimi.js      ← ölü düğme, ölü kod, tanımsız API yolu
+│
+├── belge/                     ← BELGELER
+│   ├── KILAVUZ.md             ← bu dosya: kurulum ve her bölümün ayrıntısı
+│   ├── SUNUCUYA-KURULUM.md    ← internete açma rehberi (Linux VPS + egitimevi.org)
+│   ├── config.ornek.yml       ← data/config.yml örneği (iletişim bilgileri)
+│   ├── NASIL-YAPILDI.html     ← projenin nasıl yazıldığının hikâyesi
+│   └── ekran-goruntuleri/     ← albüm (üretilir, depoya girmez)
+│
+└── tasarim/                   ← tasarım denemeleri (uygulamaya girmez)
+    ├── tema-secimi.html       ← renk/font/köşe/hareket seçme sayfası
+    └── ornekler/              ← seçilmiş kombinasyonların görüntüleri
+```
+
