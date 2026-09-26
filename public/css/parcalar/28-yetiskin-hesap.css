@@ -49,6 +49,23 @@
 .ne-sec input:checked + span { border-color: var(--ana); background: var(--ana-acik); color: var(--ana-koyu); }
 .ne-sec input:focus-visible + span { box-shadow: 0 0 0 3px var(--odak); }
 
+/* ================= el çizimleri (02b-cizimler.js) ================= */
+.cizim { width: 56px; height: 56px; flex: 0 0 auto; overflow: visible; }
+.cizim .c-cizgi, .cizim .c-vurgu {
+  fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+}
+.cizim .c-cizgi { stroke: currentColor; }
+.cizim .c-vurgu { stroke: var(--ana); }
+.cizim .c-dolgu { fill: var(--ana-acik); stroke: none; }
+.cizim .c-vurgu-dolgu { fill: var(--ana); stroke: none; }
+.cizim .c-sari-dolgu { fill: var(--vurgu); stroke: none; }
+.cizim .c-tahta { fill: var(--ikinci-koyu); stroke: none; }
+.cizim .c-tebesir, .cizim .c-yaprak {
+  fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+}
+.cizim .c-tebesir { stroke: var(--kart); }
+.cizim .c-yaprak { stroke: var(--ikinci); }
+
 /* açılış sayfası */
 .vitrin-kim-cizim { display: block; margin-bottom: 12px; color: var(--yazi); }
 .vitrin-kim-cizim .cizim { width: 64px; height: 64px; }
