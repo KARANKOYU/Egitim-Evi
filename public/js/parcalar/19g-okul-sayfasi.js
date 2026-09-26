@@ -182,3 +182,161 @@ SAYFALAR['okul-sayfasi'] = function () {
   });
 };
 
+/* Renk seçici boş olamaz; "varsayılan" seçiliyken sitenin rengini gösterir. */
+function osVarsayilanRenk(anahtar) {
+  var ad = { renk: '--ana', zemin: '--kart', yazi: '--yazi' }[anahtar];
+  var v = getComputedStyle(document.documentElement).getPropertyValue(ad).trim().toLowerCase();
+  if (/^#[0-9a-f]{3}$/.test(v)) v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+  return OS_RENK.test(v) ? v : '#000000';
+}
+
+function osAyarlariOku() {
+  var renk = function (k) {
+    var el = $('osRenk-' + k);
+    return el && el.getAttribute('data-secildi') === '1' ? el.value.toLowerCase() : '';
+  };
+  return {
+    renk: renk('renk'), zemin: renk('zemin'), yazi: renk('yazi'),
+    baslikBoyu: $('osBaslik').value, kapakBoyu: $('osKapak').value, hiza: $('osHiza').value,
+    genislik: $('osGenislik').value, galeriSutun: $('osSutun').value
+  };
+}
+
+function osOnizlemeCiz() {
+  var kap = $('osOnizleme');
+  if (!kap || !OS.veri) return;
+  var ayar = osAyarlariOku();
+  kap.className = 'okul-sayfa genislik-' + ayar.genislik;
+  kap.innerHTML = okulSayfasiHtml({ tanitim: $('osTanitim').value, ayarlar: ayar, fotolar: OS.veri.fotolar }, OS.veri.okul);
+  okulSayfaStiliYaz(OS.temizCss);
+}
+
+function osTanitimSayac() {
+  $('osTanitimSayac').textContent = $('osTanitim').value.length + ' / 1500.';
+}
+
+EYLEMLER['os-renk-sifirla'] = function (el, anahtar) {
+  var kutu = $('osRenk-' + anahtar);
+  kutu.removeAttribute('data-secildi');
+  kutu.value = osVarsayilanRenk(anahtar);
+  $('osRenkDurum-' + anahtar).textContent = 'Varsayılan';
+  osOnizlemeCiz();
+};
+
+/* ---- fotoğraflar ---- */
+function osFotolariCiz() {
+  var fotolar = OS.veri.fotolar;
+  var tek = function (yer, ad) {
+    var f = fotolar.filter(function (x) { return x.yer === yer; })[0];
+    return '<div class="os-foto-satir">' +
+      (f ? '<img class="os-kucuk" src="/api/okul-foto/' + esc(f.id) + '" alt="">' : '<div class="os-kucuk bos">' + ik('okul') + '</div>') +
+      '<div class="buyu"><div class="ad">' + ad + '</div><div class="alt">' + (f ? 'Yüklendi' : 'Yok') + '</div></div>' +
+      '<button type="button" class="btn kucuk gri" data-act="os-foto-sec" data-id="' + yer + '">' + (f ? 'Değiştir' : 'Yükle') + '</button>' +
+      (f ? '<button type="button" class="btn kucuk gri" data-act="os-foto-sil" data-id="' + esc(f.id) + '">Sil</button>' : '') +
+      '</div>';
+  };
+  var galeri = fotolar.filter(function (x) { return x.yer === 'galeri'; });
+  var h = tek('kapak', 'Kapak fotoğrafı') + tek('logo', 'Logo');
+  h += '<h4 class="alt-baslik" style="margin-top:14px">Galeri (' + galeri.length + ' / 8)</h4>';
+  h += galeri.map(function (f) {
+    return '<div class="os-foto-satir"><img class="os-kucuk" src="/api/okul-foto/' + esc(f.id) + '" alt="">' +
+      '<div class="buyu field"><input type="text" class="os-aciklama" data-foto="' + esc(f.id) + '" maxlength="120"' +
+      ' value="' + esc(f.aciklama) + '" placeholder="Açıklama (ör. Bilim fuarı 2026)" aria-label="Fotoğrafın açıklaması"></div>' +
+      '<button type="button" class="btn kucuk gri" data-act="os-foto-sil" data-id="' + esc(f.id) + '">Sil</button></div>';
+  }).join('');
+  if (galeri.length < 8) h += '<button type="button" class="btn kucuk gri" data-act="os-foto-sec" data-id="galeri">Galeriye fotoğraf ekle</button>';
+  $('osFotolar').innerHTML = h;
+  var kutular = document.querySelectorAll('.os-aciklama');
+  for (var i = 0; i < kutular.length; i++) {
+    kutular[i].addEventListener('change', function () {
+      var id = this.getAttribute('data-foto'), deger = this.value.trim();
+      api('/okul-sayfa/foto-aciklama', 'POST', { id: id, aciklama: deger }).then(function () {
+        OS.veri.fotolar.forEach(function (f) { if (f.id === id) f.aciklama = deger; });
+        osOnizlemeCiz();
+      })['catch'](function (e) { mesajGoster('osFotoMesaj', 'hata', e.message); });
+    });
+  }
+}
+
+EYLEMLER['os-foto-sec'] = function (el, yer) {
+  OS.yuklenecekYer = yer;
+  $('osDosya').value = '';
+  $('osDosya').click();
+};
+
+function osDosyaSecildi() {
+  var dosya = this.files && this.files[0];
+  if (!dosya) return;
+  if (['image/png', 'image/jpeg', 'image/webp'].indexOf(dosya.type) < 0) {
+    mesajGoster('osFotoMesaj', 'hata', 'Yalnızca PNG, JPEG ya da WebP fotoğraf yüklenebilir.');
+    return;
+  }
+  if (dosya.size > 3 * 1024 * 1024) {
+    mesajGoster('osFotoMesaj', 'hata', 'Fotoğraf 3 MB\'tan büyük. Telefonda küçültüp ya da ekran görüntüsünü alıp yeniden dene.');
+    return;
+  }
+  mesajGoster('osFotoMesaj', 'bilgi', 'Yükleniyor...');
+  fetch('/api/okul-sayfa/foto?yer=' + encodeURIComponent(OS.yuklenecekYer), {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + S.token, 'Content-Type': dosya.type },
+    body: dosya
+  }).then(function (r) {
+    return r.json()['catch'](function () { return {}; }).then(function (j) {
+      if (!r.ok) throw new Error(j.error || ('Yüklenemedi (' + r.status + ')'));
+      return j;
+    });
+  }).then(function (j) {
+    if (j.foto.yer !== 'galeri') {
+      OS.veri.fotolar = OS.veri.fotolar.filter(function (f) { return f.yer !== j.foto.yer; });
+    }
+    OS.veri.fotolar.push(j.foto);
+    $('osFotoMesaj').innerHTML = '';
+    osFotolariCiz();
+    osOnizlemeCiz();
+    S.okulAdresi = null;   // giriş sayfası yenisini alsın
+  })['catch'](function (e) { mesajGoster('osFotoMesaj', 'hata', e.message); });
+}
+
+EYLEMLER['os-foto-sil'] = function (el, id) {
+  if (!confirm('Fotoğraf silinsin mi?')) return;
+  return api('/okul-sayfa/foto-sil', 'POST', { id: id }).then(function () {
+    OS.veri.fotolar = OS.veri.fotolar.filter(function (f) { return f.id !== id; });
+    osFotolariCiz();
+    osOnizlemeCiz();
+    S.okulAdresi = null;
+  })['catch'](hataGoster);
+};
+
+/* ---- CSS ---- */
+function osUyarilariCiz(uyarilar) {
+  $('osUyarilar').innerHTML = uyarilar.length
+    ? '<div class="msg uyari os-uyarilar"><b>Atılan kısımlar</b><ul>' + uyarilar.map(function (u) {
+      return '<li>' + esc(u) + '</li>';
+    }).join('') + '</ul></div>'
+    : '';
+}
+
+EYLEMLER['os-css-onizle'] = function (el) {
+  dugmeBekle(el, 'Deneniyor...');
+  return api('/okul-sayfa/onizle', 'POST', { css: $('osCss').value }).then(function (d) {
+    dugmeBitir(el);
+    OS.temizCss = d.css;
+    osUyarilariCiz(d.uyarilar);
+    osOnizlemeCiz();
+    if (!d.uyarilar.length) mesajGoster('osUyarilar', 'iyi', 'CSS\'in tamamı kullanılabiliyor. Kalıcı olması için Kaydet\'e bas.');
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('osUyarilar', 'hata', e.message); });
+};
+
+EYLEMLER['os-kaydet'] = function (el) {
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/okul-sayfa', 'POST', { ayarlar: osAyarlariOku(), tanitim: $('osTanitim').value, css: $('osCss').value })
+    .then(function (d) {
+      dugmeBitir(el);
+      OS.temizCss = d.temizCss;
+      osUyarilariCiz(d.uyarilar);
+      osOnizlemeCiz();
+      S._sayfaDegisti = false;
+      S.okulAdresi = null;
+      mesajGoster('osMesaj', 'iyi', d.message);
+    })['catch'](function (e) { dugmeBitir(el); mesajGoster('osMesaj', 'hata', e.message); });
+};
