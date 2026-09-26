@@ -41,6 +41,14 @@
 }
 .site-menu > a:hover, .site-yapimci:hover, .site-yapimci[aria-expanded="true"] { background: var(--ana-acik); color: var(--ana-koyu); }
 
+/* Ay/güneş: açık görünümde ay (koyuya geç), koyuda güneş (açığa geç). */
+.site-tema {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0 10px;
+  border: 0; border-radius: var(--r-mini); background: transparent; color: var(--yazi); cursor: pointer;
+}
+.site-tema:hover { background: var(--ana-acik); color: var(--ana-koyu); }
+.site-tema .ikon { width: 21px; height: 21px; }
+
 /* Yapımcılar: düğmenin altında açılan liste. */
 .yapimci-kutu { position: relative; }
 .yapimci-liste {

@@ -26,6 +26,18 @@
 .iconbtn { display: inline-flex; align-items: center; gap: 6px; }
 .iconbtn .ikon { width: 19px; height: 19px; }
 
+/* Tema düğmesi: görünen temanın tersini gösterir. Seçim html[data-tema]
+   ya da (seçim yoksa) işletim sisteminin tercihidir; betik beklemeden doğru çizilir. */
+.tema-dugme .tema-gunes { display: none; }
+:root[data-tema="koyu"] .tema-dugme .tema-gunes { display: block; }
+:root[data-tema="koyu"] .tema-dugme .tema-ay { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="acik"]) .tema-dugme .tema-gunes { display: block; }
+  :root:not([data-tema="acik"]) .tema-dugme .tema-ay { display: none; }
+}
+.hamburger .ikon { width: 22px; height: 22px; }
+.search .ico .ikon { width: 17px; height: 17px; opacity: .55; }
+
 /* Kutucuklardaki filigran ikon */
 .kutucuk .kutucuk-ikon .ikon { width: 62px; height: 62px; stroke-width: 1.4; }
 
