@@ -128,3 +128,266 @@ function teslimKapali(a) {
   return '';
 }
 
+/* Ödevi yönetir mi: ödevi veren öğretmen ya da okulun müdürü. */
+const yonetir = (me, a) => a.teacherId === me.id || (me.role === 'principal' && a.schoolId === me.schoolId);
+
+/* Kişi bu öğrencinin bu ödevdeki dosyalarını görebilir mi? */
+async function gorebilir(me, a, ogrenciId) {
+  if (a.studentIds.indexOf(ogrenciId) < 0) return false;
+  if (me.id === ogrenciId) return true;
+  if (yonetir(me, a)) return true;
+  return me.role !== 'student' && depo.kullanicilar.bagliMi(me.id, ogrenciId);
+}
+
+const gorunum = d => ({ id: d.id, ad: d.ad, boyut: Number(d.boyut), yuklenme: d.yuklenme,
+  bitis: new Date(new Date(d.yuklenme).getTime() + SAKLAMA_GUN * 24 * 60 * 60 * 1000).toISOString(),
+  ogrenciId: d.ogrenci_id, ogrenci: d.ogrenci_adi || '' });
+
+async function bosYer() {
+  try {
+    const s = await fs.promises.statfs(KLASOR);
+    return s.bavail * s.bsize;
+  } catch (e) { return null; }
+}
+
+/* Reddedilen yüklemede gövdenin geri kalanı okunmaz: cevap yazılır, bağlantı
+   kısa süre sonra kapatılır (istemci cevabı görebilsin). */
+function reddet(req, res, mesaj, kod) {
+  if (res.headersSent || res.destroyed) return;
+  res.setHeader('Connection', 'close');
+  bad(res, mesaj, kod || 400);
+  if (!req.complete) {
+    try { req.pause(); } catch (e) { /* yoksay */ }
+    setTimeout(() => { try { req.destroy(); } catch (e) { /* yoksay */ } }, 1500);
+  }
+}
+
+/* İstek gövdesini diske yazar; boyut, CRC32 ve SHA-256 akarken hesaplanır. */
+function akisiYaz(req, hedef, beklenen) {
+  return new Promise((resolve, reject) => {
+    const ozet = crypto.createHash('sha256');
+    const yazici = fs.createWriteStream(hedef, { flags: 'wx', mode: 0o600 });
+    let crc = 0, n = 0, bitti = false, bosta = null;
+    const bas = Date.now();
+    const toplamSure = setTimeout(() => bitir(hataYap('Yükleme çok uzun sürdü', 408)), EN_UZUN_MS);
+    const bostaKur = () => {
+      clearTimeout(bosta);
+      bosta = setTimeout(() => bitir(hataYap('Bağlantı koptu, yükleme yarıda kaldı', 408)), BOSTA_MS);
+    };
+    function hataYap(m, kod) { const e = new Error(m); e.kod = kod; return e; }
+    function bitir(hata, sonuc) {
+      if (bitti) return;
+      bitti = true;
+      clearTimeout(bosta);
+      clearTimeout(toplamSure);
+      if (hata) {
+        yazici.destroy();
+        fs.unlink(hedef, () => {});
+        return reject(hata);
+      }
+      resolve(sonuc);
+    }
+    bostaKur();
+    req.on('data', parca => {
+      if (bitti) return;
+      n += parca.length;
+      if (n > beklenen) return bitir(hataYap('Dosya bildirilen boyuttan büyük', 400));
+      const gecen = (Date.now() - bas) / 1000;
+      if (gecen > 60 && n / gecen < EN_AZ_HIZ) {
+        return bitir(hataYap('Bağlantı çok yavaş, yükleme kesildi. Daha iyi bir bağlantıyla yeniden dene.', 408));
+      }
+      ozet.update(parca);
+      crc = zlib.crc32(parca, crc);
+      bostaKur();
+      if (!yazici.write(parca)) {
+        req.pause();
+        yazici.once('drain', () => { if (!bitti) req.resume(); });
+      }
+    });
+    req.on('end', () => {
+      if (bitti) return;
+      if (n !== beklenen) return bitir(hataYap('Yükleme yarıda kaldı', 400));
+      yazici.end(() => bitir(null, { boyut: n, crc32: crc >>> 0, sha256: ozet.digest('hex') }));
+    });
+    req.on('close', () => { if (!req.complete) bitir(hataYap('Yükleme yarıda kesildi', 400)); });
+    req.on('error', () => bitir(hataYap('Yükleme yarıda kesildi', 400)));
+    yazici.on('error', () => bitir(hataYap('Dosya kaydedilemedi', 500)));
+  });
+}
+
+/* POST /api/odev-dosya/yukle?odev=ID  gövde: dosyanın kendisi
+   Başlıklar: Content-Length (zorunlu), X-Dosya-Adi (encodeURIComponent). */
+async function yukle(k) {
+  const { req, res, me, q } = k;
+  if (!me) return reddet(req, res, 'Giriş yapmalısın', 401);
+  if (!k.kvkkGuncel) return reddet(req, res, 'Aydınlatma metni güncellendi. Devam etmek için okuyup onaylaman gerekiyor.', 403);
+  if (!k.sifreTamam) return reddet(req, res, 'Önce kendi şifreni belirle.', 403);
+  if (me.status !== 'approved' || me.role !== 'student') return reddet(req, res, 'Ödeve yalnızca öğrenci dosya yükler', 403);
+  if (!hizSinir('dosyaYukle:' + me.id, 60, 60 * 60 * 1000)) return reddet(req, res, 'Bu saat içinde çok fazla dosya yükledin.', 429);
+
+  const a = await depo.odevler.bul(clean(q.get('odev'), 60));
+  if (!a || a.studentIds.indexOf(me.id) < 0) return reddet(req, res, 'Ödev bulunamadı', 404);
+  const kapali = teslimKapali(a);
+  if (kapali) return reddet(req, res, kapali);
+
+  const boyut = Number(req.headers['content-length']);
+  if (!Number.isSafeInteger(boyut) || boyut <= 0) return reddet(req, res, 'Dosya boş ya da boyutu bildirilmedi', 411);
+  if (boyut > DOSYA_SINIR) return reddet(req, res, 'Bir dosya en fazla 150 MB olabilir', 413);
+  const ad = dosyaAdi(req.headers['x-dosya-adi']);
+  if (!ad) return reddet(req, res, 'Dosya adı geçersiz');
+  if (!UZANTILAR.has(uzanti(ad))) {
+    return reddet(req, res, 'Bu dosya türü yüklenemez. PDF, Word, Excel, sunum, resim, ses, video ya da zip yükleyebilirsin.', 415);
+  }
+
+  const onceki = await depo.odevDosyalari.odevin(a.id, me.id);
+  if (onceki.length >= OGRENCI_SINIR.adet) return reddet(req, res, 'Bir ödeve en fazla ' + OGRENCI_SINIR.adet + ' dosya yükleyebilirsin');
+  if (onceki.reduce((t, d) => t + Number(d.boyut), 0) + boyut > OGRENCI_SINIR.toplam) {
+    return reddet(req, res, 'Bir ödeve yüklediğin dosyaların toplamı en fazla 150 MB olabilir', 413);
+  }
+  const okulToplam = Number(await depo.odevDosyalari.okulToplami(a.schoolId));
+  await fs.promises.mkdir(KLASOR, { recursive: true });
+  const bos = await bosYer();
+
+  /* Buradan ayırmaya kadar await yok: iki yükleme aynı boş yeri paylaşamaz. */
+  if (okulToplam + (suren.okulBayt.get(a.schoolId) || 0) + boyut > OKUL_SINIR) {
+    return reddet(req, res, 'Okulun dosya alanı doldu. Öğretmenine haber ver.', 507);
+  }
+  if (bos !== null && bos - suren.bayt - boyut < BOS_YER_PAYI) return reddet(req, res, 'Sunucuda yer kalmadı. Biraz sonra dene.', 507);
+  if ((suren.kisi.get(me.id) || 0) >= AYNI_ANDA_KISI || (suren.okul.get(a.schoolId) || 0) >= AYNI_ANDA_OKUL ||
+      suren.toplam >= AYNI_ANDA_TOPLAM) {
+    return reddet(req, res, 'Aynı anda çok fazla yükleme var. Biri bitince dene.', 429);
+  }
+  ayir(me.id, a.schoolId, boyut);
+
+  const id = crypto.randomBytes(16).toString('hex');
+  const gecici = path.join(KLASOR, id + '.yukleniyor');
+  const kalici = path.join(KLASOR, id);
+  try {
+    let sonuc;
+    try {
+      sonuc = await akisiYaz(req, gecici, boyut);
+    } catch (e) {
+      return reddet(req, res, e.message, e.kod || 400);
+    }
+    /* Yükleme sürerken ödev sonuçlandırılmış, silinmiş ya da süre çoktan
+       dolmuş olabilir: son durum yeniden okunur. */
+    const simdiki = await depo.odevler.bul(a.id);
+    const bitis = simdiki && odevBitisAni(simdiki);
+    if (!simdiki || simdiki.status !== 'active' || (bitis && Date.now() > bitis.getTime() + TESLIM_PAYI_MS)) {
+      await fs.promises.unlink(gecici).catch(() => {});
+      return bad(res, 'Teslim kapandı; dosya kaydedilmedi.');
+    }
+    await fs.promises.rename(gecici, kalici);
+    const durum = await depo.odevDosyalari.ekle({ id, odevId: a.id, ogrenciId: me.id, ad,
+      boyut: sonuc.boyut, crc32: sonuc.crc32, sha256: sonuc.sha256 }, OGRENCI_SINIR);
+    if (durum !== 'tamam') {
+      await fs.promises.unlink(kalici).catch(() => {});
+      return bad(res, { yok: 'Ödev bulunamadı', sayi: 'Bir ödeve en fazla ' + OGRENCI_SINIR.adet + ' dosya yükleyebilirsin',
+        boyut: 'Bir ödeve yüklediğin dosyaların toplamı en fazla 150 MB olabilir' }[durum], durum === 'yok' ? 404 : 400);
+    }
+    return ok(res, { dosya: { id, ad, boyut: sonuc.boyut, yuklenme: new Date().toISOString() }, message: ad + ' yüklendi.' });
+  } finally {
+    birak(me.id, a.schoolId, boyut);
+  }
+}
+
+/* Dosyayı "ek" olarak gönderir: tarayıcı açmaz, indirir. */
+function ekBasliklari(ad, boyut) {
+  const ascii = ad.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  const b = baslikEkle({
+    'Content-Type': 'application/octet-stream',
+    'Content-Disposition': 'attachment; filename="' + ascii + '"; filename*=UTF-8\'\'' + encodeURIComponent(ad),
+    'Cache-Control': 'private, no-store',
+    'X-Content-Type-Options': 'nosniff'
+  });
+  b['Content-Security-Policy'] = "default-src 'none'; sandbox";
+  if (boyut !== undefined) b['Content-Length'] = boyut;
+  return b;
+}
+
+/* ---------------- zip (sıkıştırmasız, akışla) ----------------
+   Dosyaların boyutu ve CRC32'si yüklemede hesaplandığı için başlıklar önceden
+   yazılabilir; dosyalar belleğe alınmadan sırayla diskten akar. */
+function dosDamga(iso) {
+  const d = new Date(iso);
+  const saat = (d.getHours() << 11) | (d.getMinutes() << 5) | Math.floor(d.getSeconds() / 2);
+  const gun = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  return { saat, gun };
+}
+
+function yerelBaslik(g) {
+  const b = Buffer.alloc(30);
+  b.writeUInt32LE(0x04034b50, 0); b.writeUInt16LE(20, 4); b.writeUInt16LE(0x0800, 6); b.writeUInt16LE(0, 8);
+  b.writeUInt16LE(g.damga.saat, 10); b.writeUInt16LE(g.damga.gun, 12); b.writeUInt32LE(g.crc, 14);
+  b.writeUInt32LE(g.boyut, 18); b.writeUInt32LE(g.boyut, 22); b.writeUInt16LE(g.ad.length, 26); b.writeUInt16LE(0, 28);
+  return Buffer.concat([b, g.ad]);
+}
+
+function merkezBaslik(g) {
+  const b = Buffer.alloc(46);
+  b.writeUInt32LE(0x02014b50, 0); b.writeUInt16LE(20, 4); b.writeUInt16LE(20, 6); b.writeUInt16LE(0x0800, 8);
+  b.writeUInt16LE(0, 10); b.writeUInt16LE(g.damga.saat, 12); b.writeUInt16LE(g.damga.gun, 14); b.writeUInt32LE(g.crc, 16);
+  b.writeUInt32LE(g.boyut, 20); b.writeUInt32LE(g.boyut, 24); b.writeUInt16LE(g.ad.length, 28);
+  b.writeUInt32LE(g.konum, 42);
+  return Buffer.concat([b, g.ad]);
+}
+
+function zipAdi(metin) {
+  return String(metin || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim() || 'adsiz';
+}
+
+async function zipGonder(res, a, dosyalar) {
+  const girdiler = [];
+  const kullanilan = new Set();
+  let konum = 0;
+  for (const d of dosyalar) {
+    const yol = path.join(KLASOR, d.id);
+    let st;
+    try { st = await fs.promises.stat(yol); } catch (e) { continue; }
+    if (st.size !== Number(d.boyut)) continue;        // bozuk ya da yarım dosya zipe girmez
+    let ad = zipAdi(d.ogrenci_adi) + '/' + zipAdi(d.ad);
+    for (let i = 2; kullanilan.has(ad.toLocaleLowerCase('tr')); i++) {
+      const u = uzanti(d.ad);
+      ad = zipAdi(d.ogrenci_adi) + '/' + zipAdi(u ? d.ad.slice(0, -(u.length + 1)) : d.ad) + ' (' + i + ')' + (u ? '.' + u : '');
+    }
+    kullanilan.add(ad.toLocaleLowerCase('tr'));
+    const g = { yol, ad: Buffer.from(ad, 'utf8'), boyut: st.size, crc: Number(d.crc32) >>> 0, damga: dosDamga(d.yuklenme), konum };
+    konum += 30 + g.ad.length + g.boyut;
+    girdiler.push(g);
+  }
+  if (!girdiler.length) return bad(res, 'İndirilecek dosya yok', 404);
+  const merkez = Buffer.concat(girdiler.map(merkezBaslik));
+  if (konum + merkez.length + 22 > ZIP_SINIR || girdiler.length > 65000) {
+    return bad(res, 'Dosyalar tek zip için çok büyük; öğrenci öğrenci indir.', 413);
+  }
+  const son = Buffer.alloc(22);
+  son.writeUInt32LE(0x06054b50, 0); son.writeUInt16LE(girdiler.length, 8); son.writeUInt16LE(girdiler.length, 10);
+  son.writeUInt32LE(merkez.length, 12); son.writeUInt32LE(konum, 16);
+
+  res.writeHead(200, ekBasliklari(zipAdi(a.title) + ' - teslimler.zip', konum + merkez.length + 22));
+  let koptu = false;
+  res.on('close', () => { koptu = true; });
+  /* Geri basınç: yazma tamponu dolunca "drain" ya da "close" beklenir. Kaybeden
+     bekleyici iptal edilir; yoksa her beklemede bir dinleyici birikirdi. */
+  const yaz = async parca => {
+    if (res.write(parca)) return;
+    const iptal = new AbortController();
+    const bekle = ad => once(res, ad, { signal: iptal.signal }).catch(() => {});
+    try { await Promise.race([bekle('drain'), bekle('close')]); } finally { iptal.abort(); }
+  };
+  try {
+    for (const g of girdiler) {
+      if (koptu) return;
+      await yaz(yerelBaslik(g));
+      for await (const parca of fs.createReadStream(g.yol)) {
+        if (koptu) return;
+        await yaz(parca);
+      }
+    }
+    res.end(Buffer.concat([merkez, son]));
+  } catch (e) {
+    /* Başlık gitti; yarım zip bırakmak yerine bağlantı kesilir. */
+    res.destroy();
+  }
+}
+
