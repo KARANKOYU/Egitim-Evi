@@ -191,6 +191,21 @@ function adDuzelt(ad) {
     .replace(/(^|[\s\-'’])(\p{L})/gu, (m, once, harf) => once + harf.toLocaleUpperCase('tr'));
 }
 
+/* Telefon uluslararası biçimde (E.164) saklanır: "+905321234567". Ülke kodu
+   yazılmamışsa Türkiye numarası sayılır: "0532...", "532...", "90532...". */
+function normTelefon(t) {
+  let s = metinYap(t).replace(/[\s()\-./]/g, '');
+  if (!s) return '';
+  if (s.indexOf('00') === 0) s = '+' + s.slice(2);
+  if (s[0] === '+') return s;
+  /* 0 ile başlayan her yazım Türkiye numarası: hane sayısı yanlışsa
+     telefonSorunu "10 haneli olmalı" der, "ülke koduyla yaz" demez. */
+  if (/^0[1-9]\d*$/.test(s)) return '+90' + s.slice(1);
+  if (/^5\d{9}$/.test(s)) return '+90' + s;
+  if (/^90\d{10}$/.test(s)) return '+' + s;
+  return s;
+}
+
 /* "2008-05-20" doğumlu kişinin bugünkü yaşı. */
 function yasHesapla(iso) {
   const p = String(iso || '').split('-').map(Number);
@@ -212,6 +227,14 @@ function dogumSorunu(deger, zorunlu) {
   if (new Date(zaman).toISOString().slice(0, 10) !== d) return 'Böyle bir gün yok';
   if (zaman > Date.now()) return 'Doğum tarihi gelecekte olamaz';
   if (Number(d.slice(0, 4)) < 1920) return 'Doğum tarihi çok eski';
+  return '';
+}
+
+function telefonSorunu(t) {
+  const s = normTelefon(t);
+  if (!s) return 'Telefon numarası gerekli';
+  if (!/^\+[1-9]\d{6,14}$/.test(s)) return 'Telefon numarasını ülke koduyla yaz (ör. +90 532 123 45 67)';
+  if (s.indexOf('+90') === 0 && s.length !== 13) return 'Türkiye numarası 10 haneli olmalı (5xx xxx xx xx)';
   return '';
 }
 

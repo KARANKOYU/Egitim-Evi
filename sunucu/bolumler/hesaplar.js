@@ -240,6 +240,18 @@ function hesapGorunumu(u, sinifAdi) {
   };
 }
 
+/* Gelen gövdeden hesap alanları (tek tek açma ve düzenleme). Yalnızca
+   gövdede olan alanlar alınır: düzenlemede dokunulmayan alan değişmez. */
+function govdedenAlanlar(body) {
+  const g = {};
+  const esle = { ad: 'ad', soyad: 'soyad', fullName: 'fullName', tc: 'tc', username: 'kullaniciAdi',
+    kullaniciAdi: 'kullaniciAdi', password: 'sifre', sifre: 'sifre', email: 'eposta', eposta: 'eposta',
+    dogum: 'dogum', telefon: 'telefon', phone: 'telefon', adres: 'adres', address: 'adres', okulNo: 'okulNo',
+    classId: 'sinifId', note: 'not', not: 'not', brans: 'brans', branch: 'brans', rolId: 'rolId' };
+  for (const k of Object.keys(esle)) if (body[k] !== undefined && g[esle[k]] === undefined) g[esle[k]] = body[k];
+  return g;
+}
+
 /* ---- uçlar ---- (okul.js'ten, yetkiGerek ve me hazır olarak çağrılır) */
 async function uclar(k, sub) {
   const { req, res, me, body, q, method } = k;

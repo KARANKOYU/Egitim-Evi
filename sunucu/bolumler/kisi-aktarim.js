@@ -28,6 +28,35 @@ const { yetkiVarMi } = require('../yetki');
 const { islemYaz } = require('./islem-kaydi');
 const { hesapDogrula, hesapNesnesi, ROL_AD, YETKI } = require('./hesaplar');
 
+const DOSYA_SINIR = 1300000;   // base64 (≈ 1 MB dosya)
+const SATIR_SINIR = 600;
+
+/* Dosyayla yalnızca öğrenci ve servisçi hesabı açılır. Öğretmen kendi
+   hesabını açar ve eşleme koduyla okula eklenir (hesaplar.js ogretmen-ekle). */
+const TURLER = {
+  ogrenci: { rol: 'student', sayfa: 'Öğrenciler' },
+  servisci: { rol: 'servisci', sayfa: 'Servisçiler' }
+};
+const OGRETMEN_SAYFASI = 'Öğretmenler dosyayla eklenmez: her öğretmen kendi hesabını açar, kişisel kodunu verir; ' +
+  'Öğretmenler sayfasında "Kodla ekle" ile kodu girersin.';
+
+/* Sütunlar. esler: başlığın anahtarlanmış hâli (Türkçe harf, boşluk,
+   büyük/küçük farkı yok); onek: bununla başlayan başlık da olur. */
+const AD = { anahtar: 'ad', baslik: 'Ad', esler: ['ad', 'adi', 'isim', 'isimler', 'ogrenciadi', 'ogrenciad',
+  'ogretmenad', 'ogretmenadi', 'serviscad', 'servisciad', 'serviscadi', 'serviscisoforad', 'soforad'] };
+const SOYAD = { anahtar: 'soyad', baslik: 'Soyad', esler: ['soyad', 'soyadi', 'soyisim', 'soyisimi'] };
+const ADSOYAD = { anahtar: 'adSoyad', baslik: 'Ad Soyad', esler: ['adsoyad', 'adisoyadi', 'isimsoyisim', 'adsoyadi'], gizli: true };
+const TC = { anahtar: 'tc', baslik: 'T.C. Kimlik No', esler: ['tc', 'tcno', 'tckimlik', 'tckimlikno', 'kimlikno', 'tcnumarasi'],
+  onek: ['tckimlik'] };
+const KADI = { anahtar: 'kullaniciAdi', baslik: 'Kullanıcı adı', esler: ['kullaniciadi', 'kullaniciad', 'kullanici', 'kadi'],
+  onek: ['kullanici'] };
+const EPOSTA = { anahtar: 'eposta', baslik: 'E-posta', esler: ['eposta', 'email', 'mail', 'epostaadresi'], onek: ['eposta', 'email'] };
+const SIFRE = { anahtar: 'sifre', baslik: 'Şifre', esler: ['sifre', 'parola'], onek: ['sifre'] };
+const DOGUM = { anahtar: 'dogum', baslik: 'Doğum tarihi (gg.aa.yyyy)', esler: ['dogum', 'dogumtarihi', 'ggmmyyyy', 'ggaayyyy'],
+  onek: ['dogum'] };
+const ADRES = { anahtar: 'adres', baslik: 'Adres', esler: ['adres', 'evadresi'], onek: ['adres'] };
+const TELEFON = { anahtar: 'telefon', baslik: 'Telefon', esler: ['telefon', 'tel', 'cep', 'ceptelefonu', 'gsm'], onek: ['telefon'] };
+
 const SUTUNLAR = {
   ogrenci: [AD, SOYAD, TC, KADI, EPOSTA, SIFRE, DOGUM,
     { anahtar: 'seviye', baslik: 'Sınıf (1-12)', esler: ['sinif', 'sinif112', 'sinifseviyesi', 'seviye', 'sinifduzeyi', 'duzey'] },

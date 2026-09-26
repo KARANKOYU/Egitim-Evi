@@ -59,6 +59,30 @@ const EPOSTA = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-z]{2,}$/i;
 let config = { iletisim: { eposta: '', telefon: '' } };
 let configZamani = -1;
 
+/* Dosya en fazla 30 saniyede bir yoklanır; değiştiyse yeniden okunur. */
+let sonYoklama = 0;
+function configGuncel() {
+  const simdi = Date.now();
+  if (simdi - sonYoklama < 30 * 1000) return config;
+  sonYoklama = simdi;
+  let zaman = 0;
+  try { zaman = fs.statSync(CONFIG_DOSYASI).mtimeMs; } catch (e) { zaman = 0; }
+  if (zaman === configZamani) return config;
+  configZamani = zaman;
+  let ham = {};
+  try { ham = zaman ? yamlOku(fs.readFileSync(CONFIG_DOSYASI, 'utf8')) : {}; } catch (e) { ham = {}; }
+  const iletisim = ham.iletisim || {};
+  const eposta = String(iletisim.eposta || '').trim().slice(0, 254);
+  const telefon = String(iletisim.telefon || '').replace(/[^0-9+() -]/g, '').trim().slice(0, 24);
+  config = {
+    iletisim: {
+      eposta: EPOSTA.test(eposta) ? eposta : '',
+      telefon: telefon.replace(/[^0-9]/g, '').length >= 7 ? telefon : ''
+    }
+  };
+  return config;
+}
+
 /* ---------------- yapimcilar.json ----------------
    Dosya bozuksa ya da yoksa liste boş gelir, sayfa depo bağlantısını gösterir.
    GitHub kullanıcı adı GitHub'ın kuralına uymalı (harf, rakam, tire). */
