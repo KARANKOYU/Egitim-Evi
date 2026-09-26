@@ -43,6 +43,51 @@ function ozellik(ozn, ad) {
   return m ? xlsx.xmlCoz(m[1]) : '';
 }
 
+function odsOku(buf) {
+  const zip = xlsx.zipOku(buf);
+  if (!zip['content.xml']) throw new Error('Bu bir ODS dosyası değil.');
+  const xml = zip['content.xml'].toString('utf8');
+  const sayfalar = [];
+  let toplam = 0;
+  const tabloRe = /<table:table\b([^>]*)>([\s\S]*?)<\/table:table>/g;
+  let t;
+  while ((t = tabloRe.exec(xml)) && sayfalar.length < EN_FAZLA_SAYFA) {
+    const satirlar = [];
+    let bosBekleyen = 0;   // araya giren boş satırlar: ancak sonra dolu satır gelirse eklenir
+    const satirRe = /<table:table-row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/table:table-row>)/g;
+    let r;
+    while ((r = satirRe.exec(t[2]))) {
+      const tekrarSatir = Math.max(1, Number(ozellik(r[1], 'table:number-rows-repeated')) || 1);
+      const hucreler = [];
+      let sutun = 0;
+      const hucreRe = /<table:(?:covered-)?table-cell\b([^>]*?)(?:\/>|>([\s\S]*?)<\/table:(?:covered-)?table-cell>)/g;
+      let c;
+      while ((c = hucreRe.exec(r[2] || '')) && sutun < EN_FAZLA_SUTUN) {
+        const tekrar = Math.max(1, Number(ozellik(c[1], 'table:number-columns-repeated')) || 1);
+        const tur = ozellik(c[1], 'office:value-type');
+        let deger;
+        if (tur === 'date') deger = ozellik(c[1], 'office:date-value').slice(0, 10);
+        else if (tur === 'float' || tur === 'percentage' || tur === 'currency') deger = ozellik(c[1], 'office:value');
+        else if (tur === 'boolean') deger = ozellik(c[1], 'office:boolean-value') === 'true' ? 'EVET' : 'HAYIR';
+        else deger = odsHucreMetni(c[2]);
+        if (deger === '') { sutun += tekrar; continue; }
+        for (let i = 0; i < tekrar && sutun < EN_FAZLA_SUTUN; i++) hucreler[sutun++] = deger;
+      }
+      for (let i = 0; i < hucreler.length; i++) if (hucreler[i] === undefined) hucreler[i] = '';
+      if (!hucreler.length) { bosBekleyen += tekrarSatir; continue; }
+      for (let i = 0; i < bosBekleyen && satirlar.length < EN_FAZLA_SATIR; i++) satirlar.push([]);
+      bosBekleyen = 0;
+      for (let i = 0; i < Math.min(tekrarSatir, 1000) && satirlar.length < EN_FAZLA_SATIR; i++) satirlar.push(hucreler.slice());
+      if (satirlar.length >= EN_FAZLA_SATIR) break;
+    }
+    toplam += satirlar.length;
+    if (toplam > TOPLAM_SATIR) throw new Error('Dosya çok büyük. Listeyi bölüp birkaç dosya hâlinde yükle.');
+    sayfalar.push({ ad: ozellik(t[1], 'table:name') || 'Sayfa' + (sayfalar.length + 1), satirlar });
+  }
+  if (!sayfalar.length) throw new Error('ODS dosyasında okunabilir sayfa yok.');
+  return sayfalar;
+}
+
 /* ---------------- CSV ---------------- */
 
 function csvOku(buf) {

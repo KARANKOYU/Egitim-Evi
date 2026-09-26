@@ -210,6 +210,93 @@ const YASAK_NEDEN = {
   '-moz-binding': 'kod çalıştırabilir'
 };
 
+/* ---------------- ayrıştırma ---------------- */
+
+/* css: kişinin yazdığı metin.
+   Dönen: { css: '.okul-sayfa ... { ... }' (temizlenmiş), uyarilar: [...] } */
+function cssTemizle(css) {
+  const uyarilar = [];
+  const uyar = m => { if (uyarilar.length < EN_FAZLA_UYARI) uyarilar.push(m); };
+  let metin = String(css || '');
+  if (metin.length > EN_UZUN) {
+    uyar('CSS en fazla ' + EN_UZUN + ' karakter olabilir; fazlası atıldı.');
+    metin = metin.slice(0, EN_UZUN);
+  }
+  metin = metin.replace(/\/\*[\s\S]*?(\*\/|$)/g, ' ');
+  if (/[\\<]/.test(metin)) {
+    uyar('Ters bölü (\\) ve "<" kullanılamaz; bu karakterleri içeren kurallar atıldı.');
+  }
+
+  const kurallar = [];
+  let parcalarSoylendi = false;
+  let i = 0;
+  while (i < metin.length && kurallar.length < EN_FAZLA_KURAL) {
+    /* Bloksuz @ kuralı (@import ...;) noktalı virgüle kadar atlanır. */
+    const bas = metin.slice(i).search(/\S/);
+    if (bas < 0) break;
+    i += bas;
+    const noktaliVirgul = metin.indexOf(';', i);
+    const ac = metin.indexOf('{', i);
+    if (metin[i] === '@' && noktaliVirgul >= 0 && (ac < 0 || noktaliVirgul < ac)) {
+      uyar('"' + kisalt(metin.slice(i, noktaliVirgul)) + '": @ kuralları (@import, @media, @font-face...) kullanılamaz.');
+      i = noktaliVirgul + 1;
+      continue;
+    }
+    if (ac < 0) {
+      if (metin.slice(i).trim()) uyar('Süslü parantezi olmayan metin atıldı: "' + kisalt(metin.slice(i)) + '"');
+      break;
+    }
+    /* Bloğun sonunu bul (iç içe süslü parantez varsa hepsini atla). */
+    let derinlik = 0, kapa = -1;
+    for (let j = ac; j < metin.length; j++) {
+      if (metin[j] === '{') derinlik++;
+      else if (metin[j] === '}' && --derinlik === 0) { kapa = j; break; }
+    }
+    if (kapa < 0) { uyar('Kapanmayan süslü parantez; sondaki kural atıldı.'); break; }
+    const seciciHam = metin.slice(i, ac).trim();
+    const govde = metin.slice(ac + 1, kapa);
+    i = kapa + 1;
+
+    if (seciciHam.indexOf('@') >= 0) { uyar('"' + kisalt(seciciHam) + '": @ kuralları (@import, @media, @font-face...) kullanılamaz.'); continue; }
+    if (/[\\<]/.test(seciciHam + govde)) continue;
+    if (govde.indexOf('{') >= 0) { uyar('"' + kisalt(seciciHam) + '": iç içe kural yazılamaz.'); continue; }
+    const secici = seciciTemizle(seciciHam);
+    if (!secici) {
+      uyar('"' + kisalt(seciciHam) + '": bu seçici kullanılamaz.' + (parcalarSoylendi ? ''
+        : ' Yalnızca sayfanın parçaları seçilebilir: ' + SAYFA_PARCALARI.map(p => '.' + p).join(', ') + '.'));
+      parcalarSoylendi = true;
+      continue;
+    }
+
+    const bildirimler = [];
+    for (const ham of govde.split(';')) {
+      if (!ham.trim()) continue;
+      const iki = ham.indexOf(':');
+      if (iki < 0) { uyar(seciciHam + ': "' + kisalt(ham) + '" anlaşılamadı.'); continue; }
+      const ozellik = ham.slice(0, iki).trim().toLowerCase();
+      const deger = ham.slice(iki + 1).trim().replace(/\s*!important$/i, '').replace(/\s+/g, ' ').toLowerCase();
+      const denetci = OZELLIKLER[ozellik];
+      if (!denetci) {
+        uyar(seciciHam + ' { ' + kisalt(ozellik) + ' }: ' + (YASAK_NEDEN[ozellik]
+          ? 'kullanılamaz, ' + YASAK_NEDEN[ozellik] + '.' : 'bu özellik kullanılamaz.'));
+        continue;
+      }
+      if (/url\s*\(|expression|javascript:|image-set|attr\s*\(|var\s*\(|env\s*\(/.test(deger)) {
+        uyar(seciciHam + ' { ' + ozellik + ' }: dış adres, değişken ve işlev kullanılamaz; fotoğrafı "Fotoğraflar" bölümünden ekle.');
+        continue;
+      }
+      if (!deger || deger.length > 200 || !denetci(deger)) {
+        uyar(seciciHam + ' { ' + ozellik + ': ' + kisalt(deger) + ' }: değer kabul edilmedi (sınırların dışında ya da biçimi tanınmadı).');
+        continue;
+      }
+      bildirimler.push(ozellik + ': ' + deger);
+    }
+    if (bildirimler.length) kurallar.push(secici + ' { ' + bildirimler.join('; ') + '; }');
+  }
+  if (kurallar.length >= EN_FAZLA_KURAL && i < metin.length) uyar('En fazla ' + EN_FAZLA_KURAL + ' kural yazılabilir; fazlası atıldı.');
+  return { css: kurallar.join('\n'), uyarilar };
+}
+
 function kisalt(s) {
   s = String(s).replace(/\s+/g, ' ').trim();
   return s.length > 60 ? s.slice(0, 57) + '...' : s;
