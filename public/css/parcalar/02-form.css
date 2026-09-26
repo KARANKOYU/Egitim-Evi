@@ -133,3 +133,29 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .field .tel-kutu .tel-ulke { width: auto; flex: 0 0 auto; padding-right: 6px; font-variant-numeric: tabular-nums; }
 .field .tel-kutu input { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
 
+/* Dosya ekleme alanı (04d-ekler.js): sürükle-bırak ya da basıp seç. */
+.ek-alan { margin: 6px 0 12px; }
+.ek-birak {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  padding: 18px 14px; border: 2px dashed var(--cizgi); border-radius: var(--r); cursor: pointer;
+  color: var(--soluk); background: var(--zemin); transition: border-color .15s ease, background .15s ease;
+}
+.ek-birak .ikon { width: 26px; height: 26px; color: var(--ana); }
+.ek-birak b { color: var(--yazi); }
+.ek-birak small { font-size: 12.5px; }
+.ek-birak:hover, .ek-birak.uzerinde { border-color: var(--ana); background: var(--ana-acik); }
+.ek-liste { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ek-satir {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-kucuk);
+  border: 1px solid var(--cizgi); background: var(--kart);
+}
+.ek-satir > .ikon { width: 20px; height: 20px; color: var(--soluk); flex: 0 0 auto; }
+.ek-satir.hatali { border-color: var(--kirmizi, #d62839); }
+.ek-ad { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.ek-ad b { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+.ek-ad small { color: var(--soluk); font-size: 12.5px; }
+.ek-satir.hatali .ek-ad small { color: var(--kirmizi, #d62839); }
+.ek-cubuk { display: block; height: 4px; margin-top: 5px; border-radius: 2px; background: var(--cizgi); overflow: hidden; }
+.ek-cubuk i { display: block; height: 100%; background: var(--ana); transition: width .2s ease; }
+.ekler-kutu { margin-top: 14px; }
+.ekler-kutu h4 { margin: 0 0 4px; font-size: 14px; }

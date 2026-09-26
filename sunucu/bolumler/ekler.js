@@ -211,3 +211,4 @@ async function ekSupur() {
   }
 }
 
+module.exports = { uclar, yukle, ekSupur, ekleriDogrula, ekleriBagla, hedefinEkleri, ekGorunumu, EK_SINIR };
