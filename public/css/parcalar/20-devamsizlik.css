@@ -37,3 +37,17 @@
 .satir.tiklanir { cursor: pointer; transition: background .12s ease; }
 .satir.tiklanir:hover { background: var(--zemin); }
 
+/* ================= etüt ================= */
+.etut-tarih { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.etut-tarih-yazi { display: flex; flex-direction: column; min-width: 120px; text-align: center; }
+.etut-tarih .btn .ikon { width: 16px; height: 16px; }
+.ters { display: inline-flex; transform: scaleX(-1); }
+.durum-grup { display: flex; flex-wrap: wrap; gap: 6px; }
+.etut-ogrenci-liste {
+  max-height: 46vh; overflow-y: auto; border: 1px solid var(--cizgi); border-radius: var(--r-kucuk);
+  padding: 6px 10px; display: flex; flex-direction: column; gap: 2px;
+}
+@media (max-width: 560px) {
+  .etut-yoklama-satir { flex-direction: column; align-items: stretch; }
+  .etut-yoklama-satir .durum-grup .durum-dugme { flex: 1 1 0; }
+}

@@ -55,3 +55,48 @@
 .ders-blok-alt { font-size: 12.5px; color: var(--soluk); margin-top: 2px; overflow-wrap: anywhere; }
 .ders-blok-bos { padding: 12px 0 4px; font-size: 13px; color: var(--soluk); }
 
+/* ===== yetki kapsamı (ders / sınıf daraltması) ===== */
+.yetki-blok { padding: 3px 0; }
+.kapsam-alan {
+  margin: 4px 0 10px 28px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.kapsam-kutu {
+  flex: 1 1 200px;
+  min-width: 0;
+  border: 1.5px solid var(--cizgi);
+  border-radius: var(--r-mini);
+  background: var(--kart);
+  padding: 8px 10px;
+}
+.kapsam-basi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--soluk);
+}
+.kapsam-hepsi {
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--yazi);
+}
+.kapsam-hepsi input { width: 15px; height: 15px; }
+.kapsam-secenekler {
+  margin-top: 6px;
+  max-height: 132px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.kapsam-secenek { font-size: 13px; padding: 2px 0; }
+.kapsam-secenek input { width: 15px; height: 15px; }
