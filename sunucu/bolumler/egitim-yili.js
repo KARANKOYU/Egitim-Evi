@@ -27,8 +27,49 @@ const { islemYaz } = require('./islem-kaydi');
 /* Okulun yılları, yeniden eskiye. */
 const okulYillari = schoolId => depo.okullar.yillari(schoolId);
 
+/* Kullanıcının yıl bilgisi: bir istekte bir kez sorgulanır ve kullanıcı
+   nesnesinde saklanır (kullanıcı nesnesi her istekte yeniden okunur). */
+async function yilBilgisi(me) {
+  if (me._yilBilgisi) return me._yilBilgisi;
+  let okulunki = me.schoolId ? await okulYillari(me.schoolId) : [];
+  /* Öğrencinin geçmiş okul dönemleri (nakil) okulun yıllarının arkasına. */
+  const gecmis = me.role === 'student' ? (await depo.ogrenciGecmisi.listesi(me.id)).map(g => ({
+    id: g.id, ad: [g.yilAdi, g.okulAdi, g.sinifAdi].filter(Boolean).join(' · '), okulId: g.okulId,
+    yilId: g.yilId, gecmis: true, aktif: false, bas: '', bit: ''
+  })) : [];
+  /* Yeni okulda yıl tanımlı değilse "şimdiki okul" tek seçenek olur ki
+     öğrenci geçmiş okuldan geri dönebilsin. */
+  if (!okulunki.length && gecmis.length && me.schoolId) {
+    okulunki = [{ id: 'simdiki', ad: 'Şimdiki okul', aktif: true, simdiki: true, bas: '', bit: '' }];
+  }
+  /* Eski okulun yılsız kayıtları o okulun en eski dönemine sayılır. */
+  const enEskiGecmis = {};
+  for (const g of gecmis) enEskiGecmis[g.okulId] = g.id;
+  const liste = okulunki.concat(gecmis);
+  const aktif = okulunki.find(y => y.aktif) || okulunki[0] || null;
+  const secili = (me.seciliGecmis && gecmis.find(y => y.id === me.seciliGecmis)) ||
+    (me.seciliYil && okulunki.find(y => y.id === me.seciliYil)) || null;
+  me._yilBilgisi = {
+    liste,
+    aktif,
+    bakilan: secili || aktif || null,
+    enEskiId: okulunki.length ? okulunki[okulunki.length - 1].id : null,
+    enEskiGecmis
+  };
+  return me._yilBilgisi;
+}
+
 /* Bir kaydın okulu (kayıtların çoğu schoolId taşır). */
 const kayitOkulu = k => (k && (k.schoolId || k.okulId)) || '';
+
+/* Veli çocuğunun kayıtlarına çocuğun gözünden bakar: çocuğun okulu ve geçmiş
+   okulları, velinin seçtiği yıl. Öğrenci ve öğrencinin okulundaki personel
+   kendileri olarak bakar (başka okuldaki öğretmen ancak velisiyse görebilir). */
+function bakisKisisi(bakan, ogrenci) {
+  if (!bakan || !ogrenci || bakan.id === ogrenci.id || bakan.role === 'admin') return bakan;
+  if ((bakan.role === 'teacher' || bakan.role === 'principal') && bakan.schoolId === ogrenci.schoolId) return bakan;
+  return Object.assign({}, ogrenci, { seciliYil: bakan.seciliYil, seciliGecmis: bakan.seciliGecmis, _yilBilgisi: null });
+}
 
 async function aktifYil(schoolId) {
   const liste = await okulYillari(schoolId);
