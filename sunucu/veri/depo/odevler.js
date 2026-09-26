@@ -94,6 +94,14 @@ async function acildi(id, ogrenciId) {
     [id, ogrenciId]);
 }
 
+/* Öğrencinin yıldızı: yalnızca kendisi için bir işaret. Ödev o öğrenciye
+   verilmemişse satır yoktur, hiçbir şey değişmez (false döner). */
+async function yildizla(id, ogrenciId, yildiz) {
+  const degisen = await calistir('UPDATE odev_ogrencileri SET yildiz = $3 WHERE odev_id = $1 AND ogrenci_id = $2',
+    [id, ogrenciId, !!yildiz]);
+  return degisen > 0;
+}
+
 /* Öğrencinin yıldızladığı ödevlerin kimlikleri. */
 async function yildizlilari(ogrenciId) {
   const satirlar = await sorgu('SELECT odev_id FROM odev_ogrencileri WHERE ogrenci_id = $1 AND yildiz', [ogrenciId]);
