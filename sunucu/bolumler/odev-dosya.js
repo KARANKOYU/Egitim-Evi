@@ -391,3 +391,197 @@ async function zipGonder(res, a, dosyalar) {
   }
 }
 
+/* Tek dosyayı gönderir (yetki çağıran tarafından denetlenmiş olmalı). */
+/* Fotoğraf, video ya da sesi tarayıcıda açar. Range destekli (video ileri
+   sarılabilsin); yine de içerik sezdirilmez ve betik çalışamaz. */
+async function medyaGonder(req, res, d) {
+  const m = medya(d.ad);
+  if (!m) return dosyaGonder(res, d);
+  const yol = path.join(KLASOR, d.id);
+  let st;
+  try { st = await fs.promises.stat(yol); } catch (e) { return bad(res, 'Dosya sunucuda bulunamadı', 404); }
+  const ascii = d.ad.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  const b = baslikEkle({
+    'Content-Type': m[1],
+    'Content-Disposition': 'inline; filename="' + ascii + '"; filename*=UTF-8\'\'' + encodeURIComponent(d.ad),
+    'Cache-Control': 'private, max-age=300',
+    'Accept-Ranges': 'bytes',
+    'X-Content-Type-Options': 'nosniff'
+  });
+  b['Content-Security-Policy'] = "default-src 'none'; img-src 'self'; media-src 'self'; sandbox";
+  const aralik = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ''));
+  if (aralik && (aralik[1] || aralik[2])) {
+    let bas = aralik[1] ? Number(aralik[1]) : st.size - Number(aralik[2]);
+    let bit = aralik[1] && aralik[2] ? Number(aralik[2]) : st.size - 1;
+    bas = Math.max(0, bas); bit = Math.min(bit, st.size - 1);
+    if (!(bas <= bit)) {
+      res.writeHead(416, baslikEkle({ 'Content-Range': 'bytes */' + st.size }));
+      return res.end();
+    }
+    b['Content-Range'] = 'bytes ' + bas + '-' + bit + '/' + st.size;
+    b['Content-Length'] = bit - bas + 1;
+    res.writeHead(206, b);
+    return fs.createReadStream(yol, { start: bas, end: bit }).on('error', () => res.destroy()).pipe(res);
+  }
+  b['Content-Length'] = st.size;
+  res.writeHead(200, b);
+  fs.createReadStream(yol).on('error', () => res.destroy()).pipe(res);
+}
+
+async function dosyaGonder(res, d) {
+  const yol = path.join(KLASOR, d.id);   // id veritabanında 32 haneli onaltılık olarak denetlenir
+  let st;
+  try { st = await fs.promises.stat(yol); } catch (e) { return bad(res, 'Dosya sunucuda bulunamadı', 404); }
+  res.writeHead(200, ekBasliklari(d.ad, st.size));
+  fs.createReadStream(yol).on('error', () => res.destroy()).pipe(res);
+}
+
+/* Dosya ve ödev için erişim denetimi; indirmede ve bilet verirken aynı kural. */
+async function dosyaErisimi(kisi, id) {
+  const d = await depo.odevDosyalari.bul(clean(id, 40));
+  if (!d) return { hata: 'Dosya bulunamadı', kod: 404 };
+  const a = await depo.odevler.bul(d.odev_id);
+  if (!a || !await gorebilir(kisi, a, d.ogrenci_id)) return { hata: 'Bu dosyayı görme yetkin yok', kod: 403 };
+  return { d };
+}
+async function zipErisimi(kisi, odevId) {
+  const a = await depo.odevler.bul(clean(odevId, 60));
+  if (!a) return { hata: 'Ödev bulunamadı', kod: 404 };
+  if (!yonetir(kisi, a)) return { hata: 'Toplu indirmeyi yalnızca ödevi veren öğretmen yapabilir', kod: 403 };
+  return { a };
+}
+
+/* Biletle indirme: oturum başlığı yok, bilet sahibinin yetkisi yeniden denetlenir. */
+async function biletleIndir(req, res, bilet, tur) {
+  const b = biletKullan(bilet);
+  if (!b || b.tur !== tur) return bad(res, 'İndirme bağlantısının süresi doldu. Yeniden dene.', 410);
+  const kisi = await depo.kullanicilar.bul(b.kullaniciId);
+  if (!kisi || kisi.status !== 'approved') return bad(res, 'Yetkin yok', 403);
+  if (tur === 'dosya' || tur === 'goster') {
+    const e = await dosyaErisimi(kisi, b.hedef);
+    if (e.hata) return bad(res, e.hata, e.kod);
+    return tur === 'goster' ? medyaGonder(req, res, e.d) : dosyaGonder(res, e.d);
+  }
+  const e = await zipErisimi(kisi, b.hedef);
+  if (e.hata) return bad(res, e.hata, e.kod);
+  return zipGonder(res, e.a, await depo.odevDosyalari.odevin(e.a.id));
+}
+
+/* ---------------- uçlar ---------------- */
+async function uclar(k) {
+  const { req, res, me, body, q, p, segs, method, need } = k;
+  if (p !== 'odev-dosya') return false;
+  const alt = segs[2] || '';
+  if (alt === 'yukle' && method === 'POST') return yukle(k);
+  if ((alt === 'indir' || alt === 'zip' || alt === 'goster') && method === 'GET' && q.get('bilet')) {
+    return biletleIndir(req, res, clean(q.get('bilet'), 60), alt === 'zip' ? 'zip' : alt === 'goster' ? 'goster' : 'dosya');
+  }
+  if (!need(['student', 'parent', 'teacher', 'principal'])) return;
+
+  /* İndirme bileti ister: dosya (id) ya da zip (odev). */
+  if (alt === 'bilet' && method === 'GET') {
+    const tur = clean(q.get('tur'), 10) === 'zip' ? 'zip' : 'dosya';   // "goster" aşağıda dosya kuralıyla
+    if (tur === 'zip') {
+      if (!hizSinir('dosyaZip:' + me.id, 20, 60 * 60 * 1000)) return bad(res, 'Çok fazla toplu indirme yaptın. Biraz bekle.', 429);
+      const e = await zipErisimi(me, q.get('odev'));
+      if (e.hata) return bad(res, e.hata, e.kod);
+      const bilet = biletVer(me.id, 'zip', e.a.id);
+      if (!bilet) return bad(res, 'Sunucu şu an çok yoğun. Biraz sonra dene.', 503);
+      return ok(res, { yol: '/api/odev-dosya/zip?bilet=' + bilet });
+    }
+    if (!hizSinir('dosyaIndir:' + me.id, 300, 60 * 60 * 1000)) return bad(res, 'Çok fazla indirme yaptın. Biraz bekle.', 429);
+    const e = await dosyaErisimi(me, q.get('id'));
+    if (e.hata) return bad(res, e.hata, e.kod);
+    /* Fotoğraf, video, ses: tarayıcıda açılır (tur=goster). */
+    if (clean(q.get('tur'), 10) === 'goster') {
+      const m = medya(e.d.ad);
+      if (!m) return bad(res, 'Bu dosya tarayıcıda açılamaz; indir.');
+      const bilet = biletVer(me.id, 'goster', e.d.id);
+      if (!bilet) return bad(res, 'Sunucu şu an çok yoğun. Biraz sonra dene.', 503);
+      return ok(res, { yol: '/api/odev-dosya/goster?bilet=' + bilet, tur: m[0] });
+    }
+    const bilet = biletVer(me.id, 'dosya', e.d.id);
+    if (!bilet) return bad(res, 'Sunucu şu an çok yoğun. Biraz sonra dene.', 503);
+    return ok(res, { yol: '/api/odev-dosya/indir?bilet=' + bilet });
+  }
+
+  /* Liste: öğrenci kendi dosyalarını; veli ?ogrenci= ile çocuğununkileri;
+     öğretmen/müdür ödevin bütün dosyalarını görür. */
+  if (!alt && method === 'GET') {
+    const a = await depo.odevler.bul(clean(q.get('odev'), 60));
+    if (!a) return bad(res, 'Ödev bulunamadı', 404);
+    if (yonetir(me, a) && !q.get('ogrenci')) {
+      const dosyalar = (await depo.odevDosyalari.odevin(a.id)).map(gorunum);
+      return ok(res, { dosyalar, yonetir: true, toplam: dosyalar.reduce((t, d) => t + d.boyut, 0) });
+    }
+    const ogrenciId = me.role === 'student' ? me.id : clean(q.get('ogrenci'), 60);
+    if (!await gorebilir(me, a, ogrenciId)) return bad(res, 'Bu dosyaları görme yetkin yok', 403);
+    const kapali = teslimKapali(a);
+    return ok(res, {
+      dosyalar: (await depo.odevDosyalari.odevin(a.id, ogrenciId)).map(gorunum),
+      yukleyebilir: me.id === ogrenciId && !kapali, kapali,
+      sinir: { dosya: DOSYA_SINIR, adet: OGRENCI_SINIR.adet, toplam: OGRENCI_SINIR.toplam, gun: SAKLAMA_GUN, uzantilar: [...UZANTILAR] }
+    });
+  }
+
+  if (alt === 'indir' && method === 'GET') {
+    if (!hizSinir('dosyaIndir:' + me.id, 300, 60 * 60 * 1000)) return bad(res, 'Çok fazla indirme yaptın. Biraz bekle.', 429);
+    const e = await dosyaErisimi(me, q.get('id'));
+    if (e.hata) return bad(res, e.hata, e.kod);
+    return dosyaGonder(res, e.d);
+  }
+
+  if (alt === 'zip' && method === 'GET') {
+    const e = await zipErisimi(me, q.get('odev'));
+    if (e.hata) return bad(res, e.hata, e.kod);
+    if (!hizSinir('dosyaZip:' + me.id, 20, 60 * 60 * 1000)) return bad(res, 'Çok fazla toplu indirme yaptın. Biraz bekle.', 429);
+    return zipGonder(res, e.a, await depo.odevDosyalari.odevin(e.a.id));
+  }
+
+  /* Silme: öğrenci kendi dosyasını teslim açıkken; öğretmen/müdür her zaman. */
+  if (alt === 'sil' && method === 'POST') {
+    const d = await depo.odevDosyalari.bul(clean(body.id, 40));
+    if (!d) return bad(res, 'Dosya bulunamadı', 404);
+    const a = await depo.odevler.bul(d.odev_id);
+    if (!a) return bad(res, 'Dosya bulunamadı', 404);
+    if (!yonetir(me, a)) {
+      if (me.id !== d.ogrenci_id) return bad(res, 'Bu dosyayı silme yetkin yok', 403);
+      const kapali = teslimKapali(a);
+      if (kapali) return bad(res, kapali + ' Dosya silinemez.');
+    }
+    await depo.odevDosyalari.sil(d.id);
+    await fs.promises.unlink(path.join(KLASOR, d.id)).catch(() => {});
+    return ok(res, { message: d.ad + ' silindi.' });
+  }
+
+  return false;
+}
+
+/* Artık temizliği: 7 günü dolan teslim dosyaları, yarıda kalmış yüklemeler
+   (2 saatten eski) ve kaydı silinmiş dosyalar (1 saatten eski) diskten silinir. */
+async function dosyaSupur() {
+  for (const id of await depo.odevDosyalari.eskileriSil(SAKLAMA_GUN)) {
+    await fs.promises.unlink(path.join(KLASOR, id)).catch(() => {});
+  }
+  let adlar;
+  try { adlar = await fs.promises.readdir(KLASOR); } catch (e) { return 0; }
+  const simdi = Date.now();
+  const kalicilar = adlar.filter(a => /^[0-9a-f]{32}$/.test(a));
+  const kayitli = await depo.odevDosyalari.kayitlilar(kalicilar);
+  let silinen = 0;
+  for (const ad of adlar) {
+    const yarim = /^[0-9a-f]{32}\.yukleniyor$/.test(ad);
+    if (!yarim && (!/^[0-9a-f]{32}$/.test(ad) || kayitli.has(ad))) continue;
+    try {
+      const st = await fs.promises.stat(path.join(KLASOR, ad));
+      if (simdi - st.mtimeMs < (yarim ? 2 : 1) * 60 * 60 * 1000) continue;
+      await fs.promises.unlink(path.join(KLASOR, ad));
+      silinen++;
+    } catch (e) { /* bu arada silinmiş olabilir */ }
+  }
+  return silinen;
+}
+
+module.exports = { uclar, dosyaSupur, dosyaAdi, teslimKapali, KLASOR,
+  /* ekler.js de aynı güvenli yükleme ve indirme yardımcılarını kullanır */
+  akisiYaz, reddet, ekBasliklari, uzanti, UZANTILAR, biletVer, biletKullan };
