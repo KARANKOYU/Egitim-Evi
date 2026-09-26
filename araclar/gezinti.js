@@ -924,6 +924,101 @@ function raporYaz(album, tum) {
   console.log('\n' + tum.length + ' adım, ' + sorunlu.length + ' adımda sorun -> ' + CIKTI + '  (rapor: ' + RAPOR + ')');
 }
 
+/* Albüm: ekranlarla kılavuz. Önce müdürün bölümü (okulu kuran ve yöneten),
+   sonra dış sayfalar ve öteki roller. Her fotoğrafın altında ne gösterdiği
+   yazar (gezinti-metin.js). Sorun ölçümleri burada değil, rapordadır. */
+function albumYaz(album, tum) {
+  /* İki kısım: önce bilgisayar görünümü (açık ve koyu), sonra telefon görünümü;
+     ikisi karışmaz. Her kısımda sıra: müdür, dış sayfalar, öteki roller. */
+  const SIRA = ['mudur', 'giris'];
+  const gruplar = album.slice().sort((a, b) => {
+    const x = SIRA.indexOf(a.klasor), y = SIRA.indexOf(b.klasor);
+    return (x < 0 ? 99 : x) - (y < 0 ? 99 : y);
+  });
+  const metin = (klasor, ad) => ADIM_METNI[klasor + '|' + ad] || ADIM_METNI['*|' + ad] || null;
+  /* Eğitim Evi Aile uygulamasının öykünücüde çekilmiş ekranları (varsa) telefon kısmına eklenir. */
+  const uygKlasor = path.join(CIKTI, 'aile-uygulamasi');
+  if (fs.existsSync(uygKlasor)) {
+    const kayitlar = fs.readdirSync(uygKlasor).filter(f => /\.png$/.test(f)).sort()
+      .map(f => ({ ad: (UYGULAMA_EKRANLARI[f] || f), dosya: 'aile-uygulamasi/' + f }));
+    if (kayitlar.length) gruplar.push({ rol: 'Eğitim Evi Aile uygulaması', klasor: 'aile-uygulamasi', kayitlar });
+  }
+  const telefonMu = k => /(^|\/)\d+-(koyu-)?telefon-/.test(k.dosya) || /^aile-uygulamasi\//.test(k.dosya);
+  const eksik = [];
+  const KISIMLAR = [
+    { k: 'bilgisayar', baslik: 'Bilgisayar görünümü', telefon: false,
+      giris: ROL_METNI._bilgisayar || 'Bütün ekranlar önce bilgisayarda (1440 piksel genişlik), açık ve koyu görünümle.' },
+    { k: 'telefon', baslik: 'Telefon görünümü', telefon: true,
+      giris: ROL_METNI._telefon || 'Aynı ekranlar telefonda (390 piksel genişlik). Görüntüleyicide telefon ekranı boyunda açılır; fare tekerleğiyle aşağı kaydırarak okunur.' }
+  ];
+
+  /* Görüntüleyici için bütün fotoğraflar tek sırada: kısım → rol → adım. */
+  const fotolar = [];
+  let govde = '';
+  let icindekiler = '';
+  for (const kisim of KISIMLAR) {
+    let kisimHtml = '';
+    let kisimVar = false;
+    icindekiler += '<span class="ic-kisim">' + esc(kisim.baslik) + '</span>';
+    for (const g of gruplar) {
+      const kayitlar = g.kayitlar.filter(k => telefonMu(k) === kisim.telefon);
+      if (!kayitlar.length) continue;
+      kisimVar = true;
+      const r = ROL_METNI[g.klasor] || {};
+      const bolumId = kisim.k + '-' + g.klasor;
+      icindekiler += '<a href="#' + bolumId + '">' + esc(r.baslik || g.rol) + '</a>';
+      kisimHtml += '<section class="bolum" id="' + bolumId + '"><div class="bolum-bas"><h3>' + esc(r.baslik || g.rol) + '</h3>' +
+        (r.giris && !kisim.telefon ? '<p>' + r.giris + '</p>' : '') + '</div><div class="izgara' + (kisim.telefon ? ' tel' : '') + '">';
+      let altBolum = '';
+      kayitlar.forEach(k => {
+        const m = metin(g.klasor, k.ad);
+        if (!m) eksik.push(g.klasor + '|' + k.ad);
+        if (m && m.bolum && !kisim.telefon) {
+          altBolum = m.bolum;
+          kisimHtml += '</div><h4 class="alt-bolum">' + esc(m.bolum) + '</h4><div class="izgara">';
+        }
+        const i = fotolar.length;
+        fotolar.push({ s: k.dosya, b: k.ad, r: r.baslik || g.rol, a: altBolum, m: (m && m.metin) || '', t: kisim.telefon ? 1 : 0 });
+        kisimHtml += '<figure><a class="foto" href="' + esc(k.dosya) + '" data-i="' + i + '"><img loading="lazy" src="' +
+          esc(k.dosya) + '" alt="' + esc(k.ad) + '"></a><figcaption><b>' + esc(k.ad) + '</b>' +
+          (m && m.metin ? '<p>' + m.metin + '</p>' : '') + '</figcaption></figure>';
+      });
+      kisimHtml += '</div></section>';
+    }
+    if (kisimVar) {
+      govde += '<section class="kisim" id="' + kisim.k + '"><div class="kisim-bas"><p class="etiket">' +
+        (kisim.telefon ? 'İkinci kısım' : 'Birinci kısım') + '</p><h2>' + esc(kisim.baslik) + '</h2><p>' + kisim.giris + '</p></div>' +
+        kisimHtml + '</section>';
+    }
+  }
+
+  const h = '<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Eğitim Evi — ekranlarla kılavuz</title><meta name="description" content="Eğitim Evi okul portalının bütün ekranları: ' +
+    'müdürün gözünden okul yönetimi, öğretmen, öğrenci, veli ve servisçi; önce bilgisayar, sonra telefon görünümü.">' +
+    '<style>' + ALBUM_CSS + '</style></head><body>' +
+    '<header class="ust"><div class="ic"><p class="etiket">Eğitim Evi · ekranlarla kılavuz</p>' +
+    '<h1>Bir okul Eğitim Evi\'ni nasıl kullanır?</h1>' +
+    '<p class="giris">' + ROL_METNI._giris + '</p>' +
+    '<p class="not">' + fotolar.length + ' ekran · Fotoğraflar gerçek bir tarayıcıda çekildi; içlerindeki bütün kişiler, okullar, ' +
+    'notlar ve şifreler <b>test verisidir</b>. Bir fotoğrafa tıklayınca büyük açılır: <kbd>←</kbd> <kbd>→</kbd> ile önceki ve sonraki ' +
+    'ekrana geçilir, fare tekerleğiyle aşağı kaydırılır, <kbd>Esc</kbd> ile kapanır.</p></div></header>' +
+    '<nav class="icindekiler" aria-label="Bölümler"><div class="ic">' + icindekiler + '</div></nav>' +
+    '<main>' + govde + '</main>' +
+    '<footer class="alt"><div class="ic">Eğitim Evi · açık kaynak okul portalı · ' +
+    '<a href="https://github.com/KARANKOYU/Egitim-Evi">GitHub</a> · Bu sayfayı <code>araclar/gezinti.js</code> üretir.</div></footer>' +
+    '<div class="gosterici" id="gosterici" role="dialog" aria-modal="true" aria-labelledby="gBaslik" hidden>' +
+    '<div class="g-ust"><div class="g-bilgi"><p class="g-yer" id="gYer"></p><h2 id="gBaslik"></h2><p class="g-metin" id="gMetin"></p></div>' +
+    '<div class="g-dugmeler"><span class="g-sayac" id="gSayac"></span>' +
+    '<button type="button" id="gOnceki" title="Önceki (sol ok)" aria-label="Önceki ekran">&#8592;</button>' +
+    '<button type="button" id="gSonraki" title="Sonraki (sağ ok)" aria-label="Sonraki ekran">&#8594;</button>' +
+    '<button type="button" id="gKapat" title="Kapat (Esc)" aria-label="Kapat">&#215;</button></div></div>' +
+    '<div class="g-sahne" id="gSahne" tabindex="-1"><div class="g-cerceve" id="gCerceve" tabindex="0"><img id="gResim" alt=""></div></div></div>' +
+    '<script>var FOTOLAR = ' + JSON.stringify(fotolar).replace(/</g, '\\u003c') + ';\n' + ALBUM_JS + '</script>' +
+    '</body></html>';
+  fs.writeFileSync(path.join(CIKTI, 'index.html'), h, 'utf8');
+  if (eksik.length) console.log('  ! anlatımı olmayan ' + eksik.length + ' adım: ' + eksik.slice(0, 8).join(' · ') + (eksik.length > 8 ? ' ...' : ''));
+}
+
 /* Görüntüleyici: fotoğrafa tıklayınca açılır; sol/sağ ok önceki/sonraki,
    Esc kapatır; üstte rol, konu ve adımın adı ile anlatımı. Telefon
    fotoğrafı telefon ekranı boyunda bir çerçevede, tekerlekle kaydırılır. */

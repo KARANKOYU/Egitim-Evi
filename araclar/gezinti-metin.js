@@ -456,4 +456,20 @@ const UYGULAMA_EKRANLARI = {
   '06-bildirim-cubugu.png': 'Uygulama: bildirim çubuğunda her zaman görünür'
 };
 
+ROL_METNI['aile-uygulamasi'] = { baslik: 'Eğitim Evi Aile uygulaması (çocuğun telefonu)',
+  giris: `Ayrı depodaki Android uygulaması (KARANKOYU/Egitim-Evi-App), öykünücüde deneme sunucusuna bağlanırken.` };
+Object.assign(ADIM_METNI, {
+  'aile-uygulamasi|Uygulama: ne paylaşıldığı ve giriş': A(`Uygulama açılınca neyin kimle paylaşılacağını yazar: konum ve
+    ekran süresi yalnızca veliye; okul görmez, 7 gün sonra silinir, hiçbir uygulama kapatılmaz.`),
+  'aile-uygulamasi|Uygulama: öğrenci hesabıyla giriş ve açık onay': A(`Okulun adresi ve çocuğun öğrenci hesabıyla giriş;
+    doğrulama sorusu ve çocuğun kendi onay kutusu. Şifre gizli yazılır; çocuğun oturumu telefonda kalmaz.`),
+  'aile-uygulamasi|Uygulama: konum izni isteniyor': A(`Bağlanınca Android önce konum iznini sorar.`),
+  'aile-uygulamasi|Uygulama: bağlandı, izinler sırayla': A(`Bağlı hesap ve eksik izinler: <b>Her zaman</b> konum, kullanım
+    erişimi, bildirimler ve arka planda çalışma; her birinin düğmesi ilgili ayar ekranını açar.`),
+  'aile-uygulamasi|Uygulama: bütün izinler verildi, son gönderim': A(`İzinler tamam; son konumun ve son gönderimin zamanı
+    yazar. Bağlantı buradan da kaldırılabilir.`),
+  'aile-uygulamasi|Uygulama: bildirim çubuğunda her zaman görünür': A(`Android, arka planda konum alan uygulamanın bildirim
+    çubuğunda görünmesini şart koşar: "Konumun ve ekran süren velinle paylaşılıyor".`)
+});
+
 module.exports = { ROL_METNI, ADIM_METNI, UYGULAMA_EKRANLARI };
