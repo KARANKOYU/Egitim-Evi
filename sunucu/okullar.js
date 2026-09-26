@@ -117,6 +117,42 @@ function okullariYukle() {
   }
 }
 
+/* Okul arama: sorgu (yazılan metin), il, ilçe ve tür süzgeci.
+   Kelime yoksa (yalnızca il/ilçe seçili) liste alfabetik gelir. Cevap:
+     { toplam, yakin, duzeltme, okullar: [{ id, ad, il, ilce, tip, ozel, resmiTur, kod, vurgu }] }
+   yakin: bütün kelimeleri tutan okul yok, en çok kelimesi tutanlar geldi.
+   duzeltme: yanlış yazılmış kelime düzeltildiyse aranan metin ("renk ortaokulu").
+   vurgu: okulun adında (boşlukla ayrılmış kelimelerden) tutan kelimelerin sırası. */
+const siralayici = new Intl.Collator('tr');
+
+function okulArama(sorgu, il, ilce, tip, limit) {
+  const qIlce = sadelestir(ilce);
+  const enFazla = Math.min(Math.max(limit || 30, 1), 100);
+  const uygun = i => {
+    const o = okulAra[i];
+    return !(il && o.il !== il) && !(qIlce && o.sadeIlce !== qIlce) && !(tip && o.tip !== tip);
+  };
+  const disari = (o, vurgu) => ({
+    id: o.id, ad: o.ad, il: o.il, ilce: o.ilce, tip: o.tip,
+    ozel: o.ozel ? 1 : 0, resmiTur: o.resmiTur, kod: o.kod, vurgu: vurgu || []
+  });
+
+  if (!aramaSade(sorgu)) {
+    /* Yalnız noktalama ("%%", "---") yazılmışsa ve il seçilmemişse bütün
+       listeyi taramanın anlamı yok. */
+    if (!il) return { toplam: 0, yakin: false, duzeltme: '', okullar: [], mesaj: 'İl seç ya da okul adı yaz.' };
+    const liste = [];
+    for (let i = 0; i < okulAra.length; i++) if (uygun(i)) liste.push(okulAra[i]);
+    liste.sort((a, b) => siralayici.compare(a.ad, b.ad));
+    return { toplam: liste.length, yakin: false, duzeltme: '', okullar: liste.slice(0, enFazla).map(o => disari(o)) };
+  }
+  const r = okulDizini.ara(sorgu, uygun, enFazla);
+  return {
+    toplam: r.toplam, yakin: r.yakin, duzeltme: r.duzeltme,
+    okullar: r.sonuclar.map(s => disari(okulAra[s.i], s.vurgu))
+  };
+}
+
 function okulKimlikBul(id) {
   const hedef = String(id || '');
   for (let i = 0; i < okulAra.length; i++) if (okulAra[i].id === hedef) return okulAra[i];
