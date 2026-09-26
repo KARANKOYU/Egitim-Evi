@@ -105,6 +105,51 @@ let hata2 = '';
 try { xlsx.oku(Buffer.alloc(0)); } catch (e) { hata2 = e.message; }
 kontrol('bos dosya cokertmiyor', hata2.length > 0, hata2);
 
+console.log('=== 8) ESKI EXCEL (.xls, Excel 97-2003) ===');
+{
+  const { tabloOku } = require(path.join(__dirname, '..', 'sunucu', 'yardimci', 'tablo-oku.js'));
+  const { tarihCoz } = require(path.join(__dirname, '..', 'sunucu', 'ortak.js'));
+  /* ornek-eski-liste.xls: LibreOffice ile kaydedilmiş sentetik liste. 900 farklı
+     metin, ortak metin tablosunun (SST) kayıt sınırını aşar (CONTINUE). */
+  const liste = fs.readFileSync(path.join(__dirname, 'ornek-eski-liste.xls'));
+  const s = tabloOku(liste, 'ornek-eski-liste.xls');
+  kontrol('iki sayfa, adlari Turkce harfli', s.length === 2 && s[0].ad === 'Öğrenciler' && s[1].ad === 'Servisçiler',
+    s.map(x => x.ad).join(','));
+  kontrol('451 satir (baslik + 450)', s[0].satirlar.length === 451, String(s[0].satirlar.length));
+  const ad = ['Ayşe', 'Mehmet', 'Çağla', 'Ömer', 'Şule', 'İpek', 'Can', 'Deniz', 'Ece', 'Gökhan'];
+  const soy = ['Yıldız', 'Kaya', 'Öztürk', 'Şahin', 'Çelik', 'Doğan', 'Arslan', 'Koç', 'Aydın', 'Güneş'];
+  let yanlis = 0, ilkYanlis = '';
+  for (let i = 0; i < 450; i++) {
+    const bek = [ad[i % 10], soy[(i * 7) % 10] + 'oğlu' + i, String(10000000000 + i * 7919), String(1 + i % 12), i % 2 ? 'Çiçek' : 'A'];
+    if (JSON.stringify(s[0].satirlar[i + 1]) !== JSON.stringify(bek)) { yanlis++; if (!ilkYanlis) ilkYanlis = i + ': ' + JSON.stringify(s[0].satirlar[i + 1]); }
+  }
+  kontrol('butun hucreler dogru (kayit sinirini asan metinler dahil)', yanlis === 0, yanlis + ' yanlis; ' + ilkYanlis);
+  kontrol('uzantisiz da taniniyor (dosya imzasindan)', tabloOku(liste, 'liste')[0].satirlar.length === 451);
+
+  /* ornek-eski-sayilar.xls: kucuk dosya (mini akis), sayi, ondalik, eksi, tarih. */
+  const sy = tabloOku(fs.readFileSync(path.join(__dirname, 'ornek-eski-sayilar.xls')), 'x.xls')[0].satirlar;
+  kontrol('sayi hucreleri: T.C., ondalik, eksi', sy[1][2] === '12345678950' && sy[1][5] === '3.5' && sy[1][6] === '-7' &&
+    sy[2][6] === '-0.25', JSON.stringify(sy[1]) + JSON.stringify(sy[2]));
+  kontrol('tarih hucresi gun sayisindan cozuluyor', tarihCoz(sy[1][3]) === '2012-05-12' && tarihCoz(sy[2][3]) === '2013-09-01',
+    sy[1][3] + ' ' + sy[2][3]);
+
+  /* Bozuk dosyalar hata verir, cokertmez ya da donguye girmez. */
+  const hataVerir = b => { try { tabloOku(b, 'x.xls'); return false; } catch (e) { return !!e.message; } };
+  kontrol('kesilmis dosya hata veriyor', hataVerir(liste.subarray(0, 3000)));
+  const donguEdi = Buffer.from(liste);
+  /* Dizin zinciri kendine döner: dizinin ilk sektörünün FAT girişi kendisini gösterir.
+     FAT sektörü başına 128 giriş (512 baytlık sektörde); hangi FAT sektörü olduğu başlıktaki listeden. */
+  const dizinIlk = donguEdi.readUInt32LE(0x30);
+  const fatSektoru = donguEdi.readUInt32LE(0x4C + Math.floor(dizinIlk / 128) * 4);
+  donguEdi.writeUInt32LE(dizinIlk, (fatSektoru + 1) * 512 + (dizinIlk % 128) * 4);
+  kontrol('dongulu sektor zinciri hata veriyor', hataVerir(donguEdi));
+  const disari = Buffer.from(liste);
+  disari.writeUInt32LE(0x7FFFFFF0, 0x30);
+  kontrol('dosya disini gosteren sektor hata veriyor', hataVerir(disari));
+  const sahte = Buffer.concat([liste.subarray(0, 8), Buffer.alloc(600, 0xAB)]);
+  kontrol('imzasi dogru ama ici bozuk dosya hata veriyor', hataVerir(sahte));
+}
+
 console.log('=== 6b) KUCUK DOSYA, DEV TABLO (bellek bombasi) ===');
 {
   /* Tek hucresi en uzak koseye yazilmis kucuk bir .xlsx: eskiden milyarlarca bos
