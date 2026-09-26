@@ -192,6 +192,69 @@ function okumaYukle(id) {
   });
 }
 
+function okumaCiz() {
+  var kap = $('okumaKap');
+  if (!kap) return;
+  var v = okumaDurum.veri;
+
+  /* Rol başına sayılar; düğmeye basınca o role süzülür. */
+  var roller = {}, sira = ['student', 'parent', 'teacher', 'principal'];
+  for (var i = 0; i < v.length; i++) {
+    var r = roller[v[i].rol] || (roller[v[i].rol] = { toplam: 0, okuyan: 0 });
+    r.toplam++;
+    if (v[i].okuma) r.okuyan++;
+  }
+  var h = '<div class="okuma-roller">';
+  for (var j = 0; j < sira.length; j++) {
+    var rs = roller[sira[j]];
+    if (!rs) continue;
+    h += '<button class="okuma-rol' + (okumaDurum.rol === sira[j] ? ' secili' : '') + '" data-act="okuma-rol" data-rol="' + sira[j] + '">' +
+      OKUMA_ROL_AD[sira[j]] + ' <b>' + rs.okuyan + '/' + rs.toplam + '</b></button>';
+  }
+  h += '</div>' +
+    '<div class="okuma-arac"><div class="sekme-satir">' +
+    okumaSekme('hepsi', 'Hepsi') + okumaSekme('okuyan', 'Okuyanlar') + okumaSekme('okumayan', 'Okumayanlar') +
+    '</div><input type="text" id="okumaAra" class="ara-kutu" placeholder="İsim ara" autocomplete="off"></div>' +
+    '<div class="okuma-liste" id="okumaListe"></div>';
+  kap.querySelector('.okuma-bilgi').innerHTML = h;
+
+  var kutu = $('okumaAra');
+  kutu.value = okumaDurum.ara;
+  kutu.oninput = function () { okumaDurum.ara = kutu.value; okumaListeCiz(); };
+  okumaListeCiz();
+}
+
+/* Yalnızca liste yeniden çizilir: arama kutusu odağını ve imlecini korur. */
+function okumaListeCiz() {
+  var q = nrm(okumaDurum.ara);
+  var liste = okumaDurum.veri.filter(function (a) {
+    if (okumaDurum.rol && a.rol !== okumaDurum.rol) return false;
+    if (okumaDurum.filtre === 'okuyan' && !a.okuma) return false;
+    if (okumaDurum.filtre === 'okumayan' && a.okuma) return false;
+    return !q || nrm(a.ad + ' ' + a.sinif + ' ' + a.cocuklar.join(' ')).indexOf(q) >= 0;
+  });
+  /* Okumayanlar üstte, sonra ada göre. */
+  liste.sort(function (a, b) {
+    return (a.okuma ? 1 : 0) - (b.okuma ? 1 : 0) || a.ad.localeCompare(b.ad, 'tr');
+  });
+
+  var h = liste.length ? '' : '<div class="hint" style="padding:8px 0">Bu seçimde kimse yok.</div>';
+  for (var k = 0; k < liste.length; k++) {
+    var a = liste[k];
+    var ek = a.cocuklar.length ? esc(a.cocuklar.join(', ')) + ' velisi' : (a.sinif ? esc(a.sinif) : (ROL_AD[a.rol] || ''));
+    h += '<div class="alici-satir"><div class="buyu">' + esc(a.ad) + ' <span class="alt">' + ek + '</span></div>' +
+      (a.okuma ? '<span class="okudu">' + tarihSaat(a.okuma) + '</span>' : '<span class="okumadi">okumadı</span>') + '</div>';
+  }
+  $('okumaListe').innerHTML = h;
+}
+
+EYLEMLER['okuma-filtre'] = function (el) { okumaDurum.filtre = el.getAttribute('data-filtre'); okumaCiz(); };
+EYLEMLER['okuma-rol'] = function (el) {
+  var r = el.getAttribute('data-rol');
+  okumaDurum.rol = okumaDurum.rol === r ? '' : r;
+  okumaCiz();
+};
+
 /* ---- yeni mesaj ---- */
 function mesajYeniModal() {
   return api('/mesajlar/hedefler').then(function (d) {

@@ -281,3 +281,54 @@ EYLEMLER['etut-hepsi-geldi'] = function () {
   for (var id in ETUT.secili.durumlar) if (!ETUT.secili.durumlar[id]) etutDurumYaz(id, 'var');
 };
 
+EYLEMLER['etut-yoklama-kaydet'] = function (el) {
+  var s = ETUT.secili, kayitlar = [], bos = 0;
+  for (var id in s.durumlar) {
+    if (s.durumlar[id]) kayitlar.push({ ogrenciId: id, durum: s.durumlar[id] });
+    else bos++;
+  }
+  if (!kayitlar.length) { mesajGoster('etyMesaj', 'hata', 'Kimse işaretlenmedi. "Hepsi geldi" ile başlayabilirsin.'); return; }
+  if (bos && !confirm(bos + ' öğrenci işaretlenmedi. Yalnızca işaretlenenler kaydedilsin mi?')) return;
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/etut/yoklama', 'POST', { id: s.id, tarih: s.tarih, kayitlar: kayitlar }).then(function (d) {
+    dugmeBitir(el);
+    mesajGoster('etyMesaj', 'iyi', d.message);
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('etyMesaj', 'hata', e.message); });
+};
+
+/* ---------------- öğrenci ve veli ---------------- */
+function etutOgrenciKarti(veri, baslik) {
+  var h = '<div class="kart">' + (baslik ? '<h3>' + esc(baslik) + '</h3>' : '');
+  if (!veri.etutler.length) h += '<div class="hint">Kayıtlı etüt yok.</div>';
+  for (var i = 0; i < veri.etutler.length; i++) {
+    var e = veri.etutler[i];
+    h += '<div class="satir"><div class="buyu"><div class="ad">' + esc(e.ad) + '</div>' +
+      '<div class="alt">' + esc(etutSaati(e)) + (e.ogretmenAdi ? ' · ' + esc(e.ogretmenAdi) : '') + '</div></div></div>';
+  }
+  var yoklamalar = veri.yoklamalar.filter(function (y) { return y.durum !== 'var'; });
+  if (yoklamalar.length) {
+    h += '<h4 class="alt-baslik" style="margin-top:14px">Gelmediği günler</h4>';
+    for (var j = 0; j < yoklamalar.length; j++) {
+      var y = yoklamalar[j];
+      h += '<div class="satir"><div class="buyu"><div class="ad">' + esc(tarihYazisi(y.tarih)) + ' · ' + esc(y.etutAdi) + '</div></div>' +
+        '<span class="etiket ' + (y.durum === 'yok' ? 'kirmizi' : 'mavi') + '">' + esc(ETUT_DURUM_AD[y.durum]) + '</span></div>';
+    }
+  } else if (veri.yoklamalar.length) {
+    h += '<div class="hint" style="margin-top:10px">Son yoklamaların hepsinde gelmiş.</div>';
+  }
+  return h + '</div>';
+}
+
+SAYFALAR.etutlerim = function () {
+  if (S.user.role === 'student') {
+    return api('/etut/ogrenci').then(function (d) {
+      yaz(hero('ETÜTLERİM', 'Katıldığın etütler ve yoklamaları.') + etutOgrenciKarti(d, ''));
+    });
+  }
+  if (!veliCocuklar().length) return veliCocukYok('ETÜTLER');
+  return cocuklarIcin('/etut/ogrenci').then(function (r) {
+    var h = hero('ETÜTLER', 'Çocuklarının etütleri ve etüt yoklamaları.') + veliCocukSeridi();
+    for (var i = 0; i < r.length; i++) h += etutOgrenciKarti(r[i].veri, r[i].cocuk.fullName);
+    yaz(h);
+  });
+};
