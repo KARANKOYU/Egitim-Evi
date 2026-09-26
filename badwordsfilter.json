@@ -1,0 +1,14 @@
+{
+  "aciklama": "Açılış sayfasındaki yorumlarda engellenen kelimeler. Büyük/küçük harf, Türkçe harf (ş=s, ı=i, ğ=g, ü=u, ö=o, ç=c), rakamla yazılmış harf (4=a, 3=e, 1=i, 0=o, 5=s) ve uzatılmış harf (salaaak) fark etmez. Dikkat: ı ile i de aynı sayılır; 'sık', 'sıkı' gibi masum kelimelerle çakışan kısa kelimeler eklenmemeli. 4 harf ve daha uzun kelimeler ekleriyle de yakalanır (salak -> salaklar); 3 harf ve kısası yalnızca tek başına yazılınca. Boşluklu satır (iki kelime) yan yana geçerse yakalanır. Satır ekleyip dosyayı kaydetmek yeter; sunucu en geç 30 saniyede yeniden okur.",
+  "kelimeler": [
+    "amk", "aq", "amq", "mk", "oç", "piç", "göt",
+    "amına", "amcık", "ananı", "anasını", "avradını", "bacını", "sülaleni",
+    "orospu", "oruspu", "orosbu", "fahişe", "kahpe", "kaltak", "sürtük", "kerhane",
+    "siktir", "sikerim", "sikeyim", "sokayım", "sokarım",
+    "yarrak", "yarak", "taşak", "götveren", "götlek", "ibne", "puşt", "pezevenk", "gavat", "yavşak",
+    "şerefsiz", "haysiyetsiz", "namussuz", "gerizekalı", "geri zekalı", "beyinsiz", "embesil",
+    "salak", "aptal", "dangalak", "ahmak", "dallama", "lavuk", "zibidi", "hıyarağası", "it oğlu it",
+    "fuck", "fucking", "shit", "bitch", "bastard", "asshole", "pussy", "whore", "slut", "cunt",
+    "bahis", "casino", "kumarhane"
+  ]
+}
