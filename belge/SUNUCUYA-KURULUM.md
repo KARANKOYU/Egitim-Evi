@@ -211,3 +211,253 @@ yeniden başlatmak gerekmez.
 
 ---
 
+## 6. Servis olarak çalıştır
+
+Uygulama arka planda, çökerse kendiliğinden yeniden başlasın diye:
+
+```
+nano /etc/systemd/system/egitimevi.service
+```
+
+İçine:
+
+```ini
+[Unit]
+Description=Egitim Evi
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/egitimevi
+ExecStart=/usr/bin/node sunucu/index.js
+Environment=PORT=3000
+Environment=HOST=127.0.0.1
+Restart=always
+RestartSec=5
+User=egitimevi
+Group=egitimevi
+# Uygulama yalnızca kendi data/ klasörüne yazabilir; sistemin geri kalanı salt okunur.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/egitimevi/data
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> `HOST=127.0.0.1` sayesinde uygulama doğrudan internete açılmaz; yalnızca
+> Caddy üzerinden erişilir.
+
+Başlat:
+
+```
+systemctl daemon-reload
+systemctl enable --now egitimevi
+systemctl status egitimevi
+```
+
+Yeşil `active (running)` görmen lazım.
+
+---
+
+## 7. HTTPS (Caddy)
+
+Caddy sertifikayı kendisi alır ve yeniler — uğraşmana gerek yok.
+
+```
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update && apt install -y caddy
+```
+
+Yapılandırma:
+
+```
+nano /etc/caddy/Caddyfile
+```
+
+İçindekileri sil, şunu yaz:
+
+```
+egitimevi.org, www.egitimevi.org {
+    reverse_proxy 127.0.0.1:3000
+    encode gzip
+}
+```
+
+Başlat:
+
+```
+systemctl restart caddy
+```
+
+Bir dakika içinde `https://egitimevi.org` açılır. Sertifika otomatik gelir.
+
+---
+
+## 8. Güvenlik duvarı
+
+Sadece gerekli kapılar açık kalsın:
+
+```
+ufw allow OpenSSH
+ufw allow 80
+ufw allow 443
+ufw --force enable
+```
+
+---
+
+## 9. İlk giriş
+
+İlk yönetici şifresi rastgele üretilir ve uygulamanın ilk açılışında (4. adımda elle
+açtığında) yalnızca bir kez ekrana yazılır. Kaçırdıysan servis günlüğüne bak:
+
+```
+journalctl -u egitimevi | grep -A3 "İlk yönetici"
+```
+
+`https://egitimevi.org` adresine `admin@egitimevi.com` ve bu şifreyle gir.
+**Girer girmez Ayarlar'dan şifreyi değiştir.**
+
+---
+
+## Yedekleme
+
+Veri PostgreSQL'de; uygulama bunu kendisi yedekliyor — **kurman gereken bir şey yok.**
+Günde bir kez veritabanının tamamını `data/yedek/` altına tek bir JSON dosyası olarak
+yazar, son kopyaları saklar, eskileri siler. Admin hesabıyla **Yedekleme** sayfasından
+elle kopya alabilir, indirebilir, istediğine geri dönebilirsin.
+
+> Geri yükleme öncesi o anki hâl `yedek-elle-geri-alma-…` adıyla ayrıca
+> saklanır; yanlış yedeği seçersen kaybolmazsın.
+
+Yedek dosyasına girmeyen iki şey var, bunları da kopyala:
+
+| Ne | Nerede | Kaybolursa |
+|---|---|---|
+| Ödev teslim dosyaları | `data/dosyalar/` | öğrencilerin yüklediği dosyalar gider |
+| Okul sayfası fotoğrafları | `data/okul-fotolari/` | okulların kapak, logo ve galeri fotoğrafları gider |
+| İletişim bilgileri | `data/config.yml` | sitenin altındaki e-posta ve telefon görünmez olur |
+| Telefon bildirimi anahtarı | `data/push-anahtar.json` | herkesin bildirimleri yeniden açması gerekir |
+
+**Ama bu tek başına yetmez.** Kopyalar sunucunun kendi diskinde duruyor;
+disk giderse yedekler de gider. Ayda bir kendi bilgisayarına çek:
+
+```
+scp -r root@egitimevi.org:/opt/egitimevi/data/yedek ./egitimevi-yedek
+scp -r root@egitimevi.org:/opt/egitimevi/data/dosyalar ./egitimevi-dosyalar
+scp -r root@egitimevi.org:/opt/egitimevi/data/okul-fotolari ./egitimevi-fotolar
+scp root@egitimevi.org:/opt/egitimevi/data/push-anahtar.json ./egitimevi-yedek/
+```
+
+Ek güvence olarak PostgreSQL'in kendi dökümü (haftalık, `crontab -e`):
+
+```
+0 4 * * 0 sudo -u postgres pg_dump egitimevi | gzip > /root/egitimevi-$(date +\%F).sql.gz
+```
+
+---
+
+## Güncelleme
+
+GitHub'a yeni sürüm gönderildikten sonra sunucuda:
+
+```
+cd /opt/egitimevi
+git pull
+npm ci --omit=dev
+systemctl restart egitimevi
+```
+
+Yeni şema dosyaları (`sunucu/veri/sema/`) açılışta kendiliğinden uygulanır.
+`data/` git'e girmediği için güncellemede dokunulmaz.
+
+---
+
+## İnternete açılınca ne değişiyor
+
+| | LAN'da | İnternette |
+|---|---|---|
+| Uygulama olarak kurma | önerilmiyordu | **çalışır** (HTTPS geldi) |
+| Telefon bildirimi (Web Push) | çalışmıyordu | **çalışır** |
+| Servisçinin konum göndermesi | çalışmıyordu (konum HTTPS ister) | **çalışır** |
+| Telefondan erişim | aynı wifi şart | her yerden |
+| Saldırı yüzeyi | okul ağı | **tüm internet** |
+
+Son satır önemli: artık gerçekten dışarıdayız. Zaten hazırdık — zorunlu
+iki adımlı giriş, kaba kuvvet kilidi, hız sınırı, CSP, scrypt şifreleme.
+Ama şu üçünü ihmal etme:
+
+1. **Admin şifresini değiştir** (ilk iş)
+2. **Yedeklemeyi kur** (yukarıdaki cron)
+3. **E-postayı ayarla** — kurulmazsa giriş kodları sunucu günlüğüne yazılır,
+   sen `journalctl -u egitimevi -f` ile bakmak zorunda kalırsın
+
+---
+
+## Saldırı ve aşırı yük (DDoS) koruması
+
+Uygulama tek başına şunlara karşı korunur: IP ve oturum başına hız sınırı, girişte
+kaba kuvvet kilidi ve bot sorusu, aynı anda en fazla 400 API isteği, sunucu boğulunca
+yeni API isteklerini `503` ile geri çevirme, gövdesini yavaş gönderen isteği 30 saniyede
+kesme, en fazla 1024 bağlantı. Bunlar **tek makineden gelen** saldırıyı durdurur.
+
+Binlerce makineden gelen gerçek DDoS'u sunucuya ulaşmadan durdurmak için önüne
+**Cloudflare** koy (ücretsiz plan yeter):
+
+1. cloudflare.com'da hesap aç, **Add site** ile `egitimevi.org`'u ekle, ücretsiz planı seç.
+2. Alan adı panelinde (GoDaddy vb.) ad sunucularını Cloudflare'in verdikleriyle değiştir.
+3. Cloudflare **DNS**: `@` ve `www` A kayıtları VPS'in IP'si, **turuncu bulut açık** (Proxied).
+4. **SSL/TLS → Overview: Full (strict)** (Caddy'nin sertifikası geçerli olduğu için).
+5. **Security → WAF → Rate limiting rules**: `/api/login` ve `/api/register` için
+   IP başına dakikada 20 istek, aşan 10 dakika engellensin.
+6. Saldırı anında **Security → Settings → Under Attack Mode**'u aç.
+
+Cloudflare arkasında `data/ayarlar.json` şöyle olmalı:
+
+```json
+"vekil": { "guven": true, "baslik": "cf-connecting-ip" }
+```
+
+Ve saldırgan Cloudflare'i atlayıp doğrudan sunucunun IP'sine gidemesin diye 443'ü
+yalnızca Cloudflare'in adreslerine aç (liste: https://www.cloudflare.com/ips/):
+
+```
+ufw delete allow 443
+for ip in $(curl -s https://www.cloudflare.com/ips-v4); do ufw allow from $ip to any port 443 proto tcp; done
+for ip in $(curl -s https://www.cloudflare.com/ips-v6); do ufw allow from $ip to any port 443 proto tcp; done
+```
+
+> Caddy'nin sertifika yenilemesi 80. kapıyı kullanır; o açık kalsın.
+
+---
+
+## PostgreSQL şifresini unuttum
+
+Sunucuda `postgres` kullanıcısının şifresine hiç gerek yok: kurulum aracı
+`--yerel-soket` ile şifresiz bağlanır. Uygulamanın kendi şifresi `data/ayarlar.json`'da;
+kaybolursa kurulum aracını yeniden çalıştır (şifreyi yeniler, veriye dokunmaz):
+
+```
+cd /opt/egitimevi && chown -R postgres data
+sudo -u postgres node araclar/veritabani-kur.js --yerel-soket
+chown -R egitimevi:egitimevi data && chmod 600 data/ayarlar.json && systemctl restart egitimevi
+```
+
+---
+
+## Sorun çıkarsa
+
+```
+systemctl status egitimevi      # servis çalışıyor mu
+journalctl -u egitimevi -n 50   # uygulama günlüğü
+systemctl status caddy          # HTTPS katmanı
+journalctl -u caddy -n 50       # sertifika hataları
+```
+
+Site açılmıyorsa sırayla bak: DNS doğru mu (`ping egitimevi.org`),
+servis çalışıyor mu, Caddy ayakta mı, güvenlik duvarı 443'ü açtı mı.
