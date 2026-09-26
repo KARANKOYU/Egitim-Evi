@@ -32,6 +32,14 @@ const { ogrenciKapsamindaMi, pub, yetkiVarMi } = require('../yetki');
 const { islemYaz } = require('./islem-kaydi');
 const nakil = require('./nakil');
 
+const ROL_AD = { student: 'öğrenci', teacher: 'öğretmen', servisci: 'servisçi' };
+const YETKI = {
+  student: { ac: 'ogrenci.hesap-ac', duzenle: 'ogrenci.duzenle', sifre: 'ogrenci.sifre' },
+  teacher: { ac: 'ogretmen.onayla', duzenle: 'ogretmen.duzenle', sifre: 'ogretmen.duzenle', sil: 'ogretmen.cikar' },
+  servisci: { ac: 'servis.yonet', duzenle: 'servis.yonet', sifre: 'servis.yonet', sil: 'servis.yonet' }
+};
+const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 async function yeniKod() {
   let kod = makeCode();
   while (await depo.kullanicilar.kodVarMi(kod)) kod = makeCode();

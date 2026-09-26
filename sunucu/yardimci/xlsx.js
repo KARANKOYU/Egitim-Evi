@@ -32,6 +32,74 @@ function crc32(buf) {
   return (c ^ -1) >>> 0;
 }
 
+/* ============ zip yazma ============ */
+
+function zipYaz(dosyalar) {
+  const parcalar = [];
+  const merkez = [];
+  let konum = 0;
+
+  for (const d of dosyalar) {
+    const ad = Buffer.from(d.ad, 'utf8');
+    const ham = d.veri;
+    const sikis = zlib.deflateRawSync(ham, { level: 9 });
+    /* Sıkıştırma büyütüyorsa ham hâliyle koy. */
+    const kucuk = sikis.length < ham.length;
+    const govde = kucuk ? sikis : ham;
+    const yontem = kucuk ? 8 : 0;
+    const crc = crc32(ham);
+
+    const yerel = Buffer.alloc(30);
+    yerel.writeUInt32LE(0x04034b50, 0);   // yerel başlık imzası
+    yerel.writeUInt16LE(20, 4);           // gereken sürüm (2.0)
+    yerel.writeUInt16LE(0x0800, 6);       // bayrak: dosya adları UTF-8
+    yerel.writeUInt16LE(yontem, 8);
+    yerel.writeUInt16LE(0, 10);           // saat
+    yerel.writeUInt16LE(0x21, 12);        // tarih: 1980-01-01 (sabit, tekrar üretilebilir olsun)
+    yerel.writeUInt32LE(crc, 14);
+    yerel.writeUInt32LE(govde.length, 18);
+    yerel.writeUInt32LE(ham.length, 22);
+    yerel.writeUInt16LE(ad.length, 26);
+    yerel.writeUInt16LE(0, 28);           // ek alan yok
+    parcalar.push(yerel, ad, govde);
+
+    const mrk = Buffer.alloc(46);
+    mrk.writeUInt32LE(0x02014b50, 0);     // merkezî dizin imzası
+    mrk.writeUInt16LE(20, 4);             // üreten sürüm
+    mrk.writeUInt16LE(20, 6);             // gereken sürüm
+    mrk.writeUInt16LE(0x0800, 8);
+    mrk.writeUInt16LE(yontem, 10);
+    mrk.writeUInt16LE(0, 12);
+    mrk.writeUInt16LE(0x21, 14);
+    mrk.writeUInt32LE(crc, 16);
+    mrk.writeUInt32LE(govde.length, 20);
+    mrk.writeUInt32LE(ham.length, 24);
+    mrk.writeUInt16LE(ad.length, 28);
+    mrk.writeUInt16LE(0, 30);             // ek alan
+    mrk.writeUInt16LE(0, 32);             // yorum
+    mrk.writeUInt16LE(0, 34);             // disk numarası
+    mrk.writeUInt16LE(0, 36);             // iç öznitelik
+    mrk.writeUInt32LE(0, 38);             // dış öznitelik
+    mrk.writeUInt32LE(konum, 42);         // yerel başlığın konumu
+    merkez.push(mrk, ad);
+
+    konum += yerel.length + ad.length + govde.length;
+  }
+
+  const merkezBuf = Buffer.concat(merkez);
+  const son = Buffer.alloc(22);
+  son.writeUInt32LE(0x06054b50, 0);
+  son.writeUInt16LE(0, 4);
+  son.writeUInt16LE(0, 6);
+  son.writeUInt16LE(dosyalar.length, 8);
+  son.writeUInt16LE(dosyalar.length, 10);
+  son.writeUInt32LE(merkezBuf.length, 12);
+  son.writeUInt32LE(konum, 16);
+  son.writeUInt16LE(0, 20);
+
+  return Buffer.concat(parcalar.concat([merkezBuf, son]));
+}
+
 /* ============ zip okuma ============ */
 
 function zipOku(buf) {

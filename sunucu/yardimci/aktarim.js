@@ -117,6 +117,22 @@ function gune(v) {
   return 0;
 }
 
+/* ============ başlık eşleme ============ */
+
+function basliklariEsle(satir, sutunlar) {
+  const harita = {};
+  const bulunan = {};
+  for (let i = 0; i < satir.length; i++) {
+    const a = anahtarla(satir[i]);
+    if (!a) continue;
+    for (const s of sutunlar) {
+      if (harita[s.anahtar] !== undefined) continue;
+      if (s.esler.indexOf(a) >= 0) { harita[s.anahtar] = i; bulunan[a] = 1; break; }
+    }
+  }
+  return harita;
+}
+
 /* ============ boş şablon ============ */
 
 const ANLATIM = {

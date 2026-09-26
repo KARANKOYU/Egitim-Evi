@@ -11,6 +11,37 @@ const { govdeTemizle } = require('./ortak');
 const { kucultKontrollu } = require('./yardimci/kucult');
 const { PUB } = require('./yollar');
 
+/* ============ http yardımcıları ============ */
+/* Her yanitta gonderilen guvenlik basliklari.
+   CSP: sayfa yalnizca kendi sunucusundan betik/stil yukler, disari veri gonderemez.
+   Satir ici style="" nitelikleri kullanildigi icin style-src'de unsafe-inline var;
+   script-src'de YOK, yani enjekte edilen bir <script> calismaz.
+   Harita dosemeleri (resim) yalnizca OpenStreetMap'ten gelir. Konum izni
+   yalnizca bu sitenin kendisine acik (servisci seferi); baska site ya da
+   cerceve konum isteyemez. */
+const GUVENLIK_BASLIKLARI = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Permissions-Policy': 'geolocation=(self), microphone=(), camera=(), payment=(), usb=()',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "img-src 'self' data: https://tile.openstreetmap.org",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "connect-src 'self'"
+  ].join('; ')
+};
+
 function baslikEkle(hedef) {
   for (const k in GUVENLIK_BASLIKLARI) hedef[k] = GUVENLIK_BASLIKLARI[k];
   return hedef;

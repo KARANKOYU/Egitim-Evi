@@ -155,6 +155,14 @@ const hatirlaticiSayaci = setInterval(() => { hatirlaticilariGonder().catch(e =>
 if (hatirlaticiSayaci.unref) hatirlaticiSayaci.unref();
 if (hatirlatmaSayaci.unref) hatirlatmaSayaci.unref();
 
+/* Konum gelmeyen açık servis seferleri kapanır, eski seferler silinir (10 dakikada bir). */
+const { depo: veriDeposu } = require('./veri');
+const seferSayaci = setInterval(() => { veriDeposu.okulHayati.seferTemizle().catch(() => {}); }, 10 * 60 * 1000);
+if (seferSayaci.unref) seferSayaci.unref();
+/* Eğitim Evi Aile: 7 günden eski konum ve ekran süresi saatte bir silinir. */
+const aileSayaci = setInterval(() => { veriDeposu.aile.temizle().catch(() => {}); }, 60 * 60 * 1000);
+if (aileSayaci.unref) aileSayaci.unref();
+
 /* Bildirim yazılınca aboneliği olan kişinin telefonuna da gider. */
 require('./push').baslat();
 

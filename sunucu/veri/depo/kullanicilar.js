@@ -14,6 +14,21 @@ const SEC = 'SELECT k.*, o.ad AS okul_adi, o.kisa_ad AS okul_kisa_ad, o.durum AS
   'FROM kullanicilar k LEFT JOIN okullar o ON o.id = k.okul_id';
 const AD_SIRASI = () => ' ORDER BY k.ad_soyad' + tr();
 
+async function zenginlestir(satirlar) {
+  const liste = satirlar.map(e.kullanici);
+  const rolIdler = [...new Set(liste.map(u => u.customRoleId).filter(Boolean))];
+  if (rolIdler.length) {
+    const harita = await roller.haritasi(rolIdler);
+    for (const u of liste) if (u.customRoleId) u._rol = harita.get(u.customRoleId) || null;
+  }
+  const ogretmenOkullari = [...new Set(liste.filter(u => u.role === 'teacher' && u.schoolId).map(u => u.schoolId))];
+  if (ogretmenOkullari.length) {
+    const harita = await roller.ogretmenYetkileri(ogretmenOkullari);
+    for (const u of liste) if (u.role === 'teacher' && harita.has(u.schoolId)) u._ogretmenYetkileri = harita.get(u.schoolId);
+  }
+  return liste;
+}
+
 async function coklu(kosul, parametreler, sira) {
   return zenginlestir(await sorgu(SEC + ' WHERE ' + kosul + (sira || AD_SIRASI()), parametreler));
 }
@@ -237,6 +252,24 @@ async function bagiCoz(veliId, ogrenciId) {
   });
 }
 
+/* Öğrencinin onaylı velileri */
+const velileri = ogrenciId =>
+  coklu("k.durum = 'approved' AND k.id IN (SELECT veli_id FROM veli_baglari WHERE ogrenci_id = $1)", [ogrenciId]);
+
+/* Birden çok öğrencinin onaylı velileri tek sorguda: Map(ogrenciId -> [veliId]) */
+async function veliHaritasi(ogrenciIdler) {
+  const harita = new Map();
+  if (!ogrenciIdler.length) return harita;
+  const satirlar = await sorgu(
+    'SELECT b.ogrenci_id, b.veli_id FROM veli_baglari b JOIN kullanicilar v ON v.id = b.veli_id ' +
+    "WHERE v.durum = 'approved' AND b.ogrenci_id = ANY($1::text[])", [ogrenciIdler]);
+  for (const r of satirlar) {
+    if (!harita.has(r.ogrenci_id)) harita.set(r.ogrenci_id, []);
+    harita.get(r.ogrenci_id).push(r.veli_id);
+  }
+  return harita;
+}
+
 /* Velinin ilk bağlandığı çocuğun okulu (okulu boş veliler için) */
 async function ilkCocugununOkulu(veliId) {
   const r = await tek(
@@ -264,6 +297,19 @@ async function engelleriYaz(id, liste) {
         [id, eid]);
     }
   });
+}
+
+/* Birden çok kullanıcının engel listeleri: Map(id -> [engellenen]) */
+async function engelHaritasi(idler) {
+  const harita = new Map();
+  if (!idler.length) return harita;
+  const satirlar = await sorgu(
+    'SELECT kullanici_id, engellenen_id FROM mesaj_engelleri WHERE kullanici_id = ANY($1::text[])', [idler]);
+  for (const r of satirlar) {
+    if (!harita.has(r.kullanici_id)) harita.set(r.kullanici_id, []);
+    harita.get(r.kullanici_id).push(r.engellenen_id);
+  }
+  return harita;
 }
 
 module.exports = {

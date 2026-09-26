@@ -28,6 +28,20 @@ const { yetkiVarMi } = require('../yetki');
 const { islemYaz } = require('./islem-kaydi');
 const { hesapDogrula, hesapNesnesi, ROL_AD, YETKI } = require('./hesaplar');
 
+const SUTUNLAR = {
+  ogrenci: [AD, SOYAD, TC, KADI, EPOSTA, SIFRE, DOGUM,
+    { anahtar: 'seviye', baslik: 'Sınıf (1-12)', esler: ['sinif', 'sinif112', 'sinifseviyesi', 'seviye', 'sinifduzeyi', 'duzey'] },
+    /* İkinci "sınıf" başlıklı sütun şubedir (müdürün tablosundaki gibi). */
+    { anahtar: 'sube', baslik: 'Şube', esler: ['sube', 'subesi', 'subeadi', 'sinifsubesi', 'sinif'], onek: ['sube'] },
+    { anahtar: 'okulNo', baslik: 'Okul no', esler: ['okulno', 'okulnumarasi', 'numara', 'no', 'ogrencino', 'ogrencinumarasi'],
+      onek: ['okulno', 'okulnumara'] },
+    ADRES, ADSOYAD],
+  servisci: [AD, SOYAD, DOGUM, TC, EPOSTA, KADI, SIFRE, TELEFON,
+    { anahtar: 'servis', baslik: 'Servis (adı ya da plakası)', esler: ['servis', 'servisadi', 'arac', 'plaka', 'aracplakasi'],
+      onek: ['servis', 'plaka'] },
+    ADRES, ADSOYAD]
+};
+
 /* Başlıktan aday anahtarlar: bütünü, parantez içi ve parantez öncesi.
    "Ahmet sami(İsim)" -> isim; "rol(öğretmen,custom rol)" -> rol. */
 function adaylar(baslik) {
@@ -38,6 +52,28 @@ function adaylar(baslik) {
   return liste.filter(Boolean);
 }
 
+function basliklariEsle(satir, sutunlar) {
+  const harita = {};
+  for (let i = 0; i < satir.length; i++) {
+    const a = adaylar(satir[i]);
+    if (!a.length) continue;
+    const bul = s => harita[s.anahtar] === undefined && (a.some(x => s.esler.indexOf(x) >= 0) ||
+      (s.onek || []).some(o => a.some(x => x.indexOf(o) === 0)));
+    const s = sutunlar.find(bul);
+    if (s) harita[s.anahtar] = i;
+  }
+  return harita;
+}
+
+/* Sayfanın türü: adından (Öğrenciler, Öğretmen listesi, Servisçi...). */
+function sayfaTuru(ad) {
+  const a = aktarim.anahtarla(ad);
+  if (/ogrenci/.test(a)) return 'ogrenci';
+  if (/ogretmen/.test(a)) return 'ogretmen';
+  if (/servis|sofor/.test(a)) return 'servisci';
+  return '';
+}
+
 /* Sınıf adı: seviye + şube (7 + a -> 7-A, 7 + çiçek -> 7-Çiçek). */
 function sinifAdi(seviye, sube) {
   seviye = clean(seviye, 10).replace(/\.0+$/, '').replace(/\s*\.?\s*sınıf$/i, '').trim();
@@ -46,6 +82,23 @@ function sinifAdi(seviye, sube) {
   else if (sube) sube = adDuzelt(sube.toLocaleLowerCase('tr'));
   if (seviye && sube) return (seviye + '-' + sube).slice(0, 30);
   return (seviye || sube).slice(0, 30);
+}
+
+/* Dosyayı okuyup sayfaları türlerine ayırır: [{ tur, sayfa, satirlar, harita }] */
+function cozumle(sayfalar, turIpucu) {
+  const bolumler = [];
+  for (const s of sayfalar) {
+    const satirlar = s.satirlar || [];
+    if (!satirlar.some(r => r && r.some(x => metinYap(x).trim()))) continue;
+    if (/nas[ıi]l ?doldurulur/i.test(s.ad)) continue;
+    const tur = sayfaTuru(s.ad) || turIpucu;
+    if (!tur) continue;
+    /* Başlık satırı: ilk dolu satır. */
+    let bas = satirlar.findIndex(r => r && r.some(x => metinYap(x).trim()));
+    const harita = SUTUNLAR[tur] ? basliklariEsle(satirlar[bas], SUTUNLAR[tur]) : {};
+    bolumler.push({ tur, sayfa: s.ad, satirlar, bas, harita });
+  }
+  return bolumler;
 }
 
 function sablon() {
