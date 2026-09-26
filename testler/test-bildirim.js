@@ -109,9 +109,9 @@ async function sayi(token, parca) {
   const odev2 = await iste('/api/assignments', 'POST', { title: 'Veli kopyası ödevi', description: 'x',
     startAt: gun(0), endAt: gun(3), studentIds: [s1.id, s2.id] }, O);
   let vl = await veliListe();
-  kontrol('iki çocuğun yeni ödevi veliye ayrı ayrı, başında çocuğun adı',
-    vl.filter(n => n.text === s1.fullName + ' · Yeni ödev: ' + odev2.body.assignment.title + ' (' + odev2.body.assignment.subject + ')').length === 1 &&
-    vl.filter(n => n.text.indexOf(s2.fullName + ' · Yeni ödev: Veli kopyası ödevi') === 0).length === 1, JSON.stringify(vl.slice(0, 3).map(n => n.text)));
+  kontrol('iki çocuğa giden aynı ödev veliye TEK bildirim, başında iki çocuğun adı',
+    vl.filter(n => n.text === s1.fullName + ', ' + s2.fullName + ' · Yeni ödev: ' + odev2.body.assignment.title + ' (' + odev2.body.assignment.subject + ')').length === 1 &&
+    vl.filter(n => /Yeni ödev: Veli kopyası ödevi/.test(n.text)).length === 1, JSON.stringify(vl.slice(0, 3).map(n => n.text)));
   await iste('/api/assignments/' + odev2.body.assignment.id + '/finish', 'POST', { results: { [s1.id]: 'yapti' } }, O);
   vl = await veliListe();
   const sonucKopya = vl.find(n => n.text.indexOf(s1.fullName + ' · ') === 0 && / dersinden "Veli kopyası ödevi" ödevi açıklandı: Yaptı$/.test(n.text));

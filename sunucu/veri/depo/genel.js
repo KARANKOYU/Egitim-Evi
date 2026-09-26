@@ -72,16 +72,21 @@ async function veliKopyalari(liste) {
     veliler.get(r.ogrenci_id).idler.push(r.veli_id);
   }
   const zatenAlan = new Set(kimler);
-  const kopya = [];
+  /* Aynı bildirim aynı velinin iki çocuğuna gidiyorsa (ör. kardeşler aynı sınıfta)
+     veliye tek bildirim gider: "Zeynep Şahin, Burak Öztürk · ...". */
+  const birlesik = new Map();   // veli + metin -> { kime, adlar, baglanti }
   for (const b of liste) {
     const v = veliler.get(b.kime);
     if (!v) continue;
     for (const vid of v.idler) {
       if (zatenAlan.has(vid)) continue;
-      kopya.push({ kime: vid, metin: v.ad + ' · ' + b.metin, baglanti: veliBaglantisi(b.baglanti, b.kime) });
+      const anahtar = vid + '|' + b.metin;
+      const var_ = birlesik.get(anahtar);
+      if (var_) { if (var_.adlar.indexOf(v.ad) < 0) var_.adlar.push(v.ad); continue; }
+      birlesik.set(anahtar, { kime: vid, adlar: [v.ad], metin: b.metin, baglanti: veliBaglantisi(b.baglanti, b.kime) });
     }
   }
-  return kopya;
+  return [...birlesik.values()].map(x => ({ kime: x.kime, metin: x.adlar.join(', ') + ' · ' + x.metin, baglanti: x.baglanti }));
 }
 
 /* Kişiye göre değişen metinler tek sorguda (kopya eklemeden). */

@@ -652,6 +652,8 @@ dokununca velinin o çocuğa ait sayfası açılır (Ödevler, Devamsızlık, İ
 
 - Veliye zaten kendi metniyle haber veren bildirimler (devamsızlık: "Çocuğunuz ... dersine
   gelmedi", etüt yoklaması, servis yaklaşıyor, okul değiştirme) ikinci kez gitmez.
+- Aynı bildirim velinin iki çocuğuna birden gidiyorsa (ör. kardeşler aynı sınıfta) veliye tek
+  bildirim gider: "Zeynep Şahin, Burak Öztürk · Yeni ödev: ..."
 - Aynı bildirimi kendisi de alan veliye (ör. öğrencilere ve velilere giden mesaj) kopya gitmez.
 - Öğrencinin kendi kurduğu hatırlatıcılar yalnızca ona gider.
 
