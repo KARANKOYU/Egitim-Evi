@@ -190,3 +190,62 @@ function tsAjanda(t) {
   return h + (parca.length ? '<div class="tk-ajanda-satir">' + parca.join(' · ') + '</div>' : ' <span class="soluk">· boş gün</span>');
 }
 
+EYLEMLER['tarih-ay'] = function (el, yon) {
+  var d = tsTarih(TS.ay + '-01');
+  d.setMonth(d.getMonth() + Number(yon));
+  TS.ay = tsIso(d).slice(0, 7);
+  var gun = Math.min(tsTarih(TS.odak).getDate(), new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate());
+  TS.odak = TS.ay + '-' + tsIki(gun);
+  tsCiz(false);
+};
+
+function tsDegerYaz(t) {
+  var kutu = $(TS.hedef);
+  kutu.value = t;
+  var dugme = $(TS.hedef + 'Dugme');
+  if (dugme) dugme.innerHTML = tsDugmeYazi(t) + '<span class="tarih-simge" aria-hidden="true">' + ik('takvim') + '</span>';
+  kutu.dispatchEvent(new Event('change', { bubbles: true }));
+  kutu.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/* Güne dokununca seçilir; pencere açık kalır (başka ayın günüyse o aya geçer). */
+EYLEMLER['tarih-sec'] = function (el, t) {
+  if (!TS.hedef || el.disabled) return;
+  tsDegerYaz(t);
+  TS.odak = t;
+  TS.ay = t.slice(0, 7);
+  tsCiz(true);
+};
+
+EYLEMLER['tarih-temizle'] = function () {
+  if (!TS.hedef) return;
+  tsDegerYaz('');
+  tsCiz(false);
+};
+
+EYLEMLER['tarih-kapat'] = function () { tsKapat(true); };
+
+/* Klavye ve dışarı tıklama (bir kez kurulur). */
+document.addEventListener('keydown', function (e) {
+  if (!TS.hedef || !document.querySelector('.tarih-kutu')) return;
+  var adim = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); tsKapat(true); return; }
+  if (e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); EYLEMLER['tarih-ay'](null, e.key === 'PageUp' ? -1 : 1); tsCiz(true); return; }
+  if (!adim || !e.target.closest || !e.target.closest('.tk-izgara')) return;
+  e.preventDefault();
+  TS.odak = tsGunEkle(TS.odak, adim);
+  TS.ay = TS.odak.slice(0, 7);
+  tsCiz(true);
+}, true);
+
+document.addEventListener('mouseover', function (e) {
+  var g = TS.hedef && e.target.closest && e.target.closest('.tk-gun');
+  if (!g) return;
+  var a = document.querySelector('.tk-ajanda');
+  if (a) a.innerHTML = tsAjanda(g.getAttribute('data-id'));
+});
+
+document.addEventListener('click', function (e) {
+  if (!TS.hedef || !e.target.closest) return;
+  if (!e.target.closest('.tarih-alan')) tsKapat(false);
+});

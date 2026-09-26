@@ -420,6 +420,31 @@ EYLEMLER['sonuc-hepsi'] = function (el) {
   odevSayimYaz();
 };
 
+/* ---- ödevin kendisini düzeltme (ad, açıklama, tarihler) ----
+   Sonuçlanmış ödevde de olur; öğrenciler ve sonuçlar değişmez. Ad ya da
+   son teslim değişirse öğrencilere sunucu haber verir. */
+EYLEMLER['odev-duzelt'] = function () {
+  var a = S._acikOdev;
+  if (!a) return;
+  modalAc('Ödevi düzenle',
+    '<div class="field"><label for="odBaslik">Ödev adı</label>' +
+    '<input type="text" id="odBaslik" maxlength="120" value="' + esc(a.title) + '"></div>' +
+    '<div class="field"><label for="odAciklama">Açıklama</label>' +
+    '<textarea id="odAciklama" rows="3" maxlength="1000">' + esc(a.description || '') + '</textarea></div>' +
+    '<div class="row2 odev-tarihler"><div class="field"><label for="odBasDugme">Başlama tarihi</label>' +
+    tarihAlani('odBas', (a.startAt || '').slice(0, 10)) + '<label class="gizli-etiket" for="odBasSaat">Başlama saati</label>' +
+    saatAlani('odBasSaat', a.startTime || '08:00') + '</div>' +
+    '<div class="field"><label for="odBitDugme">Son tarih</label>' +
+    tarihAlani('odBit', (a.endAt || '').slice(0, 10), { min: 'odBas' }) + '<label class="gizli-etiket" for="odSaat">Son saat</label>' +
+    saatAlani('odSaat', a.endTime || '12:00') + '</div></div>' +
+    ekAlani('odevDuzelt', 'odev', S._acikOdevEkleri) +
+    '<div id="odMesaj"></div>',
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="odev-duzelt-kaydet" data-id="' + esc(a.id) + '">Kaydet</button>');
+  ekAlaniKur('odevDuzelt');
+  $('odBaslik').focus();
+};
+
 EYLEMLER['odev-duzelt-kaydet'] = function (el, id) {
   var kok = $('modalGovde');
   formHatalariniSil(kok);

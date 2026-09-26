@@ -1,0 +1,21 @@
+/* Tarih seçici (ajanda): 04e-tarih-secici.js. Kutunun altında açılır;
+   telefonda ekranın altından yukarı açılan bir sayfa olur. */
+.tarih-alan { position: relative; }
+.tarih-dugme {
+  display: flex; align-items: center; gap: 9px; width: 100%; min-height: 46px; padding: 10px 13px;
+  border: 1px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--kart);
+  color: var(--yazi); font: inherit; font-size: 15px; text-align: left; cursor: pointer;
+}
+.tarih-dugme .tarih-simge { margin-left: auto; display: inline-flex; padding-left: 10px; border-left: 1px solid var(--cizgi); }
+.tarih-dugme .ikon { width: 18px; height: 18px; color: var(--ana); flex: 0 0 auto; }
+.tarih-gun { color: var(--soluk); font-size: 13.5px; }
+.tarih-yazi.bos { color: var(--soluk); }
+/* Başlama ve son tarihin altında saat listesi (K12net'teki gibi alt alta) */
+.odev-tarihler .saat-sec { margin-top: 8px; width: 100%; }
+.zorunlu { color: var(--ana); }
+.gizli-etiket { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tarih-dugme:hover { border-color: var(--ana); }
+.tarih-dugme:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; }
+.tarih-dugme[aria-expanded="true"] { border-color: var(--ana); box-shadow: 0 0 0 3px var(--ana-acik); }
+.tarih-yazi { font-variant-numeric: tabular-nums; }
+
