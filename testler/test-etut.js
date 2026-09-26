@@ -192,6 +192,20 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
   kontrol('/indir ve /download indirme sayfasını açıyor', /Eğitim Evi Android uygulaması/.test(sayfaHtml) &&
     /\/js\/indir\.js/.test(sayfaHtml) && sayfaHtml2 === sayfaHtml);
 
+  /* Adresler: uygulamanın sayfaları ve /school/<okul> açılır; tanınmayan adres 404 "Sayfa bulunamadı". */
+  const sayfa = async yol => { const r = await fetch(BASE + yol); return { durum: r.status, metin: await r.text() }; };
+  const olmayan = await sayfa('/boyle-bir-sayfa-yok');
+  kontrol('tanınmayan adres 404 ve "Sayfa bulunamadı"', olmayan.durum === 404 && /Sayfa bulunamadı/.test(olmayan.metin) &&
+    /Ana sayfaya dön/.test(olmayan.metin), olmayan.durum);
+  const eskiBicim = await sayfa('/test-ortaokulu');
+  kontrol('okul yalnızca /school/ altında: /<okul> artık 404', eskiBicim.durum === 404, eskiBicim.durum);
+  const acilmayan = [];
+  for (const y of ['/giris', '/kayit', '/login', '/signup', '/about', '/faq', '/hakkinda', '/sss', '/school/test-ortaokulu', '/school/test-ortaokulu/']) {
+    const s = await sayfa(y);
+    if (s.durum !== 200 || !/id="authWrap"/.test(s.metin)) acilmayan.push(y + ' ' + s.durum);
+  }
+  kontrol('uygulama adresleri açılıyor (giris/kayit/about/faq/school)', acilmayan.length === 0, acilmayan.join(', '));
+
   console.log('=== 7) İNCELEMEDEN GELEN DÜZELTMELER ===');
   /* Rol vermek "rol yönetir" ister: öğretmen düzenleme yetkisi yetmez; kimse kendine rol veremez. */
   const duzenleyici = await iste('/api/school/role', 'POST', { name: 'Düzenleyici ' + z, permissions: ['ogretmen.duzenle'] }, M);

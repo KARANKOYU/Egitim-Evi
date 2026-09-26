@@ -247,6 +247,17 @@ const MIME = {
 
 const PARCA_KLASORLERI = [path.join(PUB, 'js', 'parcalar'), path.join(PUB, 'css', 'parcalar')].map(k => k.toLowerCase());
 
+/* Tek sayfalık uygulamanın (index.html) açtığı adresler: açılış, giriş (/login, /giris),
+   kayıt (/signup, /kayit), Hakkında (/about), SSS (/faq) ve okul sayfası (/school/<okul>).
+   Bunların dışında dosyası olmayan her adres "Sayfa bulunamadı" (404) olur. */
+const UYGULAMA_YOLLARI = new Set(['', 'index.html', 'login', 'giris', 'signup', 'kayit', 'hakkinda', 'about', 'sss', 'faq']);
+const OKUL_YOLU = /^school\/[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
+
+function uygulamaYoluMu(rel) {
+  const y = String(rel).replace(/^\/+|\/+$/g, '').toLowerCase();
+  return UYGULAMA_YOLLARI.has(y) || OKUL_YOLU.test(y);
+}
+
 function serveStatic(req, res, urlPath) {
   let rel;
   try { rel = decodeURIComponent(urlPath.split('?')[0]); } catch (e) { rel = '/'; }
@@ -270,15 +281,16 @@ function serveStatic(req, res, urlPath) {
     return res.end('Bulunamadı');
   }
   statikOku(full, (err, kayit) => {
-    /* Dosya yoksa tek sayfalık uygulamanın kabuğunu döndür — adres
-       çubuğuna doğrudan #/sayfa yazılınca da açılsın. */
+    /* Dosya yoksa: uygulamanın adresiyse kabuğu (index.html), değilse
+       "Sayfa bulunamadı" sayfasını 404 koduyla döndür. */
     if (err) {
-      return statikOku(path.join(PUB, 'index.html'), (e2, kabuk) => {
+      const bulunamadi = !uygulamaYoluMu(rel);
+      return statikOku(path.join(PUB, bulunamadi ? '404.html' : 'index.html'), (e2, kabuk) => {
         if (e2) {
           res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
           return res.end('Bulunamadı');
         }
-        htmlSurumle(kabuk, k => statikGonder(req, res, k));
+        htmlSurumle(kabuk, k => statikGonder(req, res, k, bulunamadi ? 404 : 0));
       });
     }
     if (kayit.tur.indexOf('text/html') === 0) return htmlSurumle(kayit, k => statikGonder(req, res, k));
@@ -318,9 +330,9 @@ function htmlSurumle(kayit, geri) {
   });
 }
 
-function statikGonder(req, res, kayit) {
-  /* Tarayıcıda aynı sürüm varsa gövdeyi hiç göndermiyoruz. */
-  if (req.headers['if-none-match'] === kayit.etag) {
+function statikGonder(req, res, kayit, durum) {
+  /* Tarayıcıda aynı sürüm varsa gövdeyi hiç göndermiyoruz (404 sayfası hariç). */
+  if (!durum && req.headers['if-none-match'] === kayit.etag) {
     res.writeHead(304, baslikEkle({
       'ETag': kayit.etag,
       'Cache-Control': 'no-cache'
@@ -348,7 +360,8 @@ function statikGonder(req, res, kayit) {
   if (baslik['Content-Encoding']) baslik['Vary'] = 'Accept-Encoding';
 
   baslik['Content-Length'] = govde.length;
-  res.writeHead(200, baslikEkle(baslik));
+  if (durum === 404) baslik['Cache-Control'] = 'no-store';
+  res.writeHead(durum || 200, baslikEkle(baslik));
   res.end(govde);
 }
 
