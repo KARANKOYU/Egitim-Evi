@@ -64,3 +64,60 @@ function servisAdayCiz() {
   $('svListe').innerHTML = h || '<div class="hint">Eşleşen öğrenci yok.</div>';
 }
 
+EYLEMLER['kulup-katil'] = function (el, id) {
+  el.disabled = true;
+  return api('/kulupler/katil', 'POST', { id: id }).then(function (r) {
+    return SAYFALAR.kulupler().then(function () { sayfaMesaji('iyi', r.message); });
+  })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+EYLEMLER['kulup-ayril'] = function (el, id) {
+  if (!confirm('Kulüpten ayrılmak istiyor musun?')) return;
+  el.disabled = true;
+  return api('/kulupler/ayril', 'POST', { id: id }).then(function () { return SAYFALAR.kulupler(); })
+    ['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+EYLEMLER['kulup-kaydet'] = function (el, id) {
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/kulupler/kaydet', 'POST', { id: id, ad: $('kuAd').value, aciklama: $('kuAciklama').value,
+    danismanId: $('kuDanisman').value, kontenjan: $('kuKontenjan').value, gunSaat: $('kuGunSaat').value, basvuruAcik: $('kuAcik').checked })
+    .then(function () { modalKapat(); return SAYFALAR.kulupler(); })
+    ['catch'](function (e) { dugmeBitir(el); mesajGoster('kuMesaj', 'hata', e.message); });
+};
+
+EYLEMLER['kulup-sil'] = function (el, id) {
+  if (!confirm('Kulüp ve üyelik kayıtları silinsin mi?')) return;
+  el.disabled = true;
+  return api('/kulupler/sil', 'POST', { id: id }).then(function () { modalKapat(); return SAYFALAR.kulupler(); })
+    ['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+/* Üye listesi: danışman ve yönetim; çıkar ve ara-ekle. */
+EYLEMLER['kulup-uyeler'] = function (el, id) { return kulupUyeleriAc(id, ''); };
+
+function kulupAdayCiz() {
+  var q = nrm($('kuAra').value), h = '', n = 0;
+  if (!q) { $('kuAdaylar').innerHTML = '<div class="hint">Eklemek için ad yaz.</div>'; return; }
+  for (var i = 0; i < S.kulupUye.adaylar.length && n < 40; i++) {
+    var o = S.kulupUye.adaylar[i];
+    if (nrm(o.ad + ' ' + o.sinif).indexOf(q) < 0) continue;
+    n++;
+    h += '<div class="satir"><div class="buyu">' + esc(o.ad) + ' <span class="alt">' + esc(o.sinif) + '</span></div>' +
+      '<button class="btn kucuk" data-act="kulup-uye-ekle" data-id="' + esc(o.id) + '">Ekle</button></div>';
+  }
+  $('kuAdaylar').innerHTML = h || '<div class="hint">Eşleşen öğrenci yok.</div>';
+}
+
+/* Ekle / çıkar: pencere yenilenir (arama korunur), arkadaki sayfa da tazelenir. */
+function kulupUyeIslem(el, yol, ogrenciId) {
+  el.disabled = true;
+  var ara = $('kuAra') ? $('kuAra').value : '';
+  return api(yol, 'POST', { id: S.kulupUye.id, ogrenciId: ogrenciId })
+    .then(function () {
+      SAYFALAR.kulupler()['catch'](function () { /* sayfa sonra tazelenir */ });
+      return kulupUyeleriAc(S.kulupUye.id, ara);
+    })['catch'](function (e) { el.disabled = false; mesajGoster('kuuMesaj', 'hata', e.message); });
+}
+EYLEMLER['kulup-uye-ekle'] = function (el, ogrenciId) { return kulupUyeIslem(el, '/kulupler/uye-ekle', ogrenciId); };
+EYLEMLER['kulup-uye-cikar'] = function (el, ogrenciId) { return kulupUyeIslem(el, '/kulupler/uye-cikar', ogrenciId); };
