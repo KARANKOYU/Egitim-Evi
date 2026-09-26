@@ -184,3 +184,88 @@ async function fotoYukle(k) {
   return ok(res, { foto: { id, yer, aciklama: '' } });
 }
 
+/* Herkese açık fotoğraf. Kimliği 32 haneli rastgele sayı, değişmez: tarayıcı
+   uzun süre önbellekte tutabilir. */
+async function fotoGonder(req, res, id) {
+  if (!hizSinir('okulFotoOku:' + istemciIp(req), 600, 60 * 1000)) return bad(res, 'Çok fazla istek. Biraz bekle.', 429);
+  if (!FOTO_ID.test(id)) return bad(res, 'Fotoğraf bulunamadı', 404);
+  const f = await depo.okulSayfalari.foto(id);
+  if (!f) return bad(res, 'Fotoğraf bulunamadı', 404);
+  let veri;
+  try { veri = await fs.promises.readFile(dosyaYolu(id)); } catch (e) { return bad(res, 'Fotoğraf bulunamadı', 404); }
+  res.writeHead(200, baslikEkle({
+    'Content-Type': f.tur,
+    'Content-Length': veri.length,
+    'Content-Disposition': 'inline',
+    'Cache-Control': 'public, max-age=604800, immutable'
+  }));
+  res.end(veri);
+}
+
+/* ---------------- uçlar ---------------- */
+async function uclar(k) {
+  const { req, res, me, body, p, segs, method } = k;
+
+  if (p === 'okul-foto' && method === 'GET') return fotoGonder(req, res, clean(segs[2], 40));
+  if (p !== 'okul-sayfa') return false;
+  if (duzenleyemez(res, me)) return;
+  const alt = segs[2] || '';
+
+  if (!alt && method === 'GET') {
+    const [s, fotolar, okul] = await Promise.all([
+      depo.okulSayfalari.bul(me.schoolId), depo.okulSayfalari.fotolari(me.schoolId), depo.okullar.bul(me.schoolId)
+    ]);
+    const temiz = cssTemizle(s ? s.css : '');
+    return ok(res, {
+      okul: { ad: okul ? okul.name : '', il: okul ? okul.city : '', ilce: okul ? okul.district : '', kisaAd: okul ? okul.kisaAd : '' },
+      tanitim: s ? s.tanitim : '',
+      ayarlar: ayarlariTemizle(s && s.ayarlar),
+      css: s ? s.css : '',
+      temizCss: temiz.css,
+      uyarilar: temiz.uyarilar,
+      fotolar: fotolar.map(f => ({ id: f.id, yer: f.yer, aciklama: f.aciklama, boyut: f.boyut })),
+      guncelleme: s ? s.guncelleme : null
+    });
+  }
+
+  if (alt === 'onizle' && method === 'POST') {
+    return ok(res, cssTemizle(typeof body.css === 'string' ? body.css : ''));
+  }
+
+  if (!alt && method === 'POST') {
+    if (typeof body.css === 'string' && body.css.length > 8000) {
+      return sendJSON(res, 400, { error: 'CSS en fazla 8000 karakter olabilir.', alan: 'css' });
+    }
+    const tanitim = tanitimTemizle(body.tanitim);
+    const css = typeof body.css === 'string' ? body.css.replace(/\r\n?/g, '\n') : '';
+    const ayarlar = ayarlariTemizle(body.ayarlar);
+    await depo.okulSayfalari.yaz(me.schoolId, { tanitim, ayarlar, css }, me.id);
+    await islemYaz(me, 'okul-sayfa.duzenlendi', 'okul sayfası kaydedildi', req);
+    const sonuc = cssTemizle(css);
+    return ok(res, {
+      ayarlar, tanitim, css, temizCss: sonuc.css, uyarilar: sonuc.uyarilar,
+      message: sonuc.uyarilar.length ? 'Kaydedildi. CSS\'in bazı kısımları kullanılamadığı için atıldı; aşağıda nedenleri var.'
+        : 'Okul sayfası kaydedildi.'
+    });
+  }
+
+  if (alt === 'foto-sil' && method === 'POST') {
+    const f = await depo.okulSayfalari.foto(clean(body.id, 40));
+    if (!f || f.okulId !== me.schoolId) return bad(res, 'Fotoğraf bulunamadı', 404);
+    await depo.okulSayfalari.fotoSil(f.id);
+    await fotoDosyasiniSil(f.id);
+    await islemYaz(me, 'okul-sayfa.foto-silindi', f.yer + ' fotoğrafı silindi', req);
+    return ok(res);
+  }
+
+  if (alt === 'foto-aciklama' && method === 'POST') {
+    const f = await depo.okulSayfalari.foto(clean(body.id, 40));
+    if (!f || f.okulId !== me.schoolId) return bad(res, 'Fotoğraf bulunamadı', 404);
+    await depo.okulSayfalari.fotoAciklamasi(f.id, clean(body.aciklama, 120));
+    return ok(res);
+  }
+
+  return false;
+}
+
+module.exports = { uclar, fotoYukle, fotoSupur, okulSayfasiGorunumu, ayarlariTemizle };
