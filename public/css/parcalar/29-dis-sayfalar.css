@@ -164,6 +164,30 @@
 .vitrin-kim h2 { margin: 0 0 8px; font-size: 23px; }
 .vitrin-kim p { margin: 0; color: var(--soluk); max-width: 40ch; }
 
+/* yorumlar */
+.v-yorumlar { padding: 36px 0 56px; border-top: 1px solid var(--cizgi); }
+.v-yorumlar[hidden] { display: none; }
+.v-yorum-ust { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 20px; }
+.v-yorum-ust h2 { margin: 0; font-size: 30px; }
+.v-yorum-ozet { display: inline-flex; align-items: center; gap: 10px; color: var(--soluk); font-size: 14.5px; }
+.v-yorum-ozet b { font-family: var(--f-baslik); font-size: 30px; color: var(--yazi); font-variant-numeric: tabular-nums; }
+.v-yorum-liste { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.v-yorum {
+  margin: 0; padding: 20px; border-radius: var(--r); background: var(--kart); border: 1px solid var(--cizgi);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.v-yorum blockquote { margin: 0; flex: 1; font-size: 15.5px; line-height: 1.6; overflow-wrap: anywhere; }
+.v-yorum figcaption { display: flex; align-items: center; gap: 10px; }
+.v-yorum figcaption span { display: flex; flex-direction: column; line-height: 1.3; }
+.v-yorum figcaption small { color: var(--soluk); font-size: 12.5px; }
+.v-yorum-not { margin: 18px 0 0; color: var(--soluk); font-size: 14.5px; }
+.yildizlar { display: inline-flex; gap: 2px; }
+.yildiz { display: inline-flex; color: var(--cizgi); }
+.yildiz .ikon { width: 18px; height: 18px; }
+.yildiz.dolu { color: var(--vurgu); }
+.yildiz.dolu .ikon { fill: currentColor; }
+@media (max-width: 860px) { .v-yorum-liste { grid-template-columns: 1fr; } }
+
 /* ================= Hakkında ================= */
 .hakkinda { max-width: 900px; padding: 52px 0 20px; }
 .hakkinda-bolumler {

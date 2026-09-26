@@ -203,6 +203,26 @@ EYLEMLER['admin-okul-ac-kaydet'] = function (el) {
   });
 };
 
+EYLEMLER['admin-okul-bitti'] = function () { modalKapat(); return git('okullar'); };
+
+/* ---- açılış sayfasındaki yorumlar: gizle / yeniden göster ---- */
+SAYFALAR.yorumlar = function () {
+  return api('/yorumlar/hepsi').then(function (d) {
+    var h = hero('YORUMLAR', 'Açılış sayfasında görünen yorumlar. Uygunsuz kelimeler badwordsfilter.json ile zaten engellenir; ' +
+      'geçeni buradan gizleyebilirsin.');
+    if (!d.yorumlar.length) { yaz(h + bosKutu('posta', 'Henüz yorum yok.')); return; }
+    h += '<div class="kart">' + d.yorumlar.map(function (y) {
+      return '<div class="satir' + (y.gizli ? ' soluk-satir' : '') + '">' + avatar(y.adKisa, y.adKisa + y.rol) +
+        '<div class="buyu"><div class="ad">' + esc(y.adKisa) + ' · ' + esc(y.rol) + ' ' + yildizCiz(y.yildiz) + '</div>' +
+        '<div class="alt" style="white-space:pre-wrap">' + esc(y.metin) + '</div>' +
+        '<div class="alt">' + tarihSaat(y.tarih) + (y.gizli ? ' · gizli' : '') + '</div></div>' +
+        '<button class="btn kucuk gri" data-act="yorum-gizle" data-id="' + esc(y.id) + '" data-gizli="' + (y.gizli ? '0' : '1') + '">' +
+        (y.gizli ? 'Göster' : 'Gizle') + '</button></div>';
+    }).join('') + '</div>';
+    yaz(h);
+  });
+};
+
 EYLEMLER['yorum-gizle'] = function (el, id) {
   return api('/yorumlar/gizle', 'POST', { id: id, gizli: el.getAttribute('data-gizli') === '1' })
     .then(function () { return git('yorumlar'); })['catch'](hataGoster);
