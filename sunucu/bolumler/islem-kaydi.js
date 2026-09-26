@@ -7,6 +7,59 @@ const { clean } = require('../ortak');
 const { depo } = require('../veri');
 const { yetkiVarMi } = require('../yetki');
 
+/* ============ işlem kaydı ============
+   Hesap açma, yetki değiştirme, toplu aktarım, yedekten dönme gibi
+   geri alması zor işlemler kaydediliyor. "Kim sildi?" sorusunun
+   cevabı olmadan bir okul sistemi güvenilir sayılmaz.
+
+   Sıradan okuma istekleri kaydedilmiyor; tablo bir günde şişerdi.
+   Üst sınır (en fazla 5000 kayıt) depo tarafında: depo/genel.js */
+
+const ISLEM_AD = {
+  'hesap.acildi': 'Hesap açıldı',
+  'hesap.silindi': 'Hesap silindi',
+  'hesap.toplu-acildi': 'Excel ile toplu hesap açıldı',
+  'sifre.sifirlandi': 'Şifre sıfırlandı (kullanıcı)',
+  'sifre.mudur-degistirdi': 'Şifre yönetici tarafından değiştirildi',
+  'sifre.toplu-dagitildi': 'Toplu giriş bilgisi dağıtıldı (şifreler yenilendi)',
+  'yemek.kaydedildi': 'Yemek listesi kaydedildi',
+  'rol.olusturuldu': 'Rol oluşturuldu',
+  'rol.degistirildi': 'Rol yetkileri değiştirildi',
+  'rol.silindi': 'Rol silindi',
+  'rol.atandi': 'Kullanıcıya rol atandı',
+  'ogretmen.onaylandi': 'Öğretmen onaylandı',
+  'kisi.okula-eklendi': 'Kişi okula eklendi',
+  'veli.baglandi': 'Veli öğrenciye bağlandı',
+  'veli.cozuldu': 'Veli bağı kaldırıldı',
+  'mudur.basvurdu': 'Müdürlük başvurusu yapıldı',
+  'ogretmen.cikarildi': 'Öğretmen okuldan çıkarıldı',
+  'program.toplu-eklendi': 'Excel ile ders programı eklendi',
+  'yedek.geri-yuklendi': 'Yedekten geri yüklendi',
+  'yedek.silindi': 'Yedek silindi',
+  'giris.basarisiz': 'Başarısız giriş denemesi',
+  'yil.acildi': 'Eğitim yılı açıldı',
+  'yil.aktif-degisti': 'Aktif eğitim yılı değişti',
+  'okul.acildi': 'Okul yönetici tarafından açıldı',
+  'okul-sayfa.duzenlendi': 'Okul sayfası düzenlendi',
+  'okul-sayfa.foto': 'Okul sayfasına fotoğraf yüklendi',
+  'okul-sayfa.foto-silindi': 'Okul sayfasından fotoğraf silindi',
+  'yorum.reddedildi': 'Uygunsuz kelimeli yorum reddedildi',
+  'yorum.gizlendi': 'Yorum gizlendi',
+  'yorum.acildi': 'Yorum yeniden gösterildi',
+  'etut.acildi': 'Etüt açıldı',
+  'etut.degistirildi': 'Etüt değiştirildi',
+  'etut.silindi': 'Etüt silindi',
+  'etut.ogrenciler': 'Etüdün öğrencileri değişti',
+  'etut.yoklama': 'Etüt yoklaması alındı',
+  'ogretmen.eklendi': 'Öğretmen kodla okula eklendi',
+  'ogretmen.ayrildi': 'Öğretmen okuldan ayrıldı',
+  'okul.adres': 'Okulun adresi değişti',
+  'hesap.eposta': 'Hesabın e-postası değişti',
+  'hesap.bilgi': 'Hesap bilgileri değişti',
+  'ogrenci.nakil': 'Öğrenci başka okuldan nakil geldi',
+  'okul.ozellik': 'Okulun özellikleri değişti (bölüm açıldı ya da kapandı)'
+};
+
 /* Kayıt yazılamazsa asıl işlem bozulmasın: hata yalnızca günlüğe düşer. */
 async function islemYaz(kisi, islem, detay, req) {
   /* Yetişkin hesabının kendi işlemleri (şifre, e-posta...) bir okulun
