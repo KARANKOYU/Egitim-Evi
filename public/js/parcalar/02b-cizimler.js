@@ -123,3 +123,9 @@ CIZIMLER.sinif =
 /* Çizimlerin alanı: sahneler geniş, simgeler kare. */
 var CIZIM_ALANI = { sinif: '0 0 320 200' };
 
+function cizim(ad, ek) {
+  var yol = CIZIMLER[ad];
+  if (!yol) return '';
+  return '<svg class="cizim' + (ek ? ' ' + ek : '') + '" viewBox="' + (CIZIM_ALANI[ad] || '0 0 64 64') + '" ' +
+    'aria-hidden="true" focusable="false">' + yol + '</svg>';
+}
