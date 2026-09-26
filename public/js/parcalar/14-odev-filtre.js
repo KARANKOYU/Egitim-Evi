@@ -152,6 +152,23 @@ function odevFiltreBagla() {
   }
 }
 
+/* Ödev serisi (yalnızca öğrencinin kendisine gelir): arka arkaya "Yaptı".
+   "Yaptı" dışı bir sonuç uyarı verir, arka arkaya ikincisi seriyi bozar. */
+function seriSeridi(seri) {
+  if (!seri || !seri.toplam) return '';
+  var tur = seri.bozuldu ? 'bozuk' : seri.uyari ? 'uyari' : 'iyi';
+  var yazi = seri.bozuldu
+    ? 'Serin bozuldu: arka arkaya iki ödevden "Yaptı" alamadın. Bir sonraki ödevi yaparak yeniden başla.'
+    : seri.uyari
+      ? 'Dikkat! Son ödevin "Yaptı" olmadı. Bir sonrakini de yapmazsan serin bozulur.'
+      : 'Arka arkaya ' + seri.sayi + ' ödevi yaptın. Böyle devam!';
+  return '<div class="seri-serit ' + tur + '" role="status">' +
+    '<span class="seri-ikon">' + ik('alev') + '</span>' +
+    '<div class="seri-sayi"><b>' + esc(seri.sayi) + '</b><span>ödev serin</span></div>' +
+    '<div class="seri-yazi">' + esc(yazi) +
+    (seri.enUzun > seri.sayi ? '<small>En uzun serin: ' + esc(seri.enUzun) + '</small>' : '') + '</div></div>';
+}
+
 SAYFALAR.odevler = function () {
   return api('/progress' + hedefOgrenci()).then(function (d) {
     S.odevHam = d.assignments || [];
