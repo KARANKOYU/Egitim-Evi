@@ -136,3 +136,113 @@ function odevSonucCiz() {
   kap.innerHTML = h;
 }
 
+/* Öğrenci kendi ödevlerine bakıyor mu (veli çocuğuna bakarken yıldız yok). */
+function odevYildizliMi() {
+  return S.user.role === 'student' && !S.viewStudentId;
+}
+
+function odevFiltreBagla() {
+  var alanlar = [['fDers', 'ders'], ['fYildiz', 'yildiz'], ['fDurum', 'durum'], ['fBas', 'bas'], ['fBit', 'bit']];
+  for (var i = 0; i < alanlar.length; i++) {
+    (function (id, anahtar) {
+      var el = $(id);
+      if (!el) return;
+      el.onchange = function () { S.odevF[anahtar] = el.value; odevSonucCiz(); };
+    })(alanlar[i][0], alanlar[i][1]);
+  }
+}
+
+SAYFALAR.odevler = function () {
+  return api('/progress' + hedefOgrenci()).then(function (d) {
+    S.odevHam = d.assignments || [];
+    S.araHook = odevSonucCiz;
+    var h = hero('ÖDEVLER', S.viewStudentId ? S.viewStudentName + ' adına görüntülüyorsun.' : '');
+    h += seriSeridi(d.seri);
+    h += odevFiltreCubugu(S.odevHam);
+    h += '<div id="odevSonuc"></div>';
+    yaz(h);
+    odevFiltreBagla();
+    odevSonucCiz();
+  });
+};
+
+function odevListesiOgrenci(list) {
+  var h = '<div class="kart">';
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    var sag;
+    if (a.result) {
+      var r = SONUC[a.result];
+      sag = '<span class="etiket ' + r.renk + '">' + r.ad + '</span>';
+    } else if (a.status === 'finished') {
+      sag = '<span class="etiket gri">Değerlendirilmedi</span>';
+    } else sag = kalanEtiketi(a);
+
+    /* Açılmamış aktif ödev turuncuya çalar; satıra tıklayınca ayrıntı açılır
+       ve öğrencinin kendisiyse "açıldı" olarak işaretlenir. */
+    var acilmadi = a.status === 'active' && a.acildi === false;
+    /* Yıldız düğmesi satırın içinde ama ayrı bir düğme: satıra tıklamak
+       ödevi açar, yıldıza tıklamak yalnızca yıldızı değiştirir. */
+    var yildiz = odevYildizliMi() ? '<button type="button" class="yildiz-btn' + (a.yildizli ? ' on' : '') + '" data-act="odev-yildiz"' +
+      ' data-id="' + esc(a.id) + '" aria-pressed="' + (a.yildizli ? 'true' : 'false') + '"' +
+      ' aria-label="' + (a.yildizli ? 'Yıldızı kaldır' : 'Yıldızla') + '" title="' + (a.yildizli ? 'Yıldızı kaldır' : 'Yıldızla') + '">' +
+      ik('yildiz') + '</button>' : '';
+    h += '<div class="satir odev-satir tikla-odev' + (acilmadi ? ' acilmadi' : '') + '" data-act="odev-oku" data-id="' + esc(a.id) + '"' +
+      ' data-ara="' + esc(a.title + ' ' + a.subject) + '"' + (acilmadi ? ' title="Henüz açılmadı"' : '') + '>' + yildiz +
+      '<div class="buyu"><div class="ad">' + esc(a.title) + '</div>' +
+      '<div class="alt">' + esc(a.subject) + ' · ' + esc(a.teacherName) +
+      (a.endAt ? ' · son teslim ' + tarihGunSaat(a.endAt, a.endTime) : '') + '</div>' +
+      (a.description ? '<div class="alt" style="margin-top:4px">' + esc(kisaMetin(a.description, 140)) + '</div>' : '') +
+      '</div>' + sag + '</div>';
+  }
+  return h + '</div>';
+}
+
+EYLEMLER['odev-yildiz'] = function (el, id) {
+  var a = (S.odevHam || []).filter(function (x) { return x.id === id; })[0];
+  if (!a || el.disabled) return;
+  var yeni = !a.yildizli;
+  el.disabled = true;
+  return api('/assignments/' + encodeURIComponent(id) + '/yildiz', 'POST', { yildiz: yeni }).then(function () {
+    a.yildizli = yeni;
+    /* Süzgeç yıldıza göreyse liste yeniden çizilir; değilse yalnızca düğme değişir. */
+    if (S.odevF.yildiz) { odevSonucCiz(); return; }
+    el.disabled = false;
+    el.classList.toggle('on', yeni);
+    el.setAttribute('aria-pressed', yeni ? 'true' : 'false');
+    el.setAttribute('aria-label', yeni ? 'Yıldızı kaldır' : 'Yıldızla');
+    el.title = yeni ? 'Yıldızı kaldır' : 'Yıldızla';
+  })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+function kisaMetin(s, n) {
+  s = String(s || '');
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+
+/* Ödev ayrıntısı. Öğrenci ilk kez açınca sunucuya bildirilir; öğretmen
+   "ödev 20.05.2026 16:20 tarihinde açıldı" diye görür. Veli bakınca
+   işaretlenmez (sunucu da yalnızca öğrencinin kendisini kabul eder). */
+EYLEMLER['odev-oku'] = function (el, id) {
+  var a = (S.odevHam || []).filter(function (x) { return x.id === id; })[0];
+  if (!a) return;
+  var sonuc = a.result && SONUC[a.result]
+    ? '<span class="etiket ' + SONUC[a.result].renk + '">' + SONUC[a.result].ad + '</span>'
+    : (a.status === 'finished' ? '<span class="etiket gri">Değerlendirilmedi</span>' : '<span class="etiket mavi">Aktif</span>');
+  modalAc(a.title,
+    '<div class="alt" style="color:var(--soluk);margin-bottom:10px">' + esc(a.subject) + ' · ' + esc(a.teacherName) + '</div>' +
+    '<div class="satir" style="padding-left:0;padding-right:0"><div class="buyu">' +
+    (a.startAt ? '<div>Veriliş: ' + tarihGunSaat(a.startAt, a.startTime) + '</div>' : '') +
+    (a.endAt ? '<div>Son teslim: <b>' + tarihGunSaat(a.endAt, a.endTime) + '</b></div>' : '<div>Süresiz</div>') +
+    '</div>' + sonuc + '</div>' +
+    (a.description ? '<div class="odev-aciklama">' + esc(a.description) + '</div>' : '') +
+    ekListesiGoster(a.ekler));
+  if (S.user.role === 'student' && !S.viewStudentId && a.acildi === false) {
+    api('/assignments/' + id + '/acildi', 'POST').then(function () {
+      a.acildi = true;
+      el.classList.remove('acilmadi');
+      el.removeAttribute('title');
+    })['catch'](function () { /* işaretlenemezse bir dahaki açılışta yeniden denenir */ });
+  }
+};
+
