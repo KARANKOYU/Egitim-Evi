@@ -229,3 +229,4 @@ async function uclar(k) {
   return bad(res, 'Böyle bir adres yok', 404);
 }
 
+module.exports = { uclar, cihazUclari };
