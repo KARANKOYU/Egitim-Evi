@@ -16,3 +16,25 @@
   .sidebar { animation: none; }
 }
 
+/* ===== ödev filtre çubuğu ===== */
+.kart.filtre { padding: 14px 16px; }
+.filtre-satir {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: flex-end;
+}
+.filtre-satir .field { margin: 0; flex: 1 1 150px; min-width: 130px; }
+.filtre-satir .field label { font-size: 12px; }
+.filtre-satir .field select,
+.filtre-satir .field input { padding: 9px 10px; font-size: 14px; }
+.filtre-satir .btn { flex: 0 0 auto; }
+.filtre-ozet {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--soluk);
+}
+@media (max-width: 640px) {
+  .filtre-satir .field { flex: 1 1 100%; }
+  .filtre-satir .btn { width: 100%; }
+}

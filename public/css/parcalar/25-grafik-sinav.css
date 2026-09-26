@@ -125,6 +125,23 @@ table.t input.deger.hatali { border-color: var(--kirmizi); background: var(--kir
 .acilma-yazi.acilmadi { color: var(--turuncu-yazi); }
 .odev-aciklama { white-space: pre-wrap; margin-top: 12px; line-height: 1.6; }
 
+/* Öğrencinin yıldızı: boşken çizgi, yıldızlıyken sarı dolgu.
+   Parmakla rahat basılsın diye 40px kare. */
+.yildiz-btn {
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  margin: -6px 4px -6px -8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  color: var(--soluk);
+  cursor: pointer;
+}
+.yildiz-btn:hover { background: var(--vurgu-acik); color: var(--vurgu-yazi); }
+.yildiz-btn.on { color: var(--vurgu); }
+.yildiz-btn.on .ikon { fill: currentColor; }
+.yildiz-btn:disabled { opacity: .6; cursor: wait; }
+
 /* ================= ödev kontrolü =================
    Üstte ödevin adı, altında konusu; öğrenciler alt alta, yanında sonuç kutusu. */
 .odev-bas { margin-bottom: 16px; }

@@ -118,3 +118,14 @@
   .kayan-isaret, .ekle-kutu { transition: none; }
 }
 
+/* Ayarlar: açılış sayfasına yorum — 0 ile 5 arası yıldız seçimi. */
+.yildiz-sec { display: flex; gap: 4px; flex-wrap: wrap; }
+.yildiz-sec-btn {
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--cizgi); background: var(--kart);
+  color: var(--soluk); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  font-weight: 700; font-size: 14px;
+}
+.yildiz-sec-btn .ikon { width: 22px; height: 22px; }
+.yildiz-sec-btn.dolu { color: var(--vurgu); border-color: var(--vurgu); }
+.yildiz-sec-btn.dolu .ikon { fill: currentColor; }
+.yildiz-sec-btn.secili { box-shadow: 0 0 0 3px var(--odak); }
