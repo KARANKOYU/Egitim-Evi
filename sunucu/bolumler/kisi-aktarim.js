@@ -101,6 +101,53 @@ function cozumle(sayfalar, turIpucu) {
   return bolumler;
 }
 
+/* Bir satırın alanları. */
+function satirAlanlari(b, satir) {
+  const g = {};
+  for (const k of Object.keys(b.harita)) g[k] = metinYap(satir[b.harita[k]]).trim();
+  /* Ad ve soyad tek sütundaysa (ya da soyad sütunu yoksa) son kelime soyaddır. */
+  const tekSutun = !g.ad && !g.soyad && g.adSoyad ? g.adSoyad : (b.harita.soyad === undefined && g.ad ? g.ad : '');
+  if (tekSutun) {
+    const k = tekSutun.split(/\s+/).filter(Boolean);
+    g.soyad = k.length > 1 ? k.pop() : '';
+    g.ad = k.join(' ');
+  }
+  delete g.adSoyad;
+  /* Sayı hücresinde gelen T.C. no ("12345678901.0") düzelir. */
+  if (g.tc) g.tc = normTc(g.tc).replace(/\.0+$/, '');
+  if (g.okulNo) g.okulNo = g.okulNo.replace(/\.0+$/, '');
+  return g;
+}
+
+/* ---------------- boş şablon ---------------- */
+const ANLATIM = [
+  ['Öğrenci ve servisçi listesi nasıl doldurulur'],
+  [''],
+  ['Her sayfaya o gruptaki kişileri satır satır yaz, sonra sisteme yükle. Kullanmadığın sayfayı boş bırak.'],
+  [''],
+  ['Zorunlu: Ad, Soyad ve T.C. Kimlik No. Geri kalanı isteğe bağlı.'],
+  ['Kullanıcı adı ve şifre boş bırakılırsa ikisi de T.C. kimlik no olur; kişi ilk girişte kendi şifresini belirler.'],
+  ['Kullanıcı adı yazılacaksa harfle başlar; yalnızca a-z (Türkçe harf yok), rakam, nokta ve alt çizgi.'],
+  ['Şifre yazılacaksa en az 8 karakter, harf ve rakam içermeli.'],
+  ['Doğum tarihi gg.aa.yyyy biçiminde: 12.05.2012'],
+  [''],
+  ['Öğrenciler'],
+  ['  Sınıf (1-12) ve Şube: 7 ve A yazarsan öğrenci 7-A sınıfına, 7 ve Çiçek yazarsan 7-Çiçek sınıfına girer.'],
+  ['  O sınıf okulda yoksa açılır.'],
+  ['  Okul no: okulun verdiği öğrenci numarası (okul içinde tek).'],
+  ['  Okulda aynı T.C. no ile öğrenci zaten varsa yenisi açılmaz; sınıfı, okul no\'su, adresi güncellenir'],
+  ['  (yıl sonunda sınıf atlatmak için listeyi yeniden yüklemen yeterli).'],
+  [''],
+  ['Servisçiler'],
+  ['  Telefon: velilerin ve öğrencilerin göreceği numara.'],
+  ['  Servis: sistemde açılmış servisin adı ya da plakası yazılırsa servisçi o servise atanır.'],
+  [''],
+  ['Başka bir tablodan da yükleyebilirsin: sütunların sırası önemli değil, başlık adları önemli.'],
+  ['Öğretmenler dosyayla eklenmez: her öğretmen kendi hesabını açar, eşleme kodunu sana verir.'],
+  ['.xlsx, .xls, .ods (LibreOffice) ve .csv okunur. Yalnızca alt alta isim yazılmış bir .txt dosyası da yüklenebilir.'],
+  ['Yükleme iki adımlı: önce ne olacağını gösteren bir liste görürsün, onaylayınca hesaplar açılır.']
+];
+
 function sablon() {
   const sayfa = tur => ({ ad: TURLER[tur].sayfa, basliklar: SUTUNLAR[tur].filter(s => !s.gizli).map(s => s.baslik),
     satirlar: [], genislikler: SUTUNLAR[tur].filter(s => !s.gizli).map(s => Math.max(12, s.baslik.length + 4)) });
@@ -125,6 +172,35 @@ function txtdenSablon(sayfalar, tur) {
     { ad: TURLER[tur].sayfa, basliklar: sutunlar.map(s => s.baslik), satirlar,
       genislikler: sutunlar.map(s => Math.max(12, s.baslik.length + 4)) },
     { ad: 'Nasıl doldurulur', duz: true, satirlar: ANLATIM, genislikler: [110] }]) };
+}
+
+/* ---------------- dışa aktarım ---------------- */
+async function disa(me) {
+  const [kisiler, siniflar, servisler] = await Promise.all([
+    depo.kullanicilar.okulun(me.schoolId, { roller: ['student', 'servisci'] }),
+    depo.siniflar.okulun(me.schoolId), depo.okulHayati.okulunServisleri(me.schoolId)]);
+  const sinifAd = new Map(siniflar.map(c => [c.id, c.name]));
+  const bol = ad => { const k = String(ad || '').split(/\s+/).filter(Boolean); const s = k.length > 1 ? k.pop() : ''; return [k.join(' '), s]; };
+  const tarih = iso => iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4) : '';
+  const sinifBol = ad => { const m = /^(\d{1,2})-(.+)$/.exec(ad || ''); return m ? [m[1], m[2]] : ['', ad || '']; };
+  const servisAdi = new Map();
+  for (const s of servisler) if (s.sofor_id) servisAdi.set(s.sofor_id, s.ad);
+  const satir = (tur, u) => {
+    const [ad, soyad] = bol(u.fullName);
+    const alan = { ad, soyad, tc: u.tc || '', kullaniciAdi: u.username, eposta: u.email || '', sifre: '',
+      dogum: tarih(u.dogum), adres: u.address || '', telefon: u.phone || '', okulNo: u.okulNo || '',
+      servis: servisAdi.get(u.id) || '' };
+    const [sv, sb] = sinifBol(sinifAd.get(u.classId));
+    alan.seviye = sv; alan.sube = sb;
+    return SUTUNLAR[tur].filter(s => !s.gizli).map(s => alan[s.anahtar] || '');
+  };
+  const sayfa = (tur, rol) => {
+    const sutunlar = SUTUNLAR[tur].filter(s => !s.gizli);
+    return { ad: TURLER[tur].sayfa, basliklar: sutunlar.map(s => s.baslik),
+      satirlar: kisiler.filter(u => u.role === rol).map(u => satir(tur, u)),
+      genislikler: sutunlar.map(s => Math.max(12, s.baslik.length + 4)) };
+  };
+  return xlsx.yaz([sayfa('ogrenci', 'student'), sayfa('servisci', 'servisci')]);
 }
 
 /* ---- uçlar ---- */
