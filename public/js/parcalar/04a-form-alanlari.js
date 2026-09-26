@@ -101,6 +101,32 @@ function capsUyarisi(input, acik) {
   }
 }
 
+/* ================= gün / ay / yıl seçici ================= */
+/* Tarayıcının tarih kutusu dile göre "mm/dd/yyyy" gösterebiliyor ve doğum
+   yılına gitmek için ay ay geri sarmak gerekiyor. Üç açılır liste hem her
+   tarayıcıda aynı görünür hem hızlı seçilir. Değer gizli kutuda YYYY-AA-GG
+   olarak durur; okuyan kod yine $('kimlik').value ile alır. */
+function tarihSecici(kimlik, iso, secenek) {
+  secenek = secenek || {};
+  var buYil = new Date().getFullYear();
+  var enYeni = buYil - (secenek.enKucukYas || 0);
+  var enEski = secenek.enEski || 1920;
+  var p = String(iso || '').split('-');
+  var y = p.length === 3 ? Number(p[0]) : 0;
+  var a = p.length === 3 ? Number(p[1]) : 0;
+  var g = p.length === 3 ? Number(p[2]) : 0;
+
+  var h = '<div class="tarih-secici" data-tarih="' + esc(kimlik) + '">' +
+    '<select id="' + esc(kimlik) + 'Gun" aria-label="Gün" autocomplete="bday-day"><option value="">Gün</option>';
+  for (var i = 1; i <= 31; i++) h += '<option value="' + i + '"' + (i === g ? ' selected' : '') + '>' + i + '</option>';
+  h += '</select><select id="' + esc(kimlik) + 'Ay" aria-label="Ay" autocomplete="bday-month"><option value="">Ay</option>';
+  for (var j = 1; j <= 12; j++) h += '<option value="' + j + '"' + (j === a ? ' selected' : '') + '>' + AY_ADI[j - 1] + '</option>';
+  h += '</select><select id="' + esc(kimlik) + 'Yil" aria-label="Yıl" autocomplete="bday-year"><option value="">Yıl</option>';
+  for (var k = enYeni; k >= enEski; k--) h += '<option value="' + k + '"' + (k === y ? ' selected' : '') + '>' + k + '</option>';
+  h += '</select><input type="hidden" id="' + esc(kimlik) + '" value="' + esc(y && a && g ? iso : '') + '"></div>';
+  return h;
+}
+
 /* Seçimler değişince gizli değeri yaz; ayın gün sayısına göre fazlalığı kapat
    (31 Şubat seçilemesin). Üçü de seçilmeden değer boş kalır. */
 function tarihSeciciGuncelle(kap) {
