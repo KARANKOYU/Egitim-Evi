@@ -57,6 +57,57 @@ function ogretmenProgrami() {
    Kaydedince gelmeyenin velisine "Çocuğunuz ... saat ... dersine gelmedi" gider. */
 var PY_DURUM = [{ k: 'var', ad: 'Geldi' }, { k: 'izinli', ad: 'Gelmedi — izinli' }, { k: 'yok', ad: 'Gelmedi — izinsiz' }];
 
+EYLEMLER['program-yoklama'] = function (el, lessonId) {
+  var saat = el.getAttribute('data-saat'), ad = el.getAttribute('data-ad');
+  return api('/devamsizlik/yoklama?lessonId=' + encodeURIComponent(lessonId)).then(function (d) {
+    S.py = { lessonId: lessonId, saat: saat, tarih: d.tarih, durum: {}, onceki: {} };
+    var h = '<div class="py-ust"><b>' + esc(ad) + '</b> · bugün ' + esc(saat) + ' · ' + d.ogrenciler.length + ' öğrenci' +
+      '<button type="button" class="btn kucuk ghost" data-act="py-hepsi">Hepsi geldi</button></div><div class="py-liste">';
+    for (var i = 0; i < d.ogrenciler.length; i++) {
+      var o = d.ogrenciler[i];
+      /* "Geç geldi" kaydı bu pencerede "Geldi" görünür, dokunulmazsa korunur. */
+      var secili = o.durum === 'gec' ? 'var' : (o.durum || 'var');
+      S.py.durum[o.id] = secili; S.py.onceki[o.id] = o.durum || 'var';
+      h += '<div class="py-satir"><div class="py-ad">' + avatar(o.ad, o.id) + '<span>' + esc(o.ad) + '</span></div>' +
+        '<div class="py-secim" role="radiogroup" aria-label="' + esc(o.ad) + '">';
+      for (var j = 0; j < PY_DURUM.length; j++) {
+        var s = PY_DURUM[j];
+        h += '<button type="button" class="py-dugme ' + s.k + (secili === s.k ? ' secili' : '') + '" role="radio" aria-checked="' + (secili === s.k) +
+          '" data-act="py-durum" data-id="' + esc(o.id) + '" data-durum="' + s.k + '">' + s.ad + '</button>';
+      }
+      h += '</div></div>';
+    }
+    h += '</div><div id="pyMesaj"></div>';
+    modalAc('Yoklama', h, '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+      '<button class="btn" data-act="py-kaydet">Kaydet</button>');
+  })['catch'](hataGoster);
+};
+
+function pySatiriCiz(id) {
+  Array.prototype.forEach.call(document.querySelectorAll('.py-dugme[data-id="' + id + '"]'), function (b) {
+    var on = b.getAttribute('data-durum') === S.py.durum[id];
+    b.classList.toggle('secili', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+EYLEMLER['py-durum'] = function (el, id) { S.py.durum[id] = el.getAttribute('data-durum'); pySatiriCiz(id); };
+EYLEMLER['py-hepsi'] = function () { for (var id in S.py.durum) { S.py.durum[id] = 'var'; pySatiriCiz(id); } };
+EYLEMLER['py-kaydet'] = function (el) {
+  var girisler = [];
+  for (var id in S.py.durum) {
+    var d = S.py.durum[id];
+    if (d === 'var' && S.py.onceki[id] === 'gec') d = 'gec';
+    girisler.push({ ogrenciId: id, durum: d });
+  }
+  var gelmeyen = girisler.filter(function (g) { return g.durum === 'yok' || g.durum === 'izinli'; }).length;
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/devamsizlik/yoklama', 'POST', { lessonId: S.py.lessonId, tarih: S.py.tarih, saat: S.py.saat, girisler: girisler })
+    .then(function () {
+      modalKapat();
+      sayfaMesaji('iyi', 'Yoklama kaydedildi.' + (gelmeyen ? ' Gelmeyen ' + gelmeyen + ' öğrencinin velisine bildirim gitti.' : ' Herkes geldi.'));
+    })['catch'](function (e) { dugmeBitir(el); mesajGoster('pyMesaj', 'hata', e.message); });
+};
+
 function ogrenciProgrami() {
   return api('/myschedule' + hedefOgrenci()).then(function (d) {
     var kimin = S.viewStudentId ? S.viewStudentName + ' adına görüntülüyorsun.' : '';
