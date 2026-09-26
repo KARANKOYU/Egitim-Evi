@@ -1,0 +1,120 @@
+/* Yetişkin hesabı: kaydırmalı sekmeler, kayıtta "ne olarak", el çizimleri,
+   rol seçimi ("Nasıl devam edeceksin?") ve "Ekle" penceresi. */
+
+/* ================= kaydırmalı sekme =================
+   Seçili düğmenin zemini ayrı bir parça (.kayan-isaret); 05-giris.js
+   seçili düğmenin sırasını --sira olarak yazar, parça oraya kayar. */
+.kayan-sekme { position: relative; isolation: isolate; }
+.kayan-sekme button { position: relative; z-index: 1; }
+.kayan-sekme button.on { background: transparent; box-shadow: none; }
+.kayan-isaret {
+  position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px;
+  width: calc((100% - 8px) / 2);
+  border-radius: var(--r-mini); background: var(--kart); box-shadow: var(--golge-yumusak);
+  transform: translateX(calc(var(--sira, 0) * 100%));
+  transition: transform var(--sure) var(--egri);
+  pointer-events: none;
+}
+.kayan-sekme button:focus-visible { outline: 2px solid var(--ana); outline-offset: -2px; }
+
+/* Girişte "Kullanıcı adı | E-posta": aynı düzen, bir boy küçük. */
+.kimlik-sec {
+  display: flex; background: var(--zemin); border-radius: var(--r-kucuk);
+  padding: 4px; margin-bottom: 12px; border: 1px solid var(--cizgi);
+}
+.kimlik-sec button {
+  flex: 1; border: 0; background: transparent; padding: 7px 6px; border-radius: var(--r-mini);
+  cursor: pointer; font-weight: 600; font-size: 13px; color: var(--soluk);
+  transition: color var(--sure-kisa) var(--egri);
+}
+.kimlik-sec button.on { color: var(--yazi); }
+#gKimlikIpucu:empty { display: none; }
+
+/* ================= kayıtta "ne olarak kullanacaksın" ================= */
+.alan-baslik {
+  display: block; font-size: 12.5px; font-weight: 600; color: var(--soluk);
+  margin-bottom: 5px; letter-spacing: .02em;
+}
+.ne-sec { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.field .ne-sec label { margin: 0; font-size: 13.5px; color: var(--yazi); letter-spacing: 0; }
+.ne-sec label { position: relative; cursor: pointer; }
+.ne-sec input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.ne-sec span {
+  display: block; text-align: center; padding: 9px 6px; border-radius: var(--r-kucuk);
+  border: 1.5px solid var(--cizgi); background: var(--kart-ust); font-weight: 600;
+  transition: border-color var(--sure-kisa) var(--egri), background var(--sure-kisa) var(--egri),
+              color var(--sure-kisa) var(--egri);
+}
+.ne-sec label:hover span { border-color: var(--cizgi-koyu); }
+.ne-sec input:checked + span { border-color: var(--ana); background: var(--ana-acik); color: var(--ana-koyu); }
+.ne-sec input:focus-visible + span { box-shadow: 0 0 0 3px var(--odak); }
+
+/* ================= rol seçimi ================= */
+.kisilik-bas {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 16px;
+  flex-wrap: wrap; margin-bottom: 18px; max-width: 760px;
+}
+.kisilik-bas h1 { margin: 0 0 2px; }
+.kisilik-bas .alt { margin: 0; color: var(--soluk); font-size: 13.5px; overflow-wrap: anywhere; }
+.kisilik-bas .btn { display: inline-flex; align-items: center; gap: 6px; }
+.kisilik-bas .btn .ikon { width: 16px; height: 16px; }
+
+.kisilik-liste { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.kisilik {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  padding: 14px 16px; background: var(--kart); border: 1px solid var(--cizgi);
+  border-radius: var(--r); box-shadow: var(--golge-yumusak); color: var(--yazi);
+  transition: border-color var(--sure-kisa) var(--egri), box-shadow var(--sure-kisa) var(--egri);
+}
+.kisilik:hover { border-color: var(--cizgi-koyu); }
+.kisilik.aktif { border-color: var(--ana-cizgi); background: var(--ana-acik); }
+.kisilik.kapali .kisilik-cizim, .kisilik.kapali .kisilik-yazi { opacity: .6; }
+.kisilik-cizim { width: 48px; height: 48px; }
+.kisilik-rol { font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.kisilik-yer { color: var(--soluk); font-size: 14px; overflow-wrap: anywhere; }
+.kisilik-islem { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+
+.kisilik-bos { max-width: 760px; }
+.kisilik-bos > p { margin: 0 0 14px; color: var(--soluk); max-width: 62ch; }
+
+/* ================= Ekle ================= */
+.ekle-secenek { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ekle-kutu {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left;
+  padding: 14px; border: 1.5px solid var(--cizgi); border-radius: var(--r-kucuk);
+  background: var(--kart-ust); color: var(--yazi); cursor: pointer;
+  transition: border-color var(--sure-kisa) var(--egri), transform var(--sure-kisa) var(--egri),
+              box-shadow var(--sure-kisa) var(--egri);
+}
+.ekle-kutu:hover { border-color: var(--ana-cizgi); transform: translateY(calc(var(--kalkis) * -1)); box-shadow: var(--golge); }
+.ekle-kutu:focus-visible { outline: none; border-color: var(--ana); box-shadow: 0 0 0 3px var(--odak); }
+.ekle-kutu .cizim { width: 52px; height: 52px; margin-bottom: 2px; }
+.ekle-ad { font-weight: 700; }
+.ekle-alt { font-size: 12.5px; color: var(--soluk); line-height: 1.45; }
+
+.ekle-panel { display: flex; flex-direction: column; gap: 4px; }
+.ekle-panel > p { margin: 0 0 10px; color: var(--soluk); max-width: 60ch; }
+.ekle-panel-cizim { width: 60px; height: 60px; color: var(--yazi); margin-bottom: 6px; }
+
+.ogretmen-kod {
+  font-family: var(--f-kod); font-size: 26px; font-weight: 700; letter-spacing: .12em;
+  font-variant-numeric: tabular-nums; color: var(--ana-koyu); background: var(--ana-acik);
+  border: 1.5px dashed var(--ana-cizgi); border-radius: var(--r-kucuk);
+  padding: 12px 16px; text-align: center; user-select: all; overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .ekle-secenek { grid-template-columns: 1fr; }
+  .ekle-kutu { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; row-gap: 2px; }
+  .ekle-kutu .cizim { grid-row: span 2; width: 44px; height: 44px; margin: 0; }
+  .kisilik { grid-template-columns: auto minmax(0, 1fr); }
+  .kisilik-islem { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (max-width: 480px) {
+  .ne-sec span { padding: 9px 4px; font-size: 12.5px; }
+  .ogretmen-kod { font-size: 21px; letter-spacing: .08em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kayan-isaret, .ekle-kutu { transition: none; }
+}
+
