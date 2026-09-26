@@ -535,3 +535,253 @@ kimlik numarası"), okulun giriş adresi ve öğrencinin veli kodu **bir kez** g
   doğum tarihiyle tek tek eklenir.
 - Eski okulun müdürüne, öğrenciye ve velilere bildirim gider; işlem kayda geçer.
 
+### Toplu hesap açma (Excel .xlsx/.xls, ODS, CSV, düz metin)
+
+**Excel Aktarım → İçeri aktar → Kişi listesi.** Şablonda iki sayfa var: Öğrenciler ve
+Servisçiler (üçüncü sayfada nasıl doldurulacağı yazar). Öğretmenler dosyayla eklenmez;
+dosyada öğretmen sayfası varsa o sayfa neden eklenmediği yazılarak atlanır. Kendi
+dosyan da olur: sütun başlıkları benzer olsun yeter ("İsim", "Ad(İsim)", "TC", "e posta",
+"doğum tarihi gg.mm.yyyy"...). Sayfa adı "Sayfa1" gibi genelse tür dosya adından
+(`öğrenci.ods`) ya da yüklerken yapılan seçimden anlaşılır.
+
+- Öğrencide **sınıf ve şube ayrı sütun**: 7 + Çiçek → "7-Çiçek" sınıfı; yoksa açılır.
+- Okulda aynı T.C. no ile kayıtlı kişi yeniden açılmaz, sınıfı ve bilgileri güncellenir
+  (yıl sonunda sınıf atlatma bu yolla yapılır).
+- Önce **kontrol**: her satırın ne olacağı (açılacak / güncellenecek / hata ve nedeni)
+  gösterilir; onaylanınca tek işlemde (transaction) uygulanır. Tek seferde en fazla 600
+  kişi; okul başına saatte 20 aktarım.
+- Açılan hesapların giriş bilgileri bir kez gösterilir; **Giriş kâğıtlarını yazdır** ile
+  her kişiye kesilip verilecek kâğıt çıkar.
+- **Metinden Excel'e:** alt alta yazılmış isimleri (ya da bir .txt dosyasını) şablon
+  biçiminde Excel'e çevirir; satır başındaki sıra numaraları atılır, yazılmışsa T.C.
+  no sütununa geçer. Eksikleri doldurup içeri aktarırsın.
+- **Dışarı aktar → Kişi listesi** aynı iki sayfayı verir (şifreler dosyada olmaz).
+
+Eski Excel (.xls, 97-2003) için ayrı bir okuyucu var (sunucu/yardimci/xls.js): birleşik
+belge biçimi ve BIFF8 kayıtları elle çözülür, ek paket yoktur. Şifreli .xls reddedilir.
+Ders programı aktarımı da .xlsx, .xls, .ods ve .csv kabul eder.
+
+Dosya zip bombasına karşı sınırlıdır (açılmış hâli en fazla 60 MB; en fazla 20 000
+satır, 200 sütun); dosya yalnızca okunur, sunucuda saklanmaz.
+
+### Kullanıcı adı ve şifre
+
+Her öğrencinin satırındaki **Hesap** butonundan:
+
+- Ad soyad ve **kullanıcı adı** değiştirilebilir
+- **Şifre sıfırlanabilir** (elle yaz ya da **Rastgele üret**)
+- **Veli kodu** görüntülenir, kopyalanır, gerekirse yenilenir
+
+> **Şifreler görüntülenemez.** `scrypt` ile geri döndürülemez biçimde saklanıyor;
+> sunucu bile mevcut şifreyi bilmiyor, yalnızca doğru olup olmadığını kontrol
+> edebiliyor. Öğrenci şifresini unuttuysa yenisini belirlersin.
+
+Şifre değişince o kişinin açık oturumları kapanır. **İlk girişte kendi şifresini
+belirlesin** işaretliyse (varsayılan) kişi girer girmez yeni şifre koyar;
+**Şifreyi T.C. no yap** ile şifre T.C. no'ya döner. Servisçi hesabı aynı pencereden
+silinir, öğretmen **Okuldan çıkar** ile okuldan çıkarılır (hesabı kendisinde kalır);
+öğrencininki silinmez, okuldan ayrılan öğrenci sınıfsız bırakılır.
+
+### Toplu giriş bilgisi dağıtımı
+
+**Öğrenciler → Giriş bilgisi dağıt** (şifre sıfırlama yetkisi gerekir): bir sınıf
+ya da bütün okul seçilir. Varsayılan olarak **yalnızca henüz giriş yapmamış**
+öğrenciler seçilir; kendi şifresiyle giren öğrencinin şifresi yanlışlıkla değişmez.
+
+- Yeni şifreleri **sunucu** üretir (okunaklı, karışan harfler yok, `crypto.randomInt`);
+  veritabanına yalnızca özetleri yazılır, seçilenlerin açık oturumları kapanır.
+- Liste **bir kez** gösterilir: **Excel indir** ya da **Yazdır / PDF**. Yazdırmada her
+  öğrenciye kesilip verilecek bir kâğıt çıkar: adres, kullanıcı adı, şifre ve veliye
+  veli kodu. Pencere kapanınca liste tarayıcı belleğinden de silinir.
+- Kâğıdını kaybeden öğrenci için tekrar "henüz giriş yapmamış" seçilir: yeni şifreyle
+  giriş yapana kadar öyle sayılır.
+- İşlem kaydına yazılır; okul başına saatte 30 dağıtım, tek seferde en fazla 600 öğrenci.
+
+### Öğrenci portalına giriş
+
+**Portalını aç** ile müdür, öğrencinin gördüğü ekranı birebir açar — ödevleri,
+notları, ders programı. Menüdeki **Öğrenci Listesi** ile geri döner.
+
+### Admin: müdür yönetimi
+
+**Müdürler** sayfasında tüm müdür hesapları listelenir (okul, il, öğretmen ve
+öğrenci sayısı, onay durumu). **Hesabı sil** ile müdür kaldırılır; okul
+*beklemede* durumuna döner, öğretmen ve öğrenci hesapları silinmez, okula yeni
+bir müdür başvurabilir.
+
+### Admin: okul açma
+
+Başvuru beklemeden okulu yönetici de açabilir: **Okullar → Okul aç**. Okul MEB
+listesinden aranır (listede yoksa adı, ili ve ilçesi yazılır), okulun adresi
+(`egitimevi.org/<uzantı>`) ve müdür yazılır:
+
+- Müdürün e-postası sistemde kayıtlı bir yetişkin hesabıysa müdürlük o hesaba eklenir;
+  kişi **Hesap değiştir**'den okuluna geçer, bildirim alır.
+- Değilse yeni yetişkin hesabı açılır: ad, soyad, kullanıcı adı, telefon ve güçlü bir
+  şifre (en az 8; büyük, küçük harf, rakam, özel karakter). **Rastgele üret** okunması kolay
+  bir şifre önerir. Müdür ilk girişte kendi şifresini belirlemeden hiçbir role geçemez.
+- Okul ve müdür onaylı açılır; işlem kaydına yazılır.
+
+---
+
+## Otomatik bildirimler
+
+Sunucu beş dakikada bir kontrol eder:
+
+| Bildirim | Kime | Ne zaman |
+|---|---|---|
+| Ders başlıyor | Öğretmene | Dersten 15 dakika önce |
+| Ödevin son günü yarın | Öğrenciye | Son günden bir gün önce |
+| Ders programa eklendi | Öğretmene | Müdür programa ders koyunca |
+| Sınıfa yerleştirildin | Öğrenciye | Müdür sınıfa atayınca |
+
+Aynı bildirim iki kez gönderilmez. Ödevi zaten sonuçlanmış öğrenciye hatırlatma
+gitmez.
+
+Öğretmen ödevi sonuçlandırınca öğrenciye **"Matematik dersinden "Oran orantı" ödevi
+açıklandı: Yaptı"** gider; sonuç sonradan değişirse "... ödevi sonucu değişti: Geç yaptı".
+Sınav sonucu ilk girildiğinde **"Matematik dersinden "2. Yazılı" sınavının sonucu açıklandı."**
+
+### Öğrencinin bildirimi veliye de gider
+
+Öğrenciye giden her bildirimin bir kopyası onaylı velilerine de gider; başında hangi
+çocuk olduğu yazar: **"Zeynep Şahin · Matematik dersinden "Oran orantı" ödevi açıklandı:
+Yaptı"**. Birden çok çocuklu velide her bildirim kendi çocuğunun adını taşır, karışmaz;
+dokununca velinin o çocuğa ait sayfası açılır (Ödevler, Devamsızlık, İlerleyiş...; üstteki
+çocuk şeridinde o çocuk seçili gelir). Telefon bildirimi de aynı metinle gider.
+
+- Veliye zaten kendi metniyle haber veren bildirimler (devamsızlık: "Çocuğunuz ... dersine
+  gelmedi", etüt yoklaması, servis yaklaşıyor, okul değiştirme) ikinci kez gitmez.
+- Aynı bildirimi kendisi de alan veliye (ör. öğrencilere ve velilere giden mesaj) kopya gitmez.
+- Öğrencinin kendi kurduğu hatırlatıcılar yalnızca ona gider.
+
+### Telefon bildirimi (Web Push)
+
+Kişi **Ayarlar → Telefon bildirimleri → Bildirimleri aç** derse uygulamadaki her bildirim
+(servis yaklaştı, yeni mesaj, ödev...) uygulama kapalıyken de telefonuna gelir. Paket
+kullanılmadı; Node'un kendi `crypto` modülüyle yazıldı (`sunucu/push.js`):
+
+- **RFC 8291** uçtan uca şifreleme (aes128gcm): içerik cihazın anahtarıyla şifrelenir,
+  push servisi (Google, Apple, Mozilla, Microsoft) okuyamaz. Test RFC'nin örneğini birebir
+  üretir.
+- **RFC 8292 VAPID** kimliği: sunucunun anahtar çifti ilk açılışta `data/push-anahtar.json`
+  dosyasına yazılır (depoya girmez; **yedeklenmeli**, kaybolursa herkes yeniden açmalı).
+- Abonelik adresi yalnızca bilinen push servislerinden kabul edilir (https, 443, izinli
+  alan adları): sunucu kullanıcının verdiği rastgele adrese istek atmaz.
+- Kişi başına en fazla 5 cihaz, dakikada en fazla 20 bildirim; geçersizleşen abonelik
+  (404/410) silinir. Çıkışta cihazın aboneliği bırakılır; aynı cihaza başka hesap girerse
+  öncekinin aboneliği düşer.
+- iPhone'da yalnızca **ana ekrana eklenmiş** uygulamada çalışır (iOS 16.4+).
+
+---
+
+## Telefona uygulama olarak kurma
+
+Site bir **PWA** — telefona ya da bilgisayara uygulama gibi kurulabilir.
+Kurulunca ayrı simgeyle açılır, tarayıcı çubuğu görünmez.
+
+Üst çubuktaki **Uygulamayı yükle** düğmesi, tarayıcı kuruluma izin verdiğinde
+kendiliğinden çıkar. Çıkmazsa düğmeye basınca elle kurulum adımları anlatılır.
+
+Kurulu uygulamada tarayıcının yenile düğmesi yoktur. Üst çubuktaki **Yenile** açık
+sayfayı sunucudan yeniden çizer (sen içerideyken girilen yeni ödev, mesaj ya da not
+görünsün); seçili filtreler ve kaydırma yeri korunur. Sayfada yazılmış ama kaydedilmemiş
+bir şey varsa silmeden önce sorar, dosya yüklenirken beklemeni söyler.
+
+> **Önemli:** Otomatik kurulum önerisi ve çevrimdışı çalışma **HTTPS** gerektirir.
+> `http://192.168.x.x` ile telefondan girildiğinde tarayıcı kurulum önermez —
+> ama yine de menüden **Ana ekrana ekle** diyebilirsin. Tam PWA deneyimi için
+> siteyi HTTPS arkasına almak gerekir (ör. Cloudflare Tunnel).
+
+Simgeleri yeniden üretmek için: `node araclar/simge-uret.js`
+
+---
+
+## Roller ve yetkiler
+
+Müdürün bütün yetkileri vardır ve bu değiştirilemez — okulda her şeyi
+yapabilen en az bir kişi kalmalı.
+
+Her okulun hazır bir **Öğretmen** rolü vardır: okuldaki her öğretmen bu
+rolün yetkilerine kendiliğinden sahiptir. Müdür bu yetkileri öteki roller
+gibi açıp kapatır (ör. öğretmenler sınav oluşturmasın). Bu rol silinmez ve
+ayrıca verilmez; kapatılan yetkinin bölümü öğretmen menüsünden de kalkar.
+
+Bunun dışında müdür **ek roller tanımlar**: adını kendi koyar ("Müdür
+Yardımcısı", "Etüt Sorumlusu", "Zümre Başkanı"), yetkilerini tek tek seçer,
+sonra bir öğretmene verir; o öğretmenin yetkileri iki rolün birleşimidir.
+Yeni rol **hazır şablondan** başlatılabilir: Müdür Yardımcısı, Rehber
+Öğretmen, Etüt Sorumlusu, Nöbetçi Öğretmen, Servis Sorumlusu, Kulüp
+Danışmanı, Zümre Başkanı. Şablon yalnızca kutuları işaretler; sonra
+istediğin gibi değiştirirsin.
+
+**Roller ve Yetkiler** sayfasından yönetilir. Rol vermek (öğretmen düzenleme
+penceresinden de olsa) "rol yönetir" yetkisi ister; kimse kendine rol veremez,
+kendi taşıdığı rolü ya da hazır Öğretmen rolünü de (kendine uygulandığı için)
+yalnızca müdür değiştirir. Hazır Öğretmen rolünde açık olan bir yetkiyi ek rolün
+ders/sınıf daraltması kısıtlamaz (birleşim). **Öğrenci portalına girer** yetkisi
+(ör. rehber öğretmen) okulun öğrenci listesini dar hâliyle (ad, sınıf, okul no)
+ve her öğrencinin portalını açar.
+
+### Yetki listesi
+
+| Grup | Yetkiler |
+|---|---|
+| **Ders ve program** | Derse öğretmen olarak atanabilir · Ders programını düzenler · Sınıfa ders ekler/çıkarır · Derse öğretmen atar |
+| **Sınıf ve öğrenci** | Sınıf açar/siler · Öğrenciyi sınıfa yerleştirir · Öğrenci hesabı açar · Öğrenci bilgilerini düzenler · Öğrenci şifresi sıfırlar · Öğrenci portalına girer |
+| **Öğretmenler** | Başvuru onaylar · Bilgi ve branş düzenler · Okuldan çıkarır |
+| **Ödev ve sınav** | Ödev verir · Ödev sonuçlandırır · Sınav oluşturur · Sınav notu girer · Girdiği sınıfların öğrenci sonuçlarını görür |
+| **Devamsızlık** | Yoklama alır · Okulun tüm devamsızlığını görür |
+| **Etüt** | Etüt açar ve düzenler · Bütün etütlerde yoklama alır |
+| **Mesajlaşma** | Sınıfa/gruba toplu mesaj ve anket · Herkese mesaj |
+| **Okul hayatı** | Yemek listesini düzenler · Servisleri düzenler · Kulüp açar ve düzenler |
+| **Yönetim** | Rol oluşturur · İşlem kaydını görür · Takvim · Eğitim yılı · Excel/CSV aktarım · Okul sayfası |
+
+### Ders ve sınıf daraltması
+
+Bir yetkiyi açtığında, yanında **Dersler** ve **Sınıflar** kutuları çıkar.
+Varsayılan "Tümü"dür; işareti kaldırıp tek tek seçebilirsin.
+
+Örnek — matematik zümre başkanı:
+
+| Yetki | Dersler | Sınıflar |
+|---|---|---|
+| Derse öğretmen olarak atanabilir | Matematik | Tümü |
+| Ödev verir | Matematik | Tümü |
+| Sınav notu girer | Matematik | Tümü |
+| Ders programını düzenler | — | 7-A, 7-B |
+
+Bu kişi Matematik dersine atanabilir ama Türkçe'ye atanamaz; 7-A ve 7-B'nin
+programını düzenler ama 8-A'yı **göremez bile**.
+
+Daraltılabilen yetkiler: derse atanabilir, ders programı, sınıfa ders ekleme,
+derse öğretmen atama, öğrenci yerleştirme, ödev verme ve sonuçlandırma,
+sınav oluşturma ve not girme, yoklama alma.
+
+Kapsam dışı bir işlem denenirse sunucu 403 döner — arayüzde gizlemek yetmez,
+kontrol sunucuda.
+
+### Öğretmen rolünün ilk yetkileri
+
+Derse atanabilir · Ödev verir · Ödev sonuçlandırır · Sınav oluşturur · Sınav notu girer · Yoklama alır ·
+Girdiği sınıfların öğrenci sonuçlarını görür
+
+Okulun Öğretmen rolü ilk açıldığında bu yetkilerle kurulur; müdür sonra
+değiştirebilir. Ek rol penceresinde Öğretmen rolünde zaten açık olan yetkiler
+**Öğretmen rolünde var** etiketiyle kilitli görünür.
+
+### Etütler
+
+Etüt, okulun belli bir gününde belli saatler arasında yapılan ders dışı
+çalışmadır (ör. "8. sınıf Matematik etüdü, Salı 15:40–16:20, Kütüphane").
+
+- **Etüt açar ve düzenler** yetkisi olan (müdür ya da rolüyle verilen kişi)
+  etüdü açar, gününü/saatini/yerini/öğretmenini değiştirir, öğrencilerini
+  sınıf sınıf ya da tek tek seçer.
+- Etüdün **öğretmeni** yoklamayı yalnızca etüt günü, başlangıçtan 15 dakika
+  önceden itibaren alır: **Geldi · İzinli · İzinsiz**.
+- **Bütün etütlerde yoklama alır** yetkisi olan (ör. nöbetçi öğretmen) her
+  etütte, geçmiş günler dahil yoklama alır ve düzeltir.
+- Gelmeyen öğrenciye ve velisine bildirim gider. Öğrenci **Etütlerim**,
+  veli **Etütler** sayfasında etütleri ve gelmediği günleri görür.
+
