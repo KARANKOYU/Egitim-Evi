@@ -76,7 +76,7 @@ function aileKurulumKarti(d) {
     '(<a href="' + AILE_APK + '" target="_blank" rel="noopener">GitHub\'dan APK</a>).</li>' +
     '<li>Uygulamada ' + ad + '\'in <b>öğrenci hesabıyla</b> giriş yap; paylaşımı ' + ad + ' kendisi onaylar.</li>' +
     '<li>İzinleri ver: <b>Konum — Her zaman izin ver</b>, <b>Kullanım erişimi</b>, <b>Bildirimler</b> ve ' +
-    '<b>arka planda çalışma</b> (pil kısıtlaması yok).</li></ol>' +
+    '<b>arka planda çalışma</b> (uygulamanın pil ayarında <b>Kısıtlamasız</b>).</li></ol>' +
     '<p class="hint">Uygulama hiçbir uygulamayı kapatmaz ya da kilitlemez; yalnızca konumu ve süreleri gönderir. ' +
     'iPhone\'da çalışmaz (Apple buna izin vermiyor).</p></div>';
 }

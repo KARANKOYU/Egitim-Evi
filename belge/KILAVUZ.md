@@ -1083,8 +1083,12 @@ bildirim** gider (günde bir kez).
   oturumu telefonda kalmaz. Öğrenci başına en fazla 3 telefon. Velilere "telefonunu bağladı"
   bildirimi gider.
 - **İzinler (uygulama sırayla ister):** Konum — **Her zaman izin ver** (uygulama kapalıyken
-  de), **Kullanım erişimi** (ekran süresi), **Bildirimler**, **arka planda çalışma** (pil
-  kısıtlaması yok). Android, arka planda konum alan uygulamanın bildirim çubuğunda
+  de), **Kullanım erişimi** (ekran süresi), **Bildirimler**, **arka planda çalışma**
+  (uygulama kendi ayar sayfasını açar, öğrenci Pil > **Kısıtlamasız**'ı seçer; doğrudan
+  "muaf tut" penceresi Play Store kuralına takıldığı için kullanılmaz). Uygulamanın verisi
+  buluta yedeklenmez ve yeni telefona taşınmaz; yeni telefonda yeniden bağlanılır. Yayın
+  paketi yalnızca HTTPS ile bağlanır (http yalnızca deneme paketinde, yerel ağda).
+  Android, arka planda konum alan uygulamanın bildirim çubuğunda
   görünmesini şart koşar: "Konumun ve ekran süren velinle paylaşılıyor".
 - **Sıklık:** veli Wi-Fi'de ve mobil veride ayrı seçer: 1, 5, 10, 15, 30 ya da 60 dakikada
   bir (varsayılan Wi-Fi 5, mobil 15). İnternet yokken konumlar telefonda birikir (en fazla
