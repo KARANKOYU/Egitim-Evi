@@ -81,3 +81,112 @@ function tsAyVerisi(ay) {
     .then(function () { TS.yukleniyor[ay] = false; });
 }
 
+function tsKapat(odakGeriDon) {
+  var kutu = document.querySelector('.tarih-kutu');
+  if (kutu) kutu.parentNode.removeChild(kutu);
+  var d = TS.hedef && $(TS.hedef + 'Dugme');
+  if (d) {
+    d.setAttribute('aria-expanded', 'false');
+    if (odakGeriDon) d.focus();
+  }
+  TS.hedef = null;
+}
+
+EYLEMLER['tarih-ac'] = function (el, id) {
+  if (TS.hedef === id && document.querySelector('.tarih-kutu')) { tsKapat(true); return; }
+  tsKapat(false);
+  var deger = $(id).value;
+  var enErken = tsEnErken(el.parentNode);
+  TS.hedef = id;
+  TS.odak = deger || (enErken && enErken > tsBugun() ? enErken : tsBugun());
+  TS.ay = TS.odak.slice(0, 7);
+  el.setAttribute('aria-expanded', 'true');
+  var kutu = document.createElement('div');
+  kutu.className = 'tarih-kutu';
+  kutu.setAttribute('role', 'dialog');
+  kutu.setAttribute('aria-label', 'Tarih seç');
+  el.parentNode.appendChild(kutu);
+  tsCiz(true);
+};
+
+function tsHafta(d) {
+  /* ISO hafta numarası (Pazartesi başlar) */
+  var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  var g = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - g);
+  var yilBasi = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - yilBasi) / 86400000 + 1) / 7);
+}
+
+/* K12net'teki gibi: ‹ Eylül 2025 ›, solda hafta numarası, altı hafta (önceki
+   ve sonraki ayın günleri soluk), altta Bugün · Temizle · Tamam. Güne
+   dokununca seçilir, pencere açık kalır; Tamam, Esc ya da dışarı tıklama
+   kapatır. Günün altındaki noktalar: tatil, okul etkinliği, ödevin son günü. */
+function tsCiz(odakla) {
+  var kutu = document.querySelector('.tarih-kutu');
+  var kap = TS.hedef && document.querySelector('[data-tarih-alan="' + TS.hedef + '"]');
+  if (!kutu || !kap) return;
+  tsAyVerisi(TS.ay);
+  var veri = TS.veri[TS.ay] || {};
+  var secili = $(TS.hedef).value, bugun = tsBugun(), enErken = tsEnErken(kap);
+  var ilk = tsTarih(TS.ay + '-01');
+  var bas = new Date(ilk.getFullYear(), ilk.getMonth(), 1 - ((ilk.getDay() + 6) % 7));
+
+  var h = '<div class="tk-ust">' +
+    '<button type="button" class="tk-ok" data-act="tarih-ay" data-id="-1" aria-label="Önceki ay">&#8249;</button>' +
+    '<b>' + AY_ADI[ilk.getMonth()] + ' ' + ilk.getFullYear() + '</b>' +
+    '<button type="button" class="tk-ok" data-act="tarih-ay" data-id="1" aria-label="Sonraki ay">&#8250;</button></div>' +
+    '<div class="tk-izgara" role="grid"><span class="tk-bas tk-hf" aria-hidden="true"></span>';
+  for (var s = 0; s < 7; s++) h += '<span class="tk-bas" aria-hidden="true">' + TS_GUN_KISA[s] + '</span>';
+  for (var hafta = 0; hafta < 6; hafta++) {
+    var pzt = new Date(bas.getFullYear(), bas.getMonth(), bas.getDate() + hafta * 7);
+    h += '<span class="tk-hf" aria-hidden="true">' + tsHafta(pzt) + '</span>';
+    for (var gn = 0; gn < 7; gn++) {
+      var d = new Date(pzt.getFullYear(), pzt.getMonth(), pzt.getDate() + gn);
+      var t = tsIso(d);
+      var buAy = t.slice(0, 7) === TS.ay;
+      var v = buAy ? (veri[t] || {}) : {};
+      var olay = v.olaylar || [];
+      var odev = olay.filter(function (o) { return o.tur === 'odev'; }).length;
+      var etkinlik = olay.filter(function (o) { return o.tur !== 'odev' && o.tur !== 'tatil'; }).length;
+      var kapali = enErken && t < enErken;
+      var etiket = tarihGun(t) + (v.tatil ? ', tatil' : '') + (odev ? ', ' + odev + ' ödevin son günü' : '') +
+        (etkinlik ? ', ' + etkinlik + ' etkinlik' : '');
+      h += '<button type="button" role="gridcell" class="tk-gun' + (buAy ? '' : ' diger') + (t === bugun ? ' bugun' : '') +
+        (t === secili ? ' secili' : '') + (gn >= 5 ? ' hs' : '') + (v.tatil ? ' tatil' : '') + (t === TS.odak ? ' odak' : '') +
+        '" data-act="tarih-sec" data-id="' + t + '" tabindex="' + (t === TS.odak ? '0' : '-1') + '" aria-label="' + esc(etiket) + '"' +
+        (kapali ? ' disabled' : '') + (t === secili ? ' aria-selected="true"' : '') + '>' + tsIki(d.getDate()) +
+        ((odev || etkinlik || v.tatil) ? '<span class="tk-isaret">' +
+          (v.tatil ? '<i class="tatil"></i>' : '') + (etkinlik ? '<i class="etkinlik"></i>' : '') + (odev ? '<i class="odev"></i>' : '') +
+          '</span>' : '') + '</button>';
+    }
+  }
+  var bugunKapali = enErken && bugun < enErken;
+  h += '</div><div class="tk-ajanda" aria-live="polite">' + tsAjanda(TS.odak) + '</div>' +
+    '<div class="tk-alt">' +
+    '<button type="button" class="btn kucuk tk-bugun" data-act="tarih-sec" data-id="' + bugun + '"' + (bugunKapali ? ' disabled' : '') + '>Bugün</button>' +
+    '<button type="button" class="btn kucuk tk-temizle" data-act="tarih-temizle">Temizle</button>' +
+    '<button type="button" class="btn kucuk tk-tamam" data-act="tarih-kapat">Tamam</button></div>';
+  kutu.innerHTML = h;
+  if (odakla !== false) {
+    var o = kutu.querySelector('.tk-gun.odak');
+    if (o) o.focus();
+  }
+}
+
+/* Üzerine gelinen ya da seçilen günün ajandası: tatil, etkinlik, o gün
+   biten ödevler, o gün kaç ders var. Kısa tutulur. */
+function tsAjanda(t) {
+  var v = (TS.veri[t.slice(0, 7)] || {})[t];
+  var h = '<b>' + tarihGun(t) + '</b>';
+  if (!v) return h + (TS.yukleniyor[t.slice(0, 7)] ? ' <span class="soluk">· yükleniyor</span>' : '');
+  var parca = [];
+  if (v.dersSayisi) parca.push(v.dersSayisi + ' dersin var');
+  (v.olaylar || []).forEach(function (o) {
+    var tur = o.tur === 'odev' ? 'odev' : o.tur === 'tatil' ? 'tatil' : 'etkinlik';
+    parca.push('<span class="tk-tur ' + tur + '">' + (tur === 'odev' ? 'Ödev' : tur === 'tatil' ? 'Tatil' : 'Etkinlik') + '</span> ' +
+      esc(o.baslik) + (tur === 'odev' && o.aciklama ? ' <span class="soluk">(' + esc(o.aciklama) + ')</span>' : ''));
+  });
+  return h + (parca.length ? '<div class="tk-ajanda-satir">' + parca.join(' · ') + '</div>' : ' <span class="soluk">· boş gün</span>');
+}
+
