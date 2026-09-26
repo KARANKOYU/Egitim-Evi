@@ -134,3 +134,16 @@ function okulSimgesi(boyut, kenarPay, yuvarlak) {
   };
 }
 
+function uret(dosya, boyut, kenarPay, yuvarlak) {
+  const veri = pngYaz(boyut, okulSimgesi(boyut, kenarPay, yuvarlak));
+  fs.writeFileSync(path.join(CIKTI, dosya), veri);
+  console.log('  ' + dosya + '  (' + boyut + 'x' + boyut + ', ' + (veri.length / 1024).toFixed(1) + ' KB)');
+}
+
+console.log('');
+console.log('Simgeler üretiliyor...');
+uret('simge-192.png', 192, 18, true);
+uret('simge-512.png', 512, 48, true);
+/* Maskeli simge: Android simgeyi daire/kare kırpar, kenarda pay bırakmak gerekir. */
+uret('simge-maskeli-512.png', 512, 96, false);
+console.log('');
