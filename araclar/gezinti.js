@@ -360,3 +360,203 @@ function kisaAdim(s, ek) {
   return Object.assign({ git: p[0], ad: p[1], eylem: p.slice(2).join('|') || '' }, ek);
 }
 
+/* Müdür olarak okulun kapalı özelliklerini yazar (tur içi hazırlık). */
+async function ozellikYaz(kapali) {
+  const M = await oturumAc({ eposta: 'mudur@test.com', sifre: 'Test1234!', gec: okulRolu('principal', 'test-ortaokulu') });
+  const r = await iste('/api/ozellikler', 'POST', { kapali }, M);
+  if (r.status !== 200) throw new Error('özellikler: ' + (r.body.error || r.status));
+}
+
+/* ================= oturum =================
+   Birden çok rolü olan hesap girişte rol seçim ekranına düşer; rol.gec
+   hangi role geçileceğini seçer. */
+async function oturumAc(rol) {
+  const g = await girisYap(rol.eposta, rol.sifre, rol.okul);
+  if (!rol.gec) return g.token;
+  const k = (await iste('/api/kisilikler', 'GET', null, g.token)).body;
+  const hedef = k && rol.gec(k);
+  if (!hedef) throw new Error('geçilecek rol bulunamadı');
+  return (await kisilikGec(g.token, hedef.tur, hedef.id)).token;
+}
+
+/* ================= çalıştır ================= */
+async function calistir() {
+  if (!CHROME) throw new Error('Chrome ya da Edge bulunamadı');
+  /* Eski fotoğraflar silinir; öykünücüde çekilen uygulama ekranları (aile-uygulamasi/) kalır. */
+  fs.mkdirSync(CIKTI, { recursive: true });
+  for (const ad of fs.readdirSync(CIKTI)) {
+    if (ad !== 'aile-uygulamasi') fs.rmSync(path.join(CIKTI, ad), { recursive: true, force: true });
+  }
+
+  const t = await tarayiciAc();
+  t.dinleyici = olayIsle;
+  akis.tarayici = t;
+  await t.gonder('Page.enable');
+  await t.gonder('Runtime.enable');
+  await t.gonder('Network.enable');
+  await t.gonder('Log.enable');
+  await t.gonder('Page.addScriptToEvaluateOnNewDocument', { source: YARDIMCI_BETIK });
+
+  const album = [];
+  const tumKayitlar = [];
+  akis.album = album;
+  akis.tumKayitlar = tumKayitlar;
+
+  async function adimCalistir(klasor, sira, adim, tema, boyut) {
+    await t.gonder('Emulation.setEmulatedMedia', { features: [
+      { name: 'prefers-color-scheme', value: tema === 'koyu' ? 'dark' : 'light' },
+      { name: 'prefers-reduced-motion', value: 'reduce' }
+    ] });
+    await ekranBoyutu(t, boyut);
+    akis.kayit = yeniKayit();
+    const bas = Date.now();
+    const dosya = String(sira).padStart(2, '0') + '-' + (tema === 'koyu' ? 'koyu-' : '') +
+      (boyut.mobile ? 'telefon-' : '') + (adim.git || 'giris').replace(/[^a-z0-9-]/g, '') + '.jpg';
+    try {
+      return await adimIci();
+    } catch (e) {
+      /* Adım takıldı: kaydet, yine de fotoğrafını almayı dene, turu sürdür. */
+      akis.kayit.eylemHatasi = (akis.kayit.eylemHatasi ? akis.kayit.eylemHatasi + ' · ' : '') + 'Adım tamamlanamadı: ' + e.message;
+      try { await fotografCek(t, path.join(CIKTI, klasor, dosya), boyut, false); } catch (e2) { /* yoksay */ }
+      const k = Object.assign({ rol: klasor, ad: adim.ad, dosya: klasor + '/' + dosya, sure: Date.now() - bas }, akis.kayit);
+      tumKayitlar.push(k);
+      console.log('  ! ' + dosya.padEnd(40) + adim.ad + '  [TAKILDI: ' + e.message + ']');
+      return k;
+    } finally {
+      akis.kayit = null;
+      await bekle(300);   // sunucunun hız sınırına takılmamak için
+    }
+
+    async function adimIci() {
+      if (adim.tema !== 'serbest') await degerlendir(t, 'window.temaAyarla && window.temaAyarla("sistem"); 1');
+      await degerlendir(t, 'window.__kayma = 0; document.activeElement && document.activeElement.blur && document.activeElement.blur(); ' +
+        (adim.pencereKalsin ? '' : '(document.getElementById("modalKok") || {}).innerHTML = ""; ') + '1');
+      if (adim.url) {
+        await t.gonder('Page.navigate', { url: BASE + adim.url });
+        await sakinlesmeyiBekle(t, 600);
+      } else if (adim.git !== undefined) {
+        /* Menüdeki bağlantıya tıklamak sayfayı her seferinde taze açar
+           (uygulama aynı adrese yeniden gidildiğinde çizmez; bu doğru). */
+        await degerlendir(t, `(function () {
+          var p = '${adim.git}';
+          var n = document.querySelector('[data-nav="' + p + '"]');
+          if (n) n.click(); else location.hash = '#/' + p;
+          return 1; })()`);
+      }
+      await sakinlesmeyiBekle(t);
+      if (adim.eylem) {
+        try {
+          await degerlendir(t, '(async function () { ' + adim.eylem + ' })()');
+        } catch (e) {
+          akis.kayit.eylemHatasi = e.message;
+        }
+        await sakinlesmeyiBekle(t);
+      }
+      await bekle(250);
+      akis.kayit.kayma = Math.round((await degerlendir(t, 'window.__kayma') || 0) * 1000) / 1000;
+      await fotografCek(t, path.join(CIKTI, klasor, dosya), boyut, adim.tam !== false);
+      const k = Object.assign({ rol: klasor, ad: adim.ad, dosya: klasor + '/' + dosya, sure: Date.now() - bas }, akis.kayit);
+      tumKayitlar.push(k);
+      const sorun = k.konsol.length + k.istisna.length + k.istek.length + (k.eylemHatasi ? 1 : 0) + (k.kayma > KAYMA_SINIRI ? 1 : 0);
+      console.log('  ' + (sorun ? '!' : ' ') + ' ' + dosya.padEnd(40) + adim.ad +
+        (sorun ? '  [' + sorun + ' sorun]' : '') + '  (' + k.api + ' API, ' + Math.round(k.bayt / 1024) + ' KB)');
+      return k;
+    }
+  }
+
+  /* ---- dış sayfalar (oturumsuz): açılış, Hakkında, giriş, kayıt, okulun sayfası ---- */
+  fs.mkdirSync(path.join(CIKTI, 'giris'), { recursive: true });
+  console.log('\nDış sayfalar');
+  await t.gonder('Page.navigate', { url: BASE + '/' });
+  await sakinlesmeyiBekle(t, 600);
+  await degerlendir(t, 'localStorage.clear(); sessionStorage.clear(); 1');
+  const girisler = [];
+  let disSira = 0;
+  for (const adim of DIS_ADIMLAR) girisler.push(await adimCalistir('giris', ++disSira, adim, 'acik', MASAUSTU));
+  for (const adim of DIS_KOYU) girisler.push(await adimCalistir('giris', ++disSira, adim, 'koyu', MASAUSTU));
+  for (const adim of DIS_TELEFON) girisler.push(await adimCalistir('giris', ++disSira, adim, 'acik', TELEFON));
+  album.push({ rol: 'Dış sayfalar: açılış, giriş, kayıt, okul sayfası', klasor: 'giris', kayitlar: girisler });
+
+  for (const rol of ROLLER) {
+    console.log('\n' + rol.baslik);
+    if (rol.once) { try { await rol.once(); } catch (e) { console.log('  ! hazırlık: ' + e.message); } }
+    let token;
+    try { token = await oturumAc(rol); } catch (e) {
+      console.log('  ! ' + rol.baslik + ' girişi yapılamadı (' + e.message + '), rol atlandı');
+      continue;
+    }
+    fs.mkdirSync(path.join(CIKTI, rol.ad), { recursive: true });
+    /* Rolün hazırlığı takılırsa o rol atlanır, tur sürer. */
+    let girdi = false;
+    try {
+      await t.gonder('Page.navigate', { url: BASE + '/' });
+      await sakinlesmeyiBekle(t, 400);
+      await degerlendir(t, 'localStorage.clear(); sessionStorage.clear(); ' +
+        'localStorage.setItem("ee_token", ' + JSON.stringify(token) + '); localStorage.setItem("ee_hatirla", "kalici"); ' +
+        'location.hash = "#/ana"; 1');
+      /* Aynı adreste yalnızca # değişirse sayfa yeniden yüklenmez; anahtarın
+         okunması için tam yükleme şart. */
+      await ekranBoyutu(t, MASAUSTU);
+      await t.gonder('Page.reload', {});
+      await sakinlesmeyiBekle(t, 800);
+      /* Uygulama girişten sonra #app'e "on" sınıfını koyar (26-baslat.js). */
+      girdi = await degerlendir(t, '!!(document.getElementById("app") && document.getElementById("app").classList.contains("on"))');
+    } catch (e) {
+      console.log('  ! ' + rol.baslik + ' hazırlığı takıldı (' + e.message + '), rol atlandı');
+      if (rol.sonra) { try { await rol.sonra(); } catch (e2) { /* yoksay */ } }
+      continue;
+    }
+    if (!girdi && !rol.pencereli) {
+      console.log('  ! ' + rol.baslik + ' oturumu açılamadı, rol atlandı');
+      continue;
+    }
+
+    const kayitlar = [];
+    let sira = 0;
+    for (const adim of rol.adimlar) kayitlar.push(await adimCalistir(rol.ad, ++sira, adim, 'acik', MASAUSTU));
+    for (const s of rol.koyu || []) kayitlar.push(await adimCalistir(rol.ad, ++sira, kisaAdim(s), 'koyu', MASAUSTU));
+    for (const s of rol.telefon || []) kayitlar.push(await adimCalistir(rol.ad, ++sira, typeof s === 'string' ? kisaAdim(s) : s, 'acik', TELEFON));
+    for (const adim of rol.son || []) kayitlar.push(await adimCalistir(rol.ad, ++sira, adim, 'acik', MASAUSTU));
+    album.push({ rol: rol.baslik, klasor: rol.ad, kayitlar });
+    if (rol.sonra) { try { await rol.sonra(); } catch (e) { console.log('  ! temizlik: ' + e.message); } }
+  }
+
+  t.kapat();
+  raporYaz(album, tumKayitlar);
+}
+
+/* ================= rapor ve albüm ================= */
+function sorunlari(k) {
+  const l = [];
+  if (k.eylemHatasi) l.push('Adım yapılamadı: ' + k.eylemHatasi);
+  k.istisna.forEach(x => l.push('JavaScript hatası: ' + x));
+  k.konsol.forEach(x => l.push('Konsol: ' + x));
+  k.istek.forEach(x => l.push('İstek: ' + x));
+  if (k.kayma > KAYMA_SINIRI) l.push('Yüklenirken kayma: ' + k.kayma + ' (sınır ' + KAYMA_SINIRI + ')');
+  return l;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function raporYaz(album, tum) {
+  const sorunlu = tum.filter(k => sorunlari(k).length);
+  const toplamApi = tum.reduce((s, k) => s + k.api, 0);
+  const md = ['# Gezinti raporu', '',
+    tum.length + ' adım, ' + sorunlu.length + ' adımda sorun. Toplam ' + toplamApi + ' API isteği.', ''];
+  for (const k of sorunlu) {
+    md.push('## ' + k.rol + ' — ' + k.ad + ' (`' + k.dosya + '`)');
+    sorunlari(k).forEach(s => md.push('- ' + s));
+    md.push('');
+  }
+  md.push('## Adım başına ölçüm', '', '| Rol | Adım | API | KB | Kayma | Süre ms |', '|---|---|---|---|---|---|');
+  tum.forEach(k => md.push('| ' + k.rol + ' | ' + k.ad + ' | ' + k.api + ' | ' + Math.round(k.bayt / 1024) +
+    ' | ' + k.kayma + ' | ' + k.sure + ' |'));
+  fs.mkdirSync(RAPOR, { recursive: true });
+  fs.writeFileSync(path.join(RAPOR, 'hata-raporu.md'), md.join('\n') + '\n', 'utf8');
+  fs.writeFileSync(path.join(RAPOR, 'gezinti.json'), JSON.stringify(tum, null, 2), 'utf8');
+  albumYaz(album, tum);
+  console.log('\n' + tum.length + ' adım, ' + sorunlu.length + ' adımda sorun -> ' + CIKTI + '  (rapor: ' + RAPOR + ')');
+}
+
