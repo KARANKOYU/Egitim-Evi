@@ -100,6 +100,38 @@ function tokenSil(eski) {
 var botSoru = { id: '', yukleniyor: false };      // kayıt formu
 var girisSoru = { id: '', yukleniyor: false };    // giriş formu
 
+var EPOSTA_DESENI = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/* Sunucudaki şifre kuralının aynısı (sunucu/ortak.js sifreSorunu). */
+/* Sunucudaki sifreSorunu'nun aynısı. guclu: yetişkin hesabı (veli, öğretmen,
+   müdür, yönetici) büyük harf, küçük harf, rakam ve özel karakter ister;
+   öğrenci ve servisçi harf ve rakam yeter. */
+function sifreKurallari(s) {
+  return {
+    uzun: s.length >= 8,
+    harf: /[a-zA-ZçğıöşüÇĞİÖŞÜ]/.test(s),
+    buyuk: /[A-ZÇĞİÖŞÜ]/.test(s),
+    kucuk: /[a-zçğıöşü]/.test(s),
+    rakam: /[0-9]/.test(s),
+    ozel: /[^A-Za-z0-9çğıöşüÇĞİÖŞÜ\s]/.test(s)
+  };
+}
+function sifreSorunuTR(s, guclu) {
+  var k = sifreKurallari(s || '');
+  if (!s) return 'Bir şifre belirle.';
+  if (!k.uzun) return 'Şifre en az 8 karakter olmalı.';
+  if (!guclu) return (!k.harf || !k.rakam) ? 'Şifre en az bir harf ve bir rakam içermeli.' : '';
+  var eksik = [];
+  if (!k.buyuk) eksik.push('bir büyük harf');
+  if (!k.kucuk) eksik.push('bir küçük harf');
+  if (!k.rakam) eksik.push('bir rakam');
+  if (!k.ozel) eksik.push('bir özel karakter (! ? . * gibi)');
+  return eksik.length ? 'Şifrede ' + eksik.join(', ') + ' olmalı.' : '';
+}
+/* Bu kişinin şifresi güçlü kurala mı tabi? Öğrenci ve servisçi dışında herkes;
+   okul rolündeyken şifre yetişkin hesabınındır. */
+function gucluSifreli(u) { return !u || (u.role !== 'student' && u.role !== 'servisci'); }
+
 /* Şifre kutusunun altındaki kural listesi (canlı işaretlenir). */
 function sifreKuralListesi(id, guclu) {
   var h = '<ul class="sifre-kurallar" id="' + id + '" aria-live="polite"><li data-kural="uzun">En az 8 karakter</li>';
