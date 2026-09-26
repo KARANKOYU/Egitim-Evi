@@ -20,7 +20,7 @@ async function durumYaz(id, durum) {
   await calistir('UPDATE okullar SET durum = $1 WHERE id = $2', [durum, id]);
 }
 
-/* Aynı okula ikinci başvuru var mı? (MEB koduyla ya da aynı ildeki aynı adla)
+/* Bu okul zaten kayıtlı mı? (MEB koduyla ya da aynı ildeki aynı adla)
    Ad karşılaştırması Türkçe büyük/küçük harfe duyarsız, JS tarafında. */
 async function cakisan(mebKodu, il, ad) {
   const adaylar = await sorgu(

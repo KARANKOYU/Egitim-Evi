@@ -5,23 +5,23 @@
 /* ---- VELİ ---- */
 SAYFALAR.cocuklarim = function () {
   /* Okul rolündeyken (öğretmen, müdür) çocukların sayfaları açılmaz: veli
-     kişiliğine geçmek gerekir. */
+     portalına geçmek gerekir (sol menüdeki Portallarım). */
   if (S.user && S.user.rolSatiri) {
+    var veliler = (S.portallar || []).filter(function (p) { return p.tur === 'veli'; });
     yaz(hero('ÇOCUKLARIM', '') + '<div class="kart"><div class="msg bilgi">Şu an ' + esc(ROL_AD[S.user.role] || 'okul') +
-      ' olarak girdin. Çocuğunun ödevlerini, devamsızlığını ve notlarını görmek için veli olarak geç.</div>' +
-      '<button class="btn" data-nav="kisilikler">Hesap değiştir</button></div>');
+      ' olarak girdin. Çocuğunun ödevlerini, devamsızlığını ve notlarını görmek için sol üstteki menüden veli olarak geç.</div>' +
+      (veliler.length ? '<div class="dugme-satir">' + veliler.map(function (p) {
+        return '<button class="btn" data-act="kisilik-gec" data-tur="veli" data-id="' + esc(p.id) + '">Veli · ' + esc(p.alt) + '</button>';
+      }).join('') + '</div>' : '') + '</div>');
     return Promise.resolve();
   }
   return api('/parent/children').then(function (d) {
     S.children = d.children;
     var h = hero('ÇOCUKLARIM', 'Çocuğunun kartına tıklayarak portalını aç.');
     h += '<div class="kart"><h3>Çocuk ekle</h3>' +
-      '<div class="hint" style="margin-bottom:9px">Çocuğunun hesabındaki <b>veli kodunu</b> gir. ' +
-      'Büyük/küçük harf ve tire fark etmez.</div>' +
-      '<div style="display:flex;gap:9px;flex-wrap:wrap">' +
-      '<input type="text" id="veliKod" placeholder="ör. ABCDE-FGH23" maxlength="20" ' +
-      'autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" ' +
-      'style="flex:1;min-width:180px;padding:11px 12px;border:1.5px solid var(--cizgi);border-radius:10px;font-family:ui-monospace,Consolas,monospace">' +
+      '<div class="hint" style="margin-bottom:9px">Çocuğunun <b>veli kodunu</b> gir. Kodu okulundan alırsın. ' +
+      'Büyük/küçük harfe dikkat et; boşluklar önemli değil.</div>' +
+      '<div class="rolsuz-satir">' + kisiKoduGirdisi('veliKod', 'Veli kodu') +
       '<button class="btn" data-act="cocuk-ekle">Ekle</button></div><div id="veliMesaj" style="margin-top:9px"></div></div>';
     h += cocukKartlari(d.children);
     yaz(h);
@@ -29,7 +29,7 @@ SAYFALAR.cocuklarim = function () {
 };
 
 function cocukKartlari(list) {
-  if (!list.length) return bosKutu('veli', 'Henüz çocuk eklemedin. Veli kodunu kullanarak ekleyebilirsin.');
+  if (!list.length) return bosKutu('veli', 'Henüz çocuk eklemedin. Çocuğunun veli koduyla ekleyebilirsin.');
   var h = '<div class="grid k2">';
   for (var i = 0; i < list.length; i++) {
     var c = list[i];
@@ -81,12 +81,14 @@ function profilCiz(hs) {
     (k.dogum ? satirBilgi('Doğum tarihi', esc(dogumMetni(k.dogum))) : '') +
     (u.branch ? '<div class="satir"><div class="buyu"><div class="alt">Branş</div><div class="ad">' + esc(u.branch) + '</div></div></div>' : '') +
     (u.code ? '<div class="satir"><div class="buyu"><div class="alt">Veli kodun (velinle paylaş)</div>' +
-      '<div class="ad kod-goster">' + esc(kodBicimle(u.code)) + '</div>' +
-      '<div class="hint">Velin bu kodu Eğitim Evi\'nde girince hesabına bağlanır.</div></div>' +
-      '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(kodBicimle(u.code)) + '">Kopyala</button></div>' : '') +
-    (hs ? '<div class="dugme-satir"><button class="btn kucuk ghost" data-nav="kisilikler">Rollerin ve çocukların</button></div>' +
-      '<div class="hint">Bu bilgiler yetişkin hesabınındır; öğretmen, müdür ya da veli olarak girdiğinde de aynıdır.</div>' : '') +
+      kisiKoduKutusu(u.code) +
+      '<div class="hint">Velin bu kodu Eğitim Evi\'nde <b>+ Ekle &gt; Veli</b> ekranına yazınca hesabına bağlanır. ' +
+      'Büyük/küçük harf fark eder.</div></div></div>' : '') +
+    (hs ? '<div class="hint">Bu bilgiler yetişkin hesabınındır; öğretmen, müdür ya da veli olarak girdiğinde de aynıdır.</div>' : '') +
     '</div>';
+
+  /* Yetişkin hesabı ve okul rolleri: portallar ve yönetimi (08c-kisilikler.js). */
+  if (S.portallar) h += portalYonetimKarti();
 
   if (hs) h += girisBilgileriKarti(hs);
 
@@ -112,14 +114,13 @@ function profilCiz(hs) {
     '<button class="btn" data-act="profil-kaydet">Kaydet</button><div id="pMesaj" style="margin-top:10px"></div></div>';
 
   /* Eski düzende okulun açtığı öğretmen/müdür hesabı: çocuğunu veli koduyla
-     bağlar. Yetişkin hesabında bu iş "Hesap değiştir > Ekle"dedir. */
-  if ((u.role === 'teacher' || u.role === 'principal') && !hs) {
+     bağlar. Yetişkin hesabında bu iş "+ Ekle > Veli"dedir. */
+  if ((u.role === 'teacher' || u.role === 'principal') && !hs && !u.rolSatiri) {
     h += '<div class="kart"><h3>Veli olarak çocuğunu ekle</h3>' +
       '<div class="hint" style="margin-bottom:9px">Çocuğun (bu okulda ya da başka bir okulda) okuyorsa ' +
-      '<b>veli kodunu</b> gir. Menüne "Velisi olduğum" bölümü eklenir; okul yönetimi de seni veli olarak bağlayabilir.</div>' +
-      '<div style="display:flex;gap:9px;flex-wrap:wrap">' +
-      '<input type="text" id="veliKod" placeholder="ör. ABCDE-FGH23" maxlength="20" autocapitalize="characters" ' +
-      'autocomplete="off" spellcheck="false" style="flex:1;min-width:180px;padding:11px 12px;border:1.5px solid var(--cizgi);border-radius:10px">' +
+      '<b>veli kodunu</b> gir. Menüne "Velisi olduğum" bölümü eklenir; okul yönetimi de seni veli olarak bağlayabilir. ' +
+      'Büyük/küçük harfe dikkat et; boşluklar önemli değil.</div>' +
+      '<div class="rolsuz-satir">' + kisiKoduGirdisi('veliKod', 'Veli kodu') +
       '<button class="btn" data-act="cocuk-ekle">Ekle</button></div><div id="veliMesaj" style="margin-top:9px"></div>' +
       (S.children && S.children.length ? '<div class="hint" style="margin-top:9px">Bağlı çocuğun: ' +
         S.children.map(function (c) { return esc(c.fullName); }).join(', ') + '</div>' : '') +
@@ -132,7 +133,7 @@ function profilCiz(hs) {
   if (u.role === 'principal') {
     h += '<div class="kart"><h3>Okulun adresi ve konumu</h3>' +
       '<div class="satir" style="border:0;padding:0"><div class="buyu"><div class="ad">' +
-      esc(u.schoolSlug ? location.host + '/' + u.schoolSlug : 'Henüz seçilmedi') + '</div>' +
+      esc(u.schoolSlug ? location.host + okulYolu(u.schoolSlug) : 'Henüz seçilmedi') + '</div>' +
       '<div class="alt">Öğrenci ve öğretmenler okulun bu adresinden girer.</div></div>' +
       '<button class="btn kucuk ghost" data-nav="okul-ayarlari">Değiştir</button></div></div>';
   }

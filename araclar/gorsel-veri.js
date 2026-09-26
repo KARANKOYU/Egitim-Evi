@@ -5,9 +5,10 @@
    Kurduğu durumlar:
      - Veli Fatma Şahin: e-posta onaylı kayıt, iki çocuk (veli koduyla).
      - Müdür Mehmet Demir aynı zamanda Burak'ın velisi: tek hesapta iki rol.
-     - Matematik öğretmeni Ayşe Kaya ikinci bir okulda da öğretmen: yönetici
-       "Okul aç" ile Deneme Anadolu Lisesi'ni açar, müdürü Canan Er ilk
-       girişte şifresini değiştirir, Ayşe Kaya'yı öğretmen koduyla ekler.
+     - Matematik öğretmeni Ayşe Kaya ikinci bir okulda da öğretmen: Canan Er
+       hesabını açıp kişi kodunu yöneticiye verir, yönetici "Okul aç" ile
+       Deneme Anadolu Lisesi'ni açıp onu müdür yapar; Canan Er Ayşe Kaya'yı
+       kişi koduyla ekler.
      - Okul sayfası (kapak, logo, galeri, tanıtım, renk, CSS), etüt ve
        yoklaması, servis ve servisçi, kulüp, anket, yemek listesi, okul
        konumu, düzeltilmiş mesaj, yıldızlı ödev, "Yazılı" şablonundan sınav.
@@ -19,16 +20,17 @@
      EE_BASE=http://localhost:3200 EE_LOG=testler/test-sunucu.log node araclar/gorsel-veri.js */
 
 const zlib = require('zlib');
-const { BASE, iste, girisYap, hesapAc, kisilikGec, tcUret } = require('./giris');
+const { BASE, iste, girisYap, hesapAc, kisiKodu, kisilikGec, tcUret } = require('./giris');
 
 /* gezinti.js de bu hesaplarla girer (şifreler test değerleridir). */
 const HESAPLAR = {
   veli: { ad: 'Fatma Şahin', kullanici: 'fatma.sahin', eposta: 'veli.gorsel@test.com', sifre: 'Veli2026!' },
-  ikinciMudur: { ad: 'Canan', soyad: 'Er', kullanici: 'canan.er', eposta: 'canan.er@test.com', ilkSifre: 'Ilk2026!sifre', sifre: 'Canan2026!' },
+  ikinciMudur: { ad: 'Canan', soyad: 'Er', kullanici: 'canan.er', eposta: 'canan.er@test.com', sifre: 'Canan2026!' },
   servisci: { ad: 'Hakan Yolcu', kullanici: 'hakan.yolcu', sifre: 'Servis2026' },
   ikinciOkul: { ad: 'Deneme Anadolu Lisesi', kisaAd: 'deneme-anadolu' },
-  /* Yöneticinin açtığı üçüncü okulun müdürü: şifresini hiç değiştirmedi,
-     ilk girişte "kendi şifreni belirle" penceresi çıkar. */
+  /* Yöneticinin açtığı üçüncü okulun müdürü: kendi hesabını açtı, kişi kodunu
+     yöneticiye verdi; okulu yeni açıldı (boş). ilkSifre onun kendi şifresidir
+     (yönetici artık hesap açıp şifre vermiyor; ad gezinti.js uyumu için). */
   yeniMudur: { ad: 'Selin', soyad: 'Taş', kullanici: 'selin.tas', eposta: 'selin.tas@test.com', ilkSifre: 'Ilk2026!sifre' },
   ucuncuOkul: { ad: 'Deneme İlkokulu', kisaAd: 'deneme-ilkokulu' },
   /* Başka okuldan nakil gelen öğrenci (yeni okulunun adresinden girer). */
@@ -180,28 +182,35 @@ async function calistir() {
   /* ---- müdür aynı zamanda Burak'ın velisi ---- */
   if (burak) await iste('/api/kisilik/cocuk', 'POST', { code: burak.code }, M);
 
-  /* ---- ikinci okul: yönetici açar, Ayşe Kaya orada da öğretmen ---- */
+  /* ---- ikinci okul: Canan Er hesabını açar, kişi kodunu yöneticiye verir;
+     yönetici okulu açıp onu müdür yapar. Ayşe Kaya orada da öğretmen. ---- */
   const C = HESAPLAR.ikinciMudur;
+  try {
+    await hesapAc({ fullName: C.ad + ' ' + C.soyad, username: C.kullanici, email: C.eposta, password: C.sifre, phone: '+905321110077' });
+  } catch (e) { if (!/kayıtlı|alınmış/i.test(e.message)) throw e; }
+  const c1 = await girisYap(C.eposta, C.sifre);
   const ac = await iste('/api/admin/okul-ac', 'POST', {
     schoolName: HESAPLAR.ikinciOkul.ad, city: 'Ankara', district: 'Çankaya', kisaAd: HESAPLAR.ikinciOkul.kisaAd,
-    mudur: { eposta: C.eposta, ad: C.ad, soyad: C.soyad, kullaniciAdi: C.kullanici, telefon: '+905321110077', sifre: C.ilkSifre }
+    mudurKodu: await kisiKodu(c1.token)
   }, A);
   if (ac.status === 200) {
-    const c1 = await girisYap(C.eposta, C.ilkSifre);
-    await iste('/api/kvkk-onay', 'POST', { onay: true }, c1.token);
-    beklenen(await iste('/api/password', 'POST', { old: C.ilkSifre, new: C.sifre }, c1.token), 'Canan şifre');
     const CM = await roleGir(C.eposta, C.sifre, k => { const r = k.roller.find(x => x.rol === 'principal'); return r && { tur: 'rol', id: r.id }; });
-    const kod = beklenen(await iste('/api/kisilikler', 'GET', null, MAT), 'öğretmen kodu').ogretmenKodu;
+    const kod = beklenen(await iste('/api/kisilikler', 'GET', null, MAT), 'kişi kodu').kisiKodu;
     beklenen(await iste('/api/school/ogretmen-ekle', 'POST', { kod, brans: 'Matematik' }, CM), 'ikinci okula öğretmen');
     await iste('/api/school/class', 'POST', { name: '9-A' }, CM);
   } else {
     console.log('  ikinci okul açılamadı (zaten var olabilir): ' + (ac.body.error || ac.status));
   }
 
+  /* ---- üçüncü okul: Selin Taş'ın okulu yeni açıldı (henüz boş) ---- */
   const Y = HESAPLAR.yeniMudur;
+  try {
+    await hesapAc({ fullName: Y.ad + ' ' + Y.soyad, username: Y.kullanici, email: Y.eposta, password: Y.ilkSifre, phone: '+905321110099' });
+  } catch (e) { if (!/kayıtlı|alınmış/i.test(e.message)) throw e; }
+  const y1 = await girisYap(Y.eposta, Y.ilkSifre);
   await iste('/api/admin/okul-ac', 'POST', {
     schoolName: HESAPLAR.ucuncuOkul.ad, city: 'Ankara', district: 'Yenimahalle', kisaAd: HESAPLAR.ucuncuOkul.kisaAd,
-    mudur: { eposta: Y.eposta, ad: Y.ad, soyad: Y.soyad, kullaniciAdi: Y.kullanici, telefon: '+905321110099', sifre: Y.ilkSifre }
+    mudurKodu: await kisiKodu(y1.token)
   }, A);
 
   /* ---- okul sayfası ---- */

@@ -120,7 +120,7 @@ const KOTU = [
 
   console.log('=== 6) BASKA OKULUN VERISI ===');
   /* Ikinci bir okul ve muduru olustur, birinin digerine erisemedigini dogrula */
-  /* Rolsüz kayıt -> okulunu kaydeder -> yönetici onaylar */
+  /* Kayıt -> kişi kodunu yöneticiye verir -> yönetici okulu açıp onu müdür yapar */
   await hesapAc({ fullName: 'Ikinci Mudur', username: 'mudur2', email: 'mudur2@test.com', phone: '05329998877' });
   const A = (await girisYap('admin@egitimevi.com', 'admin123')).token;
   const bsv = await mudurYap('mudur2@test.com', 'Test1234!',

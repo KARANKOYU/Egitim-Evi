@@ -15,7 +15,7 @@ Eğitim Evi; öğrencinin, velinin, öğretmenin ve okul yönetiminin her gün b
 mesajlar, takvim, yemek listesi ve okul servisi. Tarayıcıdan açılır; telefona ve
 bilgisayara uygulama gibi kurulabilir, ayrıca bir şey indirmek gerekmez.
 
-Her okulun kendi adresi vardır (`egitimevi.org/okulun-adi`). Öğrenci ve öğretmen
+Her okulun kendi adresi vardır (`egitimevi.org/school/okulun-adi`). Öğrenci ve öğretmen
 okulunun adresinden girer; okul o sayfayı kendi fotoğrafları ve renkleriyle düzenler.
 
 
@@ -28,10 +28,11 @@ okulunun adresinden girer; okul o sayfayı kendi fotoğrafları ve renkleriyle d
 | **Öğretmen** | Ödev verir ve sonuçlandırır, sınav açar ve not girer, yoklama alır, sınıfına ya da velilere mesaj yazar |
 | **Müdür** | Sınıfları, dersleri, ders programını, öğretmen ve öğrenci hesaplarını, rolleri ve yetkileri yönetir; okulun giriş sayfasını düzenler |
 | **Servisçi** | Seferi başlatır; öğrenci ve veli servisin yaklaştığını telefonunda görür |
-| **Sistem yöneticisi** | Okul başvurularını onaylar ya da okulu kendisi açar, yedek alır |
+| **Sistem yöneticisi** | Okulu açar ve müdürünü kişi koduyla atar, müdürleri yönetir, yedek alır |
 
 **Tek hesap, birden çok rol.** Bir kişi aynı hesapla bir okulda öğretmen, başka bir
-okulda müdür ve kendi çocuğunun velisi olabilir; girişte hangisiyle devam edeceğini seçer.
+okulda müdür ve kendi çocuğunun velisi olabilir. Bunlar **portal**dır: sol üstteki menüde
+alt alta durur, kişi aralarında oradan geçer.
 
 **Öğrenci hesabı kişiye aittir.** Öğrenci okul değiştirince yeni okul, T.C. kimlik no ve
 doğum tarihi eşleşirse aynı hesabı kendi okuluna alır. Eski okulun kayıtları orada kalır;
@@ -126,6 +127,11 @@ Kurulum aracı şunları yapar:
 **Okul listesi** (`data/okullar.json`, MEB'in 67 bin okulu) depoda yoktur; kurulumu
 yapan kişi dosyayı `data/` altına ayrıca kopyalar. Dosya yoksa uygulama çalışır, yalnızca
 MEB listesinde okul araması kapalı olur.
+
+**İletişim bilgileri** (`data/config.yml`, örneği `belge/config.ornek.yml`): yayına
+almadan önce yöneticinin e-postası ya da telefonu yazılır. Müdür adayı kişi kodunu
+bu bilgilerle yöneticiye verir; ikisi de boşsa ulaşacak yer göremez (aşağıda
+"İletişim bilgileri").
 
 **Çalıştırmak:** `npm start`, sonra tarayıcıda http://localhost:3000
 (`node sunucu/index.js` ile aynı; kökteki `server.js` de aynı işi yapan 3 satırlık kabuktur.)
@@ -286,41 +292,79 @@ arama servislerinden (`meb.gov.tr`, özel okullar için `ookgm.meb.gov.tr`) bir 
 çekildi; çeken araç da yalnızca kurulumu yapan bilgisayarda durur.
 
 Sunucuya kurarken dosyayı ayrıca kopyala (belge/SUNUCUYA-KURULUM.md). Dosya yoksa
-sistem yine çalışır; yalnızca müdür kaydında okul listeden aranamaz, adı elle yazılır.
+sistem yine çalışır; yalnızca yöneticinin **Okul aç** penceresinde okul listeden aranamaz,
+adı elle yazılır.
 
 ---
 
-## Hesap türleri ve onay zinciri
+## Hesap türleri ve portallar
 
 İki tür hesap var:
 
-- **Yetişkin hesabı**: veli, öğretmen ve müdür kendisi açar (**Hesap Aç**). Tek hesap,
-  birden çok rol: A okulunda öğretmen, B okulunda müdür, çocuğunun velisi olabilir.
+- **Yetişkin hesabı**: veli, öğretmen ve müdür aynı hesabı kendisi açar (**Hesap Aç**);
+  kayıtta "ne olarak kullanacaksın" diye sorulmaz. Tek hesap, birden çok portal: A okulunda
+  öğretmen, B okulunda müdür, çocuğunun velisi olabilir.
 - **Okulun açtığı hesap**: öğrenci ve servisçi kaydolmaz, hesabını okul açar (tek
   tek ya da dosyadan toplu).
 
-| Kim | Nasıl | Kim onaylar |
+| Kim | Nasıl | Kim bağlar |
 |---|---|---|
-| **Müdür** | Yetişkin hesabıyla **Ekle → Okulumu kaydet** (MEB listesinden) | **Admin (sen)** |
-| **Öğretmen** | Yetişkin hesabıyla **Ekle → Öğretmen olarak katıl**: kişisel kodunu müdüre verir; müdür **Öğretmenler → Kodla ekle** ile kodu girer, maskeli adı ("Ay** Yı****") görüp ekler | Gerekmez |
-| **Veli** | Yetişkin hesabıyla **Ekle → Çocuğumu ekle** (veli kodu); ya da okul, velinin T.C. no'su veya kullanıcı adıyla bağlar | Gerekmez |
-| **Öğrenci** | Müdür (ya da yetkili) **Öğrenciler → Öğrenci ekle** ya da dosyayla açar | Gerekmez |
-| **Servisçi** | Müdür (ya da servis yetkilisi) **Servisler → Servisçi ekle** ya da dosyayla açar | Gerekmez |
+| **Müdür** | Yetişkin hesabıyla **+ Ekle → Müdür**: kişi kodunu sistem yöneticisine verir; yönetici **Okullar → Okul aç** ile okulu ve adresini açar, kodla onu müdür yapar (aşağıda "Admin: okul açma") | **Admin (sen)** |
+| **Öğretmen** | Yetişkin hesabıyla **+ Ekle → Öğretmen**: kişi kodunu müdüre verir; müdür **Öğretmenler → Kodla ekle** ile kodu girer, maskeli adı ("Ay** Yı****") görüp ekler | Müdür (ya da yetkilisi) |
+| **Veli** | Yetişkin hesabıyla **+ Ekle → Veli** (çocuğun veli kodu); ya da okul, velinin T.C. no'su veya kullanıcı adıyla bağlar | Kendisi ya da okul |
+| **Öğrenci** | Müdür (ya da yetkili) **Öğrenciler → Öğrenci ekle** ya da dosyayla açar | Okul |
+| **Servisçi** | Müdür (ya da servis yetkilisi) **Servisler → Servisçi ekle** ya da dosyayla açar | Okul |
 
-**Rol seçimi.** Yetişkin girişten sonra rolleri alt alta görür: *Öğretmen — okul adı*,
-*Müdür — okul adı*, *Veli — çocuğun adı*. Birini seçip devam eder; menüdeki **Hesap
-değiştir** ile aralarında geçer. Tek rolü varsa doğrudan o açılır. Sağdaki **Ekle**
-yeni rol açar. Rol değişince yeni oturum açılır, eskisi kapanır; her şeyi sunucu denetler.
+Hiçbirinde ayrıca onay beklenmez: müdürlük başvurusu yoktur (yönetici kişiyi telefon ya da
+e-postayla kendisi doğrular), öğretmen ve veli kod girildiği an bağlanır. Veli bağlanınca
+öğrenciye, öğretmen ya da müdür eklenince kişiye bildirim gider.
 
-**Öğretmen kodu** tek kullanımlıktır: bir okul öğretmeni eklediği an kod yenilenir,
-başkası görse de kullanamaz. Öğretmen **Yeni kod üret** ile eskisini geçersiz kılabilir.
-Bir hesap en fazla 10 okula öğretmen olarak eklenebilir; bir okulda yalnızca tek rolü olur.
+**Portallar.** Yetişkinin her okul rolü ve velisi olduğu her çocuk bir portaldır. Sol üstteki
+menünün en üstünde **Portallarım** başlığı altında alt alta durur: *Öğretmen · okul adı*,
+*Müdür · okul adı*, *Veli · çocuğun adı*. Bulunulan portal işaretlidir; müdürü kaldırılmış
+(kapalı) okul soluk görünür ve girilemez; listenin sonunda **Portal ekle** vardır. Liste kişi
+bir portaldayken de görünür. Okul rolüne geçmek yeni oturum demektir, eskisi kapanır; veli
+portalına geçince yalnızca seçili çocuk değişir. Her şeyi sunucu denetler.
 
-**Bırakma ve silme.** Öğretmen **Hesap değiştir → Okuldan ayrıl** der; bekleyen okul
-başvurusu geri çekilebilir. **Ayarlar → Hesabımı sil** yetişkin hesabını, çocuk bağlarını
-ve öğretmenlik rollerini siler (KVKK silme hakkı); onaylı bir okulun müdürü önce
-müdürlüğü devretmelidir. Verilen ödev ve notlar okulda kalır; ayrılan öğretmenin
-açık ödevlerini müdür **Ödevler** sayfasından sonuçlandırır.
+- Tek portalı olan girişte doğrudan o portala girer.
+- Birden çok portalı olan hesabının ana sayfasını görür: "Soldaki menüden bir portal seç"
+  ve portal kartları (dokununca geçer).
+- Hiç portalı olmayan "Henüz bir portalın yok" kartını ve büyük **+ Ekle** düğmesini görür;
+  menüsünde yalnızca **Başlangıç** ve **Hatırlatıcılar** vardır.
+- Üst çubuğun sağındaki **+ Ekle** (dar ekranda yalnız + simgesi) yetişkin hesabında ve okul
+  rolünde görünür; öğrenci, servisçi ve yöneticide yoktur. Üç yol açar: **Veli** (çocuğun
+  veli kodu), **Öğretmen** (kişi kodu ve **Kopyala**, **Yeni kod üret**) ve **Müdür** (kişi
+  kodu, **Kopyala** ve yöneticinin `data/config.yml`'deki e-postası ile telefonu).
+
+**Kişi kodu.** Her yetişkin hesabının 15 karakterlik kişi kodu vardır (hesap açılınca
+üretilir); öğrencinin kodu **veli kodu**dur. Servisçide ve yöneticide kod yoktur.
+
+- Biçim: yalnızca İngilizce harf, rakam ve `! ? # * + -`. Karışan karakterler yoktur:
+  büyük harfte I, L, O; küçük harfte l, o; rakamda 0, 1. Her kodda en az bir büyük harf,
+  bir küçük harf, bir rakam ve bir özel karakter bulunur; ilk karakter harftir (Excel'de
+  `+`, `-`, `=` ile başlayan hücre formül sanılmasın). Örnek: `Ab3#k Qx9+m Pt7?z`.
+- **Büyük/küçük harf fark eder.** Ekranda, kâğıtta ve Excel'de 5'erli gruplar hâlinde,
+  aralarında boşlukla gösterilir; girişte yalnızca boşluklar silinir, gösterilen biçim
+  yapıştırılsa da çalışır. **Kopyala** kodu boşluksuz kopyalar. Eski 10 haneli kodlar
+  geçmez: 027 şema dosyası onları siler, sunucu açılışta yenilerini üretir.
+- Yetişkinin kodu **tek kullanımlıktır**: müdür onunla öğretmen eklediğinde ya da yönetici
+  onunla müdür yaptığında aynı işlemde yenilenir; başkası görse de ikinci kez kullanamaz.
+  Kişi **Yeni kod üret** ile eskisini geçersiz kılabilir (saatte 10).
+- Öğrencinin veli kodu kullanılınca **değişmez** (anne ve baba aynı kodla ekleyebilsin);
+  okul öğrencinin **Hesap** penceresinden yeniler. Öğrenci kodunu **Ayarlar**'da görür.
+- Üretim ve biçim tek yerde: `sunucu/ortak.js` (`kisiKoduUret`, `kisiKoduSade`,
+  `kisiKoduBicim`, `crypto.randomInt`). Veritabanında iki sütunda da (`veli_kodu`,
+  `eslesme_kodu`) CHECK kısıtı ve tekil indeks vardır.
+
+Bir hesap en fazla 10 okulda rol alabilir (öğretmen ya da müdür); bir okulda yalnızca tek
+rolü olur.
+
+**Bırakma ve silme.** Öğretmen **Ayarlar → Portallarım → Okuldan ayrıl** der. Müdürlük
+kişinin kendisince bırakılamaz: okul yeni müdürü atanmadan sahipsiz kalmasın diye sistem
+yöneticisiyle görüşülür. Çocuk **Ayarlar → Portallarım → Kaldır** ile hesaptan çıkarılır.
+**Ayarlar → Hesabımı sil** yetişkin hesabını, çocuk bağlarını ve öğretmenlik rollerini siler
+(KVKK silme hakkı); bir okulun müdürü önce müdürlüğü devretmelidir. Verilen ödev ve notlar
+okulda kalır; ayrılan öğretmenin açık ödevlerini müdür **Ödevler** sayfasından sonuçlandırır.
 
 Okulun gördüğü: öğretmenin adı, telefonu, okuldaki kullanıcı adı ve branşı. E-postası,
 şifresi ve T.C. no'su yetişkin hesabındadır; okul bunları görmez, değiştiremez. Okul
@@ -339,7 +383,8 @@ Bu yüzden öğrenci, öğretmen ve servisçi **okulunun adresinden** girer (aş
 görür; öğretmenler ve öğrenciler görmez.
 
 Bir kişi **hem öğretmen (ya da müdür) hem veli** olabilir: çocuğu yetişkin hesabına
-bağlanır, rol seçiminde *Veli — çocuğun adı* satırı çıkar.
+bağlanır, menüde *Veli · çocuğun adı* portalı çıkar. Okul rolündeyken çocuğun ödevine ya da
+notuna bakmak için menüden o veli portalına geçilir.
 
 ### Açılış sayfası, giriş ve site ayarları
 
@@ -372,7 +417,7 @@ basınca projede emeği geçenlerin listesi açılır; liste depodaki
 | `/hakkinda` | Proje, bilgilerin nerede tutulduğu, nasıl yapıldığı, yapımcılar, iletişim |
 | `/login` | Giriş; öğrenci ve servisçi için "okulunu seç" (seçince okulun sayfasına gider) |
 | `/signup` | Yetişkin hesabı açma |
-| `/okulun-adi` | Okulun giriş sayfası (aşağıda) |
+| `/school/okulun-adi` | Okulun giriş sayfası (aşağıda) |
 
 "Şu an açık": son 5 dakikada uygulamaya istek gönderen farklı kişi sayısı;
 yalnızca sayı tutulur, kimin açık olduğu tutulmaz. Rakamlar dakikada bir
@@ -391,8 +436,13 @@ Yönetici **Yorumlar** sayfasından bir yorumu gizler ya da yeniden gösterir.
 **İletişim bilgileri kodda değil**, sunucudaki `data/config.yml` dosyasındadır
 (depoya girmez; örneği `belge/config.ornek.yml`). Dosyaya e-posta ve telefon
 yazılınca en geç 30 saniyede Hakkında sayfasına ve alt bilgiye eklenir; boş
-alan görünmez. E-posta sayfanın HTML kaynağında düz yazı olarak durmaz
-(adres toplayan botlar için), tarayıcıda kurulur.
+alan görünmez. Aynı bilgiler **+ Ekle → Müdür** penceresinde de "Yöneticimize ulaş"
+diye çıkar: okulunu açtırmak isteyen kişi kodunu buradan verir. E-posta sayfanın HTML
+kaynağında düz yazı olarak durmaz (adres toplayan botlar için), tarayıcıda kurulur.
+**Yayından önce en az biri (e-posta ya da telefon) doldurulmalıdır:** ikisi de boşsa
+pencere yalnızca "sayfanın altındaki iletişim bilgileri" der, alt bilgide de bir şey
+görünmez ve kişi yöneticiye ulaşamaz. Sunucu açılışta bunu `! Iletisim bilgisi yok`
+diye uyarır.
 
 ```yaml
 iletisim:
@@ -400,16 +450,17 @@ iletisim:
   telefon: ""
 ```
 
-### Okul adresi (egitimevi.org/okulun-adi)
+### Okul adresi (egitimevi.org/school/okulun-adi)
 
-Her okulun kendi adresi vardır: `egitimevi.org/doruk-koleji` gibi. Okul onaylanınca
-adından bir adres önerilir; müdür **Okul Adresi ve Konumu** sayfasından kendisi
-değiştirir (küçük harf, rakam, tire; 3–40 karakter; sitenin kendi sayfa adları alınamaz).
+Her okulun kendi adresi vardır: `egitimevi.org/school/doruk-koleji` gibi. Adresi okulu
+açarken yönetici yazar (okulun adından önerilir); müdür **Okul Adresi ve Konumu**
+sayfasından kendisi değiştirir (küçük harf, rakam, tire; 3–40 karakter; sitenin kendi
+sayfa adları alınamaz).
 Adres değişince eski adres çalışmaz.
 
 - Okul adresi açılış sayfasında tanıtılmaz. Öğrenci `/login` sayfasında okulunu seçer, okulun
   sayfasına gider; müdür okulun bağlantısını dağıtabilir. Son girilen okul bu tarayıcıda hatırlanır.
-- **Okul sayfası** (`egitimevi.org/doruk-koleji`): giriş kartının üstünde okulun kendi
+- **Okul sayfası** (`egitimevi.org/school/doruk-koleji`): giriş kartının üstünde okulun kendi
   tanıtımı (aşağıda); giriş o okulun içinde aranır (kullanıcı adı, T.C. no ya da e-posta).
   Veli de buradan girebilir.
 - Okulsuz girişte aynı kullanıcı adı birden çok okulda varsa sunucu "önce okulunu seç" der.
@@ -445,13 +496,19 @@ Güvenlik için:
 
 ### Sistemi ilk kez kurma sırası
 
-1. `admin@egitimevi.com` ile gir.
-2. Müdür adayı yetişkin hesabı açsın, **Ekle → Okulumu kaydet** ile başvursun.
-3. Admin panelinde **Onay Bekleyenler** → Onayla. Okul artık aramada görünür.
-4. Müdür **Okul Adresi ve Konumu** sayfasında adresi ve okulun haritadaki yerini seçer.
+1. `admin@egitimevi.com` ile gir. Sayfanın altında e-postan ya da telefonun görünmüyorsa
+   önce `data/config.yml`'deki iletişim bilgilerini doldur: müdür adayı sana onlarla ulaşır.
+2. Müdür adayı yetişkin hesabını açsın (**Hesap Aç**), girince **+ Ekle → Müdür**'deki
+   kişi kodunu ve okulunun adını sana versin. Kişiyi telefon ya da e-postayla doğrula.
+3. Admin panelinde **Okullar → Okul aç**: okulu seç, adresini yaz, kişi kodunu girip
+   **Bul** ile kime ait olduğuna bak, **Okulu aç**. Okul ve müdürü onaylı açılır; okul
+   müdürün sol üstteki menüsünde görünür, aramada da çıkar.
+4. Müdür **Okul Adresi ve Konumu** sayfasında gerekirse adresi değiştirir, okulun haritadaki
+   yerini seçer.
 5. Müdür öğrenci ve servisçi hesaplarını açar: tek tek ya da **Excel Aktarım** ile
    (iki sayfalı şablon ya da kendi XLS/ODS/CSV/TXT listesi). Olmayan sınıflar açılır.
-   Öğretmenler yetişkin hesabı açıp kodlarını verir; müdür **Öğretmenler → Kodla ekle**.
+   Öğretmenler yetişkin hesabı açıp **+ Ekle → Öğretmen**'deki kişi kodlarını verir; müdür
+   **Öğretmenler → Kodla ekle**.
 6. Müdür dersleri açar, derslere öğretmen atar, servisleri kurar.
 7. Öğretmen artık ödev verebilir ve sınav açabilir.
 > 81 il hazır tanımlı.
@@ -525,7 +582,9 @@ Bir öğretmen aynı gün ve saatte iki farklı sınıfa düşerse sistem uyarı
 İki rol de aynı pencereyi kullanır: ad, soyad, T.C. no (zorunlu); kullanıcı adı, şifre,
 e-posta, doğum tarihi, adres (isteğe bağlı); öğrencide sınıf ve okul no, servisçide
 telefon. Kaydedince kullanıcı adı, şifre (ya da "T.C.
-kimlik numarası"), okulun giriş adresi ve öğrencinin veli kodu **bir kez** gösterilir.
+kimlik numarası"), okulun giriş adresi ve öğrencinin veli kodu (5'erli gruplar ve **Kopyala**)
+gösterilir; şifre bir daha gösterilmez. Öğrencinin veli kodu hesap açılınca üretilir, servisçide
+kod yoktur.
 
 ### Öğrenci nakli (başka okuldan gelen öğrenci)
 
@@ -581,7 +640,8 @@ Her öğrencinin satırındaki **Hesap** butonundan:
 
 - Ad soyad ve **kullanıcı adı** değiştirilebilir
 - **Şifre sıfırlanabilir** (elle yaz ya da **Rastgele üret**)
-- **Veli kodu** görüntülenir, kopyalanır, gerekirse yenilenir
+- **Veli kodu** görüntülenir, kopyalanır, gerekirse **Yeni kod üret** ile yenilenir (eski kod
+  artık çalışmaz; bağlı veliler bağlı kalır)
 
 > **Şifreler görüntülenemez.** `scrypt` ile geri döndürülemez biçimde saklanıyor;
 > sunucu bile mevcut şifreyi bilmiyor, yalnızca doğru olup olmadığını kontrol
@@ -615,23 +675,48 @@ notları, ders programı. Menüdeki **Öğrenci Listesi** ile geri döner.
 
 ### Admin: müdür yönetimi
 
-**Müdürler** sayfasında tüm müdür hesapları listelenir (okul, il, öğretmen ve
-öğrenci sayısı, onay durumu). **Hesabı sil** ile müdür kaldırılır; okul
-*beklemede* durumuna döner, öğretmen ve öğrenci hesapları silinmez, okula yeni
-bir müdür başvurabilir.
+**Müdürler** sayfasında bütün müdürler listelenir: ad, kullanıcı adı, e-posta, okul, il,
+öğretmen ve öğrenci sayısı ve durum (*Etkin*, *Giremiyor*, *Kapalı*). **Hesabı sil** ile
+müdür kaldırılır: kişinin yetişkin hesabı durur, yalnızca müdürlüğü gider (eski düzende
+açılmış ayrı müdür hesabı ise silinir). Okul **Okullar** listesinde *Müdür bekliyor*
+durumuna döner ve kimse giremez; öğretmen ve öğrenci hesapları silinmez. Yönetici
+**Okullar → Okul aç** ile okula yeni müdür atar. Müdürlük başvurusu ve **Onay Bekleyenler**
+sayfası yoktur.
 
 ### Admin: okul açma
 
-Başvuru beklemeden okulu yönetici de açabilir: **Okullar → Okul aç**. Okul MEB
-listesinden aranır (listede yoksa adı, ili ve ilçesi yazılır), okulun adresi
-(`egitimevi.org/<uzantı>`) ve müdür yazılır:
+Okulu yönetici açar: **Okullar → Okul aç**. Müdür, kendi hesabını açmış kişinin **kişi
+koduyla** atanır.
 
-- Müdürün e-postası sistemde kayıtlı bir yetişkin hesabıysa müdürlük o hesaba eklenir;
-  kişi **Hesap değiştir**'den okuluna geçer, bildirim alır.
-- Değilse yeni yetişkin hesabı açılır: ad, soyad, kullanıcı adı, telefon ve güçlü bir
-  şifre (en az 8; büyük, küçük harf, rakam, özel karakter). **Rastgele üret** okunması kolay
-  bir şifre önerir. Müdür ilk girişte kendi şifresini belirlemeden hiçbir role geçemez.
-- Okul ve müdür onaylı açılır; işlem kaydına yazılır.
+1. Okulunu açtırmak isteyen kişi yetişkin hesabını açar ve **+ Ekle → Müdür**'deki kişi
+   kodunu okulun adıyla birlikte yöneticiye verir. Yönetici kişiyi dışarıdan (telefon,
+   e-posta) doğrular; yaş ya da beyan gibi bir form yoktur.
+2. Pencerede okul MEB listesinden aranır (listede yoksa adı, ili ve ilçesi yazılır) ve
+   okulun adresi yazılır (`egitimevi.org/school/<uzantı>`; kutuya gelince okulun adından
+   önerilir).
+3. **Müdürün kişi kodu** kutusuna kod yazılır (boşluklu ya da boşluksuz) ve **Bul**'a
+   basılır: kodun sahibinin tam adı, kullanıcı adı, e-postasının kısaltılmış hâli
+   (`fa****@gmail.com`) ve kaç okulda rolü olduğu görünür. Kod değişirse yeniden **Bul**
+   gerekir; **Okulu aç** yalnızca bulunan kodla gider.
+4. **Okulu aç**: okul ve müdürlük onaylı açılır, kişinin kodu aynı işlemde yenilenir (tek
+   kullanımlık). Kişiye "… okulunun müdürü olarak eklendin. Sol üstteki menüden okuluna
+   geçebilirsin." bildirimi gider, işlem kaydına yazılır (`okul.acildi`). Sonuç penceresinde
+   okulun adresi (**Kopyala**) ve müdürün adı görünür.
+
+Kurallar sunucuda (`sunucu/bolumler/yonetici-okul.js`, `POST /api/admin/kisi-bul` ve
+`POST /api/admin/okul-ac`):
+
+- E-postayla ya da yeni hesap açarak müdür yapma yolu yoktur.
+- Sistem yöneticisi ve okulun açtığı hesaplar (öğrenci, servisçi) müdür yapılamaz.
+- Müdürü kaldırılmış (sahipsiz) okul yeniden seçilirse yeni okul açılmaz, o okul
+  devralınır ve kendi adresini koruyabilir; kişinin o okulda başka bir rolü (ör.
+  öğretmenlik) varsa önce o rol çıkarılmalıdır.
+- Bir kişi en fazla 10 okulda rol alabilir.
+- Kod tahminine karşı: **Bul** yönetici başına dakikada 30; aynı bağlantıdan saatte en
+  fazla 30 yanlış kod (**Bul** ve **Okulu aç** birlikte sayılır). Yanlış kodda "Bu kodla bir
+  hesap yok." denir. Kod adrese ve sunucu günlüğüne düşmesin diye istekler POST'tur.
+- Aynı kod aynı anda iki kez kullanılamaz: kod koşullu olarak harcanır, ikinci istek
+  "Bu kod az önce kullanıldı" alır.
 
 ---
 
@@ -742,7 +827,7 @@ ve her öğrencinin portalını açar.
 |---|---|
 | **Ders ve program** | Derse öğretmen olarak atanabilir · Ders programını düzenler · Sınıfa ders ekler/çıkarır · Derse öğretmen atar |
 | **Sınıf ve öğrenci** | Sınıf açar/siler · Öğrenciyi sınıfa yerleştirir · Öğrenci hesabı açar · Öğrenci bilgilerini düzenler · Öğrenci şifresi sıfırlar · Öğrenci portalına girer |
-| **Öğretmenler** | Başvuru onaylar · Bilgi ve branş düzenler · Okuldan çıkarır |
+| **Öğretmenler** | Okula öğretmen ekler (kişi koduyla) · Bilgi ve branş düzenler · Okuldan çıkarır |
 | **Ödev ve sınav** | Ödev verir · Ödev sonuçlandırır · Sınav oluşturur · Sınav notu girer · Girdiği sınıfların öğrenci sonuçlarını görür |
 | **Devamsızlık** | Yoklama alır · Okulun tüm devamsızlığını görür |
 | **Etüt** | Etüt açar ve düzenler · Bütün etütlerde yoklama alır |
@@ -814,7 +899,7 @@ Etüt, okulun belli bir gününde belli saatler arasında yapılan ders dışı
 
 ## Hatırlatıcılar
 
-Herkes (öğrenci, veli, öğretmen, müdür, servisçi, rolsüz yetişkin) menüdeki
+Herkes (öğrenci, veli, öğretmen, müdür, servisçi, henüz portalı olmayan yetişkin) menüdeki
 **Hatırlatıcılar** sayfasından kendine hatırlatma kurar: **başlık**, isteğe bağlı
 **açıklama**, **sıklık** ve **saat**.
 
@@ -1065,12 +1150,15 @@ Başarı oranında yaptı tam, geç ve eksik yarım sayılır; izinli gelmemek o
 
 ## Veli tarafı
 
-1. Öğrenci **Ayarlar** sayfasında **veli kodunu** görür (örn. `7H39D-AAJQ7`).
-   Kod 10 karakterdir, yalnızca büyük harf ve rakam; karışabilen 0/O, 1/I yoktur.
-   Yanındaki **Kopyala** ile panoya alınır.
-2. Veli bu kodu başlangıç sayfasına ya da **Çocuklarım → Çocuk ekle** kısmına girer.
-   Büyük/küçük harf, boşluk ve tire fark etmez.
-3. Çocuğun kartına tıklayınca doğrudan onun portalı açılır:
+1. Öğrenci **Ayarlar** sayfasında **veli kodunu** görür (örn. `Ab3#k Qx9+m Pt7?z`):
+   15 karakter, 5'erli gruplar hâlinde (biçimi yukarıda, "Kişi kodu"). Okul da kodu giriş
+   kâğıdına yazdırır. Yanındaki **Kopyala** kodu boşluksuz panoya alır.
+2. Veli kendi hesabını açar ve kodu sağ üstteki **+ Ekle → Veli**'ye (veli olduktan sonra
+   **Çocuklarım → Çocuk ekle**'ye de) yazar. **Büyük/küçük harf fark eder**; boşluklar önemli
+   değildir. Onay beklenmez: çocuk hemen bağlanır, öğrenciye bildirim gider. Kod kullanılınca
+   değişmez: anne ve baba aynı kodla ayrı ayrı ekleyebilir.
+3. Çocuk menüde *Veli · çocuğun adı* portalı olur; yetişkin hesabındayken yeni çocuğun portalı
+   hemen açılır. **Çocuklarım**'da çocuğun kartına tıklayınca doğrudan onun portalı açılır:
    ilerleyiş, ödevler, sınavlar, başarılar.
 
 Kod olmadan kimse başkasının çocuğunu göremez. Veli kodu dışında okul da veliyi
@@ -1199,7 +1287,8 @@ görür; veli çocuğunun kulüplerini görür.
 Müdür, öğretmenin yapabildiği **her şeyi** yapabilir (ödev verme, sınav açma, not girme)
 ve ek olarak:
 
-- Öğretmen başvurularını onaylar/reddeder
+- Öğretmeni kişi koduyla okula ekler (**Öğretmenler → Kodla ekle**), branşını düzenler,
+  okuldan çıkarır
 - Okuldaki tüm öğrencileri görür
 - Sınıf açar, öğrencileri sınıflara yerleştirir, derslere öğretmen atar
 
@@ -1261,12 +1350,13 @@ ve sunucudan dışarı çıkmaz.
 | Şifre değişimi | Şifre değişince o oturum dışındaki bütün oturumlar kapanır |
 | T.C. kimlik no | İsteğe bağlı, algoritmayla denetlenir; yalnızca kişinin kendisine gösterilir |
 | Veli kodu sınırı | Hesap başına dakikada 5, bağlantı başına saatte 30 yanlış kod — çok hesap açıp denemek de sayılır |
+| Kişi kodu sınırı | Müdürün **Kodla ekle**'si kullanıcı başına dakikada 30, yöneticinin **Bul**'u dakikada 30; ikisinde de bağlantı başına saatte 30 yanlış kod. Kod yenileme hesap başına saatte 10. Kod POST gövdesinde gider, adrese ve günlüğe düşmez |
 | Oturum ömrü | Oturumlar 7 gün sonra kendiliğinden düşer, eskiler temizlenir |
 | Güvenlik başlıkları | CSP, X-Frame-Options, nosniff, Referrer-Policy — XSS ve çerçeveleme engeli |
 | Girdi temizliği | Gelen JSON'daki `__proto__` gibi tehlikeli anahtarlar ve NUL karakteri ayıklanır |
 | Hata gizliliği | Veritabanı hatasında tablo/kısıt adı istemciye gitmez; ayrıntı yalnızca günlükte |
 | Yavaş bağlantı koruması | Açık tutulan boş bağlantılar 20-30 sn sonra kapatılır (slowloris) |
-| Şifre politikası | En az 8 karakter, harf ve rakam zorunlu |
+| Şifre politikası | Yetişkin hesabında en az 8 karakter; büyük ve küçük harf, rakam ve özel karakter zorunlu. Öğrenci ve servisçide en az 8 karakter, harf ve rakam |
 | İki adımlı giriş | E-postası olan hesapta her girişte e-posta ile 6 haneli kod — kapatılamaz |
 | Dosya yükleme | Gövde okunmadan boyut/tür/kota/boş yer denetimi; 60 sn veri gelmezse kesilir; kişi başına aynı anda 3, saatte 60 yükleme |
 | Dosya indirme | Her indirmede yetki; ek olarak (octet-stream, nosniff, sandbox); dosya adları temizlenir |
@@ -1390,19 +1480,22 @@ eğitim evi/
 │   ├── index.js               ← giriş noktası: veriyi yükler, HTTP sunucuyu açar
 │   ├── api.js                 ← /api yönlendiricisi: isteği ilgili bölüme dağıtır
 │   ├── yollar.js              ← klasör yolları, port, dinleme adresi (EE_DATA, PORT, HOST)
-│   ├── ortak.js               ← sabitler ve küçük yardımcılar (ders listesi, iller, tarih, temizleme)
+│   ├── ortak.js               ← sabitler ve küçük yardımcılar (ders listesi, iller, tarih, temizleme, kişi kodu)
 │   ├── ayarlar.js             ← data/ayarlar.json (e-posta, site adresi, ters vekil)
 │   ├── veri/                  ← VERİ KATMANI (SQL yalnızca burada)
 │   │   ├── index.js           ← tek giriş noktası: depo, bildir, açılış, yedek
 │   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
 │   │   ├── sema.js            ← şema dosyalarını sırayla uygular
 │   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
-│   │   ├── sema/002...018     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   ├── sema/002...027     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
 │   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
 │   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
 │   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
 │   │   │                        015 telefon ülke kodu, 016 e-posta onayı, 017 ödev yıldızı,
-│   │   │                        018 okul sayfası)
+│   │   │                        018 okul sayfası, 019 yorumlar, 020 ekler, 021 öğrenci
+│   │   │                        geçmişi, 022 okul özellikleri, 023 öğretmen yetkileri,
+│   │   │                        024 hatırlatıcılar, 025 ödev başlama saati, 026 Eğitim Evi
+│   │   │                        Aile, 027 kişi kodu ve müdür başvurusunun kalkması)
 │   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
 │   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
 │   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)
@@ -1419,12 +1512,12 @@ eğitim evi/
 │   ├── site.js                ← /api/site: açılış sayfası rakamları, data/config.yml'deki iletişim
 │   ├── bolumler/              ← her bölüm kendi uçlarını sunar (uclar(k))
 │   │   ├── kayit.js           ← kayıt, giriş, şifre, profil, bildirimler
-│   │   ├── kisilik.js         ← yetişkin hesabı: rol seçimi, Ekle, öğretmen kodu, hesap bilgisi, hesabı sil
-│   │   ├── yonetici.js        ← /api/admin: onaylar, okullar, yedekler
-│   │   ├── yonetici-okul.js   ← /api/admin/okul-ac: yöneticinin okul açması
+│   │   ├── kisilik.js         ← yetişkin hesabı: portallar, + Ekle, kişi kodu, hesap bilgisi, hesabı sil
+│   │   ├── yonetici.js        ← /api/admin: müdürler, okullar, yedekler
+│   │   ├── yonetici-okul.js   ← /api/admin/kisi-bul ve okul-ac: yöneticinin okulu kişi koduyla açması
 │   │   ├── okul-sayfasi.js    ← /api/okul-sayfa, /api/okul-foto: okulun giriş sayfası
 │   │   ├── okul.js            ← /api/school: sınıf, ders, program, roller, ders programı Excel'i
-│   │   ├── hesaplar.js        ← /api/school: öğrenci/servisçi hesabı, öğretmeni kodla ekleme, veli bağlama, okul adresi
+│   │   ├── hesaplar.js        ← /api/school: öğrenci/servisçi hesabı, öğretmeni kişi koduyla ekleme, veli bağlama, okul adresi
 │   │   ├── kisi-aktarim.js    ← /api/school: kişi listesi şablonu, içeri/dışarı aktarım, metinden Excel
 │   │   ├── okul-hayati.js     ← /api/yemek, /api/servis (harita, sefer, konum), /api/kulupler
 │   │   ├── anket.js           ← /api/anketler
@@ -1551,14 +1644,18 @@ kullanıcıya "Dur!" uyarısı çıkar (biri ona kod yapıştırtmaya çalışı
 - **Telefon** ülke koduyla yazılır: kutunun solundan ülke seçilir (+90 Türkiye hazır),
   numara o ülkenin düzenine göre gruplanır (`+90 532 123 45 67`). Sunucu uluslararası
   biçimde (E.164, `+905321234567`) saklar; eski `0532...` kayıtlar 015 şema dosyasıyla çevrildi.
-- **Doğum tarihi** kayıtta ve Ayarlar'da alınır; öğrencide zorunlu, diğer rollerde isteğe
-  bağlı. Gelecek tarih, olmayan gün (30 Şubat) ve 1920 öncesi reddedilir.
-- **Okul müdürü 18 yaşından büyük olmalı.** Okul başvurusunda doğum tarihi istenir
-  (hesapta yoksa) ve "bu okulun yöneticisiyim, bilgilerim doğru" beyanı işaretlenir.
-  İnternette yaş kanıtlanamaz; asıl denetim yöneticinin onayıdır: yönetici başvuranın
-  yaşını, hesabın ne zaman açıldığını, e-postasını ve telefonunu görür. Şakasına art arda
-  başvuruya karşı: hesap başına tek bekleyen başvuru, aynı bağlantıdan günde en fazla 20
-  başvuru, e-postası onaylanmamış hesap zaten yok.
+- **Rol seçimi yok.** Kayıt formu "ne olarak kullanacaksın" diye sormaz; gövdede rol ya da
+  okul gönderilse de yok sayılır. Herkes rolsüz bir yetişkin hesabı açar; veli, öğretmen ya
+  da müdür olmak girişten sonra **+ Ekle** ile olur (yukarıda "Hesap türleri ve portallar").
+  Hesap e-posta bağlantısıyla açıldığı anda kişi kodu da üretilir.
+- **Doğum tarihi** öğrenciden istenir: okul hesabı açarken yazabilir, öğrenci Ayarlar'da
+  girer (orada zorunludur); nakilde T.C. no ile birlikte eşleştirmede kullanılır. Yetişkin
+  kaydında istenmez; daha önce girilmişse Ayarlar'da görünür ve silinebilir.
+  Gelecek tarih, olmayan gün (30 Şubat) ve 1920 öncesi reddedilir.
+- **Müdürlük başvurusu yoktur.** Yaş, doğum tarihi ya da beyan istenmez; okulu ve müdürünü
+  sistem yöneticisi açar, kişiyi dışarıdan (telefon, e-posta) kendisi doğrular ve kişi
+  koduyla müdür yapar (yukarıda "Admin: okul açma"). E-postası onaylanmamış hesap zaten
+  yoktur; kodu tahmin etmeye karşı hız sınırları var.
 
 ---
 
@@ -1566,7 +1663,8 @@ kullanıcıya "Dur!" uyarısı çıkar (biri ona kod yapıştırtmaya çalışı
 
 Veli çocuğunun portalına girmeden de her şeyi görür: **Ödevler**, **Devamsızlık**,
 **İlerleyiş** ve **Takvim** bütün çocuklar için tek listede gelir, her satırın başında
-hangi çocuğun olduğu yazar. Üstteki şeritten tek çocuğa daraltılır. Öğrenciye gönderilen
+hangi çocuğun olduğu yazar. Üstteki şeritten ya da sol menüdeki *Veli · çocuğun adı*
+portalından tek çocuğa daraltılır. Öğrenciye gönderilen
 her mesaj velisine de düşer; mesajda "Zeynep için" notu görünür. Eski yol da duruyor:
 Çocuklarım → çocuğun kartı → portalı.
 

@@ -6,7 +6,7 @@
 const { hataSay, hataSiniriDoldu, hizSinir, istemciIp } = require('../guvenlik');
 const { bad, ok } = require('../http');
 const { childrenOf } = require('../iliskiler');
-const { clean, kodSade, now, uid } = require('../ortak');
+const { clean, kisiKoduSade, now, uid } = require('../ortak');
 const { depo, bildir, islem } = require('../veri');
 
 /* Veli koduyla çocuğu hesaba bağlar. { hata, kod } ya da { hesap } döner. */
@@ -21,8 +21,10 @@ async function cocukBagla(hesap, kodHam, req) {
   if (hataSiniriDoldu(ipAnahtar, 30)) {
     return { hata: 'Bu bağlantıdan çok fazla yanlış kod denendi. Bir saat sonra tekrar dene.', kod: 429 };
   }
-  /* Büyük/küçük harf, boşluk ve tire fark etmez: "abcde fgh23" de olur. */
-  const code = kodSade(clean(kodHam, 40));
+  /* Büyük/küçük harf duyarlı; yalnız boşluklar silinir (ekrandaki 5'erli
+     biçim "Ab3#k Qx9+m Pt7?z" yapıştırılınca da olur). Eski 10 haneli kod geçmez.
+     Kod kullanılınca yenilenmez: anne ve baba aynı kodla ekleyebilir. */
+  const code = kisiKoduSade(clean(kodHam, 40));
   const st = code ? await depo.kullanicilar.kodlaOgrenci(code) : null;
   if (!st) {
     hataSay(ipAnahtar, 30, 60 * 60 * 1000);

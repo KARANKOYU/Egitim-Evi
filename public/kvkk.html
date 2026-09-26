@@ -77,7 +77,7 @@
 
   <div class="belge-ust">
     <h1>Kişisel Verilerin Korunması Aydınlatma Metni</h1>
-    <div class="alt">Sürüm 1.9 · Yürürlük tarihi: 26.09.2026</div>
+    <div class="alt">Sürüm 1.10 · Yürürlük tarihi: 26.09.2026</div>
   </div>
 
   <p>
@@ -103,10 +103,10 @@
       <tr><td>E-posta adresi</td><td>Kendisi kaydolan herkes (giriş kodu ve şifre sıfırlama için); okulun açtığı hesaplarda isteğe bağlı. Hesap, adrese gönderilen onay bağlantısına tıklanınca açılır; tıklanmayan istek 24 saat sonra geçersiz olur ve silinir.</td></tr>
       <tr><td>Telefon numarası</td><td>Kendisi kaydolan herkes (acil durumda ulaşmak için); okulun açtığı servisçi hesabında isteğe bağlı</td></tr>
       <tr><td>T.C. kimlik numarası</td><td>Okulun açtığı hesaplarda (öğrenci, servisçi) zorunlu; okul yönetimi girer, ilk girişte kullanıcı adı ve geçici şifre olarak kullanılabilir. Yalnızca kişinin kendisi ve okul yönetimi görür; öğretmenler ve öğrenciler görmez. Yetişkin hesabında (veli, öğretmen, müdür) isteğe bağlıdır ve okulla paylaşılmaz. Öğrenci hesabı kişiye aittir: öğrencinin T.C. kimlik numarası sistemde tektir; öğrenci okul değiştirince yeni okul, T.C. kimlik numarası ile doğum tarihi eşleşirse aynı hesabı kendi okuluna alır.</td></tr>
-      <tr><td>Öğretmen kodu</td><td>Yetişkin hesabı; kişi okula öğretmen olarak eklensin diye kodu kendisi müdüre verir. Kod bir kez kullanılır. Müdür kodu girince adın yalnızca bir kısmını görür ("Ay** Yı****"); ekledikten sonra okul öğretmenin adını, telefonunu, okuldaki kullanıcı adını ve branşını görür, e-postasını ve T.C. kimlik numarasını görmez.</td></tr>
+      <tr><td>Kişi kodu (öğrencide veli kodu)</td><td>Sistemin ürettiği 15 karakterlik rastgele kod; kişiyi bir okula ya da çocuğuna bağlamaya yarar. <b>Yetişkin hesabında</b> (veli, öğretmen, müdür) hesap açılınca üretilir ve yalnızca kişinin kendisi görür. Kodu kişi kendisi verir: okulun müdürüne verirse okula öğretmen olarak eklenir, sistem yöneticisine verirse okulu açılır ve müdürü olur. Kod bir kez kullanılır, kullanılınca yenilenir; kişi de istediği zaman yeniler. Müdür kodu girince adın yalnızca bir kısmını görür ("Ay** Yı****"); ekledikten sonra okul öğretmenin adını, telefonunu, okuldaki kullanıcı adını ve branşını görür, e-postasını ve T.C. kimlik numarasını görmez. Sistem yöneticisi kendisine verilen kodla kişinin adını ve soyadını, kullanıcı adını, e-postasının kısaltılmış hâlini ("ay****@ornek.com") ve kaç okulda rolü olduğunu görür; kod olmadan kişi arayamaz. Kişi müdür olunca yönetici onu müdür listesinde adı, kullanıcı adı, e-postası ve okuluyla görür. <b>Öğrencinin kodu veli kodudur:</b> okul hesabı açınca üretilir; öğrencinin kendisi, okul yönetimi ve öğrenciye bağlı veliler görür; okul giriş kâğıdına ve Excel listesine yazdırabilir. Veli kodu girince çocuğa bağlanır ve öğrenciye bildirim gider. Veli kodu kullanılınca değişmez (iki veli aynı kodu kullanabilsin diye); okul yenileyebilir. Servisçi ve sistem yöneticisi hesabında kod yoktur.</td></tr>
       <tr><td>Okul numarası</td><td>Öğrenci (isteğe bağlı; okul yönetimi girer)</td></tr>
       <tr><td>Adres; okulun il ve ilçesi</td><td>Adres isteğe bağlı; il ve ilçe okula bağlı kişilerde</td></tr>
-      <tr><td>Doğum tarihi</td><td>Öğrenci (okul yönetimi ya da öğrencinin kendisi girer); okul müdürü başvurusu yapan (18 yaşından büyük olduğunun denetimi için; başvuruyu değerlendiren sistem yöneticisi yaşını görür)</td></tr>
+      <tr><td>Doğum tarihi</td><td>Öğrenci (okul yönetimi ya da öğrencinin kendisi girer; öğrenci okul değiştirince T.C. kimlik numarasıyla birlikte eşleştirmede kullanılır). Yetişkin hesabında istenmez; daha önce girilmişse kişi <strong>Ayarlar</strong>'dan silebilir.</td></tr>
       <tr><td>Okul, sınıf, şube bilgisi</td><td>Öğrenci; öğretmen ve müdürün hangi okullarda rolü olduğu</td></tr>
       <tr><td>Ödev durumu ve sonuçları</td><td>Öğrenci</td></tr>
       <tr><td>Ödev yıldızları</td><td>Öğrenci; önemli bulduğu ödevi işaretler. Yalnızca öğrencinin kendisi görür.</td></tr>
@@ -151,6 +151,7 @@
     <li>Servis aracının yerinin öğrenciye ve veliye gösterilmesi, servis eve yaklaşınca (500 m ve 100 m) bildirim gönderilmesi</li>
     <li>Yeni mesaj, ödev ve duyurunun telefon bildirimiyle haber verilmesi (kişi açarsa)</li>
     <li>Okulun açtığı hesapların giriş bilgilerinin öğrenciye ve veliye ulaştırılması</li>
+    <li>Kişinin kendi verdiği kodla okula öğretmen ya da müdür olarak eklenmesi, velinin veli koduyla çocuğuna bağlanması</li>
     <li>Acil durumlarda veliye ya da öğretmene telefonla ulaşılması</li>
     <li>Hesap güvenliğinin sağlanması (iki adımlı giriş, yetkisiz erişimin engellenmesi)</li>
   </ul>
@@ -275,7 +276,7 @@
   <a class="btn ghost geri" href="/login">← Giriş sayfasına dön</a>
 
   <footer>
-    Eğitim Evi · Aydınlatma Metni Sürüm 1.9<br>
+    Eğitim Evi · Aydınlatma Metni Sürüm 1.10 · Yürürlük tarihi: 26.09.2026<br>
     Bu metin genel bir şablondur. Okulunuzun adını, iletişim bilgilerini ve
     sunucusunun bulunduğu ülkeyi ekleyerek kendinize uyarlamanız,
     yayına almadan önce bir hukukçuya danışmanız önerilir.

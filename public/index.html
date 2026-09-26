@@ -26,7 +26,7 @@
 <!-- ===================== DIŞ SAYFALAR =====================
      Giriş yapmamış ziyaretçinin gördüğü her şey: üst şerit, açılış (/),
      Hakkında (/hakkinda), giriş (/login), kayıt (/signup), okulun giriş
-     sayfası (/okulun-adi) ve alt bilgi. Hangisinin görüneceğine
+     sayfası (/school/okulun-adi) ve alt bilgi. Hangisinin görüneceğine
      js/parcalar/05a-dis-sayfalar.js karar verir. -->
 <div class="dis" id="dis" style="display:none">
   <header class="site-ust">
@@ -113,13 +113,13 @@
         <h2 id="vBasBaslik">Okulun nasıl başlar?</h2>
         <ol>
           <li><b>Müdür hesabını açar</b>
-            <span><a href="/signup" data-site="/signup">Kayıt ol</a>, sonra <b>Ekle → Okulumu kaydet</b> ile okulunu MEB listesinden seçer.</span></li>
-          <li><b>Okul onaylanır</b>
-            <span>Site yöneticisi başvuruyu inceler; onaylanınca müdür okulunu yönetmeye başlar.</span></li>
+            <span><a href="/signup" data-site="/signup">Kayıt ol</a>, sonra sağ üstteki <b>+ Ekle → Müdür</b>'de kişi kodunu görür.</span></li>
+          <li><b>Okul açılır</b>
+            <span>Müdür okulun adını ve kodunu Eğitim Evi yöneticisine verir; yönetici okulu ve adresini açıp onu müdür yapar.</span></li>
           <li><b>Sınıflar ve öğrenciler eklenir</b>
             <span>Öğrenci listesi Excel ile bir seferde gelir; giriş bilgileri yazdırılıp dağıtılır.</span></li>
           <li><b>Öğretmenler ve veliler katılır</b>
-            <span>Öğretmen kodunu müdüre verir, veli çocuğunun veli koduyla bağlanır.</span></li>
+            <span>Öğretmen kişi kodunu müdüre verir, veli çocuğunun veli koduyla bağlanır.</span></li>
         </ol>
         <p class="v-baslangic-sss">Aklına takılan bir şey mi var? <a href="/sss" data-site="/sss">Sık sorulan sorular</a></p>
       </section>
@@ -138,7 +138,7 @@
         <div class="vitrin-kim">
           <span class="vitrin-kim-cizim" data-cizim="ogretmen"></span>
           <h2>Öğretmen</h2>
-          <p>Kendi hesabını açar, kodunu okula verir. Birden çok okulda ders veriyorsa hepsi tek hesapta.</p>
+          <p>Kendi hesabını açar, kişi kodunu müdüre verir. Birden çok okulda ders veriyorsa hepsi tek hesapta.</p>
         </div>
         <div class="vitrin-kim">
           <span class="vitrin-kim-cizim" data-cizim="mudur"></span>
@@ -171,8 +171,8 @@
           <div>
             <h2>Nasıl çalışır?</h2>
             <p>Öğrenci ve servisçi hesabını okul açar. Veli, öğretmen ve müdür kendi hesabını açar; tek hesapla
-              birden çok rol olur: bir okulda öğretmen, başka bir okulda müdür, çocuğunun velisi. Girişten sonra
-              hangisiyle devam edeceğini seçersin.</p>
+              birden çok rol olur: bir okulda öğretmen, başka bir okulda müdür, çocuğunun velisi. Hepsi sol üstteki
+              menüde alt alta durur; aralarında oradan geçersin.</p>
           </div>
           <div>
             <h2>Bilgiler nerede?</h2>
@@ -216,53 +216,115 @@
         <div class="sss-grup">
           <h2>Başlarken</h2>
           <details>
+            <summary>Eğitim Evi nedir?</summary>
+            <p>Okulun günlük işlerini tek yerde toplayan bir okul portalı: ödev, sınav, devamsızlık, ders programı,
+              mesaj ve duyuru, servis, yemek listesi, kulüp, etüt, anket ve takvim. Tarayıcıda ve telefonda çalışır;
+              müdür, öğretmen, öğrenci, veli ve servisçi aynı sistemi kendi yetkisi kadar görür.</p>
+          </details>
+          <details>
             <summary>Eğitim Evi ücretli mi?</summary>
             <p>Hayır. Eğitim Evi ücretsizdir, reklam göstermez ve kaynak kodu herkese açıktır. Bir okul grup
               projesi olarak başladı.</p>
           </details>
           <details>
             <summary>Okulum Eğitim Evi'ni nasıl kullanmaya başlar?</summary>
-            <p>Müdür kendi hesabını açar (<a href="/signup" data-site="/signup">Kayıt ol</a>), girişten sonra
-              <b>Ekle → Okulumu kaydet</b> ile okulunu MEB listesinden seçip başvurur. Başvuru onaylanınca okulu
-              yönetmeye başlar: sınıfları, öğrencileri ve öğretmenleri ekler.</p>
+            <p>Müdür önce kendi hesabını açar (<a href="/signup" data-site="/signup">Kayıt ol</a>). Girişten sonra
+              sağ üstteki <b>+ Ekle</b> düğmesinden <b>Müdür</b>'ü seçer; orada kendi <b>kişi kodunu</b> ve Eğitim Evi
+              yöneticisine nasıl ulaşacağını görür. Yöneticiye okulun adını ve bu kodu verir. Yönetici okulu ve okulun
+              adresini (egitimevi.org/school/okulun-adi) açar, bu hesabı müdür yapar; okul sol üstteki menüde görünür.
+              Ardından müdür sınıfları, öğrencileri ve öğretmenleri ekler. Müdürlük için ayrıca başvuru formu yoktur.</p>
           </details>
           <details>
-            <summary>Öğrenci hesabını kim açar?</summary>
-            <p>Okul. Öğrenci kendisi kaydolmaz; kullanıcı adını ve ilk şifresini okulundan alır. İlk girişte kendi
-              şifresini belirler.</p>
-          </details>
-          <details>
-            <summary>Veli çocuğunun bilgilerini nasıl görür?</summary>
-            <p>Veli kendi hesabını açar, okulun verdiği <b>veli kodunu</b> <b>Ekle → Çocuğumu ekle</b> ile girer.
-              Birden çok çocuk aynı hesaba eklenebilir; çocuklar farklı okullarda olabilir.</p>
+            <summary>Kişi kodu nedir?</summary>
+            <p>Veli, öğretmen ve müdür hesabının kendine ait 15 karakterlik kodu; <b>+ Ekle → Öğretmen</b> ya da
+              <b>+ Ekle → Müdür</b> ekranında görünür. Okula öğretmen olarak eklenmek için okulun müdürüne, okulunu açtırıp
+              müdür olmak için Eğitim Evi yöneticisine verirsin. Bu kod bir kez kullanılır, kullanılınca yenilenir.
+              Öğrencinin kodu ise <b>veli kodudur</b>: öğrenci onu <b>Ayarlar</b>'da görür, veli çocuğunu bununla ekler;
+              bu kod kullanılınca değişmez. Servisçi hesabında kod yoktur. Kod İngilizce harf, rakam ve <b>! ? # * + -</b> karakterlerinden oluşur; Türkçe harf
+              ve birbirine karışan 0, O, o, 1, I, l, L yoktur. Büyük/küçük harf fark eder. Ekranda 5'erli gruplar hâlinde
+              görünür; yazarken aradaki boşluklar önemli değildir, <b>Kopyala</b> düğmesi kodu boşluksuz kopyalar. Kodu
+              yalnızca vermek istediğin kişiye ver.</p>
           </details>
           <details>
             <summary>Öğretmen okula nasıl katılır?</summary>
-            <p>Öğretmen kendi hesabını açar ve hesabındaki <b>öğretmen kodunu</b> müdüre verir. Müdür
-              <b>Öğretmenler → Kodla ekle</b> ile okula ekler, derslerine atar.</p>
+            <p>Öğretmen kendi hesabını açar, <b>+ Ekle → Öğretmen</b>'de gördüğü kişi kodunu okulun müdürüne verir.
+              Müdür <b>Öğretmenler → Kodla ekle</b> ekranında kodu girer, adın kısaltılmış hâlini görüp ekler ve derslerine
+              atar; okul, öğretmenin sol üstteki menüsünde görünür. Kod kullanıldığı an yenilenir; başkası eline geçirse de
+              ikinci kez kullanamaz. Kodu yanlış kişiye verdiysen <b>Yeni kod üret</b> ile eskisini geçersiz kıl.</p>
+          </details>
+          <details>
+            <summary>Veli çocuğunu nasıl ekler?</summary>
+            <p>Veli kendi hesabını açar, sağ üstteki <b>+ Ekle → Veli</b>'yi seçip çocuğun <b>veli kodunu</b> girer.
+              Kodu okul verir (giriş kâğıdında yazar); çocuk da kendi <b>Ayarlar</b> sayfasında görür. Kod kullanılınca
+              değişmez: anne ve baba aynı kodla ayrı ayrı ekleyebilir. Birden çok çocuk aynı hesaba eklenir; çocuklar farklı
+              okullarda olabilir, her biri sol üstteki menüde çocuğun adıyla ayrı bir <b>Veli</b> satırı olur. Okul da
+              veliyi T.C. kimlik no'su ya da kullanıcı adıyla çocuğa bağlayabilir.</p>
+          </details>
+          <details>
+            <summary>Öğrenci ve servisçi hesabını kim açar?</summary>
+            <p>Okul. Öğrenci ve servisçi kendisi kaydolmaz; kullanıcı adını ve ilk şifresini okulundan alır,
+              okulun adresinden (egitimevi.org/school/okulun-adi) girer ve ilk girişte kendi şifresini belirler. Okul bu
+              hesapları tek tek ya da Excel dosyasıyla toplu açar.</p>
           </details>
         </div>
 
         <div class="sss-grup">
           <h2>Hesap ve giriş</h2>
           <details>
-            <summary>Şifremi unuttum, ne yapmalıyım?</summary>
-            <p>Yetişkin hesabıysan giriş kartındaki <b>Şifremi unuttum</b> ile e-posta adresine yenileme bağlantısı
-              gelir. Öğrenci hesabının şifresini okul yönetimi yeniler.</p>
-          </details>
-          <details>
-            <summary>Girişte e-postama gelen kod ne?</summary>
-            <p>Öğrenci dışındaki hesaplar iki adımlı girer: şifreden sonra e-postana 6 haneli bir kod gelir. Kod
-              5 dakika geçerlidir ve bir kez kullanılır. Gelmediyse istenmeyen (spam) klasörüne bak.</p>
+            <summary>Nereden giriş yaparım?</summary>
+            <p>Veli, öğretmen ve müdür e-posta adresi ya da kullanıcı adıyla <a href="/login" data-site="/login">Giriş</a>
+              sayfasından girer. Öğrenci ve servisçi okulunun adresinden girer (egitimevi.org/school/okulun-adi): aynı kullanıcı
+              adı başka bir okulda da olabileceği için giriş o okulun içinde aranır. Giriş sayfasında okulunu adıyla
+              arayıp seçebilirsin; son girdiğin okul hatırlanır.</p>
           </details>
           <details>
             <summary>Aynı hesapla hem veli hem öğretmen olabilir miyim?</summary>
             <p>Evet. Tek hesapla birden çok rolün olur: bir okulda öğretmen, başka bir okulda müdür, çocuğunun
-              velisi. Girişten sonra hangisiyle devam edeceğini seçersin.</p>
+              velisi. Sahip olduğun portallar sol üstteki menüde alt alta durur; birinden ötekine oradan geçersin.</p>
+          </details>
+          <details>
+            <summary>Girişte e-postama gelen kod ne?</summary>
+            <p>Öğrenci dışındaki hesaplar, e-posta adresi varsa iki adımlı girer (veli, öğretmen ve müdür
+              hesabında hep vardır): şifreden sonra e-postana 6 haneli bir kod gelir. Kod 5 dakika geçerlidir ve bir kez
+              kullanılır; yeni kod 60 saniye sonra istenebilir. Gelmediyse istenmeyen (spam) klasörüne bak. Öğrenci
+              hesabında ve e-postası olmayan hesapta (ör. okulun açtığı servisçi) kod istenmez.</p>
+          </details>
+          <details>
+            <summary>Kayıttan sonra e-postama gelen bağlantı ne?</summary>
+            <p>Hesabının gerçekten sana ait bir adrese açıldığını doğrular. Hesap, bağlantıya 24 saat içinde
+              tıklayınca açılır; bağlantı bir kez kullanılır.</p>
+          </details>
+          <details>
+            <summary>Şifre kuralları neler?</summary>
+            <p>Yetişkin hesabında şifre en az 8 karakterdir ve büyük harf, küçük harf, rakam ve özel karakter
+              (! ? . * gibi) içerir. Öğrenci ve servisçi hesabında en az 8 karakter, en az bir harf ve bir rakam yeter.</p>
+          </details>
+          <details>
+            <summary>İlk girişte neden şifremi değiştirmem isteniyor?</summary>
+            <p>Okulun verdiği şifreyle (ör. T.C. kimlik no'su ya da dağıtılan şifre) girdin. Bu şifreyi başkaları da
+              bilebileceği için devam etmeden önce yalnızca senin bildiğin bir şifre belirlemen gerekir.</p>
+          </details>
+          <details>
+            <summary>Şifremi unuttum, ne yapmalıyım?</summary>
+            <p>Hesabında e-posta adresi varsa (veli, öğretmen ve müdür hesabında hep vardır) giriş sayfasındaki
+              <b>Şifremi unuttum</b> ile e-posta adresine yenileme bağlantısı gelir. E-postası olmayan öğrenci ve
+              servisçi hesabının şifresini okul yönetimi yeniler.</p>
+          </details>
+          <details>
+            <summary>"Beni hatırla" ile "Bilgilerimi bu cihaza kaydetme" farkı ne?</summary>
+            <p><b>Beni hatırla</b> işaretliyse tarayıcıyı kapatıp açsan da girişin sürer. İkisi de işaretli değilse
+              sekmeyi kapatınca çıkmış olursun. <b>Bilgilerimi bu cihaza kaydetme</b> ortak bilgisayarlar içindir: oturum
+              hiçbir yere yazılmaz, sayfa yenilenince bile yeniden girersin. İkisi aynı anda seçilemez.</p>
+          </details>
+          <details>
+            <summary>Aydınlatma metnini neden yeniden onaylamam isteniyor?</summary>
+            <p>Metin güncellenince sürüm numarası değişir ve herkesten yeni metni okuyup onaylaması istenir. Onay
+              tarihin hesabında kayıtlıdır.</p>
           </details>
           <details>
             <summary>Hesabımı kapatmak istiyorum.</summary>
-            <p>Yetişkin hesabını <b>Ayarlar → Hesabımı sil</b> ile kendin silebilirsin. Öğrenci hesabını okul
+            <p>Yetişkin hesabını <b>Ayarlar → Hesabımı sil</b> ile kendin silebilirsin; bir okulun müdürüysen önce
+              müdürlüğü devretmek için Eğitim Evi yöneticisiyle görüşmen gerekir. Öğrenci ve servisçi hesabını okul
               yönetimi kapatır. Kişisel verilerinle ilgili haklarını <a href="/kvkk.html">aydınlatma metninin</a>
               9. bölümünde bulabilirsin.</p>
           </details>
@@ -276,10 +338,73 @@
               devamsızlığın resmî kaydı e-Okul'dadır.</p>
           </details>
           <details>
+            <summary>Ödevimi nasıl teslim ederim?</summary>
+            <p><b>Ödevler</b>'de ödevi açıp dosyalarını eklersin (sürükle-bırak ya da cihazdan seç): bir ödeve en
+              fazla 10 dosya, toplam 150 MB. Belge, resim, ses, video, sunum ve sıkıştırılmış dosyalar kabul edilir.
+              Öğretmen dosyaları kontrol ekranında görür, sonucu (Yaptı, Geç yaptı, Yapmadı gibi) kendisi seçer;
+              sonuç girilince sana ve velene bildirim gider.</p>
+          </details>
+          <details>
+            <summary>Ödev serisi nedir?</summary>
+            <p>Sonuçlanan ödevlerinde arka arkaya kaç kez "Yaptı" aldığını gösteren sayaç. Bir kez başka bir sonuç
+              alırsan seri uyarıya düşer; arka arkaya ikinci kez "Yaptı" alamazsan seri bozulur. Seriyi yalnızca öğrencinin
+              kendisi görür: ana sayfasında ve <b>Ödevler</b>'de.</p>
+          </details>
+          <details>
+            <summary>Veliye hangi bildirimler gider?</summary>
+            <p>Çocuğa giden ödev, sınav, mesaj ve duyuru bildirimlerinin bir kopyası, başında çocuğun adıyla veliye
+              de gider; bildirime dokununca o çocuğun sayfası açılır. Çocuk bir derse gelmediğinde ya da geç
+              geldiğinde ayrıca "Çocuğunuz (adı) bugün saat ... dersine gelmedi" gibi bir bildirim gelir. Kardeşlere giden
+              aynı bildirim veliye tek bildirim olarak gelir. Telefon bildirimlerini açarsan bunlar telefonuna da düşer.</p>
+          </details>
+          <details>
+            <summary>Kime mesaj yazabilirim?</summary>
+            <p>Müdür ve öğretmenler okuldaki herkese yazabilir. Öğrenci ve veli yalnızca ilgili öğretmenlere ve
+              müdüre yazar; öğrenci öğrenciye yazamaz. Öğrenciye giden her mesaj velisine de gider. <b>Mesajlar</b>
+              sayfasındaki ayardan kimlerden mesaj alacağını seçebilir, istemediğin kişiyi engelleyebilirsin; okul
+              duyuruları bu ayarlara takılmaz.</p>
+          </details>
+          <details>
+            <summary>Hatırlatıcı nasıl kurulur?</summary>
+            <p>Herkes <b>Hatırlatıcılar</b> sayfasından kendine hatırlatıcı kurar: başlık, açıklama, saat ve sıklık
+              (bir kez, her gün, haftanın seçilen günleri ya da ayda bir). Zamanı gelince bildirim gelir. Hatırlatıcını
+              yalnızca sen görürsün.</p>
+          </details>
+          <details>
+            <summary>Anketlerde oyumu kim görür?</summary>
+            <p>Her kişinin tek oyu vardır; anket bitene kadar fikrini değiştirebilirsin. Gizli olmayan ankette anketi
+              açan kişi ve müdür kimin neyi seçtiğini görür. Gizli ankette kimin neyi seçtiği hiç kimseye, müdüre de
+              gösterilmez; sayılar da anket bitince açılır. Anketin sorulduğu kişiler sonucu anket bitince görür.</p>
+          </details>
+          <details>
+            <summary>Servisi nasıl takip ederim?</summary>
+            <p>Öğrenci <b>Servisim</b> sayfasında kendi servisini, veli <b>Servis</b> sayfasında çocuğununkini görür
+              (şoför ve telefonu dahil).
+              Servisçi seferi başlatınca araç haritada görünür; okul ve ev de haritada işaretlidir. Servis eve 500 m ve
+              100 m kala bildirim gelir. Evin yerini öğrenci, velisi ya da okul haritaya dokunarak işaretler.</p>
+          </details>
+          <details>
             <summary>Öğrenci okul değiştirirse ne olur?</summary>
             <p>Hesap öğrenciye aittir. Yeni okul T.C. kimlik no ve doğum tarihiyle öğrenciyi kendine alır. Eski
               okulun ödev, not ve devamsızlık kayıtları eski okulda kalır; yeni okul bunları görmez. Öğrenci ve
               velisi geçmiş okullarını yıl seçiciden görmeye devam eder.</p>
+          </details>
+          <details>
+            <summary>Geçmiş eğitim yıllarına bakılabilir mi?</summary>
+            <p>Evet. Sayfanın üstündeki yıl seçiciden eski yılı seçersin; ödevler, sınavlar ve devamsızlık o yılın
+              hâliyle görünür. Eski yıl salt okunurdur, değişiklik yapılamaz.</p>
+          </details>
+          <details>
+            <summary>Müdür yardımcısı ya da rehber öğretmen gibi görevler nasıl verilir?</summary>
+            <p>Müdür <b>Roller ve Yetkiler</b> sayfasında rol oluşturup yetkilerini tek tek seçer ve öğretmene verir. Hazır
+              şablonlar var: Müdür Yardımcısı, Rehber Öğretmen, Etüt Sorumlusu, Nöbetçi Öğretmen, Servis Sorumlusu,
+              Kulüp Danışmanı, Zümre Başkanı ve Kodlayıcı (okul sayfası ve okulun haritadaki yeri).</p>
+          </details>
+          <details>
+            <summary>Öğrencileri tek tek mi eklemek gerekiyor?</summary>
+            <p>Hayır. Müdür (ya da yetki verdiği kişi) öğrencileri, servisçileri ve ders programını Excel dosyasıyla
+              toplu ekler; kaydetmeden önce bir kontrol ekranında açılacak hesaplar ve hatalı satırlar gösterilir.
+              Öğrenci listesi (veli kodlarıyla), öğretmen listesi ve ders programı Excel olarak dışarı da alınabilir.</p>
           </details>
           <details>
             <summary>Okulumuz bazı bölümleri kullanmıyor, kapatılabilir mi?</summary>
@@ -295,20 +420,47 @@
         </div>
 
         <div class="sss-grup">
-          <h2>Gizlilik ve telefon</h2>
+          <h2>Gizlilik</h2>
           <details>
             <summary>Bilgilerim nerede duruyor, kim görüyor?</summary>
             <p>Okulun kullandığı sunucuda. Herkes yalnızca yetkisi olanı görür: öğrenci kendini, veli kendi
-              çocuğunu, öğretmen ders verdiği sınıfları. Bilgiler reklam ya da satış için kimseyle paylaşılmaz.
-              Ayrıntısı <a href="/kvkk.html">aydınlatma metninde</a>, kullanım kuralları
-              <a href="/kosullar.html">kullanım koşullarında</a>.</p>
+              çocuğunu, öğretmen ders verdiği sınıfları. Bir okul başka bir okulun öğrencisini göremez. Bilgiler reklam
+              ya da satış için kimseyle paylaşılmaz. Ayrıntısı <a href="/kvkk.html">aydınlatma metninde</a>, kullanım
+              kuralları <a href="/kosullar.html">kullanım koşullarında</a>.</p>
+          </details>
+          <details>
+            <summary>Okul yönetimi yapılan işlemleri görür mü?</summary>
+            <p>Müdür (ya da yetki verdiği kişi) <b>İşlem kaydı</b> sayfasında okulda yapılan önemli işlemleri kimin
+              ne zaman yaptığıyla görür: hesap açma ve silme, şifre sıfırlama, rol verme, veli bağlama, başarısız giriş
+              denemeleri, eğitim yılı ve okul sayfası değişiklikleri gibi. Mesajlar bu kayda girmez.</p>
+          </details>
+          <details>
+            <summary>Servisin konumunu kim görür?</summary>
+            <p>Yalnızca o servisteki öğrenci, velisi ve okul yönetimi; yalnızca sefer sürerken. Geçmiş iz saklanmaz,
+              yalnızca son konum tutulur. Evin yerini öğrenci, velisi, o servisin servisçisi ve okul yönetimi görür.</p>
           </details>
           <details>
             <summary>Çocuğumun telefonunun konumunu ve ekran süresini görebilir miyim?</summary>
-            <p>Evet, isteğe bağlı <b>Eğitim Evi Aile</b> uygulamasıyla (Android). Uygulama çocuğun telefonuna kurulur,
-              çocuk kendi öğrenci hesabıyla ve onayıyla bağlar. Veli sitede <b>Çocuğumun telefonu</b> sayfasında son
-              konumu ve uygulama uygulama ekran süresini görür, gönderme sıklığını ve günlük sınırları seçer; sınır
-              geçilince bildirim gelir. Uygulama kapatılmaz. Okul bu bilgileri görmez; 7 gün sonra silinir.</p>
+            <p>Evet, isteğe bağlı Android uygulamasıyla. Uygulama çocuğun telefonuna kurulur, çocuk kendi öğrenci
+              hesabıyla ve onayıyla bağlar. Veli sitede <b>Çocuğumun telefonu</b> sayfasında son konumu ve uygulama
+              uygulama ekran süresini görür, gönderme sıklığını ve günlük sınırları seçer; sınır geçilince bildirim gelir.
+              Hiçbir uygulama kapatılmaz. Okul bu bilgileri görmez; 7 gün sonra silinir.</p>
+          </details>
+        </div>
+
+        <div class="sss-grup">
+          <h2>Telefon ve uygulama</h2>
+          <details>
+            <summary>Android uygulamasını nereden indiririm?</summary>
+            <p>Sağ üstteki <b>İndir</b> düğmesinden (<a href="/indir">egitimevi.org/indir</a>). Sayfada son
+              sürüm ve bütün eski sürümler tarih, değişiklik ve boyutlarıyla bir tabloda durur. İnen
+              <b>egitim-evi.apk</b> dosyasını açıp kurarsın; telefon izin isterse bir kez izin verirsin.</p>
+          </details>
+          <details>
+            <summary>iPhone'da kullanabilir miyim?</summary>
+            <p>Evet. App Store uygulaması henüz yok; Eğitim Evi'ni Safari'de açıp <b>Paylaş → Ana Ekrana Ekle</b>
+              dersen simgesiyle, uygulama gibi açılır ve telefon bildirimi alabilir (iOS 16.4 ve üstü). Sağ üstteki
+              <b>İndir</b> sayfasında mavi <b>iPhone'a ekle</b> düğmesi adımları gösterir.</p>
           </details>
           <details>
             <summary>Telefona uygulama olarak kurulur mu?</summary>
@@ -317,10 +469,32 @@
               hatırlatıcılar telefonuna gelir.</p>
           </details>
           <details>
-            <summary>Android uygulamasını nereden indiririm?</summary>
-            <p>Sağ üstteki <b>Android uygulaması</b> düğmesinden (<a href="/indir">egitimevi.org/indir</a>). Sayfada son
-              sürüm ve bütün eski sürümler tarih, değişiklik ve boyutlarıyla bir tabloda durur. İnen
-              <b>egitim-evi.apk</b> dosyasını açıp kurarsın; telefon izin isterse bir kez izin verirsin.</p>
+            <summary>Telefon bildirimleri gelmiyor.</summary>
+            <p>Önce Eğitim Evi'nde bildirimleri açtığından ve tarayıcıya izin verdiğinden emin ol. Telefonun
+              ayarlarında tarayıcının (ya da uygulamanın) bildirimleri kapalı olabilir. iPhone'da bildirim yalnızca ana
+              ekrana eklenmiş Eğitim Evi'nden açılınca çalışır. Bildirimler güvenli (https) bağlantı ister.</p>
+          </details>
+          <details>
+            <summary>Koyu görünüm var mı?</summary>
+            <p>Evet. Üstteki ay düğmesiyle koyu, güneş düğmesiyle açık görünüme geçersin. Seçimin bu cihazda
+              hatırlanır, giriş yaptıysan hesabına da yazılır; seçmediysen telefonunun ya da bilgisayarının ayarı
+              kullanılır.</p>
+          </details>
+        </div>
+
+        <div class="sss-grup">
+          <h2>Sorun ve iletişim</h2>
+          <details>
+            <summary>Bir hata buldum.</summary>
+            <p>Okulla ilgili bir sorunsa (yanlış not, eksik ders) okulunun yönetimine söyle. Sitenin kendisinde bir
+              hata bulduysan <a href="https://github.com/KARANKOYU/Egitim-Evi/issues" target="_blank" rel="noopener">GitHub'da
+              bildir</a> ya da sayfanın altındaki iletişim bilgilerinden yaz.</p>
+          </details>
+          <details>
+            <summary>Eğitim Evi yöneticisine nasıl ulaşırım?</summary>
+            <p>Sayfanın altındaki e-posta ve telefon Eğitim Evi yöneticisinindir; hesabın varsa <b>+ Ekle → Müdür</b>
+              ekranında da yazar. Okulunu açtırmak, müdür olarak eklenmek ya da genel bir soru için oradan yaz. Öğrenci,
+              not ve devamsızlık gibi okul içi konular için okulunun yönetimine başvur.</p>
           </details>
         </div>
       </section>
@@ -329,7 +503,7 @@
 
   <!-- ===================== GİRİŞ / KAYIT ===================== -->
   <div class="auth-wrap" id="authWrap" style="display:none">
-  <!-- okulun kendi sayfası (egitimevi.org/<okulun-adi>): 19g-okul-sayfasi.js çizer -->
+  <!-- okulun kendi sayfası (egitimevi.org/school/<okulun-adi>): 19g-okul-sayfasi.js çizer -->
   <section class="okul-sayfa" id="okulSayfa" hidden></section>
   <div class="auth-card">
     <div class="auth-okul" id="authOkul" style="display:none"></div>
@@ -466,20 +640,11 @@
       </div>
     </div>
 
-    <!-- kayıt: yalnızca veli ve okulunu kaydedecek müdür. Öğrenci, öğretmen
-         ve servisçi hesabını okul açar. -->
+    <!-- kayıt: veli, öğretmen ve müdür aynı yetişkin hesabını açar; portallarını
+         girişten sonra "+ Ekle" ile ekler. Öğrenci ve servisçi hesabını okul açar. -->
     <form id="formKayit" style="display:none" autocomplete="on" novalidate>
-      <div class="msg bilgi kayit-kimler"><b>Yetişkin hesabı:</b> veli, öğretmen ve okul müdürü içindir.
-        Öğrenci hesabını okul açar.</div>
-      <div class="field">
-        <span class="alan-baslik" id="kNeEtiket">Ne olarak kullanacaksın?</span>
-        <div class="ne-sec" role="radiogroup" aria-labelledby="kNeEtiket">
-          <label><input type="radio" name="kNe" value="cocuk" checked><span>Veli</span></label>
-          <label><input type="radio" name="kNe" value="ogretmen"><span>Öğretmen</span></label>
-          <label><input type="radio" name="kNe" value="okul"><span>Okul müdürü</span></label>
-        </div>
-        <div class="hint">Sonra değiştirebilirsin; bir hesap hem veli hem öğretmen olabilir.</div>
-      </div>
+      <div class="msg bilgi kayit-kimler">Herkes aynı hesabı açar: veli, öğretmen ya da müdür. Girişten sonra sağ üstteki
+        <b>+ Ekle</b> ile çocuğunu eklersin, okuluna öğretmen olarak katılırsın ya da okulunu açtırırsın.</div>
       <div class="row2">
         <div class="field">
           <label for="kAd">Ad</label>
@@ -557,8 +722,8 @@
       </div>
 
       <button type="submit" class="btn full">Kayıt Ol</button>
-      <div class="hint kayit-sonrasi">Girişten sonra "Ekle" ile çocuğunu (veli kodu), okuluna öğretmen olarak katılmayı
-        (kendi kodun) ya da okulunu kaydetmeyi seçersin.</div>
+      <div class="hint kayit-sonrasi">Bir hesapla birden çok rolün olabilir: hem veli hem öğretmen gibi. Öğrenci ve
+        servisçi hesabını okul açar.</div>
     </form>
 
     <!-- /login: okulun açtığı hesapla (öğrenci, servisçi) girecek kişi önce okulunu seçer -->
@@ -599,6 +764,7 @@
       <input type="search" id="araKutu" placeholder="İçerik Ara" aria-label="İçerik ara">
     </div>
     <div class="topbar-right">
+      <button class="iconbtn ekle-dugme" id="btnEkle" data-act="kisilik-ekle" title="Ekle: çocuğunu, öğretmenliğini ya da okulunu" aria-label="Ekle" hidden><svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Ekle</span></button>
       <button class="iconbtn tema-dugme" id="btnTema" data-act="tema-degis" title="Koyu ya da açık görünüm" aria-label="Koyu ya da açık görünüm"><svg class="ikon tema-ay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg><svg class="ikon tema-gunes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>Görünüm</span>
       </button>
       <button class="iconbtn" id="btnYenile" title="Sayfayı yenile" aria-label="Sayfayı yenile">

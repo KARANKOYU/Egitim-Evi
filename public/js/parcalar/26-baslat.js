@@ -60,13 +60,14 @@ function uygulamayiBaslat() {
   if (!S.meta.cities.length) {
     api('/meta').then(function (m) { S.meta = m; })['catch'](function () { });
   }
-  /* Girişten ya da rol değişiminden gelen hedef (seçim ekranı, ana sayfa) adresi geçer. */
+  /* Girişten ya da portal değişiminden gelen hedef (ana sayfa, bildirimin sayfası) adresi geçer. */
   adrestekiCocuguAl();
   var acilis = S.acilis || adrestenSayfa();
   S.acilis = null;
-  /* Rolsüz hesap okul sayfalarına giremez; adres ne olursa olsun başlangıç.
-     Servisçinin de yalnızca kendi sayfaları var. */
-  if (!S.user.role && acilis !== 'profil' && acilis !== 'kisilikler') acilis = 'ana';
+  /* Portal dışındaki yetişkin hesabı (rolsüz ya da henüz portal seçmemiş)
+     okul sayfalarına giremez; adres ne olursa olsun başlangıç. Servisçinin
+     de yalnızca kendi sayfaları var. */
+  if (portalDisindaMi() && ['profil', 'hatirlaticilar'].indexOf(acilis) < 0) acilis = 'ana';
   if (S.user.role === 'servisci' && ['ana', 'mesajlar', 'takvim', 'profil'].indexOf(acilis) < 0) acilis = 'ana';
   /* Yıl bilgisi sayfa çizilmeden gelsin ki şerit ilk açılışta da görünsün. */
   yilBilgisiYukle().then(function () {
@@ -87,6 +88,7 @@ function cikisYap(sessiz) {
   var eski = S.token;
   var bitir = function () {
     S.token = null; S.user = null; S.children = []; S.veliCocuk = null; S.kapali = [];
+    S.portallar = null; S.hesapAktif = false; portalDisiYaz(false);
     oturumDurumunuSifirla();                             // sonraki kişi öncekinin ekran durumunu görmesin
     S._epostaSoruldu = false;                            // e-posta önerisi sonraki hesaba da sorulsun
     modalKapat();                                        // KVKK onay penceresinden çıkılıyorsa o da kapansın
@@ -159,6 +161,8 @@ disSayfalariKur().then(function () { return onaySonucu; }).then(function (onay) 
   api('/me').then(function (d) {
     if (d.user.status !== 'approved') { cikisYap(true); return; }
     S.user = d.user; S.children = d.children || []; S.kapali = d.kapaliOzellikler || [];
+    portalDurumuAl(d);
+    S.portalDisi = portalDisiOku();   // sayfa yenilendi: bu sekmede portal dışındaydıysa orada kalır
     /* Telefon bildiriminden gelindiyse (?k=) bildirimin geldiği role geçilir. */
     var k = null;
     try { k = new URLSearchParams(location.search).get('k'); } catch (e) { k = null; }

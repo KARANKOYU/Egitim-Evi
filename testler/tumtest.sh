@@ -53,7 +53,7 @@ for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman test-vekil-i
   TOPLAM_KALDI=$((TOPLAM_KALDI + ${k:-0}))
 done
 
-for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-aktarim test-sifre test-mesaj test-devamsizlik test-takvim test-odev-saat test-egitim-yili test-sinav test-bildirim test-giris-kayit test-veli-coklu test-giris-bilgisi test-anket test-okul-hayati test-servis-konum test-yetiskin test-etut test-okul-sayfasi test-yorum-ek test-nakil test-ozellikler test-hatirlatici test-siniflarim test-aile test-odev-dosya guvenlik-test; do
+for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-aktarim test-sifre test-mesaj test-devamsizlik test-takvim test-odev-saat test-egitim-yili test-sinav test-bildirim test-giris-kayit test-veli-coklu test-giris-bilgisi test-anket test-okul-hayati test-servis-konum test-yetiskin test-kisi-kodu test-etut test-okul-sayfasi test-yorum-ek test-nakil test-ozellikler test-hatirlatici test-siniflarim test-aile test-odev-dosya guvenlik-test; do
   sunucu_durdur
   rm -rf "$SP/testdata"
   mkdir -p "$SP/testdata"

@@ -166,4 +166,12 @@ async function uclar(k) {
 const temizlik = setInterval(acikSayisi, 10 * 60 * 1000);
 if (temizlik.unref) temizlik.unref();
 
-module.exports = { uclar, goruldu, acikSayisi, yamlOku };
+/* Yöneticiye ulaşma yolu var mı (e-posta ya da telefon)? İkisi de boşsa
+   okulunu açtırmak isteyen kişi kodunu kime vereceğini göremez; sunucu
+   açılışta uyarır (sunucu/index.js). */
+function iletisimVarMi() {
+  const il = configGuncel().iletisim;
+  return !!(il.eposta || il.telefon);
+}
+
+module.exports = { uclar, goruldu, acikSayisi, yamlOku, iletisimVarMi };

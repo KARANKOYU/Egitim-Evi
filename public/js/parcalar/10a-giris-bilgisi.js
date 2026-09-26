@@ -75,7 +75,7 @@ function girisSonucGoster() {
   for (var i = 0; i < d.satirlar.length; i++) {
     var s = d.satirlar[i];
     h += '<tr><td>' + esc(s.ad) + '</td><td>' + esc(s.sinif) + '</td><td>' + esc(s.kullaniciAdi) + '</td>' +
-      '<td class="kod-hucre">' + esc(s.sifre) + '</td><td class="kod-hucre">' + esc(s.veliKodu) + '</td></tr>';
+      '<td class="kod-hucre">' + esc(s.sifre) + '</td><td class="kod-hucre">' + esc(kisiKoduBicim(s.veliKodu)) + '</td></tr>';
   }
   h += '</tbody></table></div>';
 
@@ -110,7 +110,7 @@ EYLEMLER['giris-bilgisi-excel'] = function () {
    Tarayıcının "PDF olarak kaydet" seçeneği de aynı çıktıyı verir.
    satirlar: [{ ad, sinif, kullaniciAdi, sifre, tcIle, veliKodu }] */
 function girisMektuplariYazdir(okulAdi, satirlar) {
-  var adres = location.origin + (S.user && S.user.schoolSlug ? '/' + S.user.schoolSlug : '');
+  var adres = location.origin + (S.user && S.user.schoolSlug ? okulYolu(S.user.schoolSlug) : '');
   var h = '';
   for (var i = 0; i < satirlar.length; i++) {
     var s = satirlar[i];
@@ -121,9 +121,9 @@ function girisMektuplariYazdir(okulAdi, satirlar) {
       '<tr><td>Kullanıcı adı</td><td class="m-kod">' + esc(s.kullaniciAdi) + '</td></tr>' +
       '<tr><td>Şifre</td><td class="m-kod">' + (s.tcIle ? 'T.C. kimlik numaran' : esc(s.sifre)) + '</td></tr></table>' +
       '<div class="m-not">İlk girişte kendi şifreni belirleyeceksin. Şifreni kimseyle paylaşma.</div>' +
-      (s.veliKodu ? '<div class="m-veli"><b>Veli için:</b> ' + esc(location.origin) + ' adresinden "Veli girişi" ile ' +
-        'kendi hesabınızı açın, giriş yaptıktan sonra <b>veli kodu</b> alanına şunu yazın: <span class="m-kod">' +
-        esc(kodBicimle(s.veliKodu)) + '</span></div>' : '') +
+      (s.veliKodu ? '<div class="m-veli"><b>Veli için:</b> ' + esc(location.origin) + ' adresinden kendi hesabınızı ' +
+        'açın (Kayıt ol). Girişten sonra sağ üstteki <b>+ Ekle &gt; Veli</b> ekranına bu <b>veli kodunu</b> yazın: ' +
+        '<span class="m-kod">' + esc(kisiKoduBicim(s.veliKodu)) + '</span> (büyük/küçük harf fark eder)</div>' : '') +
       '</div>';
   }
   var kap = $('yazdirKap');

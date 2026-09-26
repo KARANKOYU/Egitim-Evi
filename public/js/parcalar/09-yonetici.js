@@ -1,28 +1,6 @@
-/* Sistem yöneticisi sayfaları: onaylar, müdürler, okullar, yedekler. */
+/* Sistem yöneticisi sayfaları: müdürler, okullar (okul açma), yedekler, yorumlar. */
 
 /* ---- ADMIN ---- */
-SAYFALAR.onaylar = function () {
-  return api('/admin/pending').then(function (d) {
-    var h = hero('ONAY BEKLEYEN BAŞVURULAR', 'Müdür başvurularını onayladığında okulları sisteme eklenir.');
-    if (!d.principals.length) { yaz(h + bosKutu('kutu', 'Bekleyen başvuru yok.')); return; }
-    h += '<div class="kart">';
-    for (var i = 0; i < d.principals.length; i++) {
-      var p = d.principals[i];
-      h += '<div class="satir" data-ara="' + esc(p.fullName + ' ' + p.schoolName + ' ' + p.city) + '">' +
-        '<div class="buyu"><div class="ad">' + ik('mudur') + esc(p.fullName) + '</div>' +
-        '<div class="alt">' + esc(p.schoolName) + ' · ' + esc(p.city) + ' / ' + esc(p.district) + '</div>' +
-        '<div class="alt">' + esc(p.username) + (p.email ? ' · ' + esc(p.email) : '') +
-        (p.phone ? ' · ' + esc(telefonGoster(p.phone)) : '') + '</div>' +
-        '<div class="alt">' + (p.yas !== null && p.yas !== undefined ? p.yas + ' yaşında · ' : '') +
-        'başvuru ' + tarih(p.createdAt) + (p.hesapAcilis ? ' · hesap ' + tarih(p.hesapAcilis) + ' açıldı' : '') + '</div></div>' +
-        '<button class="btn kucuk" data-act="admin-onay" data-id="' + esc(p.id) + '" data-ok="1">Onayla</button>' +
-        '<button class="btn kucuk tehlike" data-act="admin-onay" data-id="' + esc(p.id) + '" data-ok="0">Reddet</button>' +
-        '</div>';
-    }
-    yaz(h + '</div>');
-  });
-};
-
 SAYFALAR.yedekler = function () {
   return api('/admin/backups').then(function (d) {
     var h = hero('YEDEKLEME', 'Tüm veri tek dosyada tutuluyor. Günde bir kez otomatik kopya alınır.');
@@ -78,9 +56,9 @@ SAYFALAR.mudurler = function () {
     for (var i = 0; i < d.principals.length; i++) {
       var m = d.principals[i];
       var durum = m.status === 'approved'
-        ? '<span class="etiket yesil">Onaylı</span>'
-        : (m.status === 'pending' ? '<span class="etiket turuncu">Beklemede</span>'
-          : '<span class="etiket kirmizi">Reddedildi</span>');
+        ? '<span class="etiket yesil">Etkin</span>'
+        : (m.status === 'pending' ? '<span class="etiket turuncu">Giremiyor</span>'
+          : '<span class="etiket kirmizi">Kapalı</span>');
       h += '<div class="satir" data-ara="' + esc(m.fullName + ' ' + m.schoolName + ' ' + m.city) + '">' +
         '<div class="buyu"><div class="ad">' + ik('mudur') + esc(m.fullName) + '</div>' +
         '<div class="alt">' + esc(m.username) + (m.email ? ' · ' + esc(m.email) : '') + '</div>' +
@@ -100,7 +78,7 @@ SAYFALAR.okullar = function () {
   return api('/admin/overview').then(function (d) {
     var h = hero('KAYITLI OKULLAR', d.schools.length + ' okul kayıtlı.');
     h += '<div class="kart"><div class="satir" style="border:0;padding:0"><div class="buyu"><div class="ad">Okul aç</div>' +
-      '<div class="alt">Başvuru beklemeden okulu kendin aç: okulu seç, adresini ve müdürünü yaz.</div></div>' +
+      '<div class="alt">Okulunu açtırmak isteyen kişi kişi kodunu sana verir. Okulu seç, adresini yaz, müdürü koduyla bul.</div></div>' +
       '<button class="btn" data-act="admin-okul-ac">Okul aç</button></div></div>';
     if (!d.schools.length) { yaz(h + bosKutu('okul', 'Henüz okul yok.')); return; }
     h += '<div class="kart"><div class="tablo-sar"><table class="t"><thead><tr>' +
@@ -108,9 +86,9 @@ SAYFALAR.okullar = function () {
       '</tr></thead><tbody>';
     for (var i = 0; i < d.schools.length; i++) {
       var s = d.schools[i];
-      var dur = s.status === 'approved' ? '<span class="etiket yesil">Onaylı</span>'
-        : s.status === 'pending' ? '<span class="etiket turuncu">Bekliyor</span>'
-          : '<span class="etiket kirmizi">Red</span>';
+      var dur = s.status === 'approved' ? '<span class="etiket yesil">Açık</span>'
+        : s.status === 'pending' ? '<span class="etiket turuncu">Müdür bekliyor</span>'
+          : '<span class="etiket kirmizi">Kapalı</span>';
       h += '<tr data-ara="' + esc(s.name + ' ' + s.city + ' ' + s.principal) + '"><td><b>' + esc(s.name) + '</b></td><td>' +
         esc(s.city) + ' / ' + esc(s.district) + '</td><td>' + esc(s.principal) + '</td><td>' +
         s.teachers + '</td><td>' + s.students + '</td><td>' + dur + '</td></tr>';
@@ -120,84 +98,97 @@ SAYFALAR.okullar = function () {
 };
 
 /* ---- yöneticinin okul açması ----
-   Okul MEB listesinden seçilir (ya da adı yazılır), adresi (uzantı) ve müdürü
-   girilir. Müdürün e-postası kayıtlı bir yetişkin hesabıysa rol o hesaba
-   eklenir; değilse yeni hesap açılır ve yöneticinin verdiği güçlü şifreyle
-   girer, ilk girişte kendi şifresini belirler. */
+   Okulunu açtırmak isteyen kişi kendi hesabını açar ve "+ Ekle > Müdür"deki
+   kişi kodunu yöneticiye verir. Yönetici kişiyi dışarıdan (telefon, e-posta)
+   doğrular; okulu MEB listesinden seçer (ya da adını yazar), okulun adresini
+   yazar, müdürün kişi kodunu girip "Bul" ile kime ait olduğuna bakar (tam ad,
+   maskeli e-posta). Okul açılınca kişi müdür olur; kodu yenilenir. */
+
+/* "Bul" ile bulunan kişinin kodu: okul yalnız bu kodla açılır. */
+var adminKisi = { kod: '' };
+
 EYLEMLER['admin-okul-ac'] = function () {
+  adminKisi.kod = '';
   modalAc('Okul aç', '<div id="aoKart">' + okulSecimAlani() +
     '<div class="field"><label for="aoKisa">Okulun adresi</label>' +
-    '<div class="adres-girdi"><span>' + esc(location.host) + '/</span>' +
+    '<div class="adres-girdi"><span>' + esc(location.host) + '/school/</span>' +
     '<input type="text" id="aoKisa" maxlength="40" autocomplete="off" spellcheck="false" placeholder="okulun-adi"></div>' +
     '<div class="hint">Küçük harf, rakam ve tire; 3–40 karakter. Okulu seçince adından önerilir.</div></div>' +
     '<hr class="ayrac-cizgi"><h4 class="alt-baslik">Müdür</h4>' +
-    '<div class="hint" style="margin-bottom:10px">E-postası sistemde kayıtlı bir yetişkin hesabıysa müdürlük o hesaba eklenir; ' +
-    'o zaman öteki alanları boş bırakabilirsin.</div>' +
-    '<div class="field"><label for="aoEposta">E-posta</label><input type="email" id="aoEposta" autocomplete="off" spellcheck="false"></div>' +
-    '<div class="row2"><div class="field"><label for="aoAd">Ad</label><input type="text" id="aoAd" maxlength="60" autocomplete="off"></div>' +
-    '<div class="field"><label for="aoSoyad">Soyad</label><input type="text" id="aoSoyad" maxlength="40" autocomplete="off"></div></div>' +
-    '<div class="row2"><div class="field"><label for="aoKadi">Kullanıcı adı</label>' +
-    '<input type="text" id="aoKadi" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false"></div>' +
-    '<div class="field"><label for="aoTelefon">Telefon</label><input type="tel" id="aoTelefon"></div></div>' +
-    '<div class="field"><label for="aoSifre">Şifre</label>' +
-    '<div class="sifre-satir"><input type="text" id="aoSifre" autocomplete="off" spellcheck="false">' +
-    '<button class="btn kucuk gri" data-act="admin-sifre-uret">Rastgele üret</button></div>' +
-    sifreKuralListesi('aoKural', true) +
-    '<div class="hint">Müdür ilk girişte kendi şifresini belirler.</div></div>' +
+    '<div class="hint" style="margin-bottom:10px">Kişi, hesabındaki <b>+ Ekle &gt; Müdür</b> ekranında gördüğü kişi ' +
+    'kodunu sana verir. Kodun sahibini bul, adını ve e-postasını kişiyle karşılaştır.</div>' +
+    '<div class="field"><label for="aoKod">Müdürün kişi kodu</label>' +
+    '<div class="rolsuz-satir">' + kisiKoduGirdisi('aoKod') +
+    '<button class="btn" data-act="admin-kisi-bul">Bul</button></div></div>' +
+    '<div id="aoKisi"></div>' +
     '<div id="aoMesaj"></div></div>',
     '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
     '<button class="btn" data-act="admin-okul-ac-kaydet">Okulu aç</button>');
-  okulBasvurusuKur();
-  $('aoSifre').addEventListener('input', function () { sifreKurallariniIsaretle('aoSifre', 'aoKural'); });
+  okulSecimiKur();
   $('aoKisa').addEventListener('focus', function () {
     if (this.value) return;
     var ad = seciliOkul ? seciliOkul.ad : $('bOkulAd').value;
     if (ad) this.value = aramaSadeTR(ad).replace(/ /g, '-').slice(0, 40).replace(/-+$/, '');
   });
+  /* Kod değişince önce bulunan kişi geçersiz olur: yeniden "Bul". */
+  $('aoKod').addEventListener('input', function () {
+    if (adminKisi.kod && adminKisi.kod !== kisiKoduSade(this.value)) { adminKisi.kod = ''; $('aoKisi').innerHTML = ''; }
+  });
+  $('aoKod').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); EYLEMLER['admin-kisi-bul'](document.querySelector('[data-act="admin-kisi-bul"]')); }
+  });
 };
 
-EYLEMLER['admin-sifre-uret'] = function () {
-  /* Okunması kolay (karışan I, l, O, 0 yok) ama güçlü: büyük, küçük, rakam, özel. */
-  var gruplar = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnopqrstuvwxyz', '23456789', '!?*.#'];
-  var dizi = new Uint32Array(12);
-  (window.crypto || window.msCrypto).getRandomValues(dizi);
-  var s = '';
-  for (var i = 0; i < 12; i++) { var g = gruplar[i < 4 ? i : dizi[i] % 3]; s += g[dizi[i] % g.length]; }
-  $('aoSifre').value = s;
-  sifreKurallariniIsaretle('aoSifre', 'aoKural');
+EYLEMLER['admin-kisi-bul'] = function (el) {
+  var kutu = $('aoKod');
+  alanTemizle(kutu.closest('.field'));
+  $('aoKisi').innerHTML = '';
+  adminKisi.kod = '';
+  var sorun = kisiKoduDenetle(kutu.value);
+  if (sorun) { alanHatasi(kutu, sorun); kutu.focus(); return; }
+  var kod = kisiKoduSade(kutu.value);
+  dugmeBekle(el, 'Aranıyor...');
+  return api('/admin/kisi-bul', 'POST', { kod: kod }).then(function (d) {
+    dugmeBitir(el);
+    adminKisi.kod = kod;
+    $('aoKisi').innerHTML = '<div class="satir ao-kisi">' + ik('mudur') + '<div class="buyu">' +
+      '<div class="alt">Bu kodun sahibi</div>' +
+      '<div class="ad">' + esc(d.ad) + '</div>' +
+      '<div class="alt">' + esc(d.eposta) + ' · ' + esc(d.kullaniciAdi) +
+      (d.rolSayisi ? ' · ' + d.rolSayisi + ' okulda rolü var' : '') + '</div></div></div>' +
+      '<div class="hint">Adı ve e-postası okulunu açtırmak isteyen kişiyle uyuşuyorsa "Okulu aç"a bas.</div>';
+  })['catch'](function (e) { dugmeBitir(el); alanHatasi(kutu, e.message); kutu.focus(); });
 };
 
 EYLEMLER['admin-okul-ac-kaydet'] = function (el) {
   var kart = $('aoKart');
   formHatalariniSil(kart);
   var g = { city: $('bIl').value, district: $('bIlce').value.trim(), kisaAd: $('aoKisa').value.trim().toLowerCase(),
-    mudur: { eposta: $('aoEposta').value.trim(), ad: $('aoAd').value.trim(), soyad: $('aoSoyad').value.trim(),
-      kullaniciAdi: $('aoKadi').value.trim().toLowerCase(), telefon: telefonOku($('aoTelefon')), sifre: $('aoSifre').value } };
+    mudurKodu: kisiKoduSade($('aoKod').value) };
   if (seciliOkul) g.mebSchoolId = seciliOkul.id;
   else g.schoolName = $('bOkulAd').value.trim();
-  if (!g.mebSchoolId && !g.schoolName) alanHatasi('bOkulAra', 'Okulu listeden seç ya da "Okulum listede yok" bölümüne adını yaz.');
+  if (!g.mebSchoolId && !g.schoolName) alanHatasi('bOkulAra', 'Okulu listeden seç ya da "Okul listede yok" bölümüne adını yaz.');
   if (!g.kisaAd) alanHatasi('aoKisa', 'Okulun adresini yaz.');
-  if (!EPOSTA_DESENI.test(g.mudur.eposta)) alanHatasi('aoEposta', 'Müdürün e-posta adresini yaz.');
+  var sorun = kisiKoduDenetle(g.mudurKodu, 'Müdürün kişi kodu');
+  if (sorun) alanHatasi('aoKod', sorun);
+  else if (adminKisi.kod !== g.mudurKodu) alanHatasi('aoKod', 'Önce "Bul" ile kodun kime ait olduğuna bak.');
   if (kart.querySelector('.hatali')) { ilkHatayaGit(kart); return; }
   dugmeBekle(el, 'Açılıyor...');
   return api('/admin/okul-ac', 'POST', g).then(function (d) {
-    /* Yeni hesapta şifreyi yönetici verdi; müdüre iletebilsin diye bir kez
-       daha gösterilir (sunucu şifreyi geri göndermez, formdaki kullanılır). */
-    var sifre = d.mudur.yeni ? g.mudur.sifre : '';
     var satir = function (etiket, deger, kopya) {
       return '<div class="satir"><div class="buyu"><div class="alt">' + etiket + '</div><div class="ad">' + esc(deger) + '</div></div>' +
         (kopya ? '<button class="btn kucuk gri" data-act="kod-kopyala" data-kod="' + esc(deger) + '">Kopyala</button>' : '') + '</div>';
     };
     modalAc('Okul açıldı', '<div class="msg iyi">' + esc(d.message) + '</div>' +
-      satir('Okulun adresi', location.host + '/' + d.okul.kisaAd, true) +
-      satir('Müdürün kullanıcı adı', d.mudur.kullaniciAdi, true) +
-      (sifre ? satir('İlk şifresi (ilk girişte değiştirecek)', sifre, true) : ''),
+      satir('Okulun adresi', location.host + okulYolu(d.okul.kisaAd), true) +
+      satir('Müdür', d.mudur.ad + ' (' + d.mudur.kullaniciAdi + ')') +
+      '<div class="hint">Müdüre bildirim gitti; okuluna sol üstteki menüden geçer.</div>',
       '<button class="btn" data-act="admin-okul-bitti">Tamam</button>');
   })['catch'](function (e) {
     dugmeBitir(el);
     var v = e.veri || {};
-    var hedef = { okul: 'bOkulAra', il: 'bIl', ilce: 'bIlce', kisaAd: 'aoKisa', eposta: 'aoEposta', ad: 'aoAd', soyad: 'aoSoyad',
-      kullaniciAdi: 'aoKadi', telefon: 'aoTelefon', sifre: 'aoSifre' }[v.alan];
+    var hedef = { okul: 'bOkulAra', il: 'bIl', ilce: 'bIlce', kisaAd: 'aoKisa', mudurKodu: 'aoKod' }[v.alan];
+    if (v.alan === 'mudurKodu') { adminKisi.kod = ''; $('aoKisi').innerHTML = ''; }
     if (hedef) { alanHatasi(hedef, e.message); ilkHatayaGit(kart); }
     else mesajGoster('aoMesaj', 'hata', e.message);
   });

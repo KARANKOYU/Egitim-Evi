@@ -6,8 +6,9 @@
      seçilmeden girilirse okul sorulur, okul adresinden girilince doğru hesap açılır;
    - öğretmen/servisçi hesabı düzenlenir, şifresi yenilenir, silinir;
    - yetkisiz öğretmen hesap açamaz, başka okulun hesabına dokunamaz;
-   - rolsüz kayıt yalnızca veli / müdür adayı içindir; eski davet uçları yok. */
-const { iste, girisYap, botCevabi, hesapAc, mudurYap, ogretmenYap, tcUret } = require('./giris');
+   - herkes aynı yetişkin hesabını açar; eski davet uçları yok;
+   - yönetici okulu açar, müdürü kişi koduyla bulur; kod aynı işlemde yenilenir. */
+const { iste, girisYap, botCevabi, hesapAc, kisiKodu, mudurYap, ogretmenYap, tcUret } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -34,8 +35,9 @@ async function hamGiris(kimlik, sifre, okul) {
     fullName: 'deniz kara', username: kadi, password: 'Ogrenci2026', tc: tc1
   }, T);
   kontrol('hesap acildi', olustur.status === 200, J(olustur.body));
-  kontrol('veli kodu 10 karakter, buyuk harf ve rakam', olustur.body.student &&
-    /^[A-Z0-9]{10}$/.test(olustur.body.student.code || ''), olustur.body.student && olustur.body.student.code);
+  kontrol('veli kodu 15 karakter (harfle baslar; buyuk, kucuk, rakam, ozel)', olustur.body.student &&
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*[2-9])(?=.*[!?#*+-])[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(olustur.body.student.code || ''),
+    olustur.body.student && olustur.body.student.code);
   kontrol('ad kucuk yazilsa da duzeltiliyor', olustur.body.student && olustur.body.student.fullName === 'Deniz Kara');
   const yeniId = olustur.body.student.id;
 
@@ -114,7 +116,7 @@ async function hamGiris(kimlik, sifre, okul) {
   const eskiKod = olustur.body.student.code;
   const kodYeni = await iste('/api/school/student-code-reset', 'POST', { studentId: yeniId }, T);
   kontrol('yeni kod uretildi', kodYeni.status === 200 && kodYeni.body.code !== eskiKod, kodYeni.body.code);
-  kontrol('yeni kod 10 karakter', /^[A-Z0-9]{10}$/.test(kodYeni.body.code || ''), kodYeni.body.code);
+  kontrol('yeni kod 15 karakter', /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(kodYeni.body.code || ''), kodYeni.body.code);
 
   console.log('=== 7) MUDUR OGRENCI PORTALINI ACIYOR ===');
   const ilerleme = await iste('/api/progress?studentId=' + yeniId, 'GET', null, T);
@@ -212,7 +214,7 @@ async function hamGiris(kimlik, sifre, okul) {
   kontrol('baska okulun muduru hesaba dokunamiyor', yabanci.status === 404 && yabanciSifre.status === 404,
     yabanci.status + ' ' + yabanciSifre.status);
 
-  console.log('=== 8c) ROLSUZ KAYIT: YALNIZCA VELI VE MUDUR ADAYI ===');
+  console.log('=== 8c) ROLSUZ KAYIT: PORTALI OLMAYAN YETISKIN ===');
   const rk = 'rolsuz' + z;
   await hesapAc({ fullName: 'Rolsuz Kisi', username: rk, email: rk + '@test.com' });
   const rG = await girisYap(rk, 'Test1234!');
@@ -221,7 +223,8 @@ async function hamGiris(kimlik, sifre, okul) {
   kontrol('rolsuz hesap okul bolumlerine giremiyor', rOdev.status === 403 && rOdev.body.rolsuz === true, 'status ' + rOdev.status);
   const eskiDavet = await iste('/api/davetlerim', 'GET', null, rG.token);
   const eskiBul = await iste('/api/school/kisi-bul?rol=student&ad=' + rk, 'GET', null, T);
-  kontrol('eski davet uclari kaldirildi', eskiDavet.status === 403 && eskiBul.status === 404, eskiDavet.status + ' ' + eskiBul.status);
+  /* Kaldırılan uç rolsüz kişiye de 404 döner (rolsüz kapısı yalnız var olan bölümleri kapatır). */
+  kontrol('eski davet uclari kaldirildi', eskiDavet.status === 404 && eskiBul.status === 404, eskiDavet.status + ' ' + eskiBul.status);
   const sinifYap = await iste('/api/school/class', 'POST', { name: '8b' }, T);
   kontrol('sinif adi "8b" -> "8-B"', sinifYap.status === 200 && sinifYap.body['class'].name === '8-B', J(sinifYap.body));
 
@@ -233,41 +236,52 @@ async function hamGiris(kimlik, sifre, okul) {
   const mudurDener = await iste('/api/admin/principals', 'GET', null, T);
   kontrol('mudur bu listeye erisemiyor', mudurDener.status === 403, 'status ' + mudurDener.status);
 
-  console.log('=== 9b) YONETICI OKUL ACIYOR ===');
+  console.log('=== 9b) YONETICI OKUL ACIYOR (MUDURUN KISI KODUYLA) ===');
+  /* Müdür kendi hesabını açar, kişi kodunu yöneticiye verir. Yönetici e-postayla
+     ya da yeni hesap açarak müdür yapamaz. */
   const oa = 'acilan' + z;
+  await hesapAc({ fullName: 'Selin Kaya', username: oa, email: oa + '@test.com', password: 'Acilis2026!' });
+  const oaIlk = await girisYap(oa, 'Acilis2026!');
+  const oaKod = await kisiKodu(oaIlk.token);
   const okulGovde = { schoolName: 'Deneme Açılış Ortaokulu ' + z, city: 'Ankara', district: 'Çankaya', kisaAd: 'acilis-' + z,
-    mudur: { eposta: oa + '@test.com', ad: 'Selin', soyad: 'Kaya', kullaniciAdi: oa, telefon: '+905321234567', sifre: 'Acilis2026!' } };
+    mudurKodu: oaKod };
   const oaMudur = await iste('/api/admin/okul-ac', 'POST', okulGovde, T);
   kontrol('mudur okul acamiyor (yalniz yonetici)', oaMudur.status === 403, 'status ' + oaMudur.status);
-  const oaZayif = await iste('/api/admin/okul-ac', 'POST',
-    Object.assign({}, okulGovde, { mudur: Object.assign({}, okulGovde.mudur, { sifre: 'acilis2026' }) }), A);
-  kontrol('zayif sifre (buyuk harf ve ozel yok) reddedildi', oaZayif.status === 400 && oaZayif.body.alan === 'sifre', J(oaZayif.body));
   const oaAdres = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { kisaAd: 'a b' }), A);
   kontrol('gecersiz adres reddedildi', oaAdres.status === 400 && oaAdres.body.alan === 'kisaAd', J(oaAdres.body));
-  const oaAc = await iste('/api/admin/okul-ac', 'POST', okulGovde, A);
-  kontrol('yonetici okulu acti, yeni mudur hesabi', oaAc.status === 200 && oaAc.body.okul.kisaAd === 'acilis-' + z &&
-    oaAc.body.mudur.yeni === true, J(oaAc.body));
-  const oaTekrar = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { kisaAd: 'acilis-iki-' + z }), A);
+  const oaKodsuz = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { mudurKodu: '' }), A);
+  kontrol('kisi kodu yazilmadan okul acilmiyor', oaKodsuz.status === 400 && oaKodsuz.body.alan === 'mudurKodu', J(oaKodsuz.body));
+  const oaEposta = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde,
+    { mudurKodu: undefined, mudur: { eposta: oa + '@test.com', ad: 'Selin', soyad: 'Kaya', kullaniciAdi: oa + 'x', sifre: 'Acilis2026!' } }), A);
+  kontrol('e-postayla / yeni hesapla mudur yapma yolu yok', oaEposta.status === 400 && oaEposta.body.alan === 'mudurKodu', J(oaEposta.body));
+  const oaYanlis = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { mudurKodu: 'Zz9#zZz9#zZz9#z' }), A);
+  kontrol('kimsede olmayan kod 404', oaYanlis.status === 404 && oaYanlis.body.alan === 'mudurKodu', J(oaYanlis.body));
+  const oaAc = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde,
+    { mudurKodu: ' ' + oaKod.slice(0, 5) + ' ' + oaKod.slice(5, 10) + ' ' + oaKod.slice(10) + ' ' }), A);
+  kontrol('yonetici okulu acti; mudur kisi koduyla bulundu (bosluklu yazilsa da)', oaAc.status === 200 &&
+    oaAc.body.okul.kisaAd === 'acilis-' + z && oaAc.body.mudur.ad === 'Selin Kaya' && !oaAc.body.mudur.eposta, J(oaAc.body));
+  const oaYeniKod = await kisiKodu(oaIlk.token);
+  kontrol('okul acilinca kisinin kodu yenilendi', !!oaYeniKod && oaYeniKod !== oaKod, oaYeniKod);
+  const oaTekrar = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde,
+    { kisaAd: 'acilis-iki-' + z, mudurKodu: oaYeniKod }), A);
   kontrol('ayni okul ikinci kez acilamiyor', oaTekrar.status === 400 && oaTekrar.body.alan === 'okul', J(oaTekrar.body));
+  const oaEskiKod = await iste('/api/admin/okul-ac', 'POST', { schoolName: 'Eski Kod Okulu ' + z, city: 'Ankara',
+    district: 'Çankaya', kisaAd: 'eski-kod-' + z, mudurKodu: oaKod }, A);
+  kontrol('kullanilmis kod ikinci okulda calismiyor (tek kullanimlik)', oaEskiKod.status === 404, J(oaEskiKod.body));
   const oaAyniAdres = await iste('/api/admin/okul-ac', 'POST',
-    Object.assign({}, okulGovde, { schoolName: 'Baska Okul ' + z, mudur: { eposta: 'mudur@test.com' } }), A);
+    Object.assign({}, okulGovde, { schoolName: 'Baska Okul ' + z, mudurKodu: oaYeniKod }), A);
   kontrol('ayni adres ikinci okulda kullanilamiyor', oaAyniAdres.status === 400 && oaAyniAdres.body.alan === 'kisaAd', J(oaAyniAdres.body));
   const oaG = await girisYap(oa, 'Acilis2026!');
-  kontrol('mudur verilen sifreyle giriyor, kendi sifresini belirlemeli', !!oaG.token && oaG.user.sifreDegismeli === true &&
-    oaG.user.role === '' && oaG.kisilikSec === true, J(oaG.user));
-  await iste('/api/kvkk-onay', 'POST', { onay: true }, oaG.token);
-  const oaGec = await iste('/api/kisilik/gec', 'POST', { tur: 'rol', id: 'x' }, oaG.token);
-  kontrol('sifresini koymadan okul rolune gecemiyor', oaGec.status === 403 && oaGec.body.sifreDegismeli === true, J(oaGec.body));
-  const oaSifre = await iste('/api/password', 'POST', { old: 'Acilis2026!', new: 'Kendi2026sifre' }, oaG.token);
-  kontrol('yetiskin hesabinda da guclu sifre kurali', oaSifre.status === 400, J(oaSifre.body));
-  const oaSifre2 = await iste('/api/password', 'POST', { old: 'Acilis2026!', new: 'Kendi2026sifre!' }, oaG.token);
-  kontrol('kendi guclu sifresini koydu', oaSifre2.status === 200, J(oaSifre2.body));
+  kontrol('mudur kendi sifresiyle giriyor, tek portalinda (mudur) dogrudan', !!oaG.token && oaG.user.sifreDegismeli === false &&
+    oaG.user.role === 'principal' && oaG.user.rolSatiri === true, J(oaG.user));
   const oaRoller = await iste('/api/kisilikler', 'GET', null, oaG.token);
   kontrol('hesapta onayli mudur rolu var', oaRoller.status === 200 && (oaRoller.body.roller || []).some(r =>
     r.rol === 'principal' && r.okulKisaAd === 'acilis-' + z && r.girilebilir), J(oaRoller.body));
   const varOlan = await iste('/api/admin/okul-ac', 'POST', { schoolName: 'Ikinci Acilis Lisesi ' + z, city: 'Ankara', district: 'Çankaya',
-    kisaAd: 'ikinci-' + z, mudur: { eposta: oa + '@test.com' } }, A);
-  kontrol('kayitli yetiskine ikinci okulun muduru rolu eklendi', varOlan.status === 200 && varOlan.body.mudur.yeni === false, J(varOlan.body));
+    kisaAd: 'ikinci-' + z, mudurKodu: oaYeniKod }, A);
+  const oaG2 = await girisYap(oa, 'Acilis2026!');
+  kontrol('ayni kisiye ikinci okulun mudurlugu eklendi; iki portalda yetiskin hesabinin ana sayfasi', varOlan.status === 200 &&
+    oaG2.kisilikSec === true && (oaG2.portallar || []).filter(x => x.rol === 'principal').length === 2, J(varOlan.body) + J(oaG2.portallar));
 
   console.log('=== KVKK: MUDURUN ACTIGI HESAP ONAY VERMEDEN KULLANAMAZ ===');
   const kvkkEposta = 'kvkk.ogrenci' + z + '@okul.com';

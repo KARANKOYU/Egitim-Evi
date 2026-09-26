@@ -62,7 +62,7 @@ function ilkSifreUret() {
   return s;
 }
 
-/* Okul adresi (egitimevi.org/<kısa ad>) önerisi: adından; alınmışsa ilçesiyle,
+/* Okul adresi (egitimevi.org/school/<kısa ad>) önerisi: adından; alınmışsa ilçesiyle,
    o da alınmışsa sayıyla. */
 async function okulKisaAdiBul(ad, ilce, haricId) {
   const kok = kisaAdUret(ad);
@@ -96,6 +96,11 @@ async function baslat() {
     console.log('  Eski db.json PostgreSQL\'e taşındı (' + r.kullanici + ' kullanıcı' +
       (atlanan ? '; kopuk kayıt atlandı — ' + atlanan : '') + '). Eski dosya: db.json.tasindi');
   }
+
+  /* Kişi kodu olmayanlara (027'de boşaltılan eski kodlar, eski kayıtlar) kod
+     üretilir: her öğrenciye veli kodu, her yetişkin hesabına kişi kodu. */
+  const kodlanan = await depo.kullanicilar.eksikKodlariDoldur();
+  if (kodlanan) console.log('  Kişi kodu üretildi: ' + kodlanan + ' hesap');
 
   /* Adresi olmayan okullara (eski kayıtlar) adres verilir. */
   for (const o of await depo.okullar.kisaAdsizlar()) {

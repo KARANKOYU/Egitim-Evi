@@ -4,7 +4,7 @@
 
     Kullanıcı adı   E-posta                    Durum
     mudur           mudur@deneme.test          okulun müdürü (okul onaylı)
-    ogretmen        ogretmen@deneme.test       Matematik öğretmeni (kendi hesabını açtı, müdür koduyla ekledi)
+    ogretmen        ogretmen@deneme.test       Matematik öğretmeni (kendi hesabını açtı, müdür kişi koduyla ekledi)
     ogrenci         ogrenci@deneme.test        öğrenci, SINIFSIZ (sınıfı müdür ekranından sen aç, yerleştir)
     veli            veli@deneme.test           öğrenciye bağlı veli (kendisi kaydoldu)
     servisci        —                          servisçi, "1. Servis"e atanmış; öğrenci bu serviste
@@ -12,14 +12,13 @@
     Şifre (hepsi): Deneme2026!
     (Güçlü şifre kuralından önce açılmış deneme hesaplarında: Deneme2026)
 
-  Okulun adresi: /deneme-ortaokulu (öğretmen, öğrenci ve servisçi oradan girer).
+  Okulun adresi: /school/deneme-ortaokulu (öğretmen, öğrenci ve servisçi oradan girer).
 
   Hesaplar gerçek uçlardan (API) geçer: müdür, öğretmen ve veli yetişkin
-  hesabı açar (aydınlatma onayı, bot sorusu aynen çalışır); müdür okulunu
-  kaydeder, öğretmeni koduyla ekler, öğrenci ve servisçi hesabını açar;
-  veli veli kodunu girer. Yalnızca müdürlük
-  başvurusunun "yönetici onayı" adımı doğrudan veritabanında yapılır;
-  yönetici şifresi bu araçta yok.
+  hesabı açar (aydınlatma onayı, bot sorusu aynen çalışır); müdür öğretmeni
+  kişi koduyla ekler, öğrenci ve servisçi hesabını açar; veli veli kodunu
+  girer. Yalnızca yöneticinin "Okul aç" adımı (okulu açıp kişiyi müdür
+  yapması) doğrudan veritabanında yapılır; yönetici şifresi bu araçta yok.
 
   Tekrar çalıştırılırsa var olan hesaplara dokunmaz, eksik olanı tamamlar.
   Sonunda her rol için bir oturum anahtarı yazar (tarayıcı sekmelerini
@@ -34,7 +33,8 @@ const { iste, girisYap, hesapAc, okulHesabi } = require('./giris');
 const { ayarlariYukle } = require('../sunucu/ayarlar');
 ayarlariYukle();
 const baglanti = require('../sunucu/veri/baglanti');
-const { depo } = require('../sunucu/veri');
+const { depo, okulKisaAdiBul } = require('../sunucu/veri');
+const { kisiKoduBicim, now, uid } = require('../sunucu/ortak');
 
 /* Yetişkin hesabının şifresinde büyük/küçük harf, rakam ve özel karakter
    zorunlu; eski deneme hesapları kuraldan önce açıldığı için eski şifrede. */
@@ -74,18 +74,31 @@ async function hesap(h) {
 }
 
 (async () => {
-  /* 1) Müdür: yetişkin hesabı -> okulunu kaydeder -> onay (doğrudan veritabanında).
-     Müdürlük yetişkin hesabına bağlı ayrı bir satırdır; eski düzende
-     açılmış deneme hesabında hesabın kendisi müdürdür. */
+  /* 1) Müdür: yetişkin hesabı açar; yönetici okulu açıp onu müdür yapar
+     (doğrudan veritabanında: okul onaylı, müdür rol satırı, kişi kodu
+     yenilenir; /api/admin/okul-ac'ın yaptığı). Müdürlük yetişkin hesabına
+     bağlı ayrı bir satırdır; eski düzende açılmış deneme hesabında hesabın
+     kendisi müdürdür. */
   const hesapMudur = await hesap(HESAP.mudur);
   const mudurRolu = async () => hesapMudur.role === 'principal' ? depo.kullanicilar.bul(hesapMudur.id)
     : (await depo.kullanicilar.rolleri(hesapMudur.id)).find(r => r.role === 'principal');
   let mudur = await mudurRolu();
   if (!mudur) {
-    const g = await gir(HESAP.mudur.email);
-    const b = await iste('/api/okul-basvurusu', 'POST',
-      { schoolName: OKUL.ad, city: OKUL.il, district: OKUL.ilce, dogum: '1980-01-01', beyan: true }, g.token);
-    if (b.status !== 200) throw new Error('müdür başvurusu: ' + (b.body.error || b.status));
+    const vardi = await depo.okullar.cakisan('', OKUL.il, OKUL.ad);
+    const okul = vardi || { id: uid('s'), mebId: '', name: OKUL.ad, city: OKUL.il, district: OKUL.ilce, type: '',
+      status: 'approved', createdAt: now() };
+    const yeniKod = await depo.kullanicilar.yeniKisiKodu();
+    await baglanti.islem(async () => {
+      if (!vardi) await depo.okullar.ekle(Object.assign({ kisaAd: await okulKisaAdiBul(OKUL.ad, OKUL.ilce) }, okul));
+      else await depo.okullar.durumYaz(okul.id, 'approved');
+      await depo.kullanicilar.ekle({
+        id: uid('u'), anaHesapId: hesapMudur.id, email: '', pass: 'kullanilmaz', fullName: hesapMudur.fullName,
+        phone: hesapMudur.phone || '', username: await depo.kullanicilar.okuldaBosAd(hesapMudur.username, okul.id),
+        role: 'principal', status: 'approved', schoolId: okul.id, city: OKUL.il, district: OKUL.ilce, branch: 'Müdür',
+        kvkk: hesapMudur.kvkk || null, createdAt: now()
+      });
+      await depo.kullanicilar.eslesmeKoduYaz(hesapMudur.id, yeniKod);
+    });
     mudur = await mudurRolu();
   }
   if (mudur.status !== 'approved' || mudur._okulDurum !== 'approved') {
@@ -153,12 +166,12 @@ async function hesap(h) {
   console.log('  Müdür     ' + sutun(await kadi(HESAP.mudur)) + HESAP.mudur.fullName);
   console.log('  Öğretmen  ' + sutun(await kadi(HESAP.ogretmen)) + HESAP.ogretmen.fullName + ' (Matematik)');
   console.log('  Öğrenci   ' + sutun(await kadi(HESAP.ogrenci)) + HESAP.ogrenci.fullName + ' (sınıfsız, veli kodu ' +
-    kod.slice(0, 5) + '-' + kod.slice(5) + ')');
+    kisiKoduBicim(kod) + ')');
   console.log('  Veli      ' + sutun(await kadi(HESAP.veli)) + HESAP.veli.fullName + ' (öğrenciye bağlı)');
   console.log('  Servisçi  ' + sutun(HESAP.servisci.username) + HESAP.servisci.fullName + ' (1. Servis)');
   console.log('  Rolsüz    ' + sutun(await kadi(HESAP.yeni)) + HESAP.yeni.fullName + ' (veli adayı, çocuğu bağlı değil)');
   console.log('  Şifre     ' + SIFRE + '   (girişte kullanıcı adı ya da e-posta)');
-  console.log('  Okul adresi: /' + ((await depo.okullar.bul(mudur.schoolId)) || {}).kisaAd);
+  console.log('  Okul adresi: /school/' + ((await depo.okullar.bul(mudur.schoolId)) || {}).kisaAd);
   console.log('OTURUMLAR ' + JSON.stringify({ mudur: M, ogretmen: O, ogrenci: S, veli: V, rolsuz: Y }));
   await baglanti.kapat();
 })().catch(async e => {

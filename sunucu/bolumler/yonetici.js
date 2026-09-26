@@ -1,18 +1,17 @@
 'use strict';
 /* Sistem yöneticisi uçları (/api/admin).
-   Müdür başvurularını onaylama, okul açma (yonetici-okul.js), okullar,
-   yedek alma ve geri yükleme. */
+   Okul açma ve kişi koduyla kişi bulma (yonetici-okul.js), müdürler, okullar,
+   yedek alma ve geri yükleme. Müdür başvurusu yoktur: okulu yönetici açar. */
 
 const fs = require('fs');
 const path = require('path');
 const { bad, baslikEkle, ok } = require('../http');
-const { clean, yasHesapla } = require('../ortak');
+const { clean } = require('../ortak');
 const {
-  YEDEK_KLASOR, YEDEK_SAKLA, depo, bildir, islem, yedekAl, yedekGeriYukle, yedekListesi
+  YEDEK_KLASOR, YEDEK_SAKLA, depo, islem, yedekAl, yedekGeriYukle, yedekListesi
 } = require('../veri');
-const { pub } = require('../yetki');
 const { islemYaz } = require('./islem-kaydi');
-const { okulAc } = require('./yonetici-okul');
+const { kisiBul, okulAc } = require('./yonetici-okul');
 
 /* ---- uçlar ---- */
 /* k: istek bağlamı (api.js kurar). Cevap yazılmadıysa yönlendirici 404 döner. */
@@ -23,64 +22,10 @@ async function uclar(k) {
     if (!need(['admin'])) return;
     const sub = segs[2] || '';
 
-    /* Yönetici okulu başvuru beklemeden kendisi açar (yonetici-okul.js). */
+    /* Yönetici okulu açar ve kişiyi kişi koduyla müdür yapar (yonetici-okul.js). */
     if (sub === 'okul-ac' && method === 'POST') return okulAc(req, res, me, body);
-    if (sub === 'pending' && method === 'GET') {
-      /* Okul adı kullanıcıyla birlikte gelir (pub içinde schoolName). Başvuru
-         yetişkin hesabından yapıldıysa iletişim bilgisi o hesaptadır. */
-      const cikti = [];
-      for (const u of await depo.kullanicilar.bekleyenMudurler()) {
-        const v = pub(u);
-        if (u.anaHesapId) {
-          const a = await depo.kullanicilar.bul(u.anaHesapId);
-          if (a) {
-            v.email = a.email || ''; v.phone = a.phone || ''; v.username = a.username;
-            v.yas = a.dogum ? yasHesapla(a.dogum) : null;
-            v.hesapAcilis = a.createdAt;
-          }
-          v.anaHesapId = u.anaHesapId;
-        }
-        cikti.push(v);
-      }
-      return ok(res, { principals: cikti });
-    }
-    if (sub === 'decide' && method === 'POST') {
-      const u = await depo.kullanicilar.bul(clean(body.userId, 60));
-      if (!u || u.role !== 'principal') return bad(res, 'Müdür bulunamadı');
-      /* Onaylı müdür buradan reddedilemez (okulda dersleri, ödevleri var;
-         rolsüz kalırsa bağları sahipsiz kalırdı). Müdür hesabı kaldırmanın
-         kendi ucu var. */
-      if (u.status !== 'pending') return bad(res, 'Bu başvuru zaten karara bağlanmış.');
-      const approve = !!body.approve;
-      const durum = approve ? 'approved' : 'rejected';
-      /* Müdür ve okulu birlikte onaylanır ya da reddedilir. Yetişkin hesabından
-         yapılan başvuruda reddedilen müdür rol satırı silinir, hesap öteki
-         rolleriyle kullanılmaya devam eder. Eski usul hesap rolsüz hâline döner.
-         Okul kaydı reddedildi olarak kalır. */
-      /* Onay koşullu yazılır: başvuru aynı anda geri çekildiyse okul müdürsüz
-         onaylanmasın. Reddedilen başvuru, müdürü kaldırılmış ama içinde
-         öğretmen/öğrenci olan bir okula yapıldıysa okul kapanmaz, yeni
-         başvuru beklemeye devam eder. */
-      let gecti = true;
-      await islem(async () => {
-        if (approve) gecti = await depo.kullanicilar.basvuruyuOnayla(u.id);
-        else if (u.anaHesapId) await depo.kullanicilar.rolSatiriniSil(u.id, u.anaHesapId);
-        else await depo.kullanicilar.guncelle(u.id, { status: 'approved', role: '', schoolId: '', branch: '' });
-        if (!gecti || !u.schoolId) return;
-        const okulDolu = !approve && await depo.kullanicilar.okuldaKimseVarMi(u.schoolId);
-        await depo.okullar.durumYaz(u.schoolId, okulDolu ? 'pending' : durum);
-        /* Reddedilen okulun adresi boşa çıkar: doğru müdür başvurunca okul
-           "-ilçe" ekli bir adla kalmasın. */
-        if (!approve && !okulDolu) await depo.okullar.kisaAdYaz(u.schoolId, null);
-      });
-      if (!gecti) return bad(res, 'Bu başvuru bu arada geri çekilmiş ya da karara bağlanmış.');
-      await bildir(u.anaHesapId || u.id, approve
-        ? (u.anaHesapId ? 'Müdürlük başvurun onaylandı (' + (u._okulAdi || 'okulun') +
-          '). "Hesap değiştir"den okuluna geçebilirsin.' : 'Müdürlük başvurun onaylandı. Artık okulunu yönetebilirsin.')
-        : 'Müdürlük başvurun reddedildi.');
-      const son = approve ? await depo.kullanicilar.bul(u.id) : null;
-      return ok(res, { user: son ? pub(son) : null, message: approve ? 'Onaylandı.' : 'Reddedildi.' });
-    }
+    if (sub === 'kisi-bul' && method === 'POST') return kisiBul(req, res, me, body);
+
     /* ---------- yedekleme ---------- */
 
     if (sub === 'backups' && method === 'GET') {
@@ -154,8 +99,8 @@ async function uclar(k) {
       if (!u || u.role !== 'principal') return bad(res, 'Müdür bulunamadı');
 
       /* Okulu silmiyoruz: öğretmen ve öğrenciler duruyor. Okul "beklemede"ye
-         çekiliyor ki yeni kayıt alınmasın. Yeni müdür aynı okula başvurabilir
-         (kayit.js mudurBasvurusu müdürsüz okulu tanır). Müdürün oturumları
+         çekiliyor ki kimse giremesin. Yönetici okula yeni müdür atayabilir
+         ("Okul aç" müdürsüz okulu tanır: yonetici-okul.js). Müdürün oturumları
          ve bildirimleri yabancı anahtarla birlikte silinir. */
       await islem(async () => {
         if (u.schoolId) await depo.okullar.durumYaz(u.schoolId, 'pending');
@@ -169,7 +114,7 @@ async function uclar(k) {
       return ok(res, {
         stats: {
           okul: sayi.okul, mudur: sayi.mudur, ogretmen: sayi.ogretmen,
-          ogrenci: sayi.ogrenci, veli: sayi.veli, bekleyen: sayi.bekleyen
+          ogrenci: sayi.ogrenci, veli: sayi.veli
         },
         schools: okullar.map(s => ({
           id: s.id, name: s.name, city: s.city, district: s.district, status: s.status,

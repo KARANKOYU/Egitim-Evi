@@ -57,6 +57,9 @@
   align-items: center;
   gap: 6px;
 }
+/* Bildirim listesinin kabı üst çubukta yer kaplamasın (boşken de bir aralık
+   yiyordu); içindeki .panel zaten üst çubuğa göre konumlanır. */
+#bildirimPanel { display: contents; }
 .iconbtn {
   position: relative;
   border: 0;

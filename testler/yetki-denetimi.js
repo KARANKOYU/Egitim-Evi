@@ -54,6 +54,8 @@ function bekleniyor(ad, cevap, izinliMi) {
      "baskasinin verisi" kontrolu yapiliyor. */
   await iste('/api/parent/link', 'POST', { code: o1.code }, V);
   const o2 = ogr.body.students.find(x => x.id !== o1.id) || o1;
+  /* Velinin kişi kodu: müdür onunla öğretmen arar, yönetici onunla kişi bulur. */
+  const vKod = (await iste('/api/kisilikler', 'GET', null, V)).body.kisiKodu;
 
   /* Toplu giriş bilgisi yalnızca bu ayrı sınıftaki öğrencinin şifresini yeniler
      (denetimde kullanılan hesapların oturumu düşmesin). */
@@ -90,9 +92,10 @@ function bekleniyor(ad, cevap, izinliMi) {
     ['rol listesi', '/api/school/roles', 'GET', null, ['mudur']],
     ['ogretmen listesi', '/api/school/teacher-list', 'GET', null,
       ['mudur']],
+    ['kisi koduyla ogretmen bul', '/api/school/ogretmen-bul', 'POST', { kod: vKod }, ['mudur']],
 
     /* --- yonetici islemleri --- */
-    ['bekleyen basvurular', '/api/admin/pending', 'GET', null, ['admin']],
+    ['kisi koduyla kisi bul', '/api/admin/kisi-bul', 'POST', { kod: vKod }, ['admin']],
     ['yedek listesi', '/api/admin/backups', 'GET', null, ['admin']],
     ['yedek al', '/api/admin/backup-now', 'POST', {}, ['admin']],
 

@@ -2,7 +2,7 @@
 
 /* ---- MÜDÜR ---- */
 /* Öğrenci ve servisçi hesaplarını okul açar (10b-hesaplar.js). Öğretmen kendi
-   yetişkin hesabını açar, kişisel kodunu okula verir; okul kodu girip onu ekler. */
+   yetişkin hesabını açar, kişi kodunu müdüre verir; müdür kodu girip onu ekler. */
 SAYFALAR.ogretmenler = function () {
   /* Yalnızca "öğretmen hesabı açar" yetkisi verilmiş kişi listeyi göremeyebilir;
      o zaman sayfa düşmez, yalnızca açma kısmı görünür. */
@@ -14,7 +14,7 @@ SAYFALAR.ogretmenler = function () {
     if (yetkim('ogretmen.onayla')) {
       h += '<div class="kart"><div class="satir" style="border:0;padding:0">' +
         '<div class="buyu"><div class="ad">Öğretmen ekle</div>' +
-        '<div class="alt">Öğretmen Eğitim Evi\'nde kendi hesabını açar ve sana kişisel kodunu verir. ' +
+        '<div class="alt">Öğretmen Eğitim Evi\'nde kendi hesabını açar ve sana kişi kodunu verir. ' +
         'Kodu girersin, adını görüp eklersin. Başka okulda da çalışıyorsa aynı hesapla girer.</div></div>' +
         '<button class="btn" data-act="ogretmen-kodla">Kodla ekle</button></div></div>';
     }
@@ -94,7 +94,7 @@ SAYFALAR['okul-ogrenciler'] = function () {
           '<div class="buyu"><div class="ad">' + esc(s.fullName) +
           (s.className ? ' <span class="etiket mavi">' + esc(s.className) + '</span>' : '') +
           (s.okulNo ? ' <span class="etiket gri">No ' + esc(s.okulNo) + '</span>' : '') + '</div>' +
-          (s.username ? '<div class="alt">' + esc(s.username) + ' · veli kodu <b>' + esc(kodBicimle(s.code)) + '</b>' +
+          (s.username ? '<div class="alt">' + esc(s.username) + (s.code ? ' · veli kodu <code class="kisi-kodu satir-ici">' + esc(kisiKoduBicim(s.code)) + '</code>' : '') +
             (s.sifreDegismeli ? ' · <span class="soluk">kendi şifresini belirlemedi</span>' : '') + '</div>' : '') + '</div>' +
           (yetkim('ogrenci.duzenle') ? '<button class="btn kucuk ghost" data-act="hesap-duzenle" data-id="' + esc(s.id) + '">Hesap</button>' : '') +
           (yetkim('ogrenci.portal') ? '<button class="btn kucuk gri" data-act="ogrenci-portal" data-id="' + esc(s.id) + '" ' +

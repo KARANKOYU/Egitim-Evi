@@ -1,82 +1,40 @@
-/* Okul başvurusu formu (müdür adayı): "Hesap değiştir > Ekle > Okulumu kaydet".
-   Okul MEB listesinden aranır; listede olmayan (yeni açılmış) okulun adı
-   elle yazılır. Başvuruyu sistem yöneticisi onaylar. Okul seçme bölümü
-   (okulSecimAlani) yöneticinin "Okul aç" penceresinde de kullanılır. */
+/* Okul seçimi: yöneticinin "Okul aç" penceresi (09-yonetici.js). Okul Millî
+   Eğitim Bakanlığı listesinden aranır; listede olmayan (yeni açılmış) okulun
+   adı elle yazılır. Müdür başvurusu yoktur: okulunu açtırmak isteyen kişi
+   kişi kodunu sistem yöneticisine verir, okulu yönetici açar. */
 
 var ilceHaritasi = {};        // { "Ankara": ["Çankaya", ...] }
-var seciliOkul = null;        // müdürün MEB listesinden seçtiği okul
+var seciliOkul = null;        // MEB listesinden seçilen okul
 var okulAramaSayaci = null;   // yazarken bekletme (debounce)
 
-/* dogum: yetişkin hesabındaki doğum tarihi (varsa doldurulmuş gelir). */
-function okulBasvuruFormu(dogum) {
-  return '<div class="field"><label for="bDogumGun">Doğum tarihin</label>' +
-    tarihSecici('bDogum', dogum || '', { enKucukYas: 18 }) +
-    '<div class="hint">Okul müdürü başvurusu 18 yaşından büyükler içindir.</div></div>' +
-    okulSecimAlani() +
-    '<div class="field kvkk-alan"><label class="onay-satiri"><input type="checkbox" id="bBeyan"> ' +
-    '<span>Bu okulun müdürü ya da yöneticisiyim; yazdığım bilgilerin doğru olduğunu beyan ederim.</span></label></div>';
-}
-
-/* İl, ilçe, MEB listesinde arama ve "listede yok" bölümü. okulBasvurusuKur() bağlar. */
+/* İl, ilçe, MEB listesinde arama ve "listede yok" bölümü. okulSecimiKur() bağlar. */
 function okulSecimAlani() {
   return '<div class="row2">' +
     '<div class="field"><label for="bIl">İl</label><select id="bIl"><option value="">Yükleniyor...</option></select></div>' +
     '<div class="field"><label for="bIlce">İlçe</label><select id="bIlce"><option value="">Önce il seç...</option></select></div>' +
     '</div>' +
-    '<div class="field"><label for="bOkulAra">Okulunu bul</label>' +
-    '<div class="okul-ust"><input type="search" id="bOkulAra" placeholder="Okulunun adını yaz" ' +
+    '<div class="field"><label for="bOkulAra">Okulu bul</label>' +
+    '<div class="okul-ust"><input type="search" id="bOkulAra" placeholder="Okulun adını yaz" ' +
     'autocomplete="off" spellcheck="false" enterkeyhint="search" aria-controls="bOkulSonuc" aria-describedby="bOkulIpucu">' +
     '<select id="bOkulTip" aria-label="Okul türü"><option value="">Tüm türler</option></select></div>' +
     '<div class="hint" id="bOkulIpucu">Kelimelerin sırası önemli değil. İl seçersen yalnızca o ilde, seçmezsen Türkiye genelinde arar.</div>' +
     '<div id="bOkulSonuc" class="okul-sonuc" aria-live="polite"></div>' +
     '<div id="bOkulSecili" class="okul-secili" style="display:none"></div></div>' +
-    '<details class="okul-elle"><summary>Okulum listede yok</summary>' +
+    '<details class="okul-elle"><summary>Okul listede yok</summary>' +
     '<div class="field"><label for="bOkulAd">Okulun tam adı</label>' +
     '<input type="text" id="bOkulAd" autocomplete="off" maxlength="140">' +
     '<div class="hint">Yeni açılmış ya da adı değişmiş okullar listede olmayabilir. Yukarıdan il ve ' +
-    'ilçeyi seç, okulun tam adını yaz; sistem yöneticisi kontrol edip onaylar.</div></div></details>';
+    'ilçeyi seç, okulun tam adını yaz.</div></div></details>';
 }
 
-EYLEMLER['rolsuz-mudur'] = function (el) {
-  var kart = $('rMudurKart');
-  formHatalariniSil(kart);
-  var govde = { city: $('bIl').value, district: $('bIlce').value.trim(), dogum: $('bDogum').value, beyan: $('bBeyan').checked };
-  if (tarihSeciciDurum('bDogum') !== 'tam') alanHatasi('bDogumGun', 'Doğum tarihini gün, ay ve yıl olarak seç.');
-  if (!govde.beyan) alanHatasi('bBeyan', 'Beyanı onaylaman gerekiyor.');
-  if (seciliOkul) govde.mebSchoolId = seciliOkul.id;
-  else {
-    govde.schoolName = $('bOkulAd').value.trim();
-    if (!govde.schoolName) alanHatasi('bOkulAra', 'Listeden okulunu seç ya da "Okulum listede yok" bölümüne adını yaz.');
-    else {
-      if (!govde.city) alanHatasi('bIl', 'Okulunun ilini seç.');
-      if (!govde.district) alanHatasi('bIlce', 'Okulunun ilçesini seç.');
-    }
-  }
-  if (kart.querySelector('.hatali')) { ilkHatayaGit(kart); return; }
-  dugmeBekle(el, 'Gönderiliyor...');
-  return api('/okul-basvurusu', 'POST', govde).then(function (d) {
-    /* Başvuru, hesaba "onay bekliyor" müdür rolü ekler; hesap öteki
-       rolleriyle kullanılmaya devam eder. */
-    modalKapat();
-    return git('kisilikler').then(function () { sayfaMesaji('iyi', d.message); });
-  })['catch'](function (e) {
-    dugmeBitir(el);
-    var v = e.veri || {};
-    var hedef = { okul: seciliOkul || !$('bOkulAd').value.trim() ? 'bOkulAra' : 'bOkulAd', il: 'bIl', ilce: 'bIlce',
-      dogum: 'bDogumGun', beyan: 'bBeyan' }[v.alan];
-    if (hedef) { alanHatasi(hedef, e.message); ilkHatayaGit(kart); }
-    else hataGoster(e);
-  });
-};
-
-/* ---- müdür başvurusu: MEB listesinde okul arama ----
+/* ---- MEB listesinde okul arama ----
    Yazarken kısa bir duraksamadan sonra aranır. Geç gelen eski cevap yeni
    sonucun üstüne yazmasın diye her aramaya sıra numarası verilir; aynı
    arama tekrarlanırsa sunucuya gidilmez. Arama sürerken eski sonuçlar
    silinmez, soluklaşır (liste yanıp sönmesin). */
 var okulAramaDurum = { sira: 0, onbellek: {}, anahtarlar: [] };
 
-function okulBasvurusuKur() {
+function okulSecimiKur() {
   seciliOkul = null;
   if (!$('bIl')) return;
 
@@ -137,7 +95,7 @@ function ilceleriDoldur(il) {
   var sec = $('bIlce');
   if (!sec) return;
   /* Okul listesi yüklenemediyse ilçe listesi de yok: ilçe elle yazılır
-     (yoksa "Okulum listede yok" ile başvuru hiç gönderilemezdi). */
+     (yoksa listede olmayan okul hiç açılamazdı). */
   if (!Object.keys(ilceHaritasi).length) {
     if (sec.tagName !== 'INPUT') {
       sec.outerHTML = '<input type="text" id="bIlce" placeholder="İlçe adını yaz" maxlength="60" autocomplete="off">';
@@ -215,7 +173,7 @@ function okulSonuclari(d, sorgu, kelimeler, filtreler) {
       h += ' <button type="button" class="baglanti" data-act="okul-ara-genislet">Tüm Türkiye\'de ara</button>';
     }
     h += '<br>Okulun adından tek bir kelime yazmayı dene (ör. yalnızca "Cumhuriyet"). ' +
-      'Yine çıkmazsa aşağıdaki <b>Okulum listede yok</b> bölümüne adını yaz.</div>';
+      'Yine çıkmazsa aşağıdaki <b>Okul listede yok</b> bölümüne adını yaz.</div>';
     return h;
   }
   /* Yanlış yazılmış ya da bitişik kelime düzeltildiyse söylenir. */

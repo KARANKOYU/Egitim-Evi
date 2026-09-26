@@ -62,8 +62,10 @@ function navTanim() {
       { k: 'devamsizligim', g: 'izinli', ad: 'Devamsızlığı' }
     ];
   }
-  /* Rolsüz hesap: okul ekleyene kadar yalnızca başlangıç (Ayarlar menünün altında zaten var). */
-  if (!u.role) return [{ k: 'ana', g: 'ev', ad: 'Başlangıç' }, { k: 'hatirlaticilar', g: 'bildirim', ad: 'Hatırlatıcılar' }];
+  /* Yetişkin hesabının kendisi, portal dışında (rolsüz ya da henüz portal
+     seçmemiş): yalnızca başlangıç (Ayarlar menünün altında zaten var). Portallar
+     menünün başında (portalMenusu, 08c-kisilikler.js). */
+  if (portalDisindaMi() || !u.role) return [{ k: 'ana', g: 'ev', ad: 'Başlangıç' }, { k: 'hatirlaticilar', g: 'bildirim', ad: 'Hatırlatıcılar' }];
   if (u.role === 'servisci') {
     return [
       { k: 'ana', g: 'servis', ad: 'Seferlerim' },
@@ -189,7 +191,6 @@ function navTanim() {
   if (u.role === 'admin') {
     return [
       { k: 'ana', g: 'ev', ad: 'Ana Sayfa' },
-      { k: 'onaylar', g: 'onay', ad: 'Onay Bekleyenler' },
       { k: 'mudurler', g: 'mudur', ad: 'Müdürler' },
       { k: 'okullar', g: 'okul', ad: 'Okullar' },
       { k: 'yorumlar', g: 'posta', ad: 'Yorumlar' },
@@ -203,7 +204,10 @@ function navTanim() {
 }
 
 function navCiz() {
-  var liste = menuSuz(navTanim()), h = '';
+  var liste = menuSuz(navTanim());
+  /* Yetişkin hesabı ve okul rolleri: en üstte "Portallarım" (öğretmen@okul,
+     müdür@okul, her çocuk için veli), sonra bulunulan portalın menüsü. */
+  var h = portalMenusu();
   for (var i = 0; i < liste.length; i++) {
     var n = liste[i];
     if (n.ayrac) { h += '<div class="nav-ayrac"></div>'; continue; }
@@ -212,11 +216,15 @@ function navCiz() {
       ik(n.g) + '<span>' + esc(n.ad) + '</span></button>';
   }
   h += '<div class="nav-ayrac"></div>' +
-    /* Yetişkin hesabı: roller (öğretmen@okul, müdür@okul, veli) arasında geçiş. */
-    (S.user && (S.user.yetiskin || S.user.rolSatiri)
-      ? '<button class="navlink' + (S.page === 'kisilikler' ? ' on' : '') + '" data-nav="kisilikler">' + ik('grup') +
-        '<span>Hesap değiştir</span></button>' : '') +
-    '<button class="navlink" data-nav="profil">' + ik('ayar') + '<span>Ayarlar</span></button>' +
+    '<button class="navlink' + (S.page === 'profil' ? ' on' : '') + '" data-nav="profil">' + ik('ayar') + '<span>Ayarlar</span></button>' +
     '<button class="navlink" data-act="cikis">' + ik('cikis') + '<span>Çıkış Yap</span></button>';
   $('navListe').innerHTML = h;
+  ekleDugmesiniAyarla();
+}
+
+/* Üstteki "+ Ekle": yetişkin hesabında ve okul rolünde görünür; öğrenci,
+   servisçi ve yöneticide gizli. */
+function ekleDugmesiniAyarla() {
+  var b = $('btnEkle');
+  if (b) b.hidden = !(S.user && (S.user.yetiskin || S.user.rolSatiri));
 }

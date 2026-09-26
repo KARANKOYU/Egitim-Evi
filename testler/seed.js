@@ -24,11 +24,11 @@ function gun(n) {
   const admin = await girisYap('admin@egitimevi.com', 'admin123');
   console.log('admin girisi OK');
 
-  // 2) mudur: rolsüz kayıt -> okulunu kaydeder -> yönetici onaylar
+  // 2) mudur: yetişkin hesabı -> kişi kodu -> yönetici okulu açıp onu müdür yapar (admin/okul-ac)
   await hesapAc({ fullName: 'Mehmet Demir', username: 'mudur', email: 'mudur@test.com', password: 'Test1234!' });
   const mudur = await mudurYap('mudur@test.com', 'Test1234!',
     { schoolName: 'Test Ortaokulu', city: 'Ankara', district: 'Çankaya' }, admin.token);
-  console.log('mudur onaylandi');
+  console.log('mudur atandi');
 
   const okullar = await api('/schools?city=Ankara');
   const okul = okullar.schools.find(s => s.name === 'Test Ortaokulu');
@@ -39,7 +39,7 @@ function gun(n) {
     { ad: 'Ayşe Kaya', email: 'mat@test.com', brans: 'Matematik' },
     { ad: 'Ali Yıldız', email: 'fen@test.com', brans: 'Fen Bilimleri' }
   ];
-  /* Öğretmen kendi hesabını açar, eşleme kodunu verir; müdür kodu girip branşını seçer. */
+  /* Öğretmen kendi hesabını açar, kişi kodunu verir; müdür kodu girip branşını seçer. */
   for (const o of ogretmenler) {
     const kadi = o.email.split('@')[0];
     await okulHesabi(mudur.token, 'teacher', { fullName: o.ad, username: kadi, email: o.email, password: 'Test1234!',

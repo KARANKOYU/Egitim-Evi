@@ -34,7 +34,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
-const { iste, girisYap, kisilikGec } = require('./giris');
+const { iste, girisYap, kisilikGec, kisiKodu } = require('./giris');
 const { HESAPLAR } = require('./gorsel-veri');
 /* Nakil öğrencisinin T.C. no'su (gorsel-veri.js yazar). */
 let NAKIL_TC = '';
@@ -311,10 +311,23 @@ async function fotografCek(t, dosya, boyut, tam) {
    git: gidilecek sayfa (#/...), url: oturumsuz sayfa adresi (/, /login ...),
    eylem: sayfada çalışacak JavaScript, tam: false ise yalnızca görünen alan
    (açılır pencere fotoğrafları).
-   Rolün girişi: eposta/sifre (+ okul: okul adresi), gec: birden çok rolü
-   olan hesapta hangi role geçileceği (kisilikler listesinden seçer),
+   Rolün girişi: eposta/sifre (+ okul: okul adresi), gec: birden çok portalı
+   olan hesapta hangi portala geçileceği (kisilikler listesinden seçer),
+   portalDisi: birden çok portalı olan hesap girişteki gibi yetişkin hesabının
+   ana sayfasında ("Portalların") açılır,
    pencereli: giriş sonrası uygulama açılmıyor, bir pencere bekliyor. */
 const bekleJs = ms => `await new Promise(r => setTimeout(r, ${ms}));`;
+/* Ayarlar'daki "Portallarım" kartına kaydırır (tam: false ile). */
+const PORTAL_KARTI = `var k = document.getElementById('portalKart'); if (!k) throw new Error('Portallarım kartı yok'); ` +
+  `k.scrollIntoView({ block: 'center' }); ${bekleJs(300)}`;
+/* Telefonda sol üstteki menüyü (Portallarım) açar. */
+const MENU_AC = `__tikla('#hamburger'); ${bekleJs(500)}`;
+/* Üstteki "+ Ekle" ve (verilirse) bir seçeneği: veli | ogretmen | mudur. */
+const EKLE_AC = tur => `__tikla('#btnEkle'); ${bekleJs(500)}` +
+  (tur ? ` __tikla('[data-act="ekle-sec"][data-tur="${tur}"]'); ${bekleJs(900)}` : '');
+/* Yöneticinin "Okul aç"ta bulacağı kişi kodu: okulunu açtırmak isteyen Hülya
+   Demirtaş'ınki (zengin-veri.js). Yönetici rolünden hemen önce okunur. */
+let HULYA_KODU = '';
 const okulRolu = (rol, kisa) => k => { const r = k.roller.find(x => x.rol === rol && x.okulKisaAd === kisa); return r && { tur: 'rol', id: r.id }; };
 const veliRolu = ad => k => { const c = k.cocuklar.find(x => x.ad.indexOf(ad) === 0); return c && { tur: 'veli', id: c.id }; };
 
@@ -323,7 +336,7 @@ const ROLLER = [
     ad: 'mudur', baslik: 'Müdür', eposta: 'mudur@test.com', sifre: 'Test1234!', gec: okulRolu('principal', 'test-ortaokulu'),
     adimlar: [
       { ad: 'Ana sayfa', git: 'ana' },
-      { ad: 'Hesap değiştir (müdür ve veli, tek hesap)', git: 'kisilikler' },
+      { ad: 'Portallarım (müdür ve veli, tek hesap)', git: 'profil', tam: false, eylem: PORTAL_KARTI },
       { ad: 'Takvim (okul etkinlikleri)', git: 'takvim' },
       { ad: 'Takvime etkinlik ekleme', git: 'takvim', tam: false, eylem: `__tikla('[data-act="takvim-etkinlik-ekle"]')` },
       { ad: 'Mesajlar', git: 'mesajlar' },
@@ -412,30 +425,31 @@ const ROLLER = [
     son: [{ ad: 'Öğrencinin portalı — şablonlu sınav grafiği (müdür gözünden)', git: 'okul-ogrenciler',
       eylem: `__satirdaTikla('Zeynep', '[data-act="ogrenci-portal"]'); ${bekleJs(1200)} var n = document.querySelector('[data-nav="sinavlarim"]'); if (!n) throw new Error('portal açılmadı'); n.click(); ${bekleJs(1500)}` }],
     koyu: ['ana|Ana sayfa (koyu)|', 'program|Ders programı (koyu)|', 'okul-sayfasi|Okul sayfası (koyu)|', 'etutler|Etütler (koyu)|'],
-    telefon: ['ana|Ana sayfa (telefon)|', 'program|Ders programı (telefon)|', 'kisilikler|Hesap değiştir (telefon)|',
+    telefon: ['ana|Ana sayfa (telefon)|', 'program|Ders programı (telefon)|',
+      { ad: 'Portal menüsü (telefon)', git: 'ana', tam: false, eylem: MENU_AC },
       'okul-sayfasi|Okul sayfası (telefon)|', 'etutler|Etütler (telefon)|']
   },
   {
     /* Aynı hesap: Test Ortaokulu müdürü ve Burak'ın velisi. */
     ad: 'mudur-veli', baslik: 'Müdür aynı zamanda veli', eposta: 'mudur@test.com', sifre: 'Test1234!', gec: veliRolu('Burak'),
     adimlar: [
-      { ad: 'Hesap değiştir: veli olarak açık', git: 'kisilikler' },
       { ad: 'Ana sayfa (veli)', git: 'ana' },
+      { ad: 'Portallarım: veli olarak açık', git: 'profil', tam: false, eylem: PORTAL_KARTI },
       { ad: 'Ödevler (çocuğun)', git: 'veli-odevler' },
       { ad: 'Devamsızlık', git: 'veli-devamsizlik' },
       { ad: 'İlerleyiş', git: 'veli-ilerleyis' },
       { ad: 'Etütler', git: 'etutlerim' },
       { ad: 'Servis', git: 'servis' }
     ],
-    telefon: ['kisilikler|Hesap değiştir (telefon)|', 'veli-odevler|Ödevler (telefon)|']
+    telefon: [{ ad: 'Portal menüsü: veli olarak açık (telefon)', git: 'ana', tam: false, eylem: MENU_AC },
+      'veli-odevler|Ödevler (telefon)|']
   },
   {
     ad: 'ogretmen', baslik: 'Öğretmen', eposta: 'mat@test.com', sifre: 'Test1234!', gec: okulRolu('teacher', 'test-ortaokulu'),
     adimlar: [
       { ad: 'Ana sayfa', git: 'ana' },
-      { ad: 'Hesap değiştir (iki okulda öğretmen)', git: 'kisilikler' },
-      { ad: 'Öğretmen kodum (Ekle penceresi)', git: 'kisilikler', tam: false,
-        eylem: `__tikla('[data-act="kisilik-ekle"]'); ${bekleJs(500)} __tikla('[data-act="ekle-sec"][data-tur="ogretmen"]')` },
+      { ad: 'Portallarım (iki okulda öğretmen)', git: 'profil', tam: false, eylem: PORTAL_KARTI },
+      { ad: 'Kişi kodum (+ Ekle > Öğretmen)', git: 'ana', tam: false, eylem: EKLE_AC('ogretmen') },
       { ad: 'Takvim', git: 'takvim' },
       { ad: 'Takvim — gün ayrıntısı', git: 'takvim', eylem: `__tikla('[data-act="takvim-gun"].bugun, [data-act="takvim-gun"]')` },
       { ad: 'Mesajlar', git: 'mesajlar' },
@@ -525,7 +539,7 @@ const ROLLER = [
     gec: okulRolu('teacher', 'deneme-anadolu'),
     adimlar: [
       { ad: 'Ana sayfa (Deneme Anadolu Lisesi)', git: 'ana' },
-      { ad: 'Hesap değiştir: ikinci okulda', git: 'kisilikler' },
+      { ad: 'Portallarım: ikinci okul açık', git: 'profil', tam: false, eylem: PORTAL_KARTI },
       { ad: 'Ödevler (bu okulun)', git: 'ogr-odevler' }
     ]
   },
@@ -599,14 +613,17 @@ const ROLLER = [
       { ad: 'Ödevin ekleri (silinme günüyle)', git: 'odevler', tam: false, eylem: `__tikla('[data-act="odev-oku"]', 'Oran orantı')` }]
   },
   {
-    ad: 'veli', baslik: 'Veli (iki çocuk)', eposta: HESAPLAR.veli.eposta, sifre: HESAPLAR.veli.sifre,
+    ad: 'veli', baslik: 'Veli (iki çocuk)', eposta: HESAPLAR.veli.eposta, sifre: HESAPLAR.veli.sifre, portalDisi: true,
     adimlar: [
-      { ad: 'Hesap seçimi (iki çocuk)', git: 'kisilikler' },
+      { ad: 'Girişte portallar (iki çocuk, iki portal)', git: 'ana' },
+      { ad: 'Menüden Veli · Zeynep seçildi', git: 'ana',
+        eylem: `__tikla('.portal-link[data-tur="veli"]', 'Zeynep'); ${bekleJs(1500)}` },
       { ad: 'Çocuğumun telefonu: konum, ekran süresi, sınırlar (Eğitim Evi Aile)', git: 'aile' },
       { ad: 'Bildirimler (her bildirimin başında hangi çocuk olduğu yazar)', git: 'ana', tam: false, eylem: `__tikla('#btnBildirim'); ${bekleJs(800)}` },
+      { ad: 'Ödevler (iki çocuk, kimin olduğu yazar)', git: 'veli-odevler',
+        eylem: `__tikla('[data-act="veli-cocuk"]', 'Hepsi'); ${bekleJs(900)}` },
       { ad: 'Ana sayfa', git: 'ana' },
       { ad: 'Çocuklarım', git: 'cocuklarim' },
-      { ad: 'Ödevler (iki çocuk, kimin olduğu yazar)', git: 'veli-odevler' },
       { ad: 'Ödevler — tek çocuk', git: 'veli-odevler', eylem: `__tikla('[data-act="veli-cocuk"]', 'Zeynep')` },
       { ad: 'Devamsızlık', git: 'veli-devamsizlik', eylem: `__tikla('[data-act="veli-cocuk"]', 'Hepsi')` },
       { ad: 'İlerleyiş (çocuk çocuk grafikler)', git: 'veli-ilerleyis' },
@@ -621,7 +638,8 @@ const ROLLER = [
     ],
     son: [{ ad: 'Çocuğun kartına tıklayınca portalı (ödevleri, notları)', git: 'cocuklarim', eylem: `__tikla('[data-act="cocuk-ac"]'); ${bekleJs(1500)}` }],
     koyu: ['veli-ilerleyis|İlerleyiş (koyu)|'],
-    telefon: ['kisilikler|Hesap seçimi (telefon)|', 'veli-odevler|Ödevler (telefon)|', 'veli-ilerleyis|İlerleyiş (telefon)|']
+    telefon: [{ ad: 'Portal menüsü: her çocuk ayrı satır (telefon)', git: 'ana', tam: false, eylem: MENU_AC },
+      'veli-odevler|Ödevler (telefon)|', 'veli-ilerleyis|İlerleyiş (telefon)|']
   },
   {
     ad: 'servisci', baslik: 'Servisçi', eposta: HESAPLAR.servisci.kullanici, sifre: HESAPLAR.servisci.sifre, okul: 'test-ortaokulu',
@@ -633,41 +651,57 @@ const ROLLER = [
     telefon: ['ana|Ana sayfa (telefon)|', 'servis|Servisim (telefon)|']
   },
   {
-    /* Kaydolmuş, henüz hiçbir rolü olmayan yetişkin (zengin-veri.js: Kemal Arslan). */
+    /* Kaydolmuş, henüz hiçbir portalı olmayan yetişkin (zengin-veri.js: Kemal Arslan). */
     ad: 'rolsuz', baslik: 'Yeni yetişkin hesabı', eposta: 'kemal.arslan', sifre: 'Ogretmen2026!',
     adimlar: [
-      { ad: 'Başlangıç: nasıl devam edeceksin?', git: 'kisilikler' },
-      { ad: 'Ekle penceresi', git: 'kisilikler', tam: false, eylem: `__tikla('[data-act="kisilik-ekle"]')` },
-      { ad: 'Ekle — çocuğumu ekle (veli kodu)', git: 'kisilikler', tam: false,
-        eylem: `__tikla('[data-act="kisilik-ekle"]'); ${bekleJs(500)} __tikla('[data-act="ekle-sec"][data-tur="cocuk"]')` },
-      { ad: 'Ekle — okulumu kaydet: yazım hatalı arama', git: 'kisilikler', tam: false,
-        eylem: `__tikla('[data-act="kisilik-ekle"]'); ${bekleJs(500)} __tikla('[data-act="ekle-sec"][data-tur="okul"]'); ${bekleJs(900)} __yaz('#bOkulAra', 'ataturk ortaoklu cankaya'); ${bekleJs(1500)}` },
+      { ad: 'Başlangıç: henüz portal yok', git: 'ana' },
+      { ad: '+ Ekle penceresi: Veli, Öğretmen, Müdür', git: 'ana', tam: false, eylem: EKLE_AC() },
+      { ad: 'Ekle — Veli: çocuğun veli kodu', git: 'ana', tam: false, eylem: EKLE_AC('veli') },
+      { ad: 'Ekle — Öğretmen: kişi kodu müdüre verilir', git: 'ana', tam: false, eylem: EKLE_AC('ogretmen') },
+      { ad: 'Ekle — Müdür: okulunu açtır', git: 'ana', tam: false, eylem: EKLE_AC('mudur') },
       { ad: 'Ayarlar', git: 'profil' }
     ],
-    koyu: ['kisilikler|Başlangıç (koyu)|'],
-    telefon: ['kisilikler|Başlangıç (telefon)|']
+    koyu: ['ana|Başlangıç (koyu)|', { ad: 'Ekle — Öğretmen (koyu)', git: 'ana', tam: false, eylem: EKLE_AC('ogretmen') }],
+    telefon: ['ana|Başlangıç (telefon)|',
+      { ad: '+ Ekle penceresi (telefon)', git: 'ana', tam: false, eylem: EKLE_AC() },
+      { ad: 'Ekle — Müdür (telefon)', git: 'ana', tam: false, eylem: EKLE_AC('mudur') },
+      { ad: 'Portal menüsü (telefon)', git: 'ana', tam: false, eylem: MENU_AC }]
   },
   {
-    /* Yöneticinin açtığı okulun müdürü, ilk giriş: kendi şifresini belirlemeden giremez. */
-    ad: 'yeni-mudur', baslik: 'Yöneticinin açtığı okulun müdürü', eposta: HESAPLAR.yeniMudur.eposta,
-    sifre: HESAPLAR.yeniMudur.ilkSifre, pencereli: true,
+    /* Okulunu açtırmak isteyen kişi kendi hesabını açtı, kişi kodunu yöneticiye
+       verdi; yönetici okulu açıp onu müdür yaptı (gorsel-veri.js: Selin Taş).
+       Tek portalı olduğu için girişte doğrudan okuluna girer. */
+    ad: 'yeni-mudur', baslik: 'Kişi koduyla açılan okulun müdürü', eposta: HESAPLAR.yeniMudur.eposta,
+    sifre: HESAPLAR.yeniMudur.ilkSifre,
     adimlar: [
-      { ad: 'İlk giriş — önce aydınlatma metni onayı', tam: false, pencereKalsin: true },
-      { ad: 'Onaydan sonra — kendi şifreni belirle', tam: false, pencereKalsin: true,
-        eylem: `var k = document.getElementById('kvkkYeniKutu'); if (k) { k.checked = true; __tikla('[data-act="kvkk-onayla"]'); } ${bekleJs(1500)}` },
-      { ad: 'Şifre kuralları işaretleniyor', tam: false, pencereKalsin: true, eylem: `__yaz('#zYeni', 'Selin2026')` }
-    ]
+      { ad: 'İlk giriş: doğrudan yeni okuluna', git: 'ana' },
+      { ad: 'Bildirim: okulun müdürü olarak eklendin', git: 'ana', tam: false, eylem: `__tikla('#btnBildirim'); ${bekleJs(800)}` }
+    ],
+    telefon: [{ ad: 'Portal menüsü (telefon)', git: 'ana', tam: false, eylem: MENU_AC }]
   },
   {
     ad: 'admin', baslik: 'Yönetici', eposta: 'admin@egitimevi.com', sifre: 'admin123',
+    /* Okulunu açtırmak isteyen kişinin kodu (kişi kendi hesabında + Ekle > Müdür'de görür). */
+    once: async () => {
+      const h = await girisYap('hulya.demirtas@test.com', 'Mudur2026!');
+      HULYA_KODU = await kisiKodu(h.token);
+      await iste('/api/logout', 'POST', null, h.token);
+    },
     adimlar: [
       { ad: 'Ana sayfa', git: 'ana' },
-      { ad: 'Onay bekleyenler (yaş, hesap tarihi, telefon)', git: 'onaylar' },
       { ad: 'Müdürler', git: 'mudurler' },
       { ad: 'Okullar', git: 'okullar' },
       { ad: 'Okul aç penceresi', git: 'okullar', tam: false, eylem: `__tikla('[data-act="admin-okul-ac"]')` },
-      { ad: 'Okul aç — okul seçildi, adres önerildi, rastgele şifre', git: 'okullar', tam: false,
-        eylem: `__tikla('[data-act="admin-okul-ac"]'); ${bekleJs(700)} __yaz('#bIl', 'Ankara'); ${bekleJs(700)} __yaz('#bOkulAra', 'cumhuriyet ortaoklu'); ${bekleJs(1500)} __tikla('#bOkulSonuc [data-okul-id]'); ${bekleJs(300)} document.getElementById('aoKisa').dispatchEvent(new Event('focus')); __yaz('#aoEposta', 'yeni.mudur@okul.test'); __yaz('#aoAd', 'Deniz'); __yaz('#aoSoyad', 'Aydın'); __yaz('#aoKadi', 'deniz.aydin'); __tikla('[data-act="admin-sifre-uret"]')` },
+      { ad: 'Okul aç — okul seçildi, adres önerildi, müdür kişi koduyla bulundu', git: 'okullar', tam: false,
+        get eylem() {
+          return `__tikla('[data-act="admin-okul-ac"]'); ${bekleJs(700)} __yaz('#bIl', 'Ankara'); ${bekleJs(700)} ` +
+            `__yaz('#bOkulAra', 'cumhuriyet ortaoklu'); ${bekleJs(1500)} __tikla('#bOkulSonuc [data-okul-id]'); ${bekleJs(300)} ` +
+            `document.getElementById('aoKisa').dispatchEvent(new Event('focus')); ` +
+            `__yaz('#aoKod', ${JSON.stringify(HULYA_KODU.replace(/(.{5})(?=.)/g, '$1 '))}); ` +
+            `__tikla('[data-act="admin-kisi-bul"]'); ${bekleJs(1200)} ` +
+            `var b = document.getElementById('aoKisi'); if (!b || !b.textContent) throw new Error('kişi bulunamadı'); ` +
+            `b.scrollIntoView({ block: 'center' }); ${bekleJs(300)}`;
+        } },
       { ad: 'Yedekler (elle yedek alındı)', git: 'yedekler', eylem: `__tikla('[data-act="yedek-al"]')` },
       { ad: 'Açılış sayfası yorumları (gizle / göster)', git: 'yorumlar' },
       { ad: 'İşlem kaydı', git: 'islem-kaydi' },
@@ -678,7 +712,8 @@ const ROLLER = [
       { ad: 'Güneş düğmesi — açık görünüme döndü', git: 'ana', tema: 'serbest', eylem: `__tikla('#btnTema')` }
     ],
     koyu: ['ana|Ana sayfa (koyu)|', 'okullar|Okullar (koyu)|'],
-    telefon: ['onaylar|Onay bekleyenler (telefon)|']
+    telefon: ['okullar|Okullar (telefon)|',
+      { ad: 'Okul aç penceresi (telefon)', git: 'okullar', tam: false, eylem: `__tikla('[data-act="admin-okul-ac"]'); ${bekleJs(900)}` }]
   }
 ];
 
@@ -735,8 +770,9 @@ async function ozellikYaz(kapali) {
 }
 
 /* ================= oturum =================
-   Birden çok rolü olan hesap girişte rol seçim ekranına düşer; rol.gec
-   hangi role geçileceğini seçer. */
+   Birden çok portalı olan hesap girişte yetişkin hesabının ana sayfasına
+   ("Soldaki menüden bir portal seç") düşer; rol.gec hangi portala
+   geçileceğini seçer. */
 async function oturumAc(rol) {
   const g = await girisYap(rol.eposta, rol.sifre, rol.okul);
   if (!rol.gec) return g.token;
@@ -860,6 +896,8 @@ async function calistir() {
       await sakinlesmeyiBekle(t, 400);
       await degerlendir(t, 'localStorage.clear(); sessionStorage.clear(); ' +
         'localStorage.setItem("ee_token", ' + JSON.stringify(token) + '); localStorage.setItem("ee_hatirla", "kalici"); ' +
+        /* Birden çok portallı hesap girişte yetişkin hesabının ana sayfasında açılır (08c-kisilikler.js). */
+        (rol.portalDisi ? 'sessionStorage.setItem("ee_portal_disi", "1"); ' : '') +
         'location.hash = "#/ana"; 1');
       /* Aynı adreste yalnızca # değişirse sayfa yeniden yüklenmez; anahtarın
          okunması için tam yükleme şart. */

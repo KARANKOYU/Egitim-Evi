@@ -1,13 +1,13 @@
 /* Giriş ve kayıt:
-   - kayıt rolsüzdür; okul kullanıcı adıyla ekler, veli kod girer, müdür okulunu kaydeder;
+   - kayıt rolsüzdür; veli veli kodunu girer, öğretmeni ve müdürü kişi koduyla okul/yönetici ekler;
    - girişte kullanıcı adı ya da e-posta; büyük/küçük harf fark etmez;
    - "hesap yok" ile "şifre yanlış" ayrı söylenir, kalan hak yazılır, kilit
      hesaba bağlıdır (e-posta ile kullanıcı adını sırayla denemek kilidi aşmaz);
-   - onay bekleyen hesaba kod gönderilmez, reddedilen başvuru hesabı kilitlemez;
+   - müdür başvurusu yoktur (uç kapalı); aynı kişi koduyla aynı anda iki okul açılmaz;
    - kayıt hataları hangi alanda olduklarını söyler; doğrulama sorusu yalnızca
      hesap açılınca harcanır;
    - T.C. kimlik no isteğe bağlı, algoritmayla denetlenir, yalnızca kişinin kendisine gider;
-   - veli kodu büyük/küçük harf ve tire fark etmez;
+   - veli kodu büyük/küçük harf duyarlı; boşluklar fark etmez;
    - şifre değişince öbür oturumlar kapanır;
    - okul araması kelime sırasına, noktalamaya, büyük harfe dayanıklıdır;
    - genel istek sınırı aynı ağdaki bir sınıfı engellemez. */
@@ -144,17 +144,21 @@ async function kayit(govde, bot) {
   const serbest = await iste('/api/notifications', 'GET', null, R);
   kontrol('rolsüz bildirimlerine bakabiliyor', serbest.status === 200);
 
-  console.log('=== 7) VELİ KODU: BÜYÜK/KÜÇÜK HARF VE TİRE FARK ETMEZ ===');
+  console.log('=== 7) VELİ KODU: BÜYÜK/KÜÇÜK HARF DUYARLI, BOŞLUK FARK ETMEZ ===');
   const ogr = ((await iste('/api/school/students', 'GET', null, M)).body.students || [])[0];
-  kontrol('veli kodu yeni biçimde', /^[A-Z0-9]{10}$/.test(ogr.code || ''), ogr.code);
+  kontrol('veli kodu yeni biçimde (15 karakter)', /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(ogr.code || ''), ogr.code);
   const veliK = 'veli' + z;
   await hesapAc({ fullName: 'Veli Deneme', username: veliK, email: veliK + '@test.com' });
   const V = (await girisYap(veliK, 'Test1234!')).token;
   const yanlisKod = await iste('/api/parent/link', 'POST', { code: 'ZZZZZ-ZZZZZ' }, V);
   kontrol('yanlış kod reddedildi', yanlisKod.status === 400, J(yanlisKod.body));
-  const yazim = ' ' + ogr.code.slice(0, 5).toLowerCase() + '-' + ogr.code.slice(5).toLowerCase() + ' ';
+  /* Harf durumu çevrilmiş kod başka bir koddur. */
+  const ters = ogr.code.replace(/[A-Za-z]/g, c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase());
+  const tersBag = await iste('/api/parent/link', 'POST', { code: ters }, V);
+  kontrol('harf durumu değiştirilmiş kod kabul edilmiyor', tersBag.status === 400, J(tersBag.body));
+  const yazim = ' ' + ogr.code.slice(0, 5) + ' ' + ogr.code.slice(5, 10) + '  ' + ogr.code.slice(10) + ' ';
   const bagla = await iste('/api/parent/link', 'POST', { code: yazim }, V);
-  kontrol('küçük harf ve tireyle yazılan kod kabul edildi', bagla.status === 200 && (bagla.body.children || []).length === 1,
+  kontrol('boşluklu (5\'erli) yazılan kod kabul edildi', bagla.status === 200 && (bagla.body.children || []).length === 1,
     J(bagla.body));
   const veliMe = await iste('/api/me', 'GET', null, V);
   kontrol('kod girince rolsüz hesap veli oldu', veliMe.body.user.role === 'parent', veliMe.body.user.role);
@@ -173,29 +177,25 @@ async function kayit(govde, bot) {
   const kayitOgrenci = await iste('/api/school/kisi-ekle', 'POST', { userId: 'x', role: 'student' }, M);
   kontrol('kayıt olmuş kişiyi okula çağıran eski uç yok', kayitOgrenci.status === 404, 'status ' + kayitOgrenci.status);
 
-  console.log('=== 9) MÜDÜR BAŞVURUSU: BEKLEYEN VE REDDEDİLEN ===');
+  console.log('=== 9) MÜDÜR BAŞVURUSU YOK ===');
+  /* Okulunu açtırmak isteyen kişi kişi kodunu yöneticiye verir; başvuru ve
+     "Onay Bekleyenler" kalktı. */
   const mK = 'aday' + z;
   await hesapAc({ fullName: 'Aday Müdür', username: mK, email: mK + '@test.com' });
   const aday = await girisYap(mK, 'Test1234!');
-  const bosBasvuru = await iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true }, aday.token);
-  kontrol('okul seçmeden başvuru olmaz (alan okul)', bosBasvuru.status === 400 && bosBasvuru.body.alan === 'okul', J(bosBasvuru.body));
-  const cift = await iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true,  schoolName: 'Test Ortaokulu', city: 'Ankara', district: 'Çankaya' }, aday.token);
-  kontrol('müdürü olan okula ikinci başvuru olmaz', cift.status === 400 && /müdürü var/.test(cift.body.error || ''), J(cift.body));
-  const bas = await iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true,  schoolName: 'Aday Ortaokulu ' + z, city: 'Ankara', district: 'Mamak' }, aday.token);
-  kontrol('başvuru alındı', bas.status === 200, J(bas.body));
-  /* Başvuru hesaba "onay bekliyor" müdür rolü ekler; hesap kullanılmaya devam eder. */
-  const bekGiris = await giris(mK, 'Test1234!');
-  const bekKis = await iste('/api/kisilikler', 'GET', null, aday.token);
-  kontrol('başvuru beklerken hesap giriyor, müdür rolü onay bekliyor', bekGiris.status === 200 &&
-    bekKis.body.roller.length === 1 && bekKis.body.roller[0].durum === 'pending' && !bekKis.body.roller[0].girilebilir,
-    J(bekGiris.body) + J(bekKis.body));
-  const bekListe = await iste('/api/admin/pending', 'GET', null, A);
-  const adayKaydi = (bekListe.body.principals || []).find(p => p.username === mK);
-  kontrol('yönetici başvuruyu görüyor', !!adayKaydi);
-  await iste('/api/admin/decide', 'POST', { userId: adayKaydi.id, approve: false }, A);
-  const redSonra = await girisYap(mK, 'Test1234!');
-  kontrol('reddedilen başvuru hesabı kilitlemiyor, rolsüz döner', !!redSonra.token && redSonra.user.role === '',
-    J(redSonra.user));
+  const adayBas = await iste('/api/okul-basvurusu', 'POST', { schoolName: 'Aday Ortaokulu ' + z, city: 'Ankara', district: 'Mamak' },
+    aday.token);
+  kontrol('başvuru ucu rolsüz kişiye de yok (404)', adayBas.status === 404, adayBas.status + ' ' + J(adayBas.body));
+  const adayVar = await iste('/api/school/students', 'GET', null, aday.token);
+  kontrol('rolsüz kişi var olan okul ucunda yine 403 (rolsuz)', adayVar.status === 403 && adayVar.body.rolsuz === true,
+    adayVar.status + ' ' + J(adayVar.body));
+  const eskiUclar = [await iste('/api/okul-basvurusu', 'POST', { schoolName: 'Aday Ortaokulu ' + z, city: 'Ankara', district: 'Mamak' }, A),
+    await iste('/api/admin/pending', 'GET', null, A), await iste('/api/admin/decide', 'POST', { userId: 'x', approve: true }, A)];
+  kontrol('okul-basvurusu, admin/pending ve admin/decide uçları yok (404)', eskiUclar.every(r => r.status === 404),
+    eskiUclar.map(r => r.status).join(','));
+  const adayKis = await iste('/api/kisilikler', 'GET', null, aday.token);
+  kontrol('kişinin portalı yok, kişi kodu hazır', adayKis.status === 200 && !adayKis.body.roller.length &&
+    /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(adayKis.body.kisiKodu || ''), J(adayKis.body));
 
   console.log('=== 10) T.C. NO: KİŞİNİN KENDİSİ VE OKUL YÖNETİMİ ===');
   /* Okulun açtığı hesap (servisçi) T.C. ile açılır. */
@@ -236,25 +236,24 @@ async function kayit(govde, bot) {
   const mat = ogretmenler.find(x => x.username === 'mat');
   const matRed = await iste('/api/school/teacher-decide', 'POST', { userId: mat.id, approve: false }, M);
   kontrol('onaylı öğretmen reddedilemiyor', matRed.status === 400, 'status ' + matRed.status);
-  const mudurId = (await iste('/api/me', 'GET', null, M)).body.user.id;
-  const mudurRed = await iste('/api/admin/decide', 'POST', { userId: mudurId, approve: false }, A);
-  kontrol('onaylı müdür reddedilemiyor', mudurRed.status === 400, 'status ' + mudurRed.status);
-
-  /* Aynı anda gönderilen başvurulardan yalnızca biri geçer; sahipsiz okul kalmaz. */
+  /* Aynı kişi koduyla aynı anda 5 okul açılmak istenirse yalnızca biri geçer
+     (kod tek kullanımlık); geçmeyenlerin okulu yarım kalıp başkasını engellemez. */
   const pK = 'paralel' + z;
   await hesapAc({ fullName: 'Paralel Kisi', username: pK, email: pK + '@test.com' });
   const pG = await girisYap(pK, 'Test1234!');
+  const pKod = (await iste('/api/kisilikler', 'GET', null, pG.token)).body.kisiKodu;
   const pAd = i => 'Paralel Okul ' + z + ' ' + i;
-  const pSonuc = await Promise.all([1, 2, 3, 4, 5].map(i =>
-    iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true,  schoolName: pAd(i), city: 'Ankara', district: 'Mamak' }, pG.token)));
+  const pSonuc = await Promise.all([1, 2, 3, 4, 5].map(i => iste('/api/admin/okul-ac', 'POST',
+    { schoolName: pAd(i), city: 'Ankara', district: 'Mamak', kisaAd: 'paralel-' + z + '-' + i, mudurKodu: pKod }, A)));
   const gecen = pSonuc.filter(r => r.status === 200).length;
-  kontrol('aynı anda 5 başvurudan yalnızca biri geçti', gecen === 1, pSonuc.map(r => r.status).join(','));
+  kontrol('aynı kodla aynı anda 5 okul açmadan yalnızca biri geçti', gecen === 1, pSonuc.map(r => r.status).join(','));
   const kaybeden = pSonuc.findIndex(r => r.status !== 200) + 1;
   const p2K = 'paralel.iki' + z;
   await hesapAc({ fullName: 'Paralel Iki', username: p2K, email: p2K + '@test.com' });
   const p2G = await girisYap(p2K, 'Test1234!');
-  const p2 = await iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true,  schoolName: pAd(kaybeden), city: 'Ankara', district: 'Mamak' }, p2G.token);
-  kontrol('geçmeyen başvurunun okulu sahipsiz kalıp başkasını engellemiyor', p2.status === 200, J(p2.body));
+  const p2 = await iste('/api/admin/okul-ac', 'POST', { schoolName: pAd(kaybeden), city: 'Ankara', district: 'Mamak',
+    kisaAd: 'paralel-' + z + '-' + kaybeden, mudurKodu: (await iste('/api/kisilikler', 'GET', null, p2G.token)).body.kisiKodu }, A);
+  kontrol('geçmeyen açılışın okulu ve adresi yarım kalıp başkasını engellemiyor', p2.status === 200, J(p2.body));
 
   /* T.C. çakışması: soru harcanır, cevap numaranın kime ait olduğunu söylemez. */
   const tcBot = await botCevabi();

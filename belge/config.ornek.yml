@@ -1,7 +1,9 @@
 # Eğitim Evi site ayarları: ÖRNEK. Sunucuda data/config.yml olarak kopyala
 # ve doldur. data/config.yml depoya girmez (.gitignore).
 
-# Sayfaların altındaki "İletişim" satırı. Boş bırakılan görünmez.
+# Sayfaların altındaki "İletişim" satırı. Boş bırakılan görünmez. Aynı bilgiler
+# "+ Ekle > Müdür" penceresinde de çıkar: okulunu açtırmak isteyen kişi kişi kodunu
+# buradan yöneticiye verir.
 iletisim:
   eposta: ""
   telefon: ""

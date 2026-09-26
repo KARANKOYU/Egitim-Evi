@@ -3,7 +3,7 @@
 
    Tek çalışma kitabında iki sayfa: Öğrenciler, Servisçiler (müdürün yapi/
    tablolarındaki sütunlar). Öğretmen dosyayla eklenmez: kendi hesabını açar,
-   eşleme kodunu okula verir. .xlsx, .xls, .ods, .csv ve alt alta isim
+   kişi kodunu okula verir. .xlsx, .xls, .ods, .csv ve alt alta isim
    yazılmış .txt okunur. Sütunların sırası önemli değildir; başlıklar
    adıyla eşlenir ("İsim", "Ahmet sami(İsim)", "doğum tarihi gg.mm.yyyy"...).
 
@@ -32,12 +32,12 @@ const DOSYA_SINIR = 1300000;   // base64 (≈ 1 MB dosya)
 const SATIR_SINIR = 600;
 
 /* Dosyayla yalnızca öğrenci ve servisçi hesabı açılır. Öğretmen kendi
-   hesabını açar ve eşleme koduyla okula eklenir (hesaplar.js ogretmen-ekle). */
+   hesabını açar ve kişi koduyla okula eklenir (hesaplar.js ogretmen-ekle). */
 const TURLER = {
   ogrenci: { rol: 'student', sayfa: 'Öğrenciler' },
   servisci: { rol: 'servisci', sayfa: 'Servisçiler' }
 };
-const OGRETMEN_SAYFASI = 'Öğretmenler dosyayla eklenmez: her öğretmen kendi hesabını açar, kişisel kodunu verir; ' +
+const OGRETMEN_SAYFASI = 'Öğretmenler dosyayla eklenmez: her öğretmen kendi hesabını açar, kişi kodunu verir; ' +
   'Öğretmenler sayfasında "Kodla ekle" ile kodu girersin.';
 
 /* Sütunlar. esler: başlığın anahtarlanmış hâli (Türkçe harf, boşluk,
@@ -175,7 +175,7 @@ const ANLATIM = [
   ['  Servis: sistemde açılmış servisin adı ya da plakası yazılırsa servisçi o servise atanır.'],
   [''],
   ['Başka bir tablodan da yükleyebilirsin: sütunların sırası önemli değil, başlık adları önemli.'],
-  ['Öğretmenler dosyayla eklenmez: her öğretmen kendi hesabını açar, eşleme kodunu sana verir.'],
+  ['Öğretmenler dosyayla eklenmez: her öğretmen kendi hesabını açar, kişi kodunu sana verir.'],
   ['.xlsx, .xls, .ods (LibreOffice) ve .csv okunur. Yalnızca alt alta isim yazılmış bir .txt dosyası da yüklenebilir.'],
   ['Yükleme iki adımlı: önce ne olacağını gösteren bir liste görürsün, onaylayınca hesaplar açılır.']
 ];

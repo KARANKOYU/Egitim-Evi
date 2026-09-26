@@ -1,7 +1,8 @@
 /* Giriş, kayıt, iki adımlı kod, şifremi unuttum ekranları.
-   Kayıt olan kişi yetişkin hesabı açar; rolü yoktur. Girişten sonra "Ekle"
-   ile çocuğunu (veli kodu), öğretmenliğini (kendi kodu) ya da okulunu
-   (müdür başvurusu) ekler (08c-kisilikler.js). Öğrenci hesabını okul açar. */
+   Kayıt olan kişi yetişkin hesabı açar; rolü yoktur. Girişten sonra sağ
+   üstteki "+ Ekle" ile portal ekler (08c-kisilikler.js): çocuğunu (veli kodu),
+   öğretmenliğini (kişi kodunu müdüre verir) ya da okulunu (kişi kodunu sistem
+   yöneticisine verir). Öğrenci ve servisçi hesabını okul açar. */
 
 /* Kaydırmalı sekme (Giriş/Hesap Aç, Kullanıcı adı/E-posta): işaret seçili düğmenin altına kayar. */
 function kayanGuncelle(kap) {
@@ -61,7 +62,7 @@ function tokenSakla(token) {
   } catch (e) { /* gizli sekmede yazılamaz, sorun değil */ }
 }
 
-/* Rol değişince (Hesap değiştir) yeni anahtar eskisinin yerine yazılır.
+/* Portal değişince (sol menüdeki Portallarım) yeni anahtar eskisinin yerine yazılır.
    Saklama biçimi bu sekmede girişte seçilendir (ee_kip, sekmeye özel):
    başka sekmedeki girişin "beni hatırla" seçimi bu sekmeyi etkilemez.
    "Hiçbir şey kaydetme" seçildiyse anahtar yine yalnızca bellekte kalır.
@@ -174,10 +175,42 @@ function tcSorunuTR(tc) {
   return '';
 }
 
-/* Veli kodu ekranda iki parça: "ABCDE-FGH23" (saklanan: ABCDEFGH23). */
-function kodBicimle(kod) {
-  var s = String(kod || '');
-  return /^[A-Z0-9]{10}$/.test(s) ? s.slice(0, 5) + '-' + s.slice(5) : s;
+/* Kişi kodu (öğrencininki veli kodudur): 15 karakter; büyük ve küçük harf,
+   rakam ve ! ? # * + - işaretleri. Harf duyarlıdır. Ekranda 5'erli gruplar
+   hâlinde, arada boşlukla görünür ("Ab3#k Qx9+m Pt7?z"); Kopyala ham kodu
+   (boşluksuz) verir. Girişte yalnız boşluklar silinir: '-' kodun bir
+   karakteridir, ayırıcı değildir. Asıl denetim sunucudadır (ortak.js). */
+var KISI_KODU_UZUNLUK = 15;
+function kisiKoduSade(kod) { return String(kod || '').replace(/\s+/g, ''); }
+function kisiKoduBicim(kod) { return kisiKoduSade(kod).replace(/(.{5})(?=.)/g, '$1 '); }
+/* Kod ve Kopyala düğmesi (her yerde aynı). id verilirse kod sonradan
+   kisiKoduYenile ile değiştirilebilir; buyuk: Ekle penceresindeki iri gösterim;
+   ekDugme: Kopyala'nın yanına konacak düğme (ör. "Yeni kod üret"). */
+function kisiKoduKutusu(kod, id, buyuk, ekDugme) {
+  var ham = kisiKoduSade(kod);
+  return '<div class="kisi-kodu-satir' + (buyuk ? ' buyuk' : '') + '">' +
+    '<code class="kisi-kodu"' + (id ? ' id="' + esc(id) + '"' : '') + '>' + esc(kisiKoduBicim(ham)) + '</code>' +
+    '<span class="kisi-kodu-dugmeler"><button type="button" class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(ham) + '">' +
+    'Kopyala</button>' + (ekDugme || '') + '</span></div>';
+}
+function kisiKoduYenile(id, kod) {
+  var el = $(id);
+  if (!el) return;
+  el.textContent = kisiKoduBicim(kod);
+  var kopya = el.parentNode.querySelector('[data-act="kod-kopyala"]');
+  if (kopya) kopya.setAttribute('data-kod', kisiKoduSade(kod));
+}
+/* Kod yazılan kutu: telefon klavyesi harfi büyütmesin, düzeltmesin. */
+function kisiKoduGirdisi(id, etiket) {
+  return '<input type="text" id="' + esc(id) + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" ' +
+    'maxlength="20" placeholder="Ab3#k Qx9+m Pt7?z" class="kisi-kodu-girdi"' + (etiket ? ' aria-label="' + esc(etiket) + '"' : '') + '>';
+}
+/* Kutudaki kod: boşluksuz; 15 karakter değilse hata metni döner. */
+function kisiKoduDenetle(deger, ad) {
+  var k = kisiKoduSade(deger);
+  if (!k) return (ad || 'Kişi kodu') + 'nu yaz.';
+  if (k.length !== KISI_KODU_UZUNLUK) return (ad || 'Kişi kodu') + ' 15 karakterdir.';
+  return '';
 }
 
 /* Sunucudaki okul aramasıyla aynı sadeleştirme (sunucu/okullar.js aramaSade):
@@ -570,6 +603,7 @@ function authKur() {
     S.token = d.token;
     tokenSakla(d.token);
     S.user = d.user; S.children = d.children || []; S.kapali = d.kapaliOzellikler || [];
+    portalDurumuAl(d);
     if (d.user.status === 'pending') {
       /* Sunucu bekleyen hesabı ilk adımda durduruyor; bu yalnızca yedek. */
       S.token = null;
@@ -737,9 +771,6 @@ function authKur() {
 
   function kayitBasarili(d, kullaniciAdi) {
     $('authMesaj').innerHTML = '';
-    /* "Ne olarak kullanacaksın" seçimi: ilk girişte "Ekle"nin o yolu açılır. */
-    var ne = kayit.querySelector('input[name="kNe"]:checked');
-    tercihYaz('ilk_ekle', ne ? ne.value : '');
     kayit.reset();
     sifreKurallariniGoster();
     botSoru.id = ''; botSoruYukle();

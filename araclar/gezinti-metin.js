@@ -25,7 +25,7 @@ const ROL_METNI = {
     giris: `Giriş yapmamış birinin gördüğü sayfalar: sitenin tanıtımı, sık sorulan sorular, kullanım koşulları,
       aydınlatma metni, giriş ve kayıt kartları ile her okulun kendi adresindeki sayfası.` },
   'mudur-veli': { baslik: 'Aynı hesabın veli tarafı',
-    giris: `Tek hesapla birden çok rol olur. Müdür "Hesap değiştir"den çocuğunun velisi olarak devam edince menü
+    giris: `Tek hesapla birden çok portal olur. Müdür sol üstteki menüde (Portallarım) çocuğunun satırına dokununca menü
       velininkine döner; çocuğunun ödevlerini, devamsızlığını ve servisini görür.` },
   ogretmen: { baslik: 'Öğretmen',
     giris: `Öğretmen ödev verir ve sonuçlandırır, sınav açıp not girer, ders programından yoklama alır, ders
@@ -48,14 +48,15 @@ const ROL_METNI = {
     giris: `Servisçi hesabını okul açar. Servisçi seferi başlatır; telefonunun konumu öğrenciye ve veliye haritada
       görünür, servis eve yaklaşınca bildirim gider.` },
   rolsuz: { baslik: 'Yeni açılmış yetişkin hesabı',
-    giris: `Kendi kaydolan yetişkin henüz bir role bağlı değildir. "Ekle" ile çocuğunu ekler, öğretmen olarak bir
-      okula katılır ya da müdürse okulunu kaydeder.` },
-  'yeni-mudur': { baslik: 'Site yöneticisinin açtığı okulun müdürü',
-    giris: `Okulu site yöneticisi açtığında müdüre geçici bir şifre verilir. Müdür ilk girişte önce aydınlatma
-      metnini onaylar, sonra kendi şifresini belirlemeden içeri giremez.` },
+    giris: `Kendi kaydolan yetişkinin henüz portalı yoktur. Sağ üstteki <b>+ Ekle</b> ile çocuğunu ekler (veli kodu),
+      kişi kodunu müdüre verip bir okula öğretmen olarak katılır ya da kişi kodunu sistem yöneticisine verip okulunu açtırır.` },
+  'yeni-mudur': { baslik: 'Kişi koduyla açılan okulun müdürü',
+    giris: `Okulunu açtırmak isteyen kişi kendi hesabını açar ve <b>+ Ekle &gt; Müdür</b>'deki kişi kodunu site
+      yöneticisine verir. Yönetici okulu ve adresini açıp onu müdür yapar; kişiye bildirim gider, okul sol üstteki
+      menüde görünür. Tek portalı olduğu için girişte doğrudan okuluna girer.` },
   admin: { baslik: 'Site yöneticisi',
-    giris: `Site yöneticisi okul başvurularını onaylar ya da okulu kendisi açar, müdürleri görür, yedek alır,
-      açılış sayfasındaki yorumları denetler.` }
+    giris: `Site yöneticisi okulları açar: okulu MEB listesinden seçer, adresini yazar, müdürü kişi koduyla bulur
+      (tam adı ve gizlenmiş e-postasıyla). Müdürleri görür, yedek alır, açılış sayfasındaki yorumları denetler.` }
 };
 
 const ADIM_METNI = {
@@ -86,8 +87,9 @@ const ADIM_METNI = {
   'giris|Okul arama — büyük/küçük harf ve yazım hatası': A(`Okul araması MEB'in bütün okulları içinde yapılır; büyük/küçük harf,
     Türkçe harf ve yazım hatası fark etmez.`),
   'giris|Okul arama — harfleri yer değiştirmiş kelime': A(`Harfleri yer değiştirmiş kelimeler de bulunur; hangi kelimeyle arandığı yazılır.`),
-  'giris|Kayıt ol (şifre kuralları, telefon ülke kodu)': A(`Yetişkin hesabı açma. Şifre kuralları yazdıkça işaretlenir,
-    telefon ülke koduyla girilir. Öğrenci hesabını okul açar, öğrenci kendisi kaydolmaz.`),
+  'giris|Kayıt ol (şifre kuralları, telefon ülke kodu)': A(`Yetişkin hesabı açma: veli, öğretmen ve müdür aynı hesabı
+    açar, ne olacağını girişten sonra <b>+ Ekle</b> ile seçer. Şifre kuralları yazdıkça işaretlenir, telefon ülke koduyla
+    girilir. Öğrenci hesabını okul açar, öğrenci kendisi kaydolmaz.`),
   'giris|Kayıt — hatalar alanların altında': A(`Eksik ya da hatalı her alanın altında kırmızı yazıyla ne yapılması gerektiği yazar.`),
   'giris|Okulun sayfası ve girişi (/school/test-ortaokulu)': A(`Her okulun kendi adresi vardır. Okul bu sayfayı kapak fotoğrafı,
     tanıtım yazısı, galeri ve renkleriyle kendisi düzenler; giriş o okulun içinde aranır.`),
@@ -108,8 +110,9 @@ const ADIM_METNI = {
   /* ================= müdür ================= */
   'mudur|Ana sayfa': A(`Müdürün ana sayfası: okulun özeti ve sık kullanılan bölümlere kısayollar. Menüde yalnızca okulun
     açık bıraktığı bölümler görünür.`, 'Başlangıç'),
-  'mudur|Hesap değiştir (müdür ve veli, tek hesap)': A(`Aynı hesabın rolleri: bu okulun müdürü ve bir öğrencinin velisi.
-    Müdür rolleri arasında buradan geçer; <b>Ekle</b> ile yeni rol açar.`),
+  'mudur|Portallarım (müdür ve veli, tek hesap)': A(`Aynı hesabın portalları: bu okulun müdürü ve bir öğrencinin velisi.
+    Portallar sol üstteki menüde alt alta durur, aralarında oradan geçilir; <b>+ Ekle</b> yeni portal açar. Ayarlar'daki
+    bu kartta öğretmenlikten ayrılma ve çocuğu kaldırma düğmeleri var.`),
   'mudur|Takvim (okul etkinlikleri)': A(`Okul takvimi: tatiller, sınav haftaları ve okul etkinlikleri. Öğretmen, öğrenci ve veli de görür.`),
   'mudur|Takvime etkinlik ekleme': A(`Müdür takvime etkinlik ekler: ad, gün ya da tarih aralığı ve açıklama.`),
   'mudur|Mesajlar': A(`Okul içi mesajlar ve duyurular. Müdür tek kişiye, sınıflara, bir rol grubuna ya da bütün okula yazabilir.`,
@@ -121,8 +124,9 @@ const ADIM_METNI = {
     Duyuru cevaplanmaz; gelen herkese bildirim gider.`),
   'mudur|Öğretmenler': A(`Okulun öğretmenleri, branşları ve rolleri. Öğretmen okuldan çıkarılınca verdiği ödevler ve notlar okulda kalır.`,
     'Öğretmenler ve öğrenciler'),
-  'mudur|Öğretmeni kodla ekleme penceresi': A(`Öğretmen kendi hesabını açar ve hesabındaki öğretmen kodunu müdüre verir;
-    müdür kodu buraya yazıp öğretmeni okula ekler.`),
+  'mudur|Öğretmeni kodla ekleme penceresi': A(`Öğretmen kendi hesabını açar ve <b>+ Ekle &gt; Öğretmen</b>'deki 15 karakterlik
+    kişi kodunu müdüre verir; müdür kodu buraya yazar, adın bir kısmını görüp öğretmeni okula ekler. Kod büyük/küçük harfe
+    duyarlıdır, bir kez kullanılır.`),
   'mudur|Öğrenciler': A(`Okulun öğrencileri sınıf sınıf. Öğrenci hesaplarını okul açar; her öğrencinin veli kodu vardır,
     veli bu kodla çocuğunu kendi hesabına ekler.`),
   'mudur|Yeni öğrenci hesabı penceresi': A(`Tek öğrenci hesabı açma: ad, soyad, T.C. kimlik no, sınıf ve doğum tarihi.
@@ -215,27 +219,29 @@ const ADIM_METNI = {
   'mudur|Etütler (koyu)': A(`Etütler koyu görünümde.`),
   'mudur|Ana sayfa (telefon)': A(`Ana sayfa telefonda; menü soldaki düğmeyle açılır.`),
   'mudur|Ders programı (telefon)': A(`Ders programı telefonda: gün gün, ders saatleri alt alta.`),
-  'mudur|Hesap değiştir (telefon)': A(`Rol seçimi telefonda.`),
+  'mudur|Portal menüsü (telefon)': A(`Telefonda sol üstteki düğme menüyü açar; en üstte Portallarım.`),
   'mudur|Okul sayfası (telefon)': A(`Okul sayfası düzenleme telefonda.`),
   'mudur|Etütler (telefon)': A(`Etütler telefonda.`),
   'mudur|Öğrencinin portalı — şablonlu sınav grafiği (müdür gözünden)': A(`Müdür bir öğrencinin portalına onun gözünden
     bakar: sınav grafiği, ödev sonuçları, devamsızlık.`, 'Öğrencinin portalına bakış'),
 
   /* ================= müdürün veli tarafı ================= */
-  'mudur-veli|Hesap değiştir: veli olarak açık': A(`Aynı hesap şimdi veli olarak açık: rol listesinde "şu an bu roldesin" yazar.`),
   'mudur-veli|Ana sayfa (veli)': A(`Velinin ana sayfası: çocuğun yaklaşan ödevleri, son sonuçlar ve devamsızlık.`),
+  'mudur-veli|Portallarım: veli olarak açık': A(`Aynı hesap şimdi veli olarak açık: Portallarım'da "şu an buradasın" yazar.`),
   'mudur-veli|Ödevler (çocuğun)': A(`Çocuğun ödevleri ve sonuçları; açmadığı ödev turuncu görünür.`),
   'mudur-veli|Devamsızlık': A(`Çocuğun devamsızlığı: hangi gün, hangi ders, gelmedi, izinli ya da geç.`),
   'mudur-veli|İlerleyiş': A(`Çocuğun ödev ve sınav grafikleri.`),
   'mudur-veli|Etütler': A(`Çocuğun etütleri ve etüt yoklaması.`),
   'mudur-veli|Servis': A(`Çocuğun servisi: harita, durak ve sefer sürerken servisin yeri.`),
-  'mudur-veli|Hesap değiştir (telefon)': A(`Rol seçimi telefonda.`),
+  'mudur-veli|Portal menüsü: veli olarak açık (telefon)': A(`Telefonda menü: veli satırı işaretli, altında velinin menüsü.`),
   'mudur-veli|Ödevler (telefon)': A(`Çocuğun ödevleri telefonda.`),
 
   /* ================= öğretmen ================= */
   'ogretmen|Ana sayfa': A(`Öğretmenin ana sayfası: bugünkü dersleri, sonuçlandırılmayı bekleyen ödevler ve kısayollar.`, 'Başlangıç'),
-  'ogretmen|Hesap değiştir (iki okulda öğretmen)': A(`Öğretmen iki okulda ders veriyor; iki okul aynı hesapta, aralarında buradan geçer.`),
-  'ogretmen|Öğretmen kodum (Ekle penceresi)': A(`Öğretmenin kişisel kodu. Bir okula katılmak için bu kodu o okulun müdürüne verir.`),
+  'ogretmen|Portallarım (iki okulda öğretmen)': A(`Öğretmen iki okulda ders veriyor; iki okul aynı hesapta, aralarında
+    sol üstteki menüden geçer. Buradan bir okuldan ayrılabilir.`),
+  'ogretmen|Kişi kodum (+ Ekle > Öğretmen)': A(`Öğretmenin kişi kodu: 15 karakter, 5'erli gruplar hâlinde. Bir okula katılmak
+    için bu kodu o okulun müdürüne verir; <b>Kopyala</b> kodu boşluksuz kopyalar. Kod bir kez kullanılır, müdür ekleyince yenilenir.`),
   'ogretmen|Takvim': A(`Takvim: okul etkinlikleri, tatiller ve öğretmenin kendi ödevlerinin son günleri.`),
   'ogretmen|Takvim — gün ayrıntısı': A(`Güne dokununca o günün etkinlikleri ve ödevleri listelenir.`),
   'ogretmen|Mesajlar': A(`Öğretmenin mesaj kutusu: gelenler ve gönderilenler.`, 'Mesajlar'),
@@ -317,7 +323,7 @@ const ADIM_METNI = {
 
   /* ================= öğretmenin ikinci okulu ================= */
   'ogretmen-ikinci-okul|Ana sayfa (Deneme Anadolu Lisesi)': A(`İkinci okulun ana sayfası: yalnızca bu okulun dersleri ve ödevleri.`),
-  'ogretmen-ikinci-okul|Hesap değiştir: ikinci okulda': A(`Rol listesinde hangi okulda olduğu yazar.`),
+  'ogretmen-ikinci-okul|Portallarım: ikinci okul açık': A(`Portallarım'da hangi okulda olduğu yazar.`),
   'ogretmen-ikinci-okul|Ödevler (bu okulun)': A(`Bu okulda verilen ödevler; öteki okulun ödevleri burada görünmez.`),
 
   /* ================= okul bölümü kapatınca ================= */
@@ -381,7 +387,9 @@ const ADIM_METNI = {
   'ogrenci|Ödevin ekleri (silinme günüyle)': A(`Öğretmenin eklediği dosyalar; her birinin silineceği gün yazar.`),
 
   /* ================= veli ================= */
-  'veli|Hesap seçimi (iki çocuk)': A(`İki çocuk, iki satır: veli hangi çocukla devam edeceğini seçer.`),
+  'veli|Girişte portallar (iki çocuk, iki portal)': A(`Birden çok portalı olan yetişkin girişte portallarını görür: her
+    çocuk ayrı bir veli portalıdır. Soldaki menüden ya da karttan birini seçer.`, 'Başlangıç'),
+  'veli|Menüden Veli · Zeynep seçildi': A(`Veli portalı açıldı: menüde "Veli · Zeynep Şahin" işaretli, ana sayfa o çocuğun.`),
   'veli|Bildirimler (her bildirimin başında hangi çocuk olduğu yazar)': A(`Öğrencinin aldığı her bildirim veliye de gider;
     başında hangi çocuk olduğu yazar (ör. "Zeynep Şahin · Matematik dersinden ... açıklandı: Yaptı"). Dokununca o
     çocuğun sayfası açılır.`),
@@ -404,7 +412,7 @@ const ADIM_METNI = {
   'veli|Kulüpler': A(`Çocukların kulüpleri.`),
   'veli|Ayarlar (hesap bilgisi, telefon ülke kodu)': A(`Velinin hesap bilgileri ve telefonu (ülke koduyla).`),
   'veli|İlerleyiş (koyu)': A(`İlerleyiş koyu görünümde.`),
-  'veli|Hesap seçimi (telefon)': A(`Hesap seçimi telefonda.`),
+  'veli|Portal menüsü: her çocuk ayrı satır (telefon)': A(`Telefonda menü: her çocuk ayrı satır, bulunulan işaretli.`),
   'veli|Ödevler (telefon)': A(`Ödevler telefonda.`),
   'veli|İlerleyiş (telefon)': A(`İlerleyiş telefonda.`),
   'veli|Çocuğun kartına tıklayınca portalı (ödevleri, notları)': A(`Çocuğun kartına dokununca onun portalı açılır: ödevler,
@@ -419,35 +427,48 @@ const ADIM_METNI = {
   'servisci|Servisim (telefon)': A(`Servis ve öğrenciler telefonda.`),
 
   /* ================= yeni yetişkin ================= */
-  'rolsuz|Başlangıç: nasıl devam edeceksin?': A(`Yeni hesap henüz bir role bağlı değil; nasıl devam edeceği sorulur.`),
-  'rolsuz|Ekle penceresi': A(`Üç yol: çocuğumu ekle (veli kodu), öğretmen olarak katıl (kendi kodu), okulumu kaydet (müdür).`),
-  'rolsuz|Ekle — çocuğumu ekle (veli kodu)': A(`Çocuğun veli kodu yazılır; çocuk hesaba eklenir.`),
-  'rolsuz|Ekle — okulumu kaydet: yazım hatalı arama': A(`Müdür okulunu MEB listesinde arar; yazım hatası fark etmez.
-    Başvuru site yöneticisinin onayına gider.`),
-  'rolsuz|Ayarlar': A(`Hesap ayarları.`),
+  'rolsuz|Başlangıç: henüz portal yok': A(`Yeni hesabın henüz portalı yok: sade bir kart sağ üstteki <b>+ Ekle</b>'ye çağırır.
+    Menüde yalnızca Başlangıç ve Hatırlatıcılar var.`),
+  'rolsuz|+ Ekle penceresi: Veli, Öğretmen, Müdür': A(`Üç yol: Veli (çocuğun veli kodu), Öğretmen (kişi kodunu müdüre
+    vermek), Müdür (okulunu açtırmak).`),
+  'rolsuz|Ekle — Veli: çocuğun veli kodu': A(`Çocuğun veli kodu yazılır; çocuk hesaba eklenir, veli portalı açılır. Kod büyük/küçük
+    harfe duyarlıdır; boşluklu yazılsa da olur.`),
+  'rolsuz|Ekle — Öğretmen: kişi kodu müdüre verilir': A(`Kişinin kendi kodu 5'erli gruplar hâlinde; <b>Kopyala</b> boşluksuz
+    kopyalar. Müdür bu kodla onu okula ekler; kod bir kez kullanılır.`),
+  'rolsuz|Ekle — Müdür: okulunu açtır': A(`Müdür başvuru formu yok: kişi aynı kodu ve okulunun adını site yöneticisine verir,
+    yönetici okulu ve adresini açıp onu müdür yapar. Yöneticinin iletişim bilgisi burada yazar.`),
+  'rolsuz|Ayarlar': A(`Hesap ayarları; Portallarım kartı henüz boş.`),
   'rolsuz|Başlangıç (koyu)': A(`Başlangıç koyu görünümde.`),
-  'rolsuz|Başlangıç (telefon)': A(`Başlangıç telefonda.`),
+  'rolsuz|Ekle — Öğretmen (koyu)': A(`Kişi kodu koyu görünümde.`),
+  'rolsuz|Başlangıç (telefon)': A(`Başlangıç telefonda; "Ekle" yazısı dar ekranda gizlenir, + simgesi kalır.`),
+  'rolsuz|+ Ekle penceresi (telefon)': A(`Ekle penceresi telefonda: üç seçenek alt alta.`),
+  'rolsuz|Ekle — Müdür (telefon)': A(`Kişi kodu telefonda da tek satırda okunur.`),
+  'rolsuz|Portal menüsü (telefon)': A(`Portalı olmayan hesabın menüsü: Portal ekle, Başlangıç, Hatırlatıcılar.`),
 
-  /* ================= yöneticinin açtığı okulun müdürü ================= */
-  'yeni-mudur|İlk giriş — önce aydınlatma metni onayı': A(`İlk girişte önce aydınlatma metni onaylanır.`),
-  'yeni-mudur|Onaydan sonra — kendi şifreni belirle': A(`Sonra verilen geçici şifre yerine kendi şifresini belirlemeden içeri giremez.`),
-  'yeni-mudur|Şifre kuralları işaretleniyor': A(`Şifre yazıldıkça kurallar işaretlenir: büyük ve küçük harf, rakam, özel karakter, uzunluk.`),
+  /* ================= kişi koduyla açılan okulun müdürü ================= */
+  'yeni-mudur|İlk giriş: doğrudan yeni okuluna': A(`Yönetici okulu açınca kişi müdür olur. Tek portalı olduğu için girişte
+    doğrudan okulunun ana sayfasına girer; okul henüz boş.`),
+  'yeni-mudur|Bildirim: okulun müdürü olarak eklendin': A(`Kişiye "okulunun müdürü olarak eklendin; sol üstteki menüden okuluna
+    geçebilirsin" bildirimi gider.`),
+  'yeni-mudur|Portal menüsü (telefon)': A(`Telefonda menü: okul Portallarım'da, altında müdürün menüsü.`),
 
   /* ================= site yöneticisi ================= */
   'admin|Ana sayfa': A(`Site yöneticisinin ana sayfası.`),
-  'admin|Onay bekleyenler (yaş, hesap tarihi, telefon)': A(`Okul başvuruları: başvuranın yaşı, hesabının ne zaman açıldığı ve
-    telefonu; yönetici onaylar ya da reddeder.`),
   'admin|Müdürler': A(`Okulların müdürleri.`),
   'admin|Okullar': A(`Eğitim Evi'ni kullanan okullar.`),
-  'admin|Okul aç penceresi': A(`Yönetici okulu kendisi de açabilir: okul MEB listesinden seçilir.`),
-  'admin|Okul aç — okul seçildi, adres önerildi, rastgele şifre': A(`Okulun adresi adından önerilir, müdüre rastgele geçici şifre verilir.`),
+  'admin|Okul aç penceresi': A(`Okulları yönetici açar: okul MEB listesinden seçilir (listede yoksa adı yazılır), adresi
+    verilir, müdür kişi koduyla bulunur. Müdür başvurusu yoktur.`),
+  'admin|Okul aç — okul seçildi, adres önerildi, müdür kişi koduyla bulundu': A(`Okulun adresi adından önerilir. Kişinin
+    verdiği kod yazılıp <b>Bul</b>'a basılınca kodun sahibi görünür: tam adı, gizlenmiş e-postası ve kullanıcı adı. Yönetici
+    bunları kişiyle karşılaştırıp okulu açar; kişinin kodu yenilenir.`),
   'admin|Yedekler (elle yedek alındı)': A(`Veritabanı her gün yedeklenir; yönetici elle de yedek alır ve geri yükler.`),
   'admin|Açılış sayfası yorumları (gizle / göster)': A(`Açılış sayfasındaki yorumlar; uygunsuz olan gizlenir.`),
   'admin|İşlem kaydı': A(`Site genelindeki işlem kaydı.`),
   'admin|Ayarlar': A(`Yöneticinin ayarları.`),
   'admin|Ana sayfa (koyu)': A(`Ana sayfa koyu görünümde.`),
   'admin|Okullar (koyu)': A(`Okullar koyu görünümde.`),
-  'admin|Onay bekleyenler (telefon)': A(`Onay bekleyenler telefonda.`),
+  'admin|Okullar (telefon)': A(`Okullar telefonda.`),
+  'admin|Okul aç penceresi (telefon)': A(`Okul aç penceresi telefonda.`),
   'admin|Üstteki ay düğmesi — koyu görünüme geçti': A(`Uygulamanın içinde de üstteki ay düğmesi koyu görünüme geçirir.`),
   'admin|Güneş düğmesi — açık görünüme döndü': A(`Güneş düğmesi açık görünüme döndürür.`)
 };

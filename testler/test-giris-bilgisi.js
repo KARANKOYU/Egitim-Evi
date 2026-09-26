@@ -53,7 +53,8 @@ const J = x => JSON.stringify(x).slice(0, 160);
     satirlar.some(s => s.kullaniciAdi === adlar[1]) && satirlar.some(s => s.kullaniciAdi === adlar[2]));
   kontrol('şifreler okunaklı biçimde ve hepsi farklı', satirlar.every(s => /^[A-HJ-NP-Za-km-z]{8}[2-9]{2}$/.test(s.sifre)) &&
     new Set(satirlar.map(s => s.sifre)).size === satirlar.length, satirlar.map(s => s.sifre).join(','));
-  kontrol('veli kodu tireli', satirlar.every(s => /^[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(s.veliKodu)));
+  kontrol("veli kodu 5'erli gruplar, arada boşluk", satirlar.every(s =>
+    /^[A-Za-z][A-Za-z0-9!?#*+-]{4} [A-Za-z0-9!?#*+-]{5} [A-Za-z0-9!?#*+-]{5}$/.test(s.veliKodu)), satirlar.map(s => s.veliKodu).join(','));
   kontrol('sınıf adı satırda', satirlar.every(s => s.sinif === '9-Z'));
   kontrol('Excel dosyası (zip) geldi', typeof d.body.xlsx === 'string' && Buffer.from(d.body.xlsx, 'base64').slice(0, 2).toString() === 'PK');
   kontrol('cevapta şifre özeti ya da kimlik yok', !/scrypt|\$|"id"/.test(JSON.stringify(satirlar)));

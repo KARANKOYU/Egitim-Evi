@@ -28,6 +28,7 @@ const { ayarlariYukle } = require('../sunucu/ayarlar');
 ayarlariYukle();
 const baglanti = require('../sunucu/veri/baglanti');
 const { depo } = require('../sunucu/veri');
+const { kisiKoduUret } = require('../sunucu/ortak');   // veli kodu (027 şemasının biçimi)
 const { hashPw } = require('../sunucu/sifre');
 
 const BASE = process.env.EE_BASE || 'http://localhost:3200';
@@ -98,7 +99,7 @@ async function doldur() {
       const id = 'u_ogr' + s + '_' + k;
       ogrenciler.push({ id, sinif: 'c_' + s });
       kisi.push(kullanici(id, 'ogr' + s + '_' + k + '@yuk.test', 'Öğrenci ' + s + '-' + k, 'student',
-        { sinif_id: 'c_' + s, veli_kodu: crypto.randomBytes(7).toString('hex') }));
+        { sinif_id: 'c_' + s, veli_kodu: kisiKoduUret() }));
     }
   }
   const veliler = [];

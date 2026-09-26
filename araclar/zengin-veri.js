@@ -301,17 +301,15 @@ const { iste, girisYap, botCevabi, hesapAc, tcUret } = require('./giris');
     await iste('/api/takvim/etkinlik', 'POST', { tarih: bas, bitis: bit, baslik, tur, aciklama }, T);
   }
 
-  /* ================= rolsüz hesaplar ve bekleyen müdür başvurusu =================
-     Kemal Arslan kaydolmuş ama okul henüz eklememiş (müdür "Öğretmen ekle" ile
-     kemal.arslan kullanıcı adını eklesin); Hülya Demirtaş okulunu kaydetmiş,
-     yöneticinin onayını bekliyor. */
+  /* ================= portalı olmayan yetişkin hesapları =================
+     Kemal Arslan kaydolmuş ama henüz hiçbir okula eklenmemiş (müdür "Kodla
+     ekle" ile onun kişi kodunu girsin); Hülya Demirtaş okulunu açtırmak
+     istiyor: kişi kodunu yöneticiye verir, yönetici "Okul aç" ile Karşıyaka
+     Deneme Ortaokulu'nu açıp onu müdür yapar (müdür başvurusu yok). */
   await hesapAc({ fullName: 'Kemal Arslan', username: 'kemal.arslan', email: 'kemal.arslan@test.com',
     password: 'Ogretmen2026!', phone: '05331112233' });
   await hesapAc({ fullName: 'Hülya Demirtaş', username: 'hulya.demirtas', email: 'hulya.demirtas@test.com',
     password: 'Mudur2026!', phone: '05441234567' });
-  const hulya = await girisYap('hulya.demirtas', 'Mudur2026!');
-  await iste('/api/okul-basvurusu', 'POST',
-    { schoolName: 'Karşıyaka Deneme Ortaokulu', city: 'İzmir', district: 'Karşıyaka', dogum: '1979-03-14', beyan: true }, hulya.token);
 
   console.log('zengin veri hazir: ' + sinifAdlari.length + ' sinif, ' + sayac + ' ders saati, ' +
     acilan.length + ' ödev, ' + lgsSayi + ' LGS denemesi, ' + yoklamaSayi + ' yoklama');

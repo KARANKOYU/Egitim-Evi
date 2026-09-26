@@ -6,6 +6,7 @@
    iliştirilir; böylece pub() ve yetki kontrolleri ayrıca sorgu atmaz. */
 
 const { sorgu, tek, calistir, islem, tr } = require('../baglanti');
+const { kisiKoduUret } = require('../../ortak');
 const e = require('../esleme');
 const yaz = require('../yazici');
 const roller = require('./roller');
@@ -93,7 +94,7 @@ async function girisKimligiyle(kimlik, okulId) {
 
 /* ---------------- yetişkin hesabı ve okul rolleri ---------------- */
 
-/* Kendisi kaydolmuş yetişkin hesabı mı (rol seçimi ve "Ekle" bunlarda var)?
+/* Kendisi kaydolmuş yetişkin hesabı mı (portallar, kişi kodu ve "+ Ekle" bunlarda var)?
    Okulun açtığı hesaplar (öğrenci, servisçi), okul rolü satırları ve sistem
    yöneticisi değildir. */
 const yetiskinMi = u => !!u && !u.anaHesapId && (!u.role || u.role === 'parent');
@@ -101,9 +102,16 @@ const yetiskinMi = u => !!u && !u.anaHesapId && (!u.role || u.role === 'parent')
 /* Yetişkin hesabının okul rolleri (öğretmen/müdür satırları), okul adıyla. */
 const rolleri = anaId => coklu('k.ana_hesap_id = $1', [anaId], ' ORDER BY k.olusturma');
 
+/* Yetişkinin kişi kodu (sütun eslesme_kodu). Kod kişiye aittir: okul süzülmez. */
 const eslesmeKoduyla = kod => !kod ? Promise.resolve(null)
   : bir("k.eslesme_kodu = $1 AND k.ana_hesap_id IS NULL AND (k.rol IS NULL OR k.rol = 'parent')", [kod]);
+/* Bu kişi kodu kimde (rolüne bakılmaz; yönetici "kendine/yöneticiye olmaz" diyebilsin). */
+const eslesmeKoduSahibi = kod => !kod ? Promise.resolve(null) : bir('k.eslesme_kodu = $1', [kod]);
 const eslesmeKoduYaz = (id, kod) => calistir('UPDATE kullanicilar SET eslesme_kodu = $2 WHERE id = $1', [id, kod]);
+/* Tek kullanımlık kodu harcar: kod hâlâ eskisiyse yenisini yazar. Aynı anda iki
+   okul aynı kodu kullanmaya kalkarsa yalnızca biri geçer (öteki 0 satır görür). */
+const eslesmeKoduTuket = async (id, eski, yeni) =>
+  (await calistir('UPDATE kullanicilar SET eslesme_kodu = $3 WHERE id = $1 AND eslesme_kodu = $2', [id, eski, yeni])) === 1;
 
 /* Ad, soyad ve telefon değişince okul rolü satırları da güncellenir
    (okuldaki listelerde yetişkinin güncel adı görünsün). */
@@ -117,24 +125,19 @@ const rolSatirlarinaKvkk = (anaId, kvkk) => calistir(
 
 /* Okul rolünü bırakma / kaldırma: yalnızca bu yetişkinin bu satırı. */
 const rolSatiriniSil = (id, anaId) => calistir('DELETE FROM kullanicilar WHERE id = $1 AND ana_hesap_id = $2', [id, anaId]);
-/* kod: kodSade'den geçmiş hâli (büyük harf, yalnızca harf ve rakam). */
+/* kod: kisiKoduSade'den geçmiş hâli (boşluksuz; büyük/küçük harf duyarlı). */
 const kodlaOgrenci = kod => bir("k.rol = 'student' AND k.veli_kodu = $1", [kod]);
 const okulunMuduru = okulId =>
   bir("k.rol = 'principal' AND k.okul_id = $1 AND k.durum = 'approved'", [okulId]);
 
-/* Okulun (onaylı ya da bekleyen) müdürü var mı? Müdürü kaldırılmış okula
-   yeni müdür başvurabilsin diye bakılır. */
+/* Okulun müdürü var mı? Müdürü kaldırılmış (sahipsiz) okula yönetici yeni
+   müdür atayabilsin diye bakılır. */
 const okulunMuduruVarMi = async okulId =>
   !!(await tek("SELECT 1 FROM kullanicilar WHERE rol = 'principal' AND okul_id = $1", [okulId]));
 
 /* Okulda müdür dışında kimse var mı (öğretmen, öğrenci, servisçi)? */
 const okuldaKimseVarMi = async okulId =>
   !!(await tek("SELECT 1 FROM kullanicilar WHERE okul_id = $1 AND rol <> 'principal' LIMIT 1", [okulId]));
-
-/* Bekleyen müdür başvurusunu onaylar; başvuru bu arada geri çekildiyse ya da
-   karara bağlandıysa hiçbir şey yapmaz ve false döner. */
-const basvuruyuOnayla = async id =>
-  (await calistir("UPDATE kullanicilar SET durum = 'approved' WHERE id = $1 AND rol = 'principal' AND durum = 'pending'", [id])) === 1;
 
 async function epostaVarMi(eposta, haricId) {
   if (!eposta) return false;
@@ -237,10 +240,50 @@ async function bosKullaniciAdi(kok, okulId) {
   return aday;
 }
 
-/* Kod (veli kodu ya da öğretmen eşleme kodu) kullanılıyor mu? İki kod aynı
-   harf kümesinden üretilir; biri ötekiyle karışmasın diye ikisine de bakılır. */
+/* Kişi kodu (öğrencinin veli kodu ya da yetişkinin kişi kodu) kullanılıyor mu?
+   İki sütun aynı biçimde üretilir; biri ötekiyle karışmasın diye ikisine de bakılır. */
 async function kodVarMi(kod) {
   return !!(await tek('SELECT 1 FROM kullanicilar WHERE veli_kodu = $1 OR eslesme_kodu = $1', [kod]));
+}
+
+/* Kimsede olmayan yeni bir kişi kodu. */
+async function yeniKisiKodu() {
+  let kod = kisiKoduUret();
+  while (await kodVarMi(kod)) kod = kisiKoduUret();
+  return kod;
+}
+
+/* Açılışta bir kez: kodu boş olan her öğrenciye veli kodu, her yetişkin hesabına
+   (okul rolü satırı değil; rolsüz ya da veli) kişi kodu yazılır. Toplu yazılır;
+   bu arada biri aynı kodu almışsa (tekil indeks) yeniden üretilip denenir.
+   Servisçi, sistem yöneticisi ve okul rolü satırlarında kod yoktur. */
+async function eksikKodlariDoldur() {
+  for (let deneme = 0; deneme < 5; deneme++) {
+    const ogrenciler = (await sorgu("SELECT id FROM kullanicilar WHERE rol = 'student' AND veli_kodu = ''")).map(r => r.id);
+    const yetiskinler = (await sorgu("SELECT id FROM kullanicilar WHERE ana_hesap_id IS NULL AND (rol IS NULL OR rol = 'parent') " +
+      "AND eslesme_kodu = ''")).map(r => r.id);
+    if (!ogrenciler.length && !yetiskinler.length) return 0;
+    const kullanilan = new Set((await sorgu("SELECT veli_kodu AS k FROM kullanicilar WHERE veli_kodu <> '' " +
+      "UNION ALL SELECT eslesme_kodu FROM kullanicilar WHERE eslesme_kodu <> ''")).map(r => r.k));
+    const uret = () => { let k = kisiKoduUret(); while (kullanilan.has(k)) k = kisiKoduUret(); kullanilan.add(k); return k; };
+    const oKod = ogrenciler.map(uret), yKod = yetiskinler.map(uret);
+    try {
+      await islem(async () => {
+        if (ogrenciler.length) {
+          await calistir('UPDATE kullanicilar k SET veli_kodu = v.kod FROM unnest($1::text[], $2::text[]) AS v(id, kod) ' +
+            "WHERE k.id = v.id AND k.veli_kodu = ''", [ogrenciler, oKod]);
+        }
+        if (yetiskinler.length) {
+          await calistir('UPDATE kullanicilar k SET eslesme_kodu = v.kod FROM unnest($1::text[], $2::text[]) AS v(id, kod) ' +
+            "WHERE k.id = v.id AND k.eslesme_kodu = ''", [yetiskinler, yKod]);
+        }
+      });
+      return ogrenciler.length + yetiskinler.length;
+    } catch (hata) {
+      if (!hata || hata.code !== '23505') throw hata;   // tekillik çakışması: yeniden üret
+    }
+  }
+  throw new Error('Kişi kodları doldurulamadı (tekillik çakışması sürüyor).');
 }
 
 /* ---------------- listeler ---------------- */
@@ -276,7 +319,6 @@ const ogrencininOgretmenleri = ogrenciId =>
     'AND k.okul_id = (SELECT okul_id FROM kullanicilar WHERE id = $1)', [ogrenciId]);
 
 const adminler = () => coklu("k.rol = 'admin'", []);
-const bekleyenMudurler = () => coklu("k.rol = 'principal' AND k.durum = 'pending'", []);
 
 /* Yönetici paneli: bütün müdürler ve okullarındaki öğretmen/öğrenci sayısı. */
 async function mudurlerSayimli() {
@@ -307,8 +349,7 @@ async function sayimlar() {
     "count(*) FILTER (WHERE rol = 'principal' AND durum = 'approved') AS mudur, " +
     "count(*) FILTER (WHERE rol = 'teacher' AND durum = 'approved') AS ogretmen, " +
     "count(*) FILTER (WHERE rol = 'student') AS ogrenci, " +
-    "count(*) FILTER (WHERE rol = 'parent') AS veli, " +
-    "count(*) FILTER (WHERE rol = 'principal' AND durum = 'pending') AS bekleyen " +
+    "count(*) FILTER (WHERE rol = 'parent') AS veli " +
     'FROM kullanicilar');
 }
 
@@ -429,13 +470,14 @@ async function engelHaritasi(idler) {
 
 module.exports = {
   zenginlestir, bul, epostayla, kullaniciAdiyla, tcIle, ogrenciTcIle, girisKimligiyle, girisYazildi, topluSifreYaz, kodlaOgrenci, okulunMuduru,
-  yetiskinMi, rolleri, eslesmeKoduyla, eslesmeKoduYaz, rolSatirlariniGuncelle, rolSatirlarinaKvkk, rolSatiriniSil,
-  okulunMuduruVarMi, okuldaKimseVarMi, basvuruyuOnayla,
+  yetiskinMi, rolleri, eslesmeKoduyla, eslesmeKoduSahibi, eslesmeKoduYaz, eslesmeKoduTuket,
+  rolSatirlariniGuncelle, rolSatirlarinaKvkk, rolSatiriniSil,
+  okulunMuduruVarMi, okuldaKimseVarMi,
   epostaVarMi, kullaniciAdiVarMi, kullaniciAdiHerhangiYerde, kullaniciAdiBaskasinda, okuldaBosAd, tcVarMi, okulNoVarMi,
   bosKullaniciAdi, rolsuzuVeliYap,
-  hesabiSil, sifreDegisti, kodVarMi,
+  hesabiSil, sifreDegisti, kodVarMi, yeniKisiKodu, eksikKodlariDoldur,
   okulun, sinifOgrencileri, ogretmeninOgrencileri, ogrencininOgretmenleri,
-  adminler, bekleyenMudurler, mudurlerSayimli, sayimlar, okulSayimlari,
+  adminler, mudurlerSayimli, sayimlar, okulSayimlari,
   ekle, guncelle, sil,
   cocuklari, bagliMi, bagla, bagiCoz, velileri, veliHaritasi, ilkCocugununOkulu, cocukIdleri,
   engelliler, engelleriYaz, engelHaritasi

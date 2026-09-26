@@ -380,8 +380,8 @@ function islem(act, el) {
     var mad = el.getAttribute('data-ad') || 'Bu müdür';
     var mokul = el.getAttribute('data-okul') || '';
     if (!confirm(mad + ' hesabı silinsin mi? (' + mokul + ')\n\n' +
-      'Okul "beklemede" durumuna döner, yeni kayıt alamaz. Öğretmen ve öğrenci ' +
-      'hesapları silinmez; okula yeni bir müdür başvurabilir.')) return;
+      'Okul kapanır, kimse giremez. Öğretmen ve öğrenci hesapları silinmez; ' +
+      'Okullar > Okul aç ile okula yeni müdür atayabilirsin.')) return;
     return api('/admin/principal-delete', 'POST', { userId: id })
       .then(function () { git('mudurler'); })['catch'](hataGoster);
   }
@@ -514,12 +514,6 @@ function islem(act, el) {
       'üçüncü taraflarla paylaşılmaz ve sistemde reklam bulunmaz.</p>');
   }
 
-  /* admin */
-  if (act === 'admin-onay') {
-    return api('/admin/decide', 'POST', { userId: id, approve: el.getAttribute('data-ok') === '1' })
-      .then(function () { git('onaylar'); bildirimleriYenile(); })['catch'](hataGoster);
-  }
-
   /* müdür */
   if (act === 'ogretmen-onay') {
     return api('/school/teacher-decide', 'POST', { userId: id, approve: el.getAttribute('data-ok') === '1' })
@@ -581,8 +575,11 @@ function islem(act, el) {
 
   /* veli */
   if (act === 'cocuk-ekle') {
-    return api('/parent/link', 'POST', { code: $('veliKod').value })
-      .then(function (d) { S.children = d.children || []; navCiz(); git('cocuklarim'); })
+    var vkSorun = kisiKoduDenetle($('veliKod').value, 'Veli kodu');
+    if (vkSorun) return mesajGoster('veliMesaj', 'hata', vkSorun);
+    return api('/parent/link', 'POST', { code: kisiKoduSade($('veliKod').value) })
+      .then(function (d) { S.children = d.children || []; return portallariTazele(); })
+      .then(function () { return git(S.page === 'profil' ? 'profil' : 'cocuklarim'); })
       ['catch'](function (e) { mesajGoster('veliMesaj', 'hata', e.message); });
   }
   if (act === 'cocuk-ac') {
@@ -592,7 +589,12 @@ function islem(act, el) {
   if (act === 'cocuk-sil') {
     if (!confirm('Bu çocuk hesabından kaldırılsın mı?')) return;
     return api('/parent/unlink', 'POST', { studentId: id })
-      .then(function (d) { S.children = d.children || []; navCiz(); git(S.children.length || S.user.role === 'parent' ? 'cocuklarim' : 'ana'); })
+      .then(function (d) {
+        S.children = d.children || [];
+        if (S.veliCocuk === id) S.veliCocuk = null;
+        return portallariTazele();
+      })
+      .then(function () { return git(S.children.length || S.user.role === 'parent' ? 'cocuklarim' : 'ana'); })
       ['catch'](hataGoster);
   }
 

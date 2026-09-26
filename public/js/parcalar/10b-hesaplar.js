@@ -182,10 +182,9 @@ EYLEMLER['hesap-ac-kaydet'] = function (el) {
       '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(k.username) + '">Kopyala</button></div>' +
       sifreSatiri +
       (S.user.schoolSlug ? '<div class="satir"><div class="buyu"><div class="alt">Giriş adresi</div>' +
-        '<div class="ad">' + esc(location.host + '/' + S.user.schoolSlug) + '</div></div></div>' : '') +
-      (k.code ? '<div class="satir"><div class="buyu"><div class="alt">Veli kodu</div>' +
-        '<div class="kod-goster">' + esc(kodBicimle(k.code)) + '</div></div>' +
-        '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(kodBicimle(k.code)) + '">Kopyala</button></div>' : '') +
+        '<div class="ad">' + esc(location.host + okulYolu(S.user.schoolSlug)) + '</div></div></div>' : '') +
+      (k.code ? '<div class="satir"><div class="buyu"><div class="alt">Veli kodu (veli çocuğunu bununla ekler)</div>' +
+        kisiKoduKutusu(k.code) + '</div></div>' : '') +
       (k.varsayilanSifre ? '' : '<div class="hint">Bu şifre bir daha gösterilemez; şimdi kişiye ilet.</div>'),
       '<button class="btn ghost" data-act="hesap-yeni" data-rol="' + esc(rol) + '">Bir tane daha aç</button>' +
       '<button class="btn" data-act="hesap-bitti" data-rol="' + esc(rol) + '">Tamam</button>');
@@ -244,10 +243,10 @@ function hesapDuzenleModal(id) {
 
     if (h.rol === 'student') {
       govde += '<hr class="ayrac-cizgi"><h4 class="alt-baslik">Veli kodu</h4>' +
-        '<div class="kod-goster">' + esc(kodBicimle(h.code)) + '</div>' +
-        '<div class="dugme-satir">' +
-        '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(kodBicimle(h.code)) + '">Kopyala</button>' +
-        '<button class="btn gri kucuk" data-act="kod-yenile" data-id="' + esc(h.id) + '">Yeni kod üret</button></div>' +
+        kisiKoduKutusu(h.code, 'hVeliKodu', false,
+          '<button class="btn gri kucuk" data-act="kod-yenile" data-id="' + esc(h.id) + '">Yeni kod üret</button>') +
+        '<div class="hint">Veli bu kodu <b>+ Ekle &gt; Veli</b> ekranına yazar. Anne ve baba aynı kodu kullanabilir; ' +
+        'kod yanlış kişiye verildiyse yenile.</div>' +
         '<hr class="ayrac-cizgi"><h4 class="alt-baslik">Veliler</h4>' +
         '<div id="hVeliler" data-ogrenci="' + esc(h.id) + '"><div class="okul-bilgi">Yükleniyor...</div></div>' +
         '<div class="field" style="margin-top:9px"><label for="hVeliAra">Veli bağla</label>' +
@@ -312,16 +311,18 @@ EYLEMLER['bagli-brans-kaydet'] = function (el, id) {
   })['catch'](function (e) { dugmeBitir(el); mesajGoster('hesapMesaj', 'hata', e.message); });
 };
 
-/* ---------------- öğretmeni koduyla ekle ---------------- */
+/* ---------------- öğretmeni kişi koduyla ekle ----------------
+   Kod POST gövdesinde gider: adres satırına ve sunucu günlüklerine düşmesin,
+   içindeki # + ? bozulmasın. Girişte yalnız boşluklar silinir. */
 EYLEMLER['ogretmen-kodla'] = function () {
   modalAc('Öğretmen ekle',
-    '<div class="ekle-panel">' + cizim('ogretmen-kodu', 'ekle-panel-cizim') +
-    '<p>Öğretmenden kişisel kodunu iste. Kodu Eğitim Evi\'nde <b>Ekle &gt; Öğretmen olarak katıl</b> ekranında görür. ' +
+    '<div class="ekle-panel">' + cizim('kisi-kodu', 'ekle-panel-cizim') +
+    '<p>Öğretmenden <b>kişi kodunu</b> iste. Kodu Eğitim Evi\'nde <b>+ Ekle &gt; Öğretmen</b> ekranında görür. ' +
     'Kod bir kez kullanılır.</p>' +
-    '<div class="field"><label for="okKod">Öğretmenin kodu</label>' +
-    '<div class="rolsuz-satir"><input type="text" id="okKod" autocomplete="off" autocapitalize="characters" ' +
-    'spellcheck="false" maxlength="20" placeholder="XXXXX-XXXXX">' +
-    '<button class="btn" data-act="ogretmen-kod-bul">Bul</button></div></div>' +
+    '<div class="field"><label for="okKod">Öğretmenin kişi kodu</label>' +
+    '<div class="rolsuz-satir">' + kisiKoduGirdisi('okKod') +
+    '<button class="btn" data-act="ogretmen-kod-bul">Bul</button></div>' +
+    '<div class="hint">Büyük/küçük harfe dikkat et; boşluklar önemli değil.</div></div>' +
     '<div id="okSonuc"></div></div>',
     '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>');
   $('okKod').addEventListener('keydown', function (e) {
@@ -334,10 +335,11 @@ EYLEMLER['ogretmen-kod-bul'] = function (el) {
   var kutu = $('okKod');
   alanTemizle(kutu.closest('.field'));
   $('okSonuc').innerHTML = '';
-  var kod = kutu.value.replace(/[^0-9a-z]/gi, '').toUpperCase();
-  if (kod.length !== 10) { alanHatasi(kutu, 'Kod 10 harf ve rakamdan oluşur (XXXXX-XXXXX).'); kutu.focus(); return; }
+  var sorun = kisiKoduDenetle(kutu.value);
+  if (sorun) { alanHatasi(kutu, sorun); kutu.focus(); return; }
+  var kod = kisiKoduSade(kutu.value);
   dugmeBekle(el, 'Aranıyor...');
-  return api('/school/ogretmen-bul?kod=' + encodeURIComponent(kod)).then(function (d) {
+  return api('/school/ogretmen-bul', 'POST', { kod: kod }).then(function (d) {
     dugmeBitir(el);
     if (d.kisi.zatenOkulda) {
       $('okSonuc').innerHTML = '<div class="msg bilgi">' + esc(d.kisi.ad) + ' okulunda zaten var.</div>';
@@ -449,8 +451,11 @@ EYLEMLER['hesap-sil'] = function (el, id) {
 };
 
 EYLEMLER['kod-yenile'] = function (el, id) {
-  if (!confirm('Yeni veli kodu üretilsin mi? Eski kod çalışmaz olur.')) return;
+  if (!confirm('Yeni veli kodu üretilsin mi? Eski kod çalışmaz olur; bağlı veliler bağlı kalır.')) return;
+  dugmeBekle(el, 'Üretiliyor...');
   return api('/school/student-code-reset', 'POST', { studentId: id }).then(function (r) {
-    mesajGoster('hesapSifreMesaj', 'iyi', 'Yeni veli kodu: ' + kodBicimle(r.code));
-  })['catch'](hataGoster);
+    dugmeBitir(el);
+    kisiKoduYenile('hVeliKodu', r.code);
+    if (S._duzenlenen && S._duzenlenen.id === id) S._duzenlenen.code = r.code;
+  })['catch'](function (e) { dugmeBitir(el); hataGoster(e); });
 };

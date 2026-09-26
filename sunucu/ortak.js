@@ -1,7 +1,7 @@
 'use strict';
 /* Her yerde kullanılan küçük yardımcılar ve sabitler.
    Ders listesi, il listesi, ödev sonuç türleri; kimlik üretme, tarih,
-   metin temizleme, telefon/e-posta/şifre doğrulama, veli kodu üretme.
+   metin temizleme, telefon/e-posta/şifre doğrulama, kişi kodu üretme.
    Hiçbir başka modüle bağımlı değildir. */
 
 const crypto = require('crypto');
@@ -53,24 +53,53 @@ function govdeTemizle(v, derinlik) {
   }
   return temiz;
 }
-/* Veli kodu: 10 karakter, yalnızca büyük harf ve rakam; ekranda
-   "ABCDE-FGH23" diye iki parça gösterilir. Eskiden büyük/küçük harf ve
-   !@#$ gibi işaretler karışıktı, veli yazarken yanılıyordu. Büyük/küçük
-   harf, boşluk ve tire fark etmez (kodSade). Karışabilen karakterler
-   (0/O, 1/I) alfabede yok. 32^10 ≈ 1,1e15 olasılık; veli başına dakikada
-   5 deneme sınırıyla tahmin edilemez. */
-const KOD_ALFABE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const KOD_UZUNLUK = 10;
+/* Kişi kodu: herkesin kendine ait kodu. Öğrencide "veli kodu"dur (veli
+   çocuğunu onunla ekler), yetişkinde müdüre ya da yöneticiye verilir (okula
+   öğretmen olarak eklenmek, okulunu açtırmak). Servisçi ve sistem
+   yöneticisinde kod yoktur.
+     - 15 karakter, yalnız ASCII: büyük harf, küçük harf, rakam ve ! ? # * + -
+       (her birinden en az bir tane). Karışabilen karakterler yok: I, L, O,
+       l, o, 0, 1. Türkçe harf yok.
+     - İlk karakter harftir: Excel'e yapıştırılınca + - = ile başlayan hücre
+       formül sanılmasın.
+     - Büyük/küçük harf duyarlıdır. Girişte yalnız boşluklar silinir; ekranda
+       5'erli gruplar boşlukla ayrılır ("Ab3#k Qx9+m Pt7?z"), bu biçim
+       yapıştırılınca da çalışır. Ayırıcı tire olamaz: tire alfabede var.
+     - 67 simgelik alfabeyle ~10^27 olasılık; hız sınırlarıyla tahmin edilemez. */
+const KISI_KODU_UZUNLUK = 15;
+const KOD_BUYUK = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+const KOD_KUCUK = 'abcdefghijkmnpqrstuvwxyz';
+const KOD_RAKAM = '23456789';
+const KOD_OZEL = '!?#*+-';
+const KOD_HARF = KOD_BUYUK + KOD_KUCUK;
+const KOD_ALFABESI = KOD_HARF + KOD_RAKAM + KOD_OZEL;
 
-/* Kullanıcının yazdığı kodu karşılaştırılacak hâle getirir. */
-function kodSade(kod) {
-  return String(kod == null ? '' : kod).toLocaleUpperCase('tr').replace(/İ/g, 'I').replace(/[^A-Z0-9]/g, '');
+/* Geçerli kişi kodu: uzunluk, alfabe, ilk harf ve dört sınıfın her birinden
+   en az bir karakter. (Şemadaki CHECK daha gevşektir: sınıf koşulu burada.) */
+const KISI_KODU_DESENI = /^(?=.*[A-HJKMNP-Z])(?=.*[a-km-np-z])(?=.*[2-9])(?=.*[!?#*+-])[A-HJKMNP-Za-km-np-z][A-HJKMNP-Za-km-np-z2-9!?#*+-]{14}$/;
+
+function kisiKoduUret() {
+  for (;;) {
+    let kod = KOD_HARF[crypto.randomInt(KOD_HARF.length)];
+    for (let i = 1; i < KISI_KODU_UZUNLUK; i++) kod += KOD_ALFABESI[crypto.randomInt(KOD_ALFABESI.length)];
+    if (KISI_KODU_DESENI.test(kod)) return kod;
+  }
 }
 
-function makeCode() {
-  let kod = '';
-  for (let i = 0; i < KOD_UZUNLUK; i++) kod += KOD_ALFABE[crypto.randomInt(KOD_ALFABE.length)];
-  return kod;
+/* Kullanıcının yazdığı (ya da yapıştırdığı) kodu karşılaştırılacak hâle
+   getirir: yalnız boşluklar silinir, harf durumu korunur. Geçerli bir kod
+   değilse (eski 10 haneli biçim dahil) '' döner. */
+function kisiKoduSade(girdi) {
+  if (girdi == null || typeof girdi === 'object') return '';
+  const s = String(girdi).replace(/\s+/g, '');
+  return KISI_KODU_DESENI.test(s) ? s : '';
+}
+
+/* Ekranda, kâğıtta ve Excel'de: 5'erli gruplar, arada boşluk. */
+function kisiKoduBicim(kod) {
+  const s = kod == null ? '' : String(kod);
+  if (s.length !== KISI_KODU_UZUNLUK) return s;
+  return s.slice(0, 5) + ' ' + s.slice(5, 10) + ' ' + s.slice(10);
 }
 
 /* ============ kullanıcı adı, T.C. kimlik no, ad soyad ============ */
@@ -125,7 +154,7 @@ function asciiYap(s) {
     .replace(/ö/g, 'o').replace(/ç/g, 'c').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-/* Okulun kısa adı: egitimevi.org/<kisa-ad>. Sitenin kendi yollarıyla
+/* Okulun kısa adı: egitimevi.org/school/<kisa-ad>. Sitenin kendi yollarıyla
    karışmasın diye bazı adlar ayrılmıştır. */
 const KISA_AD_YASAK = new Set(('api css js yazitipi kvkk sw manifest simge index admin yonetici giris kayit cikis ' +
   'okul okullar veli ogretmen ogrenci mudur servis servisci destek yardim hakkinda iletisim www static assets ' +
@@ -204,16 +233,6 @@ function normTelefon(t) {
   if (/^5\d{9}$/.test(s)) return '+90' + s;
   if (/^90\d{10}$/.test(s)) return '+' + s;
   return s;
-}
-
-/* "2008-05-20" doğumlu kişinin bugünkü yaşı. */
-function yasHesapla(iso) {
-  const p = String(iso || '').split('-').map(Number);
-  if (p.length !== 3 || p.some(isNaN)) return 0;
-  const bugun = new Date();
-  let yas = bugun.getFullYear() - p[0];
-  if (bugun.getMonth() + 1 < p[1] || (bugun.getMonth() + 1 === p[1] && bugun.getDate() < p[2])) yas--;
-  return yas;
 }
 
 /* Doğum tarihi: YYYY-AA-GG. Gelecek olamaz, 1920'den eski olamaz.
@@ -305,7 +324,6 @@ function gunTarih(iso) {
 
 
 module.exports = {
-  yasHesapla,
   gucluSifreli,
   SUBJECTS,
   CITIES,
@@ -313,10 +331,11 @@ module.exports = {
   uid,
   now,
   govdeTemizle,
-  KOD_ALFABE,
-  KOD_UZUNLUK,
-  kodSade,
-  makeCode,
+  KISI_KODU_DESENI,
+  KISI_KODU_UZUNLUK,
+  kisiKoduUret,
+  kisiKoduSade,
+  kisiKoduBicim,
   normKullaniciAdi,
   kullaniciAdiSorunu,
   tcSorunu,

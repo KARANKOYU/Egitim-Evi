@@ -10,6 +10,7 @@ const { guvenlikTemizle, hizSinir, istekAnahtari, istemciIp } = require('./guven
 const { HATIRLATMA_ARALIK_MS, hatirlatmalariCalistir } = require('./hatirlatma');
 const { bad, baslikEkle, serveStatic } = require('./http');
 const { okullariYukle } = require('./okullar');
+const { iletisimVarMi } = require('./site');
 const { YEDEK_ARALIK_MS, baslat, hataCevir, kapat, yedekKontrol } = require('./veri');
 const { HOST, PORT } = require('./yollar');
 
@@ -224,6 +225,11 @@ server.listen(PORT, HOST, () => {
   } else {
     console.log('     ! E-posta ayarlanmamis: giris kodlari BU PENCEREYE yazilacak.');
     console.log('       Ayarlamak icin: data/ayarlar.json');
+  }
+  /* Okulunu açtırmak isteyen kişi yöneticiye buradaki e-posta ya da telefonla ulaşır. */
+  if (!iletisimVarMi()) {
+    console.log('     ! Iletisim bilgisi yok: "+ Ekle > Mudur" penceresi yoneticiye ulasma yolu gostermez.');
+    console.log('       Ayarlamak icin: data/config.yml (ornegi belge/config.ornek.yml)');
   }
   console.log('     Kapatmak icin bu pencereyi kapatin.');
   console.log('  ==========================================');

@@ -12,7 +12,7 @@ const {
   dersOzeti, isTeacherLike, saatDakika, saatDuzelt, sinifOzeti
 } = require('../iliskiler');
 const {
-  SUBJECTS, adDuzelt, clean, dogumSorunu, gunTarih, kullaniciAdiSorunu, makeCode, normEmail,
+  SUBJECTS, adDuzelt, clean, dogumSorunu, gunTarih, kisiKoduBicim, kullaniciAdiSorunu, normEmail,
   normKullaniciAdi, now, sifreSorunu, tcSorunu, uid
 } = require('../ortak');
 const { hizSinir } = require('../guvenlik');
@@ -42,13 +42,6 @@ function uyariMetni(u) {
   if (!u) return '';
   return (u.tur === 'sinif' ? 'sınıfın ' : 'öğretmenin ') + u.className + ' ' + u.subject +
     ' dersiyle çakışıyor (' + u.start + '-' + u.end + ')';
-}
-
-/* Yeni veli kodu: başkasında olmayan. */
-async function yeniKod() {
-  let code = makeCode();
-  while (await depo.kullanicilar.kodVarMi(code)) code = makeCode();
-  return code;
 }
 
 /* Okunması kolay, tahmini zor şifre: 8 harf + 2 rakam; karışan harfler
@@ -133,12 +126,12 @@ async function uclar(k) {
       if (tur === 'ogrenci') {
         /* Depo ada göre Türkçe sıralı döndürür. */
         const satirlar = (await depo.kullanicilar.okulun(me.schoolId, { rol: 'student' }))
-          .map(u => [u.fullName, u.username, u.email, sinifAdi(u.classId), u.code,
+          .map(u => [u.fullName, u.username, u.email, sinifAdi(u.classId), kisiKoduBicim(u.code),
             u.note || '', gunTarih(u.createdAt)]);
         return xlsxGonder(res, aktarim.disa('Öğrenciler',
           ['Ad Soyad', 'Kullanıcı adı', 'E-posta', 'Sınıf', 'Veli kodu',
             'Müdür notu', 'Kayıt tarihi'],
-          satirlar, [26, 22, 28, 10, 14, 30, 14]), 'ogrenciler.xlsx');
+          satirlar, [26, 22, 28, 10, 20, 30, 14]), 'ogrenciler.xlsx');
       }
 
       if (tur === 'ogretmen') {
@@ -430,10 +423,13 @@ async function uclar(k) {
          okuldan çıkarılamaz (dersleri, ödevleri sahipsiz kalırdı). */
       if (t.status !== 'pending') return bad(res, 'Bu başvuru zaten karara bağlanmış.');
       if (t.id === me.id) return bad(res, 'Kendi başvurunu karara bağlayamazsın.');
-      /* Reddedilen başvuru hesabı kilitlemez; kişi rolsüz hâline döner. */
+      /* Reddedilen başvuru hesabı kilitlemez; kişi rolsüz yetişkin hesabına
+         döner. Yetişkin hesabının kişi kodu olur: aynı güncellemede yazılır
+         ("+ Ekle" penceresi boş kod göstermesin). */
       await depo.kullanicilar.guncelle(t.id, body.approve
         ? { status: 'approved' }
-        : { status: 'approved', role: '', schoolId: '', branch: '', customRoleId: '' });
+        : { status: 'approved', role: '', schoolId: '', branch: '', customRoleId: '',
+            eslesmeKodu: t.eslesmeKodu || await depo.kullanicilar.yeniKisiKodu() });
       await bildir(t.id, body.approve
         ? 'Öğretmenlik başvurun müdür tarafından onaylandı.'
         : 'Öğretmenlik başvurun reddedildi.');
@@ -575,11 +571,12 @@ async function uclar(k) {
       await islemYaz(me, 'sifre.toplu-dagitildi', sinifAdi + ': ' + satirlar.length + ' öğrenci', req);
 
       satirlar.sort((a, b) => a.sinif.localeCompare(b.sinif, 'tr') || a.ad.localeCompare(b.ad, 'tr'));
-      const kod = k => (k && k.length === 10 ? k.slice(0, 5) + '-' + k.slice(5) : k || '');
+      /* Veli kodu kâğıtta ve Excel'de 5'erli gruplar hâlinde ("Ab3#k Qx9+m Pt7?z"). */
+      const kod = k => kisiKoduBicim(k || '');
       const xlsxVeri = aktarim.disa('Giriş bilgileri',
         ['Ad Soyad', 'Sınıf', 'Kullanıcı adı', 'Şifre'].concat(kodGorur ? ['Veli kodu'] : []),
         satirlar.map(s => [s.ad, s.sinif, s.kullaniciAdi, s.sifre].concat(kodGorur ? [kod(s.veliKodu)] : [])),
-        [26, 10, 22, 16, 14]);
+        [26, 10, 22, 16, 20]);
       res.setHeader('Cache-Control', 'no-store');
       return ok(res, {
         adet: satirlar.length, kapsam: sinifAdi, okul: me._okulAdi || '',
@@ -593,7 +590,7 @@ async function uclar(k) {
       if (!yetkiGerek('ogrenci.duzenle')) return;
       const st = await okulOgrencisi(me, body.studentId);
       if (!st) return bad(res, 'Öğrenci bulunamadı');
-      const code = await yeniKod();
+      const code = await depo.kullanicilar.yeniKisiKodu();
       await depo.kullanicilar.guncelle(st.id, { code });
       return ok(res, { code: code });
     }

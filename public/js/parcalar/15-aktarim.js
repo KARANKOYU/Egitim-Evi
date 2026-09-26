@@ -74,7 +74,7 @@ SAYFALAR.aktarim = function () {
     '<div class="alt">' + (A.tur === 'kisi'
       ? 'İki sayfa gelir: Öğrenciler ve Servisçiler. Üçüncü sayfada nasıl doldurulacağı yazar. ' +
         'Kendi dosyan varsa sütun başlıkları benzer olsun yeter (Ad, Soyad, T.C. Kimlik No...). ' +
-        'Öğretmenler dosyayla eklenmez: kendi hesaplarını açıp kodlarını verirler (Öğretmenler > Kodla ekle).'
+        'Öğretmenler dosyayla eklenmez: kendi hesaplarını açıp kişi kodlarını verirler (Öğretmenler > Kodla ekle).'
       : 'Sütun başlıkları hazır gelir; ikinci sayfada nasıl doldurulacağı yazar.') + '</div>' +
     '<button class="btn ghost kucuk" data-act="aktarim-sablon" style="margin-top:10px">Şablonu indir</button></div></div>';
 
@@ -158,7 +158,7 @@ function sonucKarti(A) {
       h += '<tr><td>' + esc(o.ad) + (o.sinif ? ' <span class="alt">' + esc(o.sinif) + '</span>' : '') + '</td>' +
         '<td>' + esc(ROL_AD[o.rol] || '') + '</td><td><code>' + esc(o.kullaniciAdi) + '</code></td>' +
         '<td>' + (o.tcIle ? '<span class="alt">T.C. kimlik no</span>' : '<code>' + esc(o.sifre) + '</code>') + '</td>' +
-        '<td>' + (o.veliKodu ? '<code>' + esc(kodBicimle(o.veliKodu)) + '</code>' : '') + '</td></tr>';
+        '<td>' + (o.veliKodu ? '<code class="kisi-kodu satir-ici">' + esc(kisiKoduBicim(o.veliKodu)) + '</code>' : '') + '</td></tr>';
     }
     h += '</tbody></table></div>';
   }

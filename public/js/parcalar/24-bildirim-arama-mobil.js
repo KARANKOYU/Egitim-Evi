@@ -6,13 +6,19 @@
    yoklamaz, sekmeye dönülünce hemen tazelenir. */
 function bildirimleriYenile() {
   if (!S.token || document.hidden) return;
-  api('/notifications' + (S.bildirimSurum ? '?surum=' + encodeURIComponent(S.bildirimSurum) : '')).then(function (d) {
+  var onceki = S.bildirimSurum;
+  api('/notifications' + (onceki ? '?surum=' + encodeURIComponent(onceki) : '')).then(function (d) {
     S.bildirimSurum = d.surum;
     S.unread = d.unread;
     var r = $('bildirimRozet');
     if (d.unread > 0) { r.textContent = d.unread > 99 ? '99+' : d.unread; r.style.display = ''; }
     else r.style.display = 'none';
-    if (!d.ayni) S._bildirimler = d.notifications;
+    if (!d.ayni) {
+      /* Yetişkin hesabında yeni bildirim bir okulun kişiyi eklediğini
+         söylüyor olabilir: menüdeki portallar da tazelensin. */
+      if (onceki && S.portallar) portallariTazele();
+      S._bildirimler = d.notifications;
+    }
   })['catch'](function () { });
 }
 document.addEventListener('visibilitychange', function () { if (!document.hidden) bildirimleriYenile(); });

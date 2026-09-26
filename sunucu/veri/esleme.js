@@ -76,7 +76,7 @@ function kullanici(r) {
     okulNo: bos(r.okul_no),
     sifreDegismeli: !!r.sifre_degismeli,
     anaHesapId: bos(r.ana_hesap_id),    // okul rolü satırıysa bağlı olduğu yetişkin hesabı
-    eslesmeKodu: bos(r.eslesme_kodu),   // yetişkin hesabının öğretmen eşleme kodu
+    eslesmeKodu: bos(r.eslesme_kodu),   // yetişkin hesabının kişi kodu (tek kullanımlık)
     createdAt: r.olusturma
   };
   if (r.okul_adi !== undefined) u._okulAdi = bos(r.okul_adi);

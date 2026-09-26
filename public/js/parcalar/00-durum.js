@@ -6,6 +6,10 @@ var S = {
   page: 'ana',
   viewStudentId: null, viewStudentName: '',
   veliCocuk: null,          /* veli panelinde şeritten seçilen çocuk (null = hepsi) */
+  /* Yetişkin hesabı: sol menüdeki "Portallarım" (okul rolleri ve çocuklar; öteki
+     hesaplarda null), oturum yetişkin hesabının kendisinde mi, ve orada portal
+     dışında mı (ana sayfası "Portalların"; 08c-kisilikler.js). */
+  portallar: null, hesapAktif: false, portalDisi: false,
   unread: 0,
   /* ödev filtreleri + sayfaya özel arama kancası */
   odevF: { ders: '', yildiz: '', durum: '', bas: '', bit: '', mod: 'ogrenci' },

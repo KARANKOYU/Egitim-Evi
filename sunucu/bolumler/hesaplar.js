@@ -3,7 +3,7 @@
 
    Öğrenci ve servisçi kendisi kaydolmaz; hesabını okul açar (tek tek ya da
    Excel/ODS/TXT ile, bkz. kisi-aktarim.js). Öğretmen kendi yetişkin hesabını
-   açar ve eşleme kodunu okula verir; müdür kodu girince öğretmenin bu okuldaki
+   açar ve kişi kodunu okula verir; müdür kodu girince öğretmenin bu okuldaki
    rol satırı açılır (ogretmen-bul, ogretmen-ekle). Okulun açtığı hesapta kural
    müdürün tablosundaki gibidir:
      - ad, soyad ve T.C. kimlik no zorunlu;
@@ -23,7 +23,7 @@
 const { hataSay, hataSiniriDoldu, hizSinir, istemciIp } = require('../guvenlik');
 const { bad, ok } = require('../http');
 const {
-  SUBJECTS, adDuzelt, clean, dogumSorunu, kisaAdSorunu, kodSade, kullaniciAdiSorunu, makeCode, metinYap, normEmail,
+  SUBJECTS, adDuzelt, clean, dogumSorunu, kisaAdSorunu, kisiKoduSade, kullaniciAdiSorunu, metinYap, normEmail,
   gucluSifreli, normKullaniciAdi, normTc, normTelefon, now, sifreSorunu, tarihCoz, tcSorunu, telefonSorunu, uid
 } = require('../ortak');
 const { hashPw } = require('../sifre');
@@ -39,12 +39,6 @@ const YETKI = {
   servisci: { ac: 'servis.yonet', duzenle: 'servis.yonet', sifre: 'servis.yonet', sil: 'servis.yonet' }
 };
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-async function yeniKod() {
-  let kod = makeCode();
-  while (await depo.kullanicilar.kodVarMi(kod)) kod = makeCode();
-  return kod;
-}
 
 /* "Ayşe Yılmaz" -> "Ay** Yı****": veli aranırken tam ad verilmez. */
 function adMaskele(ad) {
@@ -206,7 +200,8 @@ async function hesapNesnesi(me, rol, s, ozet) {
     city: me.city || '', district: me.district || '', address: '', email: '',
     createdBy: me.id, okulActi: true, createdAt: now(), sifreDegismeli: s.varsayilanSifre
   }, s.d, { pass: ozet });
-  if (rol === 'student') u.code = await yeniKod();
+  /* Öğrencinin veli kodu (kişi kodu) hesapla birlikte üretilir; servisçide kod yok. */
+  if (rol === 'student') u.code = await depo.kullanicilar.yeniKisiKodu();
   if (rol === 'teacher' && !u.branch) u.branch = '';
   return u;
 }
@@ -260,7 +255,7 @@ async function uclar(k, sub) {
   if ((sub === 'hesap-ac' || sub === 'student-create') && method === 'POST') {
     const rol = sub === 'student-create' ? 'student' : clean(body.rol, 20);
     if (rol === 'teacher') {
-      return bad(res, 'Öğretmen hesabını öğretmen kendisi açar ve sana kişisel kodunu verir. ' +
+      return bad(res, 'Öğretmen hesabını öğretmen kendisi açar ve sana kişi kodunu verir. ' +
         'Öğretmenler sayfasında "Kodla ekle" ile kodu gir.');
     }
     if (!YETKI[rol]) return bad(res, 'Öğrenci ya da servisçi seç');
@@ -363,27 +358,29 @@ async function uclar(k, sub) {
     return ok(res, { message: r.u.fullName + ' hesabı silindi.' });
   }
 
-  /* ---------- öğretmeni eşleme koduyla okula ekleme ----------
-     Öğretmen kodunu (Hesap değiştir > Ekle > Öğretmen) müdüre verir. Kod tek
-     kullanımlıktır: eşleşince yenilenir. Müdür eklemeden önce yalnızca adın
-     maskeli hâlini görür (kodla ad öğrenme aracına dönmesin). */
-  if ((sub === 'ogretmen-bul' || sub === 'ogretmen-ekle') && (method === 'GET' || method === 'POST')) {
+  /* ---------- öğretmeni kişi koduyla okula ekleme ----------
+     Öğretmen kişi kodunu (+ Ekle > Öğretmen) müdüre verir. Kod tek
+     kullanımlıktır: eşleşince aynı işlemde yenilenir. Müdür eklemeden önce
+     yalnızca adın maskeli hâlini görür (kodla ad öğrenme aracına dönmesin).
+     Kod gövdede gelir (POST): adrese ve erişim günlüklerine düşmesin, içindeki
+     # + ? bozulmasın. Büyük/küçük harf duyarlı; yalnız boşluklar silinir. */
+  if ((sub === 'ogretmen-bul' || sub === 'ogretmen-ekle') && method === 'POST') {
     if (!yetkiVarMi(me, 'ogretmen.onayla')) return bad(res, 'Bu işlem için yetkin yok', 403);
     if (!hizSinir('ogretmenKod:' + me.id, 30, 60 * 1000)) return bad(res, 'Çok fazla deneme. Biraz bekle.', 429);
     const ipAnahtar = 'ogretmenKodHata:' + istemciIp(req);
     if (hataSiniriDoldu(ipAnahtar, 30)) return bad(res, 'Çok fazla yanlış kod denendi. Bir saat sonra tekrar dene.', 429);
-    const kod = kodSade(clean(sub === 'ogretmen-bul' ? q.get('kod') : body.kod, 40));
-    const kisi = kod.length === 10 ? await depo.kullanicilar.eslesmeKoduyla(kod) : null;
+    const kod = kisiKoduSade(clean(body.kod, 40));
+    const kisi = kod ? await depo.kullanicilar.eslesmeKoduyla(kod) : null;
     if (!kisi) {
       hataSay(ipAnahtar, 30, 60 * 60 * 1000);
       return bad(res, 'Bu kodla bir hesap bulunamadı. Kodu öğretmenden yeniden iste; kod bir kez kullanılınca yenilenir.', 404);
     }
     const roller = await depo.kullanicilar.rolleri(kisi.id);
     const buradaki = roller.find(r => r.schoolId === me.schoolId);
-    if (sub === 'ogretmen-bul' && method === 'GET') {
+    if (sub === 'ogretmen-bul') {
       return ok(res, { kisi: { ad: adMaskele(kisi.fullName), zatenOkulda: !!buradaki } });
     }
-    if (sub === 'ogretmen-ekle' && method === 'POST') {
+    if (sub === 'ogretmen-ekle') {
       if (buradaki) return bad(res, 'Bu kişi okulunda zaten ' + (buradaki.role === 'principal' ? 'müdür' : 'öğretmen') + '.');
       if (roller.length >= 10) return bad(res, 'Bu kişi en fazla sayıda okulda rol almış.');
       const g = {};
@@ -398,13 +395,16 @@ async function uclar(k, sub) {
         status: 'approved', schoolId: me.schoolId, city: okul ? okul.city : '', district: okul ? okul.district : '',
         branch: s.d.branch || '', customRoleId: s.d.customRoleId || '', kvkk: kisi.kvkk, createdAt: now()
       };
-      let yeniKod = makeCode();
-      while (await depo.kullanicilar.kodVarMi(yeniKod)) yeniKod = makeCode();
-      await islem(async () => {
+      /* Kod harcanır ve rol satırı yazılır: ikisi birlikte. Aynı kod bu arada
+         başka yerde kullanıldıysa hiçbir şey yazılmaz. */
+      const yeniKod = await depo.kullanicilar.yeniKisiKodu();
+      const tuketildi = await islem(async () => {
+        if (!await depo.kullanicilar.eslesmeKoduTuket(kisi.id, kod, yeniKod)) return false;
         await depo.kullanicilar.ekle(satir);
-        await depo.kullanicilar.eslesmeKoduYaz(kisi.id, yeniKod);
+        return true;
       });
-      await bildir(kisi.id, (me._okulAdi || 'Bir okul') + ' seni öğretmen olarak ekledi. "Hesap değiştir"den bu okula geçebilirsin.');
+      if (!tuketildi) return bad(res, 'Bu kod az önce kullanıldı. Öğretmenden yeni kodunu iste.', 404);
+      await bildir(kisi.id, (me._okulAdi || 'Bir okul') + ' seni öğretmen olarak ekledi. Sol üstteki menüden okuluna geçebilirsin.');
       await islemYaz(me, 'ogretmen.eklendi', kisi.fullName, req);
       return ok(res, { hesap: { id: satir.id, fullName: satir.fullName, username: satir.username },
         message: kisi.fullName + ' okula öğretmen olarak eklendi.' });
@@ -481,7 +481,7 @@ async function uclar(k, sub) {
     return ok(res);
   }
 
-  /* ---------- okul adresi (egitimevi.org/<kısa ad>) ---------- */
+  /* ---------- okul adresi (egitimevi.org/school/<kısa ad>) ---------- */
   if (sub === 'adres' && method === 'GET') {
     if (me.role !== 'principal' && !yetkiVarMi(me, 'okul.konum')) return bad(res, 'Okul adresini müdür belirler', 403);
     const o = await depo.okullar.bul(me.schoolId);

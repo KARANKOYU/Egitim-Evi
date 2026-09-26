@@ -9,7 +9,7 @@
    - gönderilmiş mesajı yalnızca gönderen düzeltir; "düzenlendi" görünür;
    - /api/site girişsiz açık, yalnızca sayılar, iletişim ve yapımcılar (yapimcilar.json) döner;
    - /api/uygulama (indirme sayfasının sürüm tablosu) girişsiz açık; testte dışarı istek atılmaz. */
-const { BASE, iste, girisYap, hesapAc, mudurYap, okulHesabi } = require('./giris');
+const { BASE, iste, girisYap, hesapAc, kisiKodu, mudurYap, okulHesabi } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -189,7 +189,7 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
     uyg.body.alindi === false && /^https:\/\/github\.com\//.test(uyg.body.sayfa), J(uyg.body));
   const sayfaHtml = await fetch(BASE + '/indir').then(r => r.text());
   const sayfaHtml2 = await fetch(BASE + '/download/').then(r => r.text());
-  kontrol('/indir ve /download indirme sayfasını açıyor', /Eğitim Evi Android uygulaması/.test(sayfaHtml) &&
+  kontrol('/indir ve /download indirme sayfasını açıyor', /<h1>Eğitim Evi'ni indir<\/h1>/.test(sayfaHtml) &&
     /\/js\/indir\.js/.test(sayfaHtml) && sayfaHtml2 === sayfaHtml);
 
   /* Adresler: uygulamanın sayfaları ve /school/<okul> açılır; tanınmayan adres 404 "Sayfa bulunamadı". */
@@ -226,44 +226,32 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
   kontrol('ilerleyişteki öğrenci görünümü dar', ilerle.status === 200 && ilerle.body.student.id === ogr1.user.id &&
     ['code', 'address', 'phone', 'email', 'dogum', 'username'].every(k => ilerle.body.student[k] === undefined), J(ilerle.body.student));
 
-  /* Müdürü kaldırılan okula yeni müdür başvurabiliyor; öğrencileri yerinde. */
+  /* Müdürü kaldırılan okula yönetici yeni müdür atıyor (Okul aç + kişi kodu);
+     okul aynı kalır, öğrencileri yerinde. Müdür başvurusu yok. */
   const okulAdi = 'Sahipsiz Okul ' + z;
   await hesapAc({ fullName: 'Birinci Mudur', username: 'bm' + z, email: 'bm' + z + '@test.com' });
   const bm = await mudurYap('bm' + z, 'Test1234!', { schoolName: okulAdi, city: 'Ankara', district: 'Mamak' }, A);
   const kalan = await iste('/api/school/hesap-ac', 'POST', { rol: 'student', ad: 'Kalan', soyad: 'Ogrenci', tc: '10000000078' }, bm.token);
   const eskiOkul = bm.user.schoolId;
+  const eskiAdres = (await iste('/api/school/adres', 'GET', null, bm.token)).body.kisaAd;
   const kaldir = await iste('/api/admin/principal-delete', 'POST', { userId: bm.user.id }, A);
   await hesapAc({ fullName: 'Ikinci Mudur', username: 'im' + z, email: 'im' + z + '@test.com' });
   const im = await girisYap('im' + z + '@test.com', 'Test1234!');
-  const yeniBas = await iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true,  schoolName: okulAdi, city: 'Ankara', district: 'Mamak' }, im.token);
-  kontrol('müdürü kaldırılan okula yeniden başvurulabiliyor', kalan.status === 200 && kaldir.status === 200 && yeniBas.status === 200,
-    kalan.status + ' ' + kaldir.status + ' ' + J(yeniBas.body));
-  const bek = await iste('/api/admin/pending', 'GET', null, A);
-  const imBas = (bek.body.principals || []).find(x => x.anaHesapId === im.user.id);
-  const karar = imBas ? await iste('/api/admin/decide', 'POST', { userId: imBas.id, approve: true }, A) : { status: 0 };
+  const imKod = await kisiKodu(im.token);
+  const eskiYol = await iste('/api/okul-basvurusu', 'POST', { schoolName: okulAdi, city: 'Ankara', district: 'Mamak' }, A);
+  kontrol('müdür başvurusu ucu yok', eskiYol.status === 404, String(eskiYol.status));
+  const yeniAc = await iste('/api/admin/okul-ac', 'POST', { schoolName: okulAdi, city: 'Ankara', district: 'Mamak',
+    kisaAd: eskiAdres, mudurKodu: imKod }, A);
+  kontrol('müdürü kaldırılan okul yeni müdürle yeniden açıldı (eski adresiyle)', kalan.status === 200 && kaldir.status === 200 &&
+    yeniAc.status === 200 && yeniAc.body.okul.id === eskiOkul && yeniAc.body.okul.kisaAd === eskiAdres,
+    kalan.status + ' ' + kaldir.status + ' ' + J(yeniAc.body));
   const im2 = await girisYap('im' + z + '@test.com', 'Test1234!');
   const ogrListesi = await iste('/api/school/students', 'GET', null, im2.token);
-  kontrol('yeni müdür aynı okulu ve öğrencilerini devraldı', !!imBas && imBas.schoolId === eskiOkul && karar.status === 200 &&
-    im2.user.schoolId === eskiOkul && (ogrListesi.body.students || []).some(s => s.fullName === 'Kalan Ogrenci'),
-    J(imBas) + ' ' + im2.user.schoolId + ' ' + eskiOkul);
-  const ikinciKarar = imBas ? await iste('/api/admin/decide', 'POST', { userId: imBas.id, approve: true }, A) : { status: 0 };
-  kontrol('karara bağlanmış başvuru ikinci kez onaylanmıyor', ikinciKarar.status === 400, String(ikinciKarar.status));
-
-  /* Müdür başvurusu: 18 yaşından büyük olmalı, beyan şart. */
-  await hesapAc({ fullName: 'Genc Aday', username: 'genc' + z, email: 'genc' + z + '@test.com' });
-  const genc = await girisYap('genc' + z + '@test.com', 'Test1234!');
-  const kucuk = await iste('/api/okul-basvurusu', 'POST', { dogum: '2012-05-05', beyan: true, schoolName: 'Genc Okul ' + z,
-    city: 'Ankara', district: 'Mamak' }, genc.token);
-  const beyansiz = await iste('/api/okul-basvurusu', 'POST', { dogum: '1990-05-05', schoolName: 'Genc Okul ' + z,
-    city: 'Ankara', district: 'Mamak' }, genc.token);
-  const tarihsiz = await iste('/api/okul-basvurusu', 'POST', { beyan: true, schoolName: 'Genc Okul ' + z,
-    city: 'Ankara', district: 'Mamak' }, genc.token);
-  kontrol('18 yaşından küçük, beyansız ve doğum tarihsiz müdür başvurusu reddediliyor',
-    kucuk.status === 400 && kucuk.body.alan === 'dogum' && beyansiz.status === 400 && beyansiz.body.alan === 'beyan' &&
-    tarihsiz.status === 400 && tarihsiz.body.alan === 'dogum', J(kucuk.body) + J(beyansiz.body) + J(tarihsiz.body));
-  const bekleyenler = await iste('/api/admin/pending', 'GET', null, A);
-  const imBekleyen = (bekleyenler.body.principals || []).length;
-  kontrol('yönetici listesi başvuranın yaşını ve hesabın açılışını da görür (varsa)', bekleyenler.status === 200, String(imBekleyen));
+  kontrol('yeni müdür aynı okulu ve öğrencilerini devraldı', im2.user.role === 'principal' && im2.user.schoolId === eskiOkul &&
+    (ogrListesi.body.students || []).some(s => s.fullName === 'Kalan Ogrenci'), im2.user.schoolId + ' ' + eskiOkul);
+  const ikinciAc = await iste('/api/admin/okul-ac', 'POST', { schoolName: okulAdi, city: 'Ankara', district: 'Mamak',
+    kisaAd: eskiAdres, mudurKodu: await kisiKodu(im2.token) }, A);
+  kontrol('müdürü olan okul ikinci kez açılmıyor', ikinciAc.status === 400 && ikinciAc.body.alan === 'okul', J(ikinciAc.body));
 
   /* Veli çocuğunu kaldırınca hesabı eski okula bağlı kalmıyor. */
   const cocukKaldir = await iste('/api/kisilik/cocuk-kaldir', 'POST', { id: ogr2.user.id }, veli2.token);

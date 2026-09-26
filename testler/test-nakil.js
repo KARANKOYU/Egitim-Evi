@@ -4,7 +4,7 @@
    - yanlış doğum tarihi reddedilir, çok deneme kilitlenir;
    - eski okulun ödev ve devamsızlığı yeni okula görünmez, eski okul da öğrenciyi artık görmez;
    - öğrenci ve velisi yıl seçicide önceki okulu seçip eski kayıtları salt okunur görür. */
-const { iste, girisYap, hesapAc, kisilikGec, tcUret } = require('./giris');
+const { iste, girisYap, hesapAc, kisiKodu, kisilikGec, tcUret } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -66,18 +66,17 @@ const gun = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
   kontrol('veli çocuğa bağlandı', bag.status === 200, J(bag.body));
 
   console.log('=== 2) YENİ OKUL ===');
+  /* Müdür kendi hesabını açar, kişi kodunu yöneticiye verir; yönetici okulu açıp onu müdür yapar. */
   const mb = 'nakilmudur' + z;
+  await hesapAc({ fullName: 'Burcu Yeni', username: mb, email: mb + '@test.com', password: 'Burcu2026Yeni!' });
+  const mbIlk = await girisYap(mb, 'Burcu2026Yeni!');
   const okulAc = await iste('/api/admin/okul-ac', 'POST', { schoolName: 'Nakil Deneme Ortaokulu ' + z, city: 'Ankara',
-    district: 'Çankaya', kisaAd: 'nakil-' + z,
-    mudur: { eposta: mb + '@test.com', ad: 'Burcu', soyad: 'Yeni', kullaniciAdi: mb, telefon: '+905321234567', sifre: 'Nakil2026!' } }, A);
+    district: 'Çankaya', kisaAd: 'nakil-' + z, mudurKodu: await kisiKodu(mbIlk.token) }, A);
   kontrol('yönetici okul B yi açtı', okulAc.status === 200, J(okulAc.body));
-  let mbG = await girisYap(mb, 'Nakil2026!');
-  await iste('/api/kvkk-onay', 'POST', { onay: true }, mbG.token);
-  await iste('/api/password', 'POST', { old: 'Nakil2026!', new: 'Burcu2026Yeni!' }, mbG.token);
-  mbG = await girisYap(mb, 'Burcu2026Yeni!');
-  const roller = (await iste('/api/kisilikler', 'GET', null, mbG.token)).body.roller || [];
-  const mRol = roller.find(r => r.rol === 'principal');
-  const MB = (await kisilikGec(mbG.token, 'rol', mRol.id)).token;
+  const mbG = await girisYap(mb, 'Burcu2026Yeni!');
+  const MB = mbG.user.role === 'principal' ? mbG.token
+    : (await kisilikGec(mbG.token, 'rol', ((await iste('/api/kisilikler', 'GET', null, mbG.token)).body.roller || [])
+      .find(r => r.rol === 'principal').id)).token;
 
   console.log('=== 3) AYNI T.C. İLE EKLEME ===');
   const dogumsuz = await iste('/api/school/hesap-ac', 'POST', { rol: 'student', ad: 'Deniz', soyad: 'Göçer', tc }, MB);

@@ -44,12 +44,12 @@ const KVKK_SERBEST = ['me', 'kvkk-onay', 'logout', 'meta', 'challenge', 'okullar
    kullanabilir. */
 const SIFRE_SERBEST = KVKK_SERBEST.concat(['password']);
 
-/* Rolü olmayan (henüz veli olmamış, okul başvurusu yapmamış) hesabın
-   girebildiği yollar: kendi hesabı, bildirimleri, müdür başvurusu ve veli
+/* Rolü olmayan (henüz portalı olmayan) yetişkin hesabının girebildiği
+   yollar: kendi hesabı, bildirimleri, portallar (+ Ekle, kişi kodu) ve veli
    kodu. Geri kalan her yol burada kapanır; bölümlerin rol denetimine
    bırakılmaz. */
 const ROLSUZ_SERBEST = KVKK_SERBEST.concat(['profile', 'password', 'notifications',
-  'okul-basvurusu', 'parent', 'push', 'kisilikler', 'kisilik', 'hesap', 'yorumlar', 'hatirlaticilar']);
+  'parent', 'push', 'kisilikler', 'kisilik', 'hesap', 'yorumlar', 'hatirlaticilar']);
 
 /* Yolun ilk parçası -> bölüm. Bir yol yalnızca bir bölüme gider. */
 const BOLUM = {
@@ -84,7 +84,6 @@ const BOLUM = {
   'okul-sayfa': okul_sayfasi,
   'notifications': kayit,
   'okul-adres': kayit,
-  'okul-basvurusu': kayit,
   'okullar': kayit,
   'parent': veli,
   'password': kayit,
@@ -182,7 +181,9 @@ async function handleApi(req, res, segs, method) {
     });
   }
 
-  if (me && !me.role && ROLSUZ_SERBEST.indexOf(p) < 0) {
+  /* Olmayan (ya da kaldırılmış: okul-basvurusu) yol rolsüz kişiye de 404
+     döner; kapı yalnız var olan bölümleri kapatır. */
+  if (me && !me.role && BOLUM[p] && ROLSUZ_SERBEST.indexOf(p) < 0) {
     return sendJSON(res, 403, {
       error: 'Hesabın henüz bir okula bağlı değil. Okul yönetimi seni ekleyince bu bölüm açılır.',
       rolsuz: true

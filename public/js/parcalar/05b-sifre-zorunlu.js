@@ -4,9 +4,12 @@
    uygulama açılmaz; sunucu da bu durumdaki isteği reddeder. */
 
 function girisSonrasi(d) {
-  /* Birden çok rolü olan yetişkin önce seçim ekranına; tek çocuğu olan veli
-     o çocukla açılır. */
-  if (d && d.kisilikSec) S.acilis = 'kisilikler';
+  /* Birden çok portalı olan yetişkin önce hesabının ana sayfasını görür
+     (portal kartları; soldaki menüden seçer). Tek çocuğu olan veli o çocukla
+     açılır. Yeni oturumda (giriş, portal değişimi) portal dışı bilgisi
+     sunucunun cevabından gelir. */
+  if (d && d.token) portalDisiYaz(!!d.kisilikSec);
+  if (d && d.kisilikSec) S.acilis = 'ana';
   if (d && d.cocuk) S.veliCocuk = d.cocuk;
   if (d && d.kvkkGuncel === false) { kvkkOnayIste(d); return; }
   if (S.user && S.user.sifreDegismeli) { sifreBelirleIste(); return; }

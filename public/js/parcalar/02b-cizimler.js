@@ -1,4 +1,4 @@
-/* Küçük çizimler (64x64): rol seçimi, "Ekle" penceresi, açılış sayfası.
+/* Küçük çizimler (64x64): portallar, "+ Ekle" penceresi, açılış sayfası.
    El yapımı SVG; renkler CSS'ten gelir (28-yetiskin-hesap.css, .cizim):
      c-cizgi       ana çizgi (yazı rengi)
      c-dolgu       yumuşak zemin (marka rengi açık tonu)
@@ -50,18 +50,21 @@ var CIZIMLER = {
     '<circle class="c-dolgu" cx="46" cy="20" r="10"/>' +
     '<circle class="c-cizgi" cx="46" cy="20" r="10"/>' +
     '<path class="c-vurgu" d="M46 15v10M41 20h10"/>',
-  'ogretmen-kodu':
+  /* Kişi kodu: kart üstünde üç grup (5'erli gösterim). */
+  'kisi-kodu':
     '<rect class="c-dolgu" x="7" y="15" width="50" height="34" rx="5"/>' +
     '<rect class="c-cizgi" x="7" y="15" width="50" height="34" rx="5"/>' +
-    '<rect class="c-vurgu" x="12" y="24" width="4.5" height="8" rx="1.2"/>' +
-    '<rect class="c-vurgu" x="18" y="24" width="4.5" height="8" rx="1.2"/>' +
-    '<rect class="c-vurgu" x="24" y="24" width="4.5" height="8" rx="1.2"/>' +
-    '<path class="c-cizgi" d="M31 28h2"/>' +
-    '<rect class="c-vurgu" x="35.5" y="24" width="4.5" height="8" rx="1.2"/>' +
-    '<rect class="c-vurgu" x="41.5" y="24" width="4.5" height="8" rx="1.2"/>' +
-    '<rect class="c-vurgu" x="47.5" y="24" width="4.5" height="8" rx="1.2"/>' +
+    '<rect class="c-vurgu" x="11" y="24" width="3.2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="15.5" y="24" width="3.2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="20" y="24" width="3.2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="27.4" y="24" width="3.2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="31.9" y="24" width="3.2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="36.4" y="24" width="3.2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="43.8" y="24" width="3.2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="48.3" y="24" width="3.2" height="8" rx="1"/>' +
     '<path class="c-cizgi" d="M13 40h18"/>',
-  'okul-kaydet':
+  /* Okul ve artı: okulunu açtır (Müdür). */
+  'okul-ac':
     '<path class="c-dolgu" d="M8 32 26 20l18 12v22H8z"/>' +
     '<path class="c-cizgi" d="M5 34 26 19l21 15"/>' +
     '<path class="c-cizgi" d="M8 31v23h36V31"/>' +

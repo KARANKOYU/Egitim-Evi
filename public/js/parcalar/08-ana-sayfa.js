@@ -8,8 +8,9 @@ SAYFALAR.ana = function () {
   var u = S.user;
   var ad = u.fullName.split(' ')[0];
 
-  /* Rolü olmayan yetişkin hesabı: rol seçimi ve "Ekle" (08c-kisilikler.js). */
-  if (!u.role) return SAYFALAR.kisilikler();
+  /* Yetişkin hesabının kendisi, portal dışında: portalı yoksa "+ Ekle"ye
+     çağıran kart, varsa portal kartları (08c-kisilikler.js). */
+  if (portalDisindaMi() || !u.role) return portalAnaSayfasi();
   /* Servisçinin ana sayfası seferleridir (19e-servis-konum.js). */
   if (u.role === 'servisci') return SAYFALAR.seferim();
 
@@ -18,16 +19,14 @@ SAYFALAR.ana = function () {
       var s = d.stats;
       yaz(hero('EĞİTİM EVİNE HOŞ GELDİNİZ', 'Merhaba ' + ad + ', sistem yöneticisi panelindesin.') +
         kutucuklar([
-          { k: 'onaylar', ad: 'Onay Bekleyenler', renk: s.bekleyen > 0 ? 'kirmizi' : 'yesil', ikon: 'onay',
-            alt: s.bekleyen > 0 ? s.bekleyen + ' başvuru bekliyor' : 'Bekleyen yok',
-            rozet: s.bekleyen || '' },
-          { k: 'okullar', ad: 'Okullar', renk: 'lacivert', ikon: 'okul', alt: s.okul + ' okul kayıtlı' },
+          { k: 'okullar', ad: 'Okullar', renk: 'lacivert', ikon: 'okul', alt: s.okul + ' okul kayıtlı · Okul aç' },
+          { k: 'mudurler', ad: 'Müdürler', renk: 'yesil', ikon: 'mudur', alt: s.mudur + ' müdür' },
           { k: 'yedekler', ad: 'Yedekleme', renk: 'camgobegi', ikon: 'kutu', alt: 'Veri kopyaları' },
           { k: 'profil', ad: 'Ayarlar', renk: 'gri', ikon: 'ayar', alt: 'Yönetici hesabın' }
         ]) +
         '<div class="grid k4">' +
         stat(s.okul, 'Okul') + stat(s.mudur, 'Müdür') + stat(s.ogretmen, 'Öğretmen') +
-        stat(s.ogrenci, 'Öğrenci') + stat(s.veli, 'Veli') + stat(s.bekleyen, 'Bekleyen başvuru') +
+        stat(s.ogrenci, 'Öğrenci') + stat(s.veli, 'Veli') +
         '</div>');
     });
   }

@@ -194,10 +194,16 @@ Kaydet: `Ctrl+O`, `Enter`, `Ctrl+X`
 > **Ters vekil arkasında değilken bunu açma.** Açıkken herkes başlığı
 > uydurup hız sınırını aşabilir.
 
-### İletişim bilgileri (sayfaların altı)
+### İletişim bilgileri (sayfaların altı) — yayından önce ZORUNLU
 
 Sitenin altında ve Hakkında sayfasında görünecek e-posta ve telefon kodda değil,
-`data/config.yml` dosyasındadır (depo herkese açık olduğu için):
+`data/config.yml` dosyasındadır (depo herkese açık olduğu için).
+
+**Yayına almadan önce en az birini (e-posta ya da telefon) doldur.** Müdür başvurusu
+yoktur: okulunu açtırmak isteyen kişi **+ Ekle → Müdür** penceresinde yöneticinin
+iletişim bilgisini görür ve kişi kodunu oraya verir. İkisi de boşsa pencere yalnızca
+"sayfanın altındaki iletişim bilgileri" der, alt bilgide de bir şey görünmez; kişi
+yöneticiye ulaşamaz. Sunucu açılışta bunu `! Iletisim bilgisi yok` diye uyarır.
 
 ```
 cp /opt/egitimevi/belge/config.ornek.yml /opt/egitimevi/data/config.yml
@@ -327,6 +333,10 @@ journalctl -u egitimevi | grep -A3 "İlk yönetici"
 
 `https://egitimevi.org` adresine `admin@egitimevi.com` ve bu şifreyle gir.
 **Girer girmez Ayarlar'dan şifreyi değiştir.**
+
+Sayfanın altında yöneticinin e-postası ya da telefonu görünmüyorsa `data/config.yml`
+eksiktir (5. adım, "İletişim bilgileri"); doldurmadan okullara duyurma: okulunu
+açtırmak isteyen müdür adayı kişi kodunu kime vereceğini göremez.
 
 ---
 

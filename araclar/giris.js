@@ -96,7 +96,7 @@ async function botCevabi() {
 }
 
 /* Şifre + iki adımlı doğrulamayı birlikte yapar, oturum anahtarını döndürür.
-   okul: okul adresinin kısa adı (egitimevi.org/<kısa ad>); verilirse kullanıcı
+   okul: okul adresinin kısa adı (egitimevi.org/school/<kısa ad>); verilirse kullanıcı
    adı o okulun içinde aranır. */
 async function girisYap(email, sifre, okul) {
   const bot = await botCevabi();
@@ -123,8 +123,9 @@ async function girisYap(email, sifre, okul) {
 }
 
 /* ---- kayıt ve okul hesapları ----
-   Kendisi kaydolan tek tür hesap yetişkin hesabıdır: müdür adayı okulunu
-   kaydeder (müdür rolü), veli kod girer, öğretmen eşleme kodunu okula verir.
+   Kendisi kaydolan tek tür hesap yetişkin hesabıdır: veli çocuğunun veli
+   kodunu girer, öğretmen kişi kodunu okulun müdürüne verir, okulunu açtırmak
+   isteyen kişi kodunu yöneticiye verir (yönetici okulu açar, onu müdür yapar).
    Öğrenci ve servisçi hesabını okul açar. Araçlar ve testler aynı yoldan geçer. */
 
 /* Geçerli (algoritmaya uyan), rastgele T.C. kimlik no — testler ve deneme verisi için. */
@@ -156,7 +157,14 @@ async function kisilikGec(token, tur, id) {
   return r.body;
 }
 
-/* Öğretmen: kendi yetişkin hesabını açar, eşleme kodunu alır; müdür (token)
+/* Kişinin kendi kişi kodu (+ Ekle > Öğretmen / Müdür'de görünen, ham hâli). */
+async function kisiKodu(token) {
+  const k = await iste('/api/kisilikler', 'GET', null, token);
+  if (k.status !== 200 || !k.body.kisiKodu) throw new Error('kişi kodu: ' + (k.body.error || k.status));
+  return k.body.kisiKodu;
+}
+
+/* Öğretmen: kendi yetişkin hesabını açar, kişi kodunu alır; müdür (token)
    kodu girip onu okula ekler. g: { fullName, username, email, password, brans }.
    Dönen: öğretmenin bu okuldaki rol satırı { id, fullName, username }. */
 async function ogretmenYap(token, g) {
@@ -165,9 +173,8 @@ async function ogretmenYap(token, g) {
   const sifre = g.password || 'Test1234!';
   await hesapAc({ fullName: g.fullName, username: kadi, email: eposta, password: sifre, phone: g.telefon || '05321234567' });
   const hesap = await girisYap(eposta, sifre);
-  const k = await iste('/api/kisilikler', 'GET', null, hesap.token);
-  if (k.status !== 200) throw new Error('öğretmen kodu: ' + (k.body.error || k.status));
-  const r = await iste('/api/school/ogretmen-ekle', 'POST', { kod: k.body.ogretmenKodu, brans: g.brans || g.branch }, token);
+  const kod = await kisiKodu(hesap.token);
+  const r = await iste('/api/school/ogretmen-ekle', 'POST', { kod, brans: g.brans || g.branch }, token);
   if (r.status !== 200) throw new Error('öğretmen ekleme (' + kadi + '): ' + (r.body.error || r.status));
   await iste('/api/logout', 'POST', null, hesap.token);
   return Object.assign({ email: eposta }, r.body.hesap);
@@ -190,18 +197,27 @@ async function okulHesabi(token, rol, g, onaylat) {
   return r.body.hesap;
 }
 
-/* Rolsüz kişi okulunu kaydeder, yönetici onaylar. */
-async function mudurYap(kimlik, sifre, basvuru, adminToken) {
+/* Okulunu açtırmak isteyen kişi kişi kodunu yöneticiye verir; yönetici
+   (adminToken) okulu açar ve onu müdür yapar (/api/admin/okul-ac).
+   okul: { schoolName, city, district } ya da { mebSchoolId }; kisaAd
+   verilmezse okulun adından türetilir, alınmışsa ilçe ya da sayı eklenir.
+   Dönen: kişinin yeniden girişi (tek portalı varsa doğrudan müdür rolünde). */
+async function mudurYap(kimlik, sifre, okul, adminToken) {
+  const { kisaAdUret } = require('../sunucu/ortak');
   const g = await girisYap(kimlik, sifre);
-  const b = await iste('/api/okul-basvurusu', 'POST', Object.assign({ dogum: '1980-01-01', beyan: true }, basvuru), g.token);
-  if (b.status !== 200) throw new Error('müdür başvurusu: ' + (b.body.error || b.status));
-  const bek = await iste('/api/admin/pending', 'GET', null, adminToken);
-  const kisi = (bek.body.principals || []).find(x => x.id === g.user.id || x.anaHesapId === g.user.id);
-  if (!kisi) throw new Error('başvuru yönetici listesinde yok');
-  const k = await iste('/api/admin/decide', 'POST', { userId: kisi.id, approve: true }, adminToken);
-  if (k.status !== 200) throw new Error('müdür onayı: ' + (k.body.error || k.status));
+  const mudurKodu = await kisiKodu(g.token);
+  const kok = kisaAdUret(okul.schoolName || ('okul ' + (okul.mebSchoolId || Date.now().toString(36))));
+  const adaylar = okul.kisaAd ? [okul.kisaAd] : [kok, (kok.slice(0, 26) + '-' + kisaAdUret(okul.district || 'ilce')).slice(0, 40)
+    .replace(/-+$/, '')].concat([2, 3, 4, 5, 6, 7, 8, 9].map(n => kok.slice(0, 34).replace(/-+$/, '') + '-' + n));
+  let r = null;
+  for (const kisaAd of adaylar) {
+    r = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okul, { kisaAd, mudurKodu }), adminToken);
+    if (!(r.status === 400 && r.body.alan === 'kisaAd')) break;
+  }
+  if (r.status !== 200) throw new Error('okul açma (' + (okul.schoolName || okul.mebSchoolId) + '): ' + (r.body.error || r.status));
+  await iste('/api/logout', 'POST', null, g.token);
   return girisYap(kimlik, sifre);
 }
 
 module.exports = { BASE, LOG, iste, sonKod, sonOnayAnahtari, epostaOnayla, girisYap, botCevabi, hesapAc, okulHesabi, ogretmenYap,
-  kisilikGec, mudurYap, tcUret };
+  kisiKodu, kisilikGec, mudurYap, tcUret };

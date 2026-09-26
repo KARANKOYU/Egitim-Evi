@@ -16,7 +16,7 @@
 
 const crypto = require('crypto');
 const { sorgu, islem, metinCalistir } = require('./baglanti');
-const { ESKI_SAATLER, kisaAdSorunu, kullaniciAdiSorunu, makeCode, normTelefon, okulHesabiMi, tcSorunu, uid } = require('../ortak');
+const { ESKI_SAATLER, KISI_KODU_DESENI, kisaAdSorunu, kisiKoduUret, kullaniciAdiSorunu, normTelefon, okulHesabiMi, tcSorunu, uid } = require('../ortak');
 const e = require('./esleme');
 const yaz = require('./yazici');
 
@@ -202,14 +202,16 @@ async function iceAktar(veri) {
         atla('kullanici'); continue;
       }
       const tel = normTelefon(u.phone || '');
-      /* Veli kodu yeni biçimdeyse (10 karakter büyük harf + rakam) korunur,
-         veliye verilmiş kod geçersiz kalmasın; eski biçimse yeniden üretilir. */
-      let veliKodu = '';
-      if (rolAd === 'student') {
-        veliKodu = /^[A-Z0-9]{10}$/.test(String(u.code || '')) && !kod.has(u.code) ? u.code : '';
-        while (!veliKodu || kod.has(veliKodu)) veliKodu = makeCode();
-        kod.add(veliKodu);
-      }
+      /* Kişi kodu geçerli biçimdeyse (15 karakter, bkz. ortak.js) ve tekse
+         korunur, veliye verilmiş kod geçersiz kalmasın; eski biçimse (10 haneli)
+         ya da çakışıyorsa yeniden üretilir. */
+      const kisiKodu = k => {
+        let yeni = KISI_KODU_DESENI.test(String(k || '')) && !kod.has(k) ? String(k) : '';
+        while (!yeni || kod.has(yeni)) yeni = kisiKoduUret();
+        kod.add(yeni);
+        return yeni;
+      };
+      const veliKodu = rolAd === 'student' ? kisiKodu(u.code) : '';
       const alan = adAlani(rolAd, okulId);
       const tc = String(u.tc || '');
       const tcAlan = tcAlani(rolAd, okulId);
@@ -224,11 +226,10 @@ async function iceAktar(veri) {
       let ad = metin(u.fullName, 80).trim();
       if (ad.length < 3) ad = (ad + ' -').padEnd(3, '-');
       const kvkk = u.kvkk && u.kvkk.onay;
-      /* Öğretmen eşleme kodu yalnızca yetişkin hesabında; geçerli ve tekse korunur. */
+      /* Yetişkinin kişi kodu yalnızca yetişkin hesabında (okul rolü satırında,
+         servisçide, yöneticide kod yok). */
       const yetiskin = !anaId && (!rolAd || rolAd === 'parent');
-      const eslesme = yetiskin && /^[A-Z0-9]{10}$/.test(String(u.eslesmeKodu || '')) && !kod.has(u.eslesmeKodu)
-        ? u.eslesmeKodu : '';
-      if (eslesme) kod.add(eslesme);
+      const eslesme = yetiskin ? kisiKodu(u.eslesmeKodu) : '';
       await ekle('kullanicilar', {
         id: u.id, kullanici_adi: kullaniciAdiUret(ep, u.username, alan, tcYaz), eposta: ep || null, tc_kimlik: tcYaz,
         ana_hesap_id: anaId, eslesme_kodu: eslesme, okul_acti: u.okulActi === true || !!u.createdBy,

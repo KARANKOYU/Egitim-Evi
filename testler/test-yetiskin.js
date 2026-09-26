@@ -1,14 +1,15 @@
 /* Yetişkin hesabı ve okul rolleri:
    - yetişkin hesabı kaydolur; e-postaya kod (iki adımlı giriş) öğrenci dışında herkese zorunlu;
-   - okul başvurusu "müdür" rol satırı açar, yönetici onaylayana kadar girilemez;
-   - öğretmen eşleme kodunu verir, müdür kodu girince öğretmen rolü açılır; kod tek kullanımlık;
-   - tek rolde doğrudan girilir, birden çok seçenekte seçim ekranı; başkasının rolüne geçilemez;
+   - müdür başvurusu yok: yönetici okulu açar, kişiyi kişi koduyla müdür yapar;
+   - öğretmen kişi kodunu verir, müdür kodu girince öğretmen rolü açılır; kod tek kullanımlık;
+   - tek portalda doğrudan girilir, birden çok portalda yetişkin hesabının ana sayfası; başkasının rolüne geçilemez;
+   - oturum cevabında ve /api/me'de "portallar" (her okul rolü ve her çocuk ayrı satır);
    - bir kişi iki okulda rol alabilir (A'da öğretmen, B'de müdür) ve veli olabilir;
    - öğretmen okuldan ayrılabilir, müdür çıkarabilir; onaylı müdür rolü bırakılamaz;
    - şifre, kişisel bilgi, telefon bildirimi aboneliği yetişkin hesabınındır;
    - hesabı silme (KVKK) şifreyle; müdürken silinemez. */
 const crypto = require('crypto');
-const { iste, girisYap, hesapAc, mudurYap, kisilikGec, okulHesabi, tcUret, botCevabi } = require('./giris');
+const { iste, girisYap, hesapAc, kisiKodu, kisilikGec, okulHesabi, tcUret, botCevabi } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -40,8 +41,10 @@ async function ilkAdim(kimlik, sifre, okul) {
   kontrol('rolü olmayan yetişkin kendi hesabına giriyor, seçim ekranı yok',
     H1.user.yetiskin === true && !H1.user.role && !H1.kisilikSec, J(H1.user));
   const k1 = await iste('/api/kisilikler', 'GET', null, H1.token);
-  kontrol('seçim ekranı: rol yok, çocuk yok, öğretmen kodu var', k1.status === 200 && !k1.body.roller.length &&
-    !k1.body.cocuklar.length && /^[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(k1.body.ogretmenKodu), J(k1.body));
+  kontrol('portal listesi: rol yok, çocuk yok, kişi kodu var (15 karakter, ham)', k1.status === 200 && !k1.body.roller.length &&
+    !k1.body.cocuklar.length && /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(k1.body.kisiKodu), J(k1.body));
+  kontrol('girişte portal listesi boş, oturum hesabın kendisinde', Array.isArray(H1.portallar) && !H1.portallar.length &&
+    H1.hesapAktif === true, J(H1.portallar));
   const ogrKis = await iste('/api/kisilikler', 'GET', null, ogrIlk.body.token);
   kontrol('öğrenci ve yönetici seçim ekranını kullanamıyor', ogrKis.status === 403 &&
     (await iste('/api/kisilikler', 'GET', null, A)).status === 403, String(ogrKis.status));
@@ -49,18 +52,18 @@ async function ilkAdim(kimlik, sifre, okul) {
   kontrol('okul öğretmen hesabı açamıyor (öğretmen kendisi açar)', ogrOgt.status === 400, J(ogrOgt.body));
 
   console.log('=== 2) ÖĞRETMEN KODLA EKLENİYOR ===');
-  const bul = await iste('/api/school/ogretmen-bul?kod=' + encodeURIComponent(k1.body.ogretmenKodu), 'GET', null, M);
+  const bul = await iste('/api/school/ogretmen-bul', 'POST', { kod: k1.body.kisiKodu }, M);
   kontrol('müdür kodu girince yalnızca maskeli ad görüyor', bul.status === 200 && bul.body.kisi.ad === 'Ye*** Ek**' &&
     bul.body.kisi.zatenOkulda === false, J(bul.body));
   const O1 = await girisYap('mat@test.com', 'Test1234!');
-  const ogtBul = await iste('/api/school/ogretmen-bul?kod=' + encodeURIComponent(k1.body.ogretmenKodu), 'GET', null, O1.token);
+  const ogtBul = await iste('/api/school/ogretmen-bul', 'POST', { kod: k1.body.kisiKodu }, O1.token);
   kontrol('yetkisiz öğretmen kod arayamıyor', ogtBul.status === 403, String(ogtBul.status));
-  const ekle = await iste('/api/school/ogretmen-ekle', 'POST', { kod: k1.body.ogretmenKodu, brans: 'Matematik' }, M);
+  const ekle = await iste('/api/school/ogretmen-ekle', 'POST', { kod: k1.body.kisiKodu, brans: 'Matematik' }, M);
   kontrol('öğretmen okula eklendi', ekle.status === 200 && !!ekle.body.hesap.id, J(ekle.body));
-  const tekrar = await iste('/api/school/ogretmen-ekle', 'POST', { kod: k1.body.ogretmenKodu, brans: 'Matematik' }, M);
+  const tekrar = await iste('/api/school/ogretmen-ekle', 'POST', { kod: k1.body.kisiKodu, brans: 'Matematik' }, M);
   kontrol('kod tek kullanımlık: aynı kod ikinci kez çalışmıyor', tekrar.status === 404, J(tekrar.body));
   const k2 = await iste('/api/kisilikler', 'GET', null, H1.token);
-  kontrol('kod yenilendi, seçim ekranında "Öğretmen — okul" var', k2.body.ogretmenKodu !== k1.body.ogretmenKodu &&
+  kontrol('kod yenilendi, portallarda "Öğretmen · okul" var', !!k2.body.kisiKodu && k2.body.kisiKodu !== k1.body.kisiKodu &&
     k2.body.roller.length === 1 && k2.body.roller[0].rol === 'teacher' && k2.body.roller[0].girilebilir &&
     k2.body.roller[0].okulAdi === okulA.schoolName, J(k2.body));
   const bil = await iste('/api/notifications', 'GET', null, H1.token);
@@ -90,14 +93,27 @@ async function ilkAdim(kimlik, sifre, okul) {
   const cocuk = await iste('/api/kisilik/cocuk', 'POST', { code: ogr1.code }, H2.token);
   kontrol('öğretmen rolündeyken çocuk yetişkin hesabına ekleniyor', cocuk.status === 200 && cocuk.body.cocuklar.length === 1, J(cocuk.body));
   const H3 = await girisYap(kadi, 'Test1234!');
-  kontrol('iki seçenek varken seçim ekranı açılıyor', H3.kisilikSec === true && H3.user.yetiskin === true, J(H3));
+  kontrol('iki portal varken yetişkin hesabının ana sayfası açılıyor', H3.kisilikSec === true && H3.user.yetiskin === true, J(H3));
+  kontrol('portallar: öğretmen (okul adıyla) ve veli (çocuğun adıyla); hesabın kendisindeyken hiçbiri aktif değil',
+    H3.hesapAktif === true && H3.portallar.length === 2 &&
+    H3.portallar.some(x => x.tur === 'rol' && x.id === ogretmenRolId && x.rol === 'teacher' && x.ad === 'Öğretmen' &&
+      x.alt === okulA.schoolName && x.okulAdi === okulA.schoolName && x.girilebilir === true && x.aktif === false) &&
+    H3.portallar.some(x => x.tur === 'veli' && x.id === ogr1.id && x.ad === 'Veli' && x.alt === ogr1.fullName &&
+      x.girilebilir === true && x.aktif === false), J(H3.portallar));
   const gecRol = await kisilikGec(H3.token, 'rol', ogretmenRolId);
   kontrol('öğretmen rolüne geçildi', gecRol.user.role === 'teacher' && gecRol.user.id === ogretmenRolId, J(gecRol.user));
+  const rolMe = await iste('/api/me', 'GET', null, gecRol.token);
+  kontrol('rol satırındayken de portallar geliyor (/me ve geçiş cevabı); öğretmen portalı aktif',
+    gecRol.hesapAktif === false && rolMe.body.hesapAktif === false && (rolMe.body.portallar || []).length === 2 &&
+    rolMe.body.portallar.find(x => x.tur === 'rol').aktif === true &&
+    gecRol.portallar.find(x => x.tur === 'rol').aktif === true, J(rolMe.body.portallar));
   const eskiAnahtar = await iste('/api/me', 'GET', null, H3.token);
   kontrol('geçişte eski oturum kapandı', eskiAnahtar.status === 401, String(eskiAnahtar.status));
   const gecVeli = await kisilikGec(gecRol.token, 'veli', ogr1.id);
   kontrol('veli olarak geçildi (çocuk seçili)', gecVeli.user.role === 'parent' && gecVeli.cocuk === ogr1.id &&
     gecVeli.children.length === 1, J(gecVeli));
+  kontrol('veli portalına geçince o çocuğun portalı aktif', gecVeli.hesapAktif === true &&
+    gecVeli.portallar.find(x => x.tur === 'veli' && x.id === ogr1.id).aktif === true, J(gecVeli.portallar));
   const V = gecVeli.token;
 
   console.log('=== 5) BAŞKASININ ROLÜ ===');
@@ -110,23 +126,21 @@ async function ilkAdim(kimlik, sifre, okul) {
     r1.status + ' ' + r2.status + ' ' + r3.status);
 
   console.log('=== 6) İKİ OKUL: A\'DA ÖĞRETMEN, B\'DE MÜDÜR ===');
-  const bas = await iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true,  schoolName: 'Yetişkin Koleji ' + z, city: 'Ankara', district: 'Mamak' }, V);
-  kontrol('okul başvurusu yetişkin hesabından yapılıyor, oturum düşmüyor', bas.status === 200 &&
-    (await iste('/api/me', 'GET', null, V)).status === 200, J(bas.body));
-  const bas2 = await iste('/api/okul-basvurusu', 'POST', { dogum: '1980-01-01', beyan: true,  schoolName: 'İkinci Okul ' + z, city: 'Ankara', district: 'Mamak' }, V);
-  kontrol('bekleyen başvuru varken ikincisi yapılamıyor', bas2.status === 400, J(bas2.body));
-  const k3 = await iste('/api/kisilikler', 'GET', null, V);
-  const mudurRol = k3.body.roller.find(r => r.rol === 'principal');
-  kontrol('müdür rolü "onay bekliyor", girilemez', mudurRol && mudurRol.durum === 'pending' && !mudurRol.girilebilir, J(k3.body.roller));
-  const bekGec = await iste('/api/kisilik/gec', 'POST', { tur: 'rol', id: mudurRol.id }, V);
-  kontrol('onay bekleyen role geçilemiyor', bekGec.status === 403, J(bekGec.body));
-  const bek = await iste('/api/admin/pending', 'GET', null, A);
-  const benim = (bek.body.principals || []).find(p => p.id === mudurRol.id);
-  kontrol('yönetici başvuruyu yetişkin hesabının e-postasıyla görüyor', benim && benim.email === ep, J(benim));
-  await iste('/api/admin/decide', 'POST', { userId: mudurRol.id, approve: true }, A);
+  /* Müdür başvurusu yok: kişi kodunu yöneticiye verir, yönetici okulu açıp onu müdür yapar. */
+  const eskiYol = await iste('/api/okul-basvurusu', 'POST', { schoolName: 'Yetişkin Koleji ' + z, city: 'Ankara', district: 'Mamak' }, V);
+  kontrol('müdür başvurusu ucu yok', eskiYol.status === 404, String(eskiYol.status));
+  const vKod = await kisiKodu(V);
+  const ac = await iste('/api/admin/okul-ac', 'POST', { schoolName: 'Yetişkin Koleji ' + z, city: 'Ankara', district: 'Mamak',
+    kisaAd: 'yetiskin-koleji-' + z, mudurKodu: vKod }, A);
+  kontrol('yönetici okulu kişi koduyla açtı; kişinin oturumu düşmüyor', ac.status === 200 && ac.body.mudur.ad === 'Yeter Ekin' &&
+    (await iste('/api/me', 'GET', null, V)).status === 200, J(ac.body));
+  const vBil = await iste('/api/notifications', 'GET', null, V);
+  kontrol('kişiye "müdürü olarak eklendin" bildirimi gitti', (vBil.body.notifications || []).some(n => /müdürü olarak eklendin/.test(n.text)),
+    J(vBil.body.notifications));
   const k4 = await iste('/api/kisilikler', 'GET', null, V);
-  kontrol('onaydan sonra iki okul rolü ve bir çocuk', k4.body.roller.filter(r => r.girilebilir).length === 2 &&
-    k4.body.cocuklar.length === 1, J(k4.body));
+  const mudurRol = k4.body.roller.find(r => r.rol === 'principal');
+  kontrol('iki okul rolü ve bir çocuk; kişi kodu yenilendi', k4.body.roller.filter(r => r.girilebilir).length === 2 &&
+    k4.body.cocuklar.length === 1 && !!mudurRol && !!k4.body.kisiKodu && k4.body.kisiKodu !== vKod, J(k4.body));
   const MB = await kisilikGec(V, 'rol', mudurRol.id);
   kontrol('B okulunun müdürü olarak girildi', MB.user.role === 'principal' && MB.user.schoolId !== okulA.schoolId, J(MB.user));
   const ogrAdanB = await iste('/api/school/students', 'GET', null, MB.token);
