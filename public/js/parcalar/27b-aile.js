@@ -178,3 +178,55 @@ function aileAyarKarti(d) {
   return h;
 }
 
+function aileSinirSatiri(s) {
+  var dakikalar = [15, 30, 45, 60, 90, 120, 180, 240];
+  if (dakikalar.indexOf(s.dakika) < 0) dakikalar.push(s.dakika);
+  dakikalar.sort(function (a, b) { return a - b; });
+  return '<div class="aile-sinir" data-paket="' + esc(s.paket) + '" data-ad="' + esc(s.ad) + '"><span>' + esc(s.ad) + '</span>' +
+    '<select aria-label="' + esc(s.ad) + ' için günlük sınır">' + dakikalar.map(function (v) {
+      return '<option value="' + v + '"' + (v === s.dakika ? ' selected' : '') + '>' + aileSure(v) + '</option>';
+    }).join('') + '</select><button type="button" class="btn kucuk gri" data-act="aile-sinir-sil">Kaldır</button></div>';
+}
+
+EYLEMLER['aile-cocuk'] = function (el, id) {
+  S.veliCocuk = id;
+  return git('aile');
+};
+
+EYLEMLER['aile-sinir-ekle'] = function () {
+  var s = $('aileYeniUyg');
+  if (!s || !s.value) return;
+  var o = s.options[s.selectedIndex];
+  $('aileSinirlar').insertAdjacentHTML('beforeend', aileSinirSatiri({ paket: s.value, ad: o.getAttribute('data-ad'), dakika: 60 }));
+  s.removeChild(o);
+  s.value = '';
+};
+
+EYLEMLER['aile-sinir-sil'] = function (el) {
+  var satir = el.closest('.aile-sinir');
+  if (satir) satir.parentNode.removeChild(satir);
+};
+
+EYLEMLER['aile-kaydet'] = function (el) {
+  var d = AILE.veri;
+  if (!d) return;
+  var sinirlar = Array.prototype.map.call(document.querySelectorAll('#aileSinirlar .aile-sinir'), function (x) {
+    return { paket: x.getAttribute('data-paket'), ad: x.getAttribute('data-ad'), dakika: Number(x.querySelector('select').value) };
+  });
+  var toplam = Number($('aileToplam').value);
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/aile/ayar', 'POST', {
+    studentId: d.ogrenci.id, wifiDk: Number($('aileWifi').value), mobilDk: Number($('aileMobil').value),
+    konumAcik: $('aileKonum').checked, kullanimAcik: $('aileKullanim').checked,
+    toplamSinir: toplam || null, sinirlar: sinirlar
+  }).then(function () {
+    return git('aile').then(function () { sayfaMesaji('iyi', 'Kaydedildi. Telefon yeni ayarı en geç yarım saat içinde alır.'); });
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('aileMesaj', 'hata', e.message); });
+};
+
+EYLEMLER['aile-cihaz-kaldir'] = function (el, id) {
+  if (!confirm('Bu telefonun bağlantısı kaldırılsın mı? Uygulama konum ve süre göndermeyi bırakır.')) return;
+  var d = AILE.veri;
+  return api('/aile/cihaz-kaldir', 'POST', { studentId: d.ogrenci.id, cihazId: id })
+    .then(function () { return git('aile'); })['catch'](hataGoster);
+};
