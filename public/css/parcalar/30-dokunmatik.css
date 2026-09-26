@@ -1,0 +1,30 @@
+/* Dokunmatik ekran düzeltmeleri. Bilerek en son dosya: stiller dosya adı
+   sırasıyla birleşir, buradaki kurallar öncekileri ezer. */
+
+/* ================= dokunmatik ekran =================
+   Parmakla basılan ekranda (telefon, tablet) her düğme en az 44 piksel
+   yüksekliğinde olur ve yan yana düğmeler arasında boşluk kalır: küçük
+   düğmeye basamama ve yanındakine basma sorunu bunun içindir. Yazı kutuları
+   16 pikselden küçük olursa iPhone odaklanınca sayfayı büyütür; o yüzden 16. */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn.kucuk { min-height: 40px; padding: 9px 14px; font-size: 14px; }
+  .iconbtn { min-width: 44px; min-height: 44px; }
+  .navlink { min-height: 46px; }
+  .baglanti { min-height: 40px; padding: 8px 6px; font-size: 14px; }
+  .sekme, .sekme.kucuk { min-height: 40px; padding: 9px 15px; }
+  .durum-dugme { min-height: 40px; min-width: 44px; }
+  .tabs button, .kimlik-sec button { min-height: 44px; }
+  input, select, textarea,
+  .field input, .field select, .field textarea,
+  .filtre-satir .field input, .filtre-satir .field select { font-size: 16px; }
+  .onay input[type="checkbox"], .onay-satiri input { width: 22px; height: 22px; }
+  .onay, .onay-satiri { min-height: 40px; align-items: center; }
+  /* Yan yana küçük düğmeler birbirine yapışmasın. */
+  .satir { gap: 10px; }
+  .dugme-satir, .kisilik-islem, .modal-alt { gap: 10px; }
+  .footer a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 4px; }
+  /* Üstüne gelince yükselme telefonda "ilk dokunuşta kıpırdayıp ikincide
+     basılma" hissi verir; kapatılır. */
+  .btn:hover, .ekle-kutu:hover, .kart.tikla:hover { transform: none; }
+}
