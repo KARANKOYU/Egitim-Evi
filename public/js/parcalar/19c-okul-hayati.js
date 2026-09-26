@@ -19,6 +19,60 @@ function bugunYerel() {
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 }
 
+SAYFALAR.yemek = function () {
+  return api('/yemek' + (S.yemekBas ? '?bas=' + S.yemekBas : '')).then(function (d) {
+    S.yemekVeri = d;
+    var h = hero('YEMEK LİSTESİ', 'Okulun haftalık menüsü.');
+    h += '<div class="kart hafta-gezgin">' +
+      '<button class="btn kucuk gri" data-act="yemek-hafta" data-bas="' + gunEkleYerel(d.bas, -7) + '">' + ik('geri') + 'Önceki<span class="genis"> hafta</span></button>' +
+      '<b>' + gunKisa(d.bas) + ' – ' + gunKisa(d.bit) + '</b>' +
+      '<button class="btn kucuk gri" data-act="yemek-hafta" data-bas="' + gunEkleYerel(d.bas, 7) + '">Sonraki<span class="genis"> hafta</span></button></div>';
+
+    if (!d.okullar.length) { yaz(h + bosKutu('yemek', 'Bağlı olduğun bir okul yok.')); return; }
+
+    var bugun = bugunYerel();
+    for (var o = 0; o < d.okullar.length; o++) {
+      var okul = d.okullar[o], gunler = {};
+      for (var g = 0; g < okul.gunler.length; g++) gunler[okul.gunler[g].tarih] = okul.gunler[g];
+      if (d.okullar.length > 1 || !S.user.schoolId) h += '<h3 class="sb">' + esc(okul.ad) + '</h3>';
+      h += '<div class="yemek-hafta">';
+      for (var i = 0; i < 7; i++) {
+        var tarih = gunEkleYerel(d.bas, i), y = gunler[tarih];
+        if (i >= 5 && !y) continue;   // hafta sonu menü yoksa gösterme
+        h += '<div class="yemek-gun' + (tarih === bugun ? ' bugun' : '') + '">' +
+          '<div class="yemek-gun-ust"><b>' + YEMEK_GUN[i] + '</b><span>' + gunKisa(tarih) + '</span></div>' +
+          (y ? '<ul>' + y.menu.split('\n').map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' +
+            (y.kalori ? '<div class="alt">' + y.kalori + ' kcal</div>' : '')
+            : '<div class="alt">Menü girilmedi</div>') + '</div>';
+      }
+      h += '</div>';
+    }
+    if (d.duzenleyebilir) {
+      h += '<div style="margin-top:14px"><button class="btn" data-act="yemek-duzenle">Bu haftayı düzenle</button></div>';
+    }
+    yaz(h);
+  });
+};
+
+EYLEMLER['yemek-hafta'] = function (el) { S.yemekBas = el.getAttribute('data-bas'); return SAYFALAR.yemek(); };
+
+EYLEMLER['yemek-duzenle'] = function () {
+  var d = S.yemekVeri, okul = d.okullar[0], gunler = {};
+  for (var g = 0; g < okul.gunler.length; g++) gunler[okul.gunler[g].tarih] = okul.gunler[g];
+  var h = '<div class="hint" style="margin-bottom:10px">Her satıra bir yemek yaz. Boş bırakılan günün menüsü silinir.</div>';
+  for (var i = 0; i < 7; i++) {
+    var tarih = gunEkleYerel(d.bas, i), y = gunler[tarih] || { menu: '', kalori: '' };
+    h += '<div class="yemek-duzen"><div class="field"><label for="ym' + i + '">' + YEMEK_GUN[i] + ' · ' + gunKisa(tarih) + '</label>' +
+      '<textarea id="ym' + i + '" class="yMenu" data-tarih="' + tarih + '" rows="' + (i >= 5 ? 1 : 3) + '" maxlength="500" ' +
+      'placeholder="' + (i >= 5 ? 'Hafta sonu (isteğe bağlı)' : 'Mercimek çorbası\nTavuk sote\nPirinç pilavı\nAyran') + '">' + esc(y.menu) + '</textarea></div>' +
+      '<div class="field"><label for="yk' + i + '">Kalori</label><input type="number" id="yk' + i + '" class="yKalori" min="1" max="5000" ' +
+      'value="' + (y.kalori || '') + '" placeholder="kcal"></div></div>';
+  }
+  h += '<div id="yMesaj"></div>';
+  modalAc(gunKisa(d.bas) + ' – ' + gunKisa(d.bit) + ' menüsü', h,
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button><button class="btn" data-act="yemek-kaydet">Kaydet</button>');
+};
+
 /* ================= servis ================= */
 function telBaglanti(tel) {
   return tel ? '<a href="tel:' + esc(telefonNorm(tel)) + '">' + esc(telefonGoster(tel)) + '</a>' : '';

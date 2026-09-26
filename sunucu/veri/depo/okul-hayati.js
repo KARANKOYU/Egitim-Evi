@@ -3,6 +3,28 @@
 
 const { sorgu, tek, calistir, islem } = require('../baglanti');
 
+/* ---------------- yemek listesi ---------------- */
+
+/* Okulların [bas, bit] aralığındaki menüleri. */
+const yemekler = (okulIdler, bas, bit) => sorgu(
+  'SELECT okul_id, tarih, menu, kalori FROM yemek_listesi ' +
+  'WHERE okul_id = ANY($1::text[]) AND tarih BETWEEN $2 AND $3 ORDER BY tarih', [okulIdler, bas, bit]);
+
+/* Günleri tek işlemde yazar: menüsü boş gün silinir. liste: [{ tarih, menu, kalori }] */
+async function yemekYaz(okulId, liste) {
+  await islem(async () => {
+    for (const g of liste) {
+      if (!g.menu) {
+        await calistir('DELETE FROM yemek_listesi WHERE okul_id = $1 AND tarih = $2', [okulId, g.tarih]);
+        continue;
+      }
+      await calistir('INSERT INTO yemek_listesi (okul_id, tarih, menu, kalori) VALUES ($1, $2, $3, $4) ' +
+        'ON CONFLICT (okul_id, tarih) DO UPDATE SET menu = EXCLUDED.menu, kalori = EXCLUDED.kalori',
+        [okulId, g.tarih, g.menu, g.kalori || null]);
+    }
+  });
+}
+
 /* ---------------- servisler ---------------- */
 
 const SERVIS_ALANLARI =
