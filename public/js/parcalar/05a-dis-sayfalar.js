@@ -152,6 +152,7 @@ function siteBilgisiYukle() {
     sayilariCiz(d.sayilar);
     iletisimCiz(d.iletisim);
     yapimcilariCiz(d.yapimcilar || []);
+    if (d.android && $('sUygulama')) $('sUygulama').href = d.android;
   })['catch'](function () {
     siteBilgisi.yukleniyor = false;
     var bantlar = document.querySelectorAll('.v-sayilar');

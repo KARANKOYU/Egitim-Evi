@@ -344,8 +344,10 @@ bağlanır, rol seçiminde *Veli — çocuğun adı* satırı çıkar.
 ### Açılış sayfası, giriş ve site ayarları
 
 Giriş yapmamış ziyaretçi şu sayfaları görür; hepsinde aynı üst şerit (sol
-üstte **Giriş** ve **Kayıt ol**, sağda **Hakkında** ve **Yapımcılar**) ve alt
-bilgi (ortada GitHub'daki kaynak koduna bağlantı) vardır. **Yapımcılar**'a
+üstte **Giriş** ve **Kayıt ol**, sağda **Android uygulaması**, ay/güneş, **Hakkında**, **SSS**
+ve **Yapımcılar**) ve alt bilgi (ortada GitHub'daki kaynak koduna bağlantı) vardır.
+**Android uygulaması** telefon uygulamasının son sürümünü (APK) indirir; Play Store'a
+çıkınca `data/config.yml` içinde `uygulama: android:` satırına oranın adresi yazılır. **Yapımcılar**'a
 basınca projede emeği geçenlerin listesi açılır; liste depodaki
 `yapimcilar.json` dosyasındadır, projeye katılan kendini oraya ekler:
 

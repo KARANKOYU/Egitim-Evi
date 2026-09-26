@@ -56,7 +56,8 @@ function yamlOku(metin) {
 
 const EPOSTA = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-z]{2,}$/i;
 
-let config = { iletisim: { eposta: '', telefon: '' } };
+const ANDROID_VARSAYILAN = 'https://github.com/KARANKOYU/Egitim-Evi-App/releases/latest/download/egitim-evi.apk';
+let config = { iletisim: { eposta: '', telefon: '' }, android: ANDROID_VARSAYILAN };
 let configZamani = -1;
 
 /* Dosya en fazla 30 saniyede bir yoklanır; değiştiyse yeniden okunur. */
@@ -74,11 +75,14 @@ function configGuncel() {
   const iletisim = ham.iletisim || {};
   const eposta = String(iletisim.eposta || '').trim().slice(0, 254);
   const telefon = String(iletisim.telefon || '').replace(/[^0-9+() -]/g, '').trim().slice(0, 24);
+  /* Android uygulamasının indirme bağlantısı (Play Store'a çıkınca oranın adresi). */
+  const android = String((ham.uygulama || {}).android || '').trim();
   config = {
     iletisim: {
       eposta: EPOSTA.test(eposta) ? eposta : '',
       telefon: telefon.replace(/[^0-9]/g, '').length >= 7 ? telefon : ''
-    }
+    },
+    android: /^https:\/\/[^\s"'<>]{4,300}$/.test(android) ? android : ANDROID_VARSAYILAN
   };
   return config;
 }
@@ -146,6 +150,7 @@ async function uclar(k) {
     /* Kayıtlı kişi sayısı bir dakika önbellekte; açık olan ondan büyük görünmesin. */
     sayilar: { okul: s.okul, kisi: s.kisi, cevrimici: Math.min(acikSayisi(), s.kisi) },
     iletisim: configGuncel().iletisim,
+    android: configGuncel().android,
     yapimcilar: yapimcilariGuncel()
   });
 }

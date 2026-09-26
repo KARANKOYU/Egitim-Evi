@@ -47,6 +47,14 @@
   border: 0; border-radius: var(--r-mini); background: transparent; color: var(--yazi); cursor: pointer;
 }
 .site-tema:hover { background: var(--ana-acik); color: var(--ana-koyu); }
+/* Android uygulamasını indir (ayın solunda) */
+.site-uygulama {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 12px; border-radius: var(--r-mini);
+  color: var(--yazi); font-weight: 600; font-size: 14.5px; text-decoration: none;
+}
+.site-uygulama:hover { background: var(--ana-acik); color: var(--ana-koyu); }
+.site-uygulama .ikon { width: 19px; height: 19px; }
+@media (max-width: 640px) { .site-uygulama span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
 .site-tema .ikon { width: 21px; height: 21px; }
 
 /* Yapımcılar: düğmenin altında açılan liste. */

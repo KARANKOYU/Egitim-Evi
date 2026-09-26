@@ -5,3 +5,8 @@
 iletisim:
   eposta: ""
   telefon: ""
+
+# Sitenin üst şeridindeki "Android uygulaması" düğmesi. Boşsa GitHub'daki son sürüm açılır;
+# Play Store'a çıkınca oranın adresi yazılır (https ile başlamalı).
+uygulama:
+  android: ""

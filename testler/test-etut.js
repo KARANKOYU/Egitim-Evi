@@ -7,7 +7,8 @@
    - gelmeyen öğrenciye ve velisine bildirim gider; öğrenci ve veli görür;
    - sonuçlanmış ödevin kendisi düzeltilebilir (yalnızca sahibi);
    - gönderilmiş mesajı yalnızca gönderen düzeltir; "düzenlendi" görünür;
-   - /api/site girişsiz açık, yalnızca sayılar, iletişim ve yapımcılar (yapimcilar.json) döner. */
+   - /api/site girişsiz açık, yalnızca sayılar, iletişim, Android uygulamasının indirme adresi
+     ve yapımcılar (yapimcilar.json) döner. */
 const { iste, girisYap, hesapAc, mudurYap, okulHesabi } = require('./giris');
 
 let gecti = 0, kaldi = 0;
@@ -177,8 +178,9 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
   const site = await iste('/api/site', 'GET', null, null);
   kontrol('girişsiz açık; okul, kişi ve şu an açık sayısı', site.status === 200 && site.body.sayilar.okul >= 1 &&
     site.body.sayilar.kisi >= 4 && site.body.sayilar.cevrimici >= 1, J(site.body));
-  kontrol('yalnızca sayılar, iletişim ve yapımcılar dönüyor (kişi bilgisi yok)',
-    Object.keys(site.body).sort().join(',') === 'iletisim,sayilar,yapimcilar' &&
+  kontrol('yalnızca sayılar, iletişim, uygulama adresi ve yapımcılar dönüyor (kişi bilgisi yok)',
+    Object.keys(site.body).sort().join(',') === 'android,iletisim,sayilar,yapimcilar' &&
+    /^https:\/\//.test(site.body.android) &&
     Object.keys(site.body.iletisim).sort().join(',') === 'eposta,telefon' &&
     site.body.yapimcilar.every(y => Object.keys(y).sort().join(',') === 'ad,github,katki'), J(site.body));
 

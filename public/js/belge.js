@@ -43,6 +43,8 @@
   var yerler = document.querySelectorAll('[data-yapimcilar]');
   if (!yerler.length || !window.fetch) return;
   fetch('/api/site', { credentials: 'omit' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    var u = document.getElementById('sUygulama');
+    if (u && d && typeof d.android === 'string' && /^https:\/\//.test(d.android)) u.href = d.android;
     var l = d && Array.isArray(d.yapimcilar) ? d.yapimcilar : [];
     if (!l.length) return;
     var gh = document.querySelector('#btnYapimcilar .gh');

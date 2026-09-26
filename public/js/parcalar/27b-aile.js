@@ -8,7 +8,7 @@
 var AILE = { harita: null, veri: null };
 var AILE_ARALIK = [1, 5, 10, 15, 30, 60];
 var AILE_SINIR = [0, 30, 60, 90, 120, 180, 240, 300];
-var AILE_APK = 'https://github.com/KARANKOYU/Egitim-Evi-App/releases';
+var AILE_APK = 'https://github.com/KARANKOYU/Egitim-Evi-App/releases/latest/download/egitim-evi.apk';
 
 function aileSure(dk) {
   dk = Number(dk) || 0;
