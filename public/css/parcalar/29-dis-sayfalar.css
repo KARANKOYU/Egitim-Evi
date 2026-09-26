@@ -164,6 +164,28 @@
 .v-ozellikler li:nth-child(4n + 3) .v-oz-ikon { background: var(--vurgu); color: var(--vurgu-yazi); }
 .v-ozellikler li:nth-child(4n + 4) .v-oz-ikon { background: var(--ikinci-koyu); }
 
+/* okulun nasıl başlar: sıralı dört adım (sayılar sıra bildirir) */
+.v-baslangic { padding: 4px 0 44px; }
+.v-baslangic h2 { margin: 0 0 20px; font-size: 30px; }
+.v-baslangic ol {
+  list-style: none; margin: 0; padding: 0; counter-reset: adim;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;
+}
+.v-baslangic li {
+  counter-increment: adim; display: flex; flex-direction: column; gap: 6px;
+  padding: 18px 18px 20px; border-top: 3px solid var(--ana); background: var(--kart);
+  border-radius: 0 0 var(--r-kucuk) var(--r-kucuk);
+}
+.v-baslangic li::before {
+  content: counter(adim); font-family: var(--f-baslik); font-size: 28px; line-height: 1; color: var(--ana);
+  font-variant-numeric: tabular-nums;
+}
+.v-baslangic li > span { font-size: 14.5px; color: var(--soluk); }
+.v-baslangic-sss { margin: 18px 0 0; color: var(--soluk); }
+@media (max-width: 860px) { .v-baslangic ol { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .v-baslangic ol { grid-template-columns: 1fr; } }
+.v-oz-ikon .ikon { width: 22px; height: 22px; }
+
 /* kimin için */
 .vitrin-kimler {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px;
