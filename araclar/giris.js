@@ -149,6 +149,13 @@ async function hesapAc(g) {
   return r.body;
 }
 
+/* Rol değiştir: tur 'rol' (okul rolü satırı id), 'veli' (çocuk id) ya da 'hesap'. */
+async function kisilikGec(token, tur, id) {
+  const r = await iste('/api/kisilik/gec', 'POST', { tur, id }, token);
+  if (r.status !== 200) throw new Error('rol değiştirme: ' + (r.body.error || r.status));
+  return r.body;
+}
+
 /* Öğretmen: kendi yetişkin hesabını açar, eşleme kodunu alır; müdür (token)
    kodu girip onu okula ekler. g: { fullName, username, email, password, brans }.
    Dönen: öğretmenin bu okuldaki rol satırı { id, fullName, username }. */

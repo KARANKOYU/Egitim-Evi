@@ -281,6 +281,137 @@ async function iste(yol, anahtar, method, govde) {
   return { durum: r.status, ms, bayt: Buffer.byteLength(metin), govde: j };
 }
 
+const sonuclar = [];
+async function olc(rol, ad, yol, anahtar) {
+  await iste(yol, anahtar);                 // ısınma
+  const sureler = [];
+  let son;
+  for (let i = 0; i < OLCUM_TEKRAR; i++) {
+    await bekle(ISTEK_ARASI_MS);
+    son = await iste(yol, anahtar);
+    sureler.push(son.ms);
+  }
+  sureler.sort((a, b) => a - b);
+  const r = { rol, ad, yol, durum: son.durum, ortanca: sureler[Math.floor(sureler.length / 2)], enKotu: sureler[sureler.length - 1], kb: son.bayt / 1024 };
+  sonuclar.push(r);
+  const isaret = r.durum !== 200 ? 'HATA ' + r.durum : (r.ortanca > YAVAS_MS ? 'YAVAŞ' : r.kb > AGIR_KB ? 'AĞIR' : '');
+  console.log('  ' + rol.padEnd(9) + ad.padEnd(34) + (r.ortanca.toFixed(0) + ' ms').padStart(8) +
+    (r.enKotu.toFixed(0) + ' ms').padStart(9) + (r.kb.toFixed(1) + ' KB').padStart(10) + '  ' + isaret);
+  await bekle(ISTEK_ARASI_MS);
+  return son;
+}
+
+async function olcumler() {
+  const ogr = 'u_ogr20_3', ogrt = 'u_ogrt0', veli = 'u_veli560', mudur = 'u_mudur';
+  const A = { ogr: await oturum(ogr), ogrt: await oturum(ogrt), veli: await oturum(veli), mudur: await oturum(mudur),
+    admin: await oturum((await baglanti.tek("SELECT id FROM kullanicilar WHERE rol = 'admin' LIMIT 1")).id) };
+  const lgs = (await baglanti.tek("SELECT s.id FROM sinavlar s WHERE s.ad = 'LGS Deneme 8' AND s.ogretmen_id = (SELECT ogretmen_id FROM dersler WHERE sinif_id = 'c_20' AND konu = 'Matematik') LIMIT 1")) || {};
+  const grup = await baglanti.tek('SELECT id FROM sinav_gruplari WHERE ogretmen_id = $1 LIMIT 1', [ogrt]);
+  const odev = await baglanti.tek("SELECT id FROM odevler WHERE ogretmen_id = $1 AND durum = 'finished' LIMIT 1", [ogrt]);
+  const ders = await baglanti.tek('SELECT id FROM dersler WHERE ogretmen_id = $1 LIMIT 1', [ogrt]);
+  const ay = new Date();
+
+  console.log('\n  rol      ekran                              ortanca  en kötü     boyut');
+  await olc('öğrenci', 'Oturum (me)', '/api/me', A.ogr);
+  await olc('öğrenci', 'İlerleyiş', '/api/progress', A.ogr);
+  await olc('öğrenci', 'Sınav grafiği', '/api/exams/grafik', A.ogr);
+  await olc('öğrenci', 'Ders programı', '/api/myschedule', A.ogr);
+  await olc('öğrenci', 'Mesaj kutusu', '/api/mesajlar', A.ogr);
+  const b = await olc('öğrenci', 'Bildirimler (ilk)', '/api/notifications', A.ogr);
+  await olc('öğrenci', 'Bildirimler (yoklama, değişmedi)', '/api/notifications?surum=' + encodeURIComponent((b.govde || {}).surum || ''), A.ogr);
+  await olc('öğrenci', 'Takvim (ay)', '/api/takvim?yil=' + ay.getFullYear() + '&ay=' + (ay.getMonth() + 1), A.ogr);
+  await olc('öğrenci', 'Devamsızlığım', '/api/devamsizlik/benim', A.ogr);
+
+  await olc('öğretmen', 'Ödevlerim', '/api/assignments', A.ogrt);
+  await olc('öğretmen', 'Ödev hedefleri', '/api/assignments/hedefler', A.ogrt);
+  await olc('öğretmen', 'Ödev kontrolü', '/api/assignments/' + odev.id, A.ogrt);
+  await olc('öğretmen', 'Sınavlarım', '/api/exams', A.ogrt);
+  await olc('öğretmen', 'Sınav grupları', '/api/examgroups', A.ogrt);
+  await olc('öğretmen', 'Grup ortalamaları', '/api/examgroups/' + grup.id, A.ogrt);
+  await olc('öğretmen', 'Şablonlar', '/api/exams/sablonlar', A.ogrt);
+  await olc('öğretmen', 'Ders programım', '/api/teacher/schedule', A.ogrt);
+  await olc('öğretmen', 'Yoklama dersleri', '/api/devamsizlik/derslerim', A.ogrt);
+  await olc('öğretmen', 'Yoklama ekranı', '/api/devamsizlik/yoklama?lessonId=' + ders.id, A.ogrt);
+  await olc('öğretmen', 'Mesaj alıcıları', '/api/mesajlar/hedefler', A.ogrt);
+  await olc('öğretmen', 'Mesaj kutusu', '/api/mesajlar', A.ogrt);
+
+  if (lgs.id) {
+    const lgsOgretmen = await baglanti.tek('SELECT ogretmen_id FROM sinavlar WHERE id = $1', [lgs.id]);
+    const T2 = await oturum(lgsOgretmen.ogretmen_id);
+    await olc('öğretmen', 'Değer tablosu (LGS, 7 alan)', '/api/exams/' + lgs.id, T2);
+  }
+
+  await olc('veli', 'Çocuklarım', '/api/parent/children', A.veli);
+  await olc('veli', 'Çocuğun ilerleyişi', '/api/progress?studentId=u_ogr18_20', A.veli);
+  await olc('veli', 'Çocuğun devamsızlığı', '/api/devamsizlik/ogrenci?studentId=u_ogr18_20', A.veli);
+  await olc('veli', 'Mesaj kutusu', '/api/mesajlar', A.veli);
+
+  await olc('müdür', 'Okul öğrencileri (720)', '/api/school/students', A.mudur);
+  await olc('müdür', 'Öğretmenler', '/api/school/teachers', A.mudur);
+  await olc('müdür', 'Sınıflar', '/api/school/classes', A.mudur);
+  await olc('müdür', 'Sınıf programı', '/api/school/schedule?classId=c_5', A.mudur);
+  await olc('müdür', 'Çakışmalar', '/api/school/cakismalar', A.mudur);
+  await olc('müdür', 'Ana sayfa sayıları', '/api/school/ozet', A.mudur);
+  await olc('müdür', 'Ders ödevleri (tüm okul)', '/api/school/assignments', A.mudur);
+  await olc('müdür', 'Ders ödevleri (tek sınıf)', '/api/school/assignments?classId=c_5', A.mudur);
+  await olc('müdür', 'Ders ödevleri (bir ders açıldı)', '/api/school/assignments?lessonId=d_5_0', A.mudur);
+  await olc('müdür', 'Ders ödevleri (sınıf, hepsi açık)', '/api/school/assignments?classId=c_5&detay=1', A.mudur);
+  await olc('müdür', 'Devamsızlık özeti', '/api/devamsizlik/ozet?gun=180', A.mudur);
+  await olc('müdür', 'Mesaj alıcıları', '/api/mesajlar/hedefler', A.mudur);
+  await olc('müdür', 'İşlem kaydı', '/api/islem-kaydi', A.mudur);
+  await olc('müdür', 'Takvim', '/api/takvim?yil=' + ay.getFullYear() + '&ay=' + (ay.getMonth() + 1), A.mudur);
+
+  await olc('yönetici', 'Genel bakış (31 okul)', '/api/admin/overview', A.admin);
+  await olc('yönetici', 'Müdürler', '/api/admin/principals', A.admin);
+
+  /* ---- yazma işlemleri ---- */
+  console.log('\n  yazma işlemleri');
+  const yoklama = await iste('/api/devamsizlik/yoklama?lessonId=' + ders.id, A.ogrt);
+  const girisler = (yoklama.govde.ogrenciler || []).map((o, i) => ({ ogrenciId: o.id, durum: i % 6 ? 'var' : 'yok' }));
+  const yaz = async (ad, yol, anahtar, govde) => {
+    await bekle(ISTEK_ARASI_MS);
+    const r = await iste(yol, anahtar, 'POST', govde);
+    sonuclar.push({ rol: 'yazma', ad, yol, durum: r.durum, ortanca: r.ms, enKotu: r.ms, kb: r.bayt / 1024 });
+    console.log('  ' + ad.padEnd(44) + (r.ms.toFixed(0) + ' ms').padStart(8) + '  ' + (r.durum === 200 ? '' : 'HATA ' + r.durum + ' ' + JSON.stringify(r.govde).slice(0, 80)));
+    return r;
+  };
+  await yaz('Yoklama kaydet (30 öğrenci)', '/api/devamsizlik/yoklama', A.ogrt, { lessonId: ders.id, tarih: gunOnce(0), girisler });
+  await yaz('Aynı yoklamayı yeniden kaydet', '/api/devamsizlik/yoklama', A.ogrt, { lessonId: ders.id, tarih: gunOnce(0), girisler });
+  const hedef = await iste('/api/assignments/hedefler', A.ogrt);
+  const idler = [];
+  (hedef.govde.classes || []).slice(0, 2).forEach(c => c.students.forEach(s => idler.push(s.id)));
+  const yeni = await yaz('Ödev ver (' + idler.length + ' öğrenci)', '/api/assignments', A.ogrt,
+    { title: 'Yük testi ödevi', description: 'Deneme', subject: 'Matematik', startAt: gunOnce(0), endAt: gunOnce(-3), studentIds: idler });
+  const odevId = yeni.govde && yeni.govde.assignment && yeni.govde.assignment.id;
+  if (odevId) {
+    const sonuc = {}; idler.forEach((id, i) => { sonuc[id] = ['yapti', 'gec', 'eksik'][i % 3]; });
+    await yaz('Ödevi sonuçlandır (' + idler.length + ')', '/api/assignments/' + odevId + '/finish', A.ogrt, { results: sonuc });
+    await yaz('Aynı sonuçları yeniden kaydet', '/api/assignments/' + odevId + '/finish', A.ogrt, { results: sonuc });
+  }
+  const sinav = await yaz('Sınav aç (hazır LGS şablonu)', '/api/exams', A.ogrt, { name: 'Yük LGS', hazir: 'lgs' });
+  const sid = sinav.govde && sinav.govde.exam && sinav.govde.exam.id;
+  if (sid) {
+    const d = {}; idler.forEach((id, i) => { d[id] = { TR: '12,5', MAT: '10', FEN: '14', INK: '7', DIN: '8', ING: '6,67', LGS: String(350 + i) }; });
+    await yaz('Sınav değerleri (' + idler.length + ' x 7)', '/api/exams/' + sid + '/grades', A.ogrt, { degerler: d });
+  }
+  await yaz('Okula duyuru (tüm okul, ~1360 kişi)', '/api/mesajlar', A.mudur,
+    { tur: 'duyuru', konu: 'Yük testi duyurusu', govde: 'Deneme', hedef: { tur: 'okul' } });
+
+  /* ---- eşzamanlı kullanıcı ---- */
+  const ogrOturum = [];
+  for (let i = 0; i < 10; i++) ogrOturum.push(await oturum('u_ogr' + (i + 2) + '_' + i));
+  const bas = Date.now();
+  const ess = await Promise.all(ogrOturum.map(a => iste('/api/progress', a)));
+  const sure = Date.now() - bas;
+  const ess2 = ess.map(r => r.ms).sort((a, b) => a - b);
+  console.log('\n  10 öğrenci aynı anda ilerleyiş açtı: toplam ' + sure + ' ms, en yavaşı ' + ess2[9].toFixed(0) + ' ms, hepsi ' +
+    (ess.every(r => r.durum === 200) ? '200' : 'HATALI'));
+
+  const yavaslar = sonuclar.filter(r => r.durum !== 200 || r.ortanca > YAVAS_MS || r.kb > AGIR_KB);
+  console.log('\nÖZET: ' + sonuclar.length + ' ölçüm, ' + yavaslar.length + ' sorunlu' +
+    (yavaslar.length ? ': ' + yavaslar.map(r => r.rol + '/' + r.ad).join(', ') : ''));
+}
+
 (async () => {
   try {
     await doldur();
