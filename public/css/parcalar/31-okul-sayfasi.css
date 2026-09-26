@@ -125,3 +125,6 @@
 .os-uyarilar ul { margin: 6px 0 0; padding-left: 18px; }
 .os-uyarilar li { margin: 3px 0; font-size: 13px; word-break: break-word; }
 
+.os-kaydet { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.os-kaydet #osMesaj { flex: 1 1 220px; }
+.os-kaydet #osMesaj .msg { margin: 0; }
