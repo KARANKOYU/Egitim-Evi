@@ -200,3 +200,19 @@ const OZELLIKLER = {
   'object-position': v => /^(?:center|top|bottom|left|right)(?: (?:center|top|bottom|left|right))?$/.test(v)
 };
 
+/* Kişiye nedeniyle söylenen, bilerek kapatılmış özellikler. */
+const YASAK_NEDEN = {
+  'position': 'sayfanın dışına, giriş kartının üstüne taşınabilir',
+  'z-index': 'sayfanın dışına, giriş kartının üstüne taşınabilir',
+  'transform': 'sayfanın dışına, giriş kartının üstüne taşınabilir',
+  'content': 'sayfaya yazı ekler; yazıyı "Tanıtım" kutusuna yaz',
+  'behavior': 'kod çalıştırabilir',
+  '-moz-binding': 'kod çalıştırabilir'
+};
+
+function kisalt(s) {
+  s = String(s).replace(/\s+/g, ' ').trim();
+  return s.length > 60 ? s.slice(0, 57) + '...' : s;
+}
+
+module.exports = { cssTemizle, SAYFA_PARCALARI };
