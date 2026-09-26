@@ -120,6 +120,45 @@ konsolUyarisi();
 /* Kurulum akışı girişten bağımsız: giriş ekranındayken de yüklenebilsin. */
 pwaKur();
 
+var kayitli = sifirlamaAnahtari ? null : tokenOku();
+disSayfalariKur().then(function () { return onaySonucu; }).then(function (onay) {
+  /* Onay sonucu: giriş ekranındaysa kartın üstünde, uygulamadaysa sayfada. */
+  if (onay && kayitli) S._acilisMesaji = onay;
+  else if (onay) {
+    if (onay.tur === 'iyi' && onay.d.kullaniciAdi) {
+      girisKimlikAyarla('kadi', false);
+      $('gEmail').value = onay.d.kullaniciAdi;
+    }
+    mesajGoster('authMesaj', onay.tur, onay.d.message);
+  }
+  if (sifirlamaAnahtari) {
+    try { localStorage.removeItem('ee_token'); } catch (e) { }
+    S.genelGiris = true;
+    girisEkraniGoster();
+    yeniSifreEkraniAcDisaridan(sifirlamaAnahtari);
+    return;
+  }
+  if (!kayitli) { girisEkraniGoster(); return; }
+  S.token = kayitli;
+  api('/me').then(function (d) {
+    if (d.user.status !== 'approved') { cikisYap(true); return; }
+    S.user = d.user; S.children = d.children || []; S.kapali = d.kapaliOzellikler || [];
+    /* Telefon bildiriminden gelindiyse (?k=) bildirimin geldiği role geçilir. */
+    var k = null;
+    try { k = new URLSearchParams(location.search).get('k'); } catch (e) { k = null; }
+    if (k) {
+      try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { }
+      if (k !== d.user.id && (d.user.yetiskin || d.user.rolSatiri)) {
+        var hedef = adrestenSayfa();
+        return api('/kisilik/gec', 'POST', { tur: 'rol', id: k })
+          .then(function (y) { oturumuDegistir(y, hedef); })
+          ['catch'](function () { girisSonrasi(d); });
+      }
+    }
+    girisSonrasi(d);
+  })['catch'](function () { cikisYap(true); });
+});
+
 /* "İncele" penceresini açana: oraya yapıştırılan kod hesabını ele geçirebilir. */
 function konsolUyarisi() {
   try {

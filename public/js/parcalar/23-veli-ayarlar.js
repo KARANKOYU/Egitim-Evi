@@ -55,6 +55,13 @@ function dogumMetni(iso) {
   return Number(p[2]) + ' ' + AY_ADLARI[Number(p[1]) - 1] + ' ' + p[0] + (yas >= 0 ? ' (' + yas + ' yaşında)' : '');
 }
 
+SAYFALAR.profil = function () {
+  var u = S.user;
+  if (u.yetiskin || u.rolSatiri) return api('/hesap').then(function (d) { profilCiz(d.hesap.yetiskin ? d.hesap : null); });
+  profilCiz(null);
+  return Promise.resolve();
+};
+
 function satirBilgi(etiket, deger) {
   return '<div class="satir"><div class="buyu"><div class="alt">' + etiket + '</div><div class="ad">' + deger + '</div></div></div>';
 }
@@ -227,3 +234,24 @@ EYLEMLER['benim-hesap-sil'] = function (el) {
   });
 };
 
+/* Girişten sonra bir kez: e-postası olmayan yetişkin hesabına e-posta eklemesi önerilir. */
+function epostaOnerisi() {
+  var u = S.user;
+  if (!u || !(u.yetiskin || u.rolSatiri) || S._epostaSoruldu) return;
+  S._epostaSoruldu = true;
+  if (tercihOku('eposta_sorma', '') === u.id) return;
+  api('/hesap').then(function (d) {
+    if (!d.hesap || !d.hesap.yetiskin || d.hesap.email || !S.user || S.user.id !== u.id) return;
+    modalAc('E-posta eklemek ister misin?',
+      '<p>Hesabında e-posta adresi yok. Eklersen girişte sana bir kod gelir (iki adımlı giriş) ve şifreni ' +
+      'unutursan e-postanla sıfırlarsın.</p>',
+      '<button class="btn gri" data-act="eposta-sorma">Bir daha sorma</button>' +
+      '<button class="btn gri" data-act="modal-kapat">Sonra</button>' +
+      '<button class="btn" data-act="eposta-ekle-git">E-posta ekle</button>');
+  })['catch'](function () { });
+}
+EYLEMLER['eposta-sorma'] = function () { tercihYaz('eposta_sorma', S.user ? S.user.id : ''); modalKapat(); };
+EYLEMLER['eposta-ekle-git'] = function () {
+  modalKapat();
+  return git('profil').then(function () { var k = $('hEposta'); if (k) { k.scrollIntoView({ block: 'center' }); k.focus(); } });
+};
