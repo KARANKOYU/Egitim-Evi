@@ -785,3 +785,250 @@ Etüt, okulun belli bir gününde belli saatler arasında yapılan ders dışı
 - Gelmeyen öğrenciye ve velisine bildirim gider. Öğrenci **Etütlerim**,
   veli **Etütler** sayfasında etütleri ve gelmediği günleri görür.
 
+### Sonradan düzeltme
+
+- **Ödev**: sonuçlanmış ödevin sonuçları ("Sonuçları düzenle") ve ödevin
+  kendisi (ad, açıklama, tarihler: "Ödevi düzenle") sonradan değiştirilebilir.
+  Ad ya da son teslim değişirse öğrencilere haber gider.
+- **Mesaj**: gönderilmiş mesajın konusunu ve metnini yalnızca gönderen
+  düzeltir ("Düzelt"). Alıcıya yeniden bildirim gitmez; mesajda
+  "düzenlendi" ve saati görünür.
+
+> Yetki kontrolü sunucuda yapılır. Rol silinince ya da yetki daraltılınca
+> kişi anında o işlemi yapamaz hâle gelir.
+
+---
+
+## Hatırlatıcılar
+
+Herkes (öğrenci, veli, öğretmen, müdür, servisçi, rolsüz yetişkin) menüdeki
+**Hatırlatıcılar** sayfasından kendine hatırlatma kurar: **başlık**, isteğe bağlı
+**açıklama**, **sıklık** ve **saat**.
+
+| Sıklık | Örnek |
+|---|---|
+| Bir kez | 30 Eylül 15:00 "Kütüphane kitabını iade et" |
+| Her gün | her gün 21:00 "Kitap oku" |
+| Her hafta | yalnızca pazartesi ve çarşamba 07:30 "Beden eğitimi kıyafeti" |
+| Her ay | her ayın 1'i 10:00 "Servis ücreti" (31 seçilirse kısa ayda ayın son günü) |
+
+- Zamanı gelince bildirim gider (telefon bildirimi açıksa telefona da). Saatler
+  Türkiye saatidir; sunucu başka saat diliminde olsa da doğru çalışır.
+- Listede her hatırlatıcının **sonraki** zamanı yazar; durdurulabilir, düzenlenebilir,
+  silinebilir. Bir kezlik hatırlatıcı gönderilince kapanır.
+- Yalnızca sahibi görür. Kişi başına en fazla 50. Sunucu bir süre kapalı kaldıysa
+  6 saate kadar geciken hatırlatma yine gider, daha eskisi gitmez.
+- Tablolar: `hatirlaticilar`, `hatirlatici_gunleri` (şema 024); zaman hesabı
+  `sunucu/yardimci/hatirlatici-zaman.js`, dakikada bir çalışır.
+
+---
+
+## Okulun özellikleri (bölüm aç / kapat)
+
+Müdür menüdeki **Özellikler** sayfasından okulunda kullanmadığı bölümleri kapatır:
+**Ödevler, Sınavlar, Devamsızlık, Etütler, Servis, Yemek listesi, Kulüpler, Anketler.**
+
+- Kapalı bölüm o okuldaki herkesin (öğretmen, öğrenci, veli, servisçi, müdürün
+  kendisi) menüsünden ve ana sayfa kutucuklarından kalkar; adres çubuğuna
+  yazılırsa "Bu bölüm okulunda kapalı" der.
+- Sunucu da reddeder: kapalı bölümün her ucu 403 döner (`ozellikKapali`). Veli,
+  çocuğunun okulunun kuralına tabidir. İlerleyiş ve takvim kapalı bölümü atlar;
+  ödevler kapalıysa ödev hatırlatması da gitmez.
+- **Kayıtlar silinmez.** Yeniden açılınca ödevler, notlar, yoklamalar eskisi gibi görünür.
+- Değişiklik işlem kaydına yazılır. Tablo: `okul_kapali_ozellikler` (şema 022);
+  sunucu listeyi açılışta belleğe okur, her istekte veritabanına gitmez.
+
+---
+
+## Eğitim yılı
+
+Müdür (ya da "Eğitim yılı açar" yetkisi olan) **Eğitim Yılı** sayfasından yeni yıl
+açar; yeni yıl aktif olur. Ödev, sınav, yoklama, ders programı ve takvim etkinliği
+açıldıkları yıla damgalanır; sınıflar, öğrenciler ve sınav şablonları ortaktır.
+Yıl tanımlanmadan önceki kayıtlar okulun ilk yılına sayılır.
+
+Sayfanın üstündeki **yıl seçici** ile geçmiş yıla bakılır. Geçmiş yıla bakarken
+kayıtlar **salt okunur**dur: yeni ödev, sınav, yoklama, program ya da etkinlik
+eklenemez, var olan da değiştirilemez; sunucu "aktif yıla dön" der.
+
+Nakil gelen öğrencide (ve velisinde) seçicinin altında **Önceki okullar** grubu
+çıkar: eski okulun dönemleri "yıl · okul · sınıf" diye listelenir.
+
+---
+
+## Ödev sistemi
+
+- Öğretmen **Ödevler → Yeni ödev ver**: ders, ad, açıklama, tarih aralığı.
+- **Kimlere gideceğini sen seçersin.** Sınıflar listelenir, altlarında öğrenciler
+  onay kutusuyla durur. Sınıf kutusunu işaretleyince o sınıfın hepsi seçilir;
+  bir öğrenciyi çıkarınca sınıf kutusu yarım işaretli olur.
+  **Tümünü seç** ve **Tümünü kaldır** düğmeleri var, üstte kaç kişi seçili yazar.
+- Birden fazla sınıfa aynı anda ödev verilebilir.
+- Aynı anda **birden fazla aktif ödev** olabilir.
+- Ödev bitince **Sonuçlandır** → ödev kontrol ekranı: üstte ödevin adı, altında konusu,
+  altında ödevin verildiği öğrenciler alt alta. Her öğrencinin yanındaki kutudan sonuç
+  seçilir: **Yaptı · Geç yaptı · Eksik · Yapmadı · Gelmedi (izinli) · Gelmedi (izinsiz)**.
+  "Seçilmemişlerin hepsi: Yaptı" düğmesi kalabalık sınıfta işi kısaltır; altta canlı sayım durur.
+- Her öğrencinin altında **"Ödev 20.05.2026 16:20 tarihinde açıldı"** ya da
+  **"Ödev açılmadı"** yazar. Açılma zamanı, öğrenci ödevin ayrıntısını ilk açtığında
+  kaydedilir ve sonradan değişmez.
+- Öğrencinin listesinde henüz açmadığı ödev **turuncu** görünür; açınca normale döner.
+  Veli panelinde de çocuğun açmadığı ödev turuncudur.
+- Sonuçlananlar **Geçmiş Ödevler**'e düşer, silinmez.
+- Öğrenci ve velisi sonucu anında görür.
+
+### Ödev serisi
+
+Öğrencinin ana sayfasında ve **Ödevler** sayfasının üstünde ödev serisi durur
+(yalnızca öğrencinin kendisi görür; veli ve öğretmen görmez). Sonuçlanmış ödevler
+son teslim sırasıyla sayılır:
+
+- **Yaptı** seriyi bir artırır.
+- **Yaptı** dışında bir sonuç (geç yaptı, eksik, yapmadı, gelmedi) seriyi bozmaz ama
+  **uyarı** verir: "Bir sonraki ödevi de yapmazsan serin bozulur."
+- Arka arkaya **iki kez** Yaptı alınmazsa seri **bozulur** ve sıfırlanır.
+- Değerlendirilmemiş ödev seriyi etkilemez. En uzun seri de yazar.
+
+### Ödev teslim dosyaları
+
+Öğrenci ödevin penceresinden **Dosya yükle** ile dosya teslim eder (ilerleme
+çubuğu, iptal). Öğretmenin kontrol ekranında her öğrencinin altında "2 dosya teslim
+etti" yazar; **Teslimleri indir** hepsini öğrenci klasörlerine ayrılmış tek zip
+olarak indirir. Veli, ödevler listesinde satıra tıklayınca çocuğunun dosyalarını görür.
+
+| Kural | Değer |
+|---|---|
+| Öğrenci başına, bir ödevde | en fazla 10 dosya, toplam 150 MB |
+| Saklama | yüklendikten 7 gün sonra silinir (satırda "N gün sonra silinir" yazar) |
+| Okul başına | 20 GB (`EE_OKUL_DOSYA_GB` ile değişir) |
+| Türler | belge, tablo, sunum, resim, ses, video, zip, Scratch/GeoGebra, kod dosyaları (`.exe` gibi çalıştırılabilirler yok) |
+| Ne zaman | ödev başladıktan teslim saatine kadar; ödev sonuçlandırılınca kapanır |
+
+- Dosyalar `data/dosyalar/` altında, `public/` dışında, 32 haneli rastgele adla durur;
+  her indirmede yetki yeniden denetlenir (öğrencinin kendisi, velisi, ödevi veren
+  öğretmen, müdür). İndirme her zaman "ek" olarak gider (tarayıcıda açılmaz, çalışmaz).
+- Yükleme diske akarak yazılır (bellek şişmez); boyut, CRC32 ve SHA-256 akarken
+  hesaplanır. Sayı ve toplam sınırı veritabanında kilitli satırla denetlenir: aynı
+  anda iki yükleme sınırı aşamaz. Diskte 2 GB'tan az yer kalacaksa yükleme reddedilir.
+- Öğretmen uygunsuz bir dosyayı silebilir; ödev silinince dosyaları da silinir.
+  Süresi dolan, yarıda kalan ve kaydı silinen dosyalar saatte bir temizlenir.
+
+**Öğretmenin kontrol ekranında ekler.** Her öğrencinin altında **"3 ek"** gibi teslim
+sayısı yazar. Tıklayınca ekler simge, ad ve MB boyutuyla listelenir; hiçbiri kendiliğinden
+yüklenmez (boşuna internet harcanmaz). **Fotoğraf** (jpg, png, gif, webp), **video** (mp4,
+webm, mov) ve **ses** (mp3, m4a, wav, ogg) tıklayınca pencerede açılır ya da oynar; video
+ileri sarılabilir. Öbür dosyalar "indirilsin mi?" diye sorup iner. Tarayıcıda açılan
+dosya da güvenlidir: tür uzantıdan belirlenir, içerik sezdirilmez (nosniff), betik
+çalışamaz (sandbox); SVG ve HTML hiçbir zaman açılmaz, yalnızca iner. Açma bağlantısı
+5 dakika geçerlidir ve yine yalnızca yetkili kişide çalışır.
+
+### Ekler (mesaj ve ödev)
+
+Mesaj yazarken ve öğretmen ödev verirken **Ekler** kutusuna dosya sürüklenir ya da
+basıp cihazdan seçilir; birden çok dosya olur. Öğrenci ödevi açınca altta **Ekler**
+listesini görür; mesaj alıcısı mesajın altında görür.
+
+| Kural | Değer |
+|---|---|
+| Bir mesajda ya da ödevde | toplam en fazla 150 MB |
+| Saklama | 7 gün, sonra dosya silinir (ek satırı "süresi doldu" der) |
+| Kim indirir | mesajın göndereni ve alıcıları; ödevin öğretmeni, öğrencileri, velileri ve müdür |
+
+Yüklenen dosya önce "taslak"tır; mesaj gönderilince ya da ödev kaydedilince bağlanır.
+Bağlanmayan taslaklar da 7 günde silinir. Başkasının taslağı bağlanamaz.
+
+### Müdürün ödev görünümü
+
+Müdür ödev vermez — **Ödevler** sayfasında derse göre bakar. Her ders bloğunda
+sınıf, ders adı, dersin öğretmeni ve haftalık saati yazar; altında o derse
+verilmiş ödevler sıralanır: **kim verdi**, kaç öğrenciye, son teslim ne zaman,
+açıklaması ne.
+
+Üstteki sınıf seçiciyle tek sınıfa daraltılır.
+
+### Filtreleme ve arama
+
+Ödevler sayfasının üstündeki çubuktan liste daraltılabilir:
+
+| Filtre | Seçenekler |
+|---|---|
+| **Ders** | Listedeki derslerden biri (tek ders varsa gizlenir) |
+| **Durum — öğrenci** | Aktif · Geçmiş · Açılmamış · Yaptı · Geç yaptı · Yapmadı · Eksik · Gelmedi (izinli) · Gelmedi (izinsiz) · Değerlendirilmedi |
+| **Durum — öğretmen** | Aktif · Sonuçlananlar · Süresi dolmuş ama sonuçlanmamış |
+| **Tarih aralığı** | Son teslim tarihine göre başlangıç ve bitiş |
+
+**Yıldız.** Öğrenci önemli bulduğu ödevi satırın solundaki yıldızla işaretler, **Yıldız**
+filtresiyle yalnızca yıldızlıları ya da yıldızsızları görür. Yıldız yalnızca öğrencinin
+kendisi içindir: öğretmen, müdür ve veli görmez (017 şema dosyası).
+
+Üstteki **İçerik Ara** kutusu ödev adı, ders, öğretmen adı ve açıklamada arar.
+Türkçe karakterler esnek eşleşir — `gunes` yazınca `Güneş sistemi maketi`,
+`ayse` yazınca `Ayşe Kaya`'nın ödevleri gelir. Filtreler birlikte çalışır;
+**Temizle** hepsini sıfırlar.
+
+---
+
+## Yoklama (ders programından)
+
+Öğretmen **Ders programım** sayfasında o gün başlamış dersinin altındaki
+**Yoklama** düğmesine dokunur (şu an süren dersin düğmesi **Şu an — yoklama al** diye öne çıkar).
+Pencerede o dersin öğrencileri alt alta durur; her birinin yanında üç seçenek:
+**Geldi · Gelmedi — izinli · Gelmedi — izinsiz**. **Hepsi geldi** düğmesi kalabalık
+sınıfta işi kısaltır; altta **Kaydet**. Pencere telefonda tam ekran açılır, düğmeler
+parmakla basılacak büyüklüktedir.
+
+Gelmedi işaretlenen öğrencinin velisine bildirim gider:
+"Çocuğunuz Zeynep Şahin bugün saat 09:20 Matematik dersine gelmedi (izinsiz)."
+Sonradan izinliye çevrilirse veliye yeni durum yazılır. Yoklamayı yalnızca o
+sınıfa dersi olan öğretmen (ya da **Yoklama alır** yetkisi daraltılmamış biri) alır.
+
+## Sınıflarım (öğretmen)
+
+**Girdiği sınıfların öğrenci sonuçlarını görür** yetkisi olan öğretmenin menüsünde
+**Sınıflarım** çıkar (hazır Öğretmen rolünde açık gelir; müdür **Roller**'den kapatabilir
+ya da ek rolle başka birine verebilir).
+
+- Üstte öğretmenin ders verdiği sınıflar kart olarak durur (dersleri ve öğrenci sayısıyla).
+- Sınıfa dokununca öğrencileri okul numarası sırasıyla listelenir.
+- Öğrenciye dokununca pencere açılır: **o öğretmenin verdiği ödevler** ve yanında
+  sonucu (Yaptı, Geç yaptı...; süren ödevde kalan süre ve "açtı/açmadı"), üstte sonuçların
+  sayımı; altında öğrencinin **sınav sonuçları** (grup ortalaması 100 üzerinden, tek
+  sınavların değerleri).
+- Öğretmen ders vermediği sınıfı ya da o sınıftaki öğrenciyi açamaz (sunucu 403 döner).
+
+## Sınav sistemi
+
+Öğretmenin **Sınavlar** sayfasında üç sekme var: **Sınavlarım**, **Gruplar**, **Şablonlar**.
+
+**Şablon** bir sınavın değer alanlarıdır; bir kez tanımlanır, her sınavda yeniden
+yazılmaz. Hazır üç şablon gelir, "Okula ekle" ile okulun olur ve düzenlenebilir:
+
+| Şablon | Değer alanları |
+|---|---|
+| Yazılı (0-100) | Puan 0–100 |
+| Test (Doğru / Yanlış / Net) | Doğru, Yanlış, Net |
+| LGS Denemesi | Türkçe, Matematik, Fen, İnkılap, Din, İngilizce netleri; LGS Puanı 100–500 |
+
+- Her alanın kendi aralığı var, sınır **-10000 ile 10000**. Değerler **ondalıklı** ve
+  **virgülle** yazılabilir: `490,161`.
+- Bir alan **ana değer**dir: ortalamaya ve grafiğe o girer.
+- Açık bir sınavda **+ Yeni değer ekle** ile sınava sonradan alan eklenir, adı ve
+  aralığı değiştirilir. Girilmiş bir değeri dışarıda bırakacak daraltma reddedilir.
+- Şablon sonradan değişse de eski sınavlar bozulmaz: sınav, alanların kopyasını taşır.
+
+**Değer girişi:** öğrenciler satır, alanlar sütun. Enter ile alttaki öğrenciye geçilir.
+Aralık dışı ya da sayı olmayan değer kırmızı olur ve kaydedilmez. Yalnızca değişen kutular
+sunucuya gider. Birden çok sınıfa giren öğretmen üstten sınıf seçip daraltır.
+
+**Grup isteğe bağlı.** Dönem ortalaması gibi etki oranlı bir hesap istenirse sınav bir
+gruba eklenir. Ağırlıklı ortalama **100 üzerinden** hesaplanır; böylece 0–100'lük yazılı ile
+0–500'lük deneme aynı grupta birleşebilir:
+
+```
+1. Yazılı  → 80 / 100        etki %50   → 80
+Deneme     → 400 / 500       etki %50   → 80
+Grup ortalaması = (80×50 + 80×50) / 100 = 80
+```
+
+---
+
