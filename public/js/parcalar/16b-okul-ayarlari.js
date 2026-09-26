@@ -1,4 +1,4 @@
-/* Okulun adresi (egitimevi.org/<ad>) ve haritadaki yeri. Yalnızca müdür.
+/* Okulun adresi (egitimevi.org/school/<ad>) ve haritadaki yeri. Yalnızca müdür.
    Adres, öğrenci ve öğretmenlerin girdiği sayfadır; değişince eski adres
    çalışmaz olur. Okulun konumu servis haritasında okul işaretidir. */
 
@@ -19,7 +19,7 @@ SAYFALAR['okul-ayarlari'] = function () {
   okulAyar.secim = null;
   return api('/school/adres').then(function (d) {
     okulAyar.veri = d;
-    var tam = location.host + '/' + d.kisaAd;
+    var tam = location.host + okulYolu(d.kisaAd);
     /* Okulun giriş adresini yalnızca müdür seçer; "Okulun haritadaki yerini ayarlar"
        yetkisi olan (ör. Kodlayıcı) yalnızca konumu görür. */
     var mudur = S.user.role === 'principal';
@@ -30,7 +30,7 @@ SAYFALAR['okul-ayarlari'] = function () {
       (d.kisaAd ? '<div class="satir" style="border:0;padding:0 0 12px"><div class="buyu"><div class="ad adres-goster">' + esc(tam) + '</div></div>' +
         '<button class="btn kucuk ghost" data-act="kod-kopyala" data-kod="' + esc(location.protocol + '//' + tam) + '">Bağlantıyı kopyala</button></div>' : '') +
       '<div class="field"><label for="oaKisa">Adres adı</label>' +
-      '<div class="adres-girdi"><span>' + esc(location.host) + '/</span>' +
+      '<div class="adres-girdi"><span>' + esc(location.host) + '/school/</span>' +
       '<input type="text" id="oaKisa" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(d.kisaAd || '') + '"></div>' +
       '<div class="hint">Küçük harf, rakam ve tire. Değiştirirsen eski adres çalışmaz; yeni adresi herkese duyur.</div></div>' +
       '<button class="btn" data-act="okul-adres-kaydet">Adresi kaydet</button><div id="oaMesaj" style="margin-top:9px"></div></div>';
@@ -74,7 +74,7 @@ EYLEMLER['okul-adres-kaydet'] = function (el) {
   if (sorun) { alanHatasi(kutu, sorun); return; }
   if (okulAyar.veri && kisa === okulAyar.veri.kisaAd) { mesajGoster('oaMesaj', 'bilgi', 'Adres zaten bu.'); return; }
   if (okulAyar.veri && okulAyar.veri.kisaAd &&
-      !confirm('Okulun adresi ' + location.host + '/' + kisa + ' olsun mu?\n\nEski adres (' + okulAyar.veri.kisaAd + ') çalışmaz olur.')) return;
+      !confirm('Okulun adresi ' + location.host + okulYolu(kisa) + ' olsun mu?\n\nEski adres (' + okulAyar.veri.kisaAd + ') çalışmaz olur.')) return;
   dugmeBekle(el, 'Kaydediliyor...');
   return api('/school/adres', 'POST', { kisaAd: kisa }).then(function (d) {
     S.user.schoolSlug = d.kisaAd;

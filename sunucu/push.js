@@ -170,7 +170,7 @@ async function bildirimGeldi(liste) {
       const baglanti = String(b.baglanti || '').indexOf('#/') === 0 ? b.baglanti : '#/ana';
       /* ?k=: bildirim hangi rolüne geldiyse uygulama açılınca o role geçilir. */
       sirayaAl(a, { t: 'Eğitim Evi', b: String(b.metin || '').slice(0, 300),
-        u: (a.kisa_ad ? '/' + a.kisa_ad : '') + '/?k=' + encodeURIComponent(b.kime) + baglanti });
+        u: (a.kisa_ad ? '/school/' + encodeURIComponent(a.kisa_ad) : '') + '/?k=' + encodeURIComponent(b.kime) + baglanti });
     }
   }
 }

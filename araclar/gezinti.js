@@ -707,8 +707,8 @@ const DIS_ADIMLAR = [
   { ad: 'Kayıt ol (şifre kuralları, telefon ülke kodu)', url: '/signup' },
   { ad: 'Kayıt — hatalar alanların altında', url: '/signup',
     eylem: `__yaz('#kSifre', 'deneme1'); __yaz('#kEmail', 'birisi@'); __tikla('#formKayit button[type=submit]'); ${bekleJs(700)}` },
-  { ad: 'Okulun sayfası ve girişi (/test-ortaokulu)', url: '/test-ortaokulu' },
-  { ad: 'Okul girişi — şifre yanlış', url: '/test-ortaokulu',
+  { ad: 'Okulun sayfası ve girişi (/school/test-ortaokulu)', url: '/school/test-ortaokulu' },
+  { ad: 'Okul girişi — şifre yanlış', url: '/school/test-ortaokulu',
     eylem: `__yaz('#gEmail', 'fen'); __yaz('#gSifre', 'Yanlis2026'); __tikla('#formGiris button[type=submit]'); ${bekleJs(1000)}` },
   { ad: 'Giriş — böyle bir hesap yok', url: '/login',
     eylem: `__yaz('#gEmail', 'boyle.biri.yok'); __yaz('#gSifre', 'Yanlis2026'); __tikla('#formGiris button[type=submit]'); ${bekleJs(1000)}` },
@@ -716,10 +716,10 @@ const DIS_ADIMLAR = [
   { ad: '"Bilgilerimi kaydetme" seçilince "Beni hatırla" kalkar', url: '/login',
     eylem: `__tikla('#gKaydetme'); if (document.getElementById('gHatirla').checked) throw new Error('iki kutu birden işaretli kaldı')` }
 ];
-const DIS_KOYU = [{ ad: 'Açılış (koyu)', url: '/' }, { ad: 'Okulun sayfası (koyu)', url: '/test-ortaokulu' }];
+const DIS_KOYU = [{ ad: 'Açılış (koyu)', url: '/' }, { ad: 'Okulun sayfası (koyu)', url: '/school/test-ortaokulu' }];
 const DIS_TELEFON = [{ ad: 'Açılış (telefon)', url: '/' }, { ad: 'Hakkında (telefon)', url: '/hakkinda' },
   { ad: 'Sık sorulan sorular (telefon)', url: '/sss' }, { ad: 'İndir (telefon)', url: '/indir' },
-  { ad: 'Okulun sayfası (telefon)', url: '/test-ortaokulu' }, { ad: 'Kayıt ol (telefon)', url: '/signup' }];
+  { ad: 'Okulun sayfası (telefon)', url: '/school/test-ortaokulu' }, { ad: 'Kayıt ol (telefon)', url: '/signup' }];
 
 /* "sayfa|ad|eylem" kısaltmasını adıma çevirir */
 function kisaAdim(s, ek) {

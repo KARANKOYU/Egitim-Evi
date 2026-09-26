@@ -89,7 +89,7 @@ const ADIM_METNI = {
   'giris|Kayıt ol (şifre kuralları, telefon ülke kodu)': A(`Yetişkin hesabı açma. Şifre kuralları yazdıkça işaretlenir,
     telefon ülke koduyla girilir. Öğrenci hesabını okul açar, öğrenci kendisi kaydolmaz.`),
   'giris|Kayıt — hatalar alanların altında': A(`Eksik ya da hatalı her alanın altında kırmızı yazıyla ne yapılması gerektiği yazar.`),
-  'giris|Okulun sayfası ve girişi (/test-ortaokulu)': A(`Her okulun kendi adresi vardır. Okul bu sayfayı kapak fotoğrafı,
+  'giris|Okulun sayfası ve girişi (/school/test-ortaokulu)': A(`Her okulun kendi adresi vardır. Okul bu sayfayı kapak fotoğrafı,
     tanıtım yazısı, galeri ve renkleriyle kendisi düzenler; giriş o okulun içinde aranır.`),
   'giris|Okul girişi — şifre yanlış': A(`Yanlış şifrede kaç deneme hakkı kaldığı yazar; çok denemede hesap bir süre kilitlenir.`),
   'giris|Giriş — böyle bir hesap yok': A(`Kullanıcı adı bulunamazsa bu açıkça söylenir ve kayıt olma bağlantısı çıkar.`),
@@ -203,7 +203,7 @@ const ADIM_METNI = {
     öğretmenler, ders programı.`),
   'mudur|İşlem kaydı': A(`Okulda kim, ne zaman, ne yaptı: hesap açma, rol verme, nakil, özellik açıp kapatma, şifre dağıtma.
     Kayıtlar süzülerek aranır.`, 'Kayıtlar, okul adresi ve okul sayfası'),
-  'mudur|Okul adresi ve konumu': A(`Okulun adresi (egitimevi.org/okulun-adi) ve haritadaki yeri. Adres değişince eski adres çalışmaz.`),
+  'mudur|Okul adresi ve konumu': A(`Okulun adresi (egitimevi.org/school/okulun-adi) ve haritadaki yeri. Adres değişince eski adres çalışmaz.`),
   'mudur|Okul sayfası (düzenleme ve önizleme)': A(`Okulun kendi sayfası: kapak, logo, tanıtım yazısı, fotoğraf galerisi ve
     renkler. Değişiklik kaydetmeden önce yan tarafta önizlenir.`),
   'mudur|Okul sayfası — kısıtlı CSS, atılan kısımlar': A(`İsteyen okul kısıtlı CSS ile görünümü ince ayarlar. Tehlikeli

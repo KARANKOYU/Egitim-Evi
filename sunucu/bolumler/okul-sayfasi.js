@@ -1,5 +1,5 @@
 'use strict';
-/* Okul sayfası: okulun giriş adresinde (egitimevi.org/<okulun-adi>) giriş
+/* Okul sayfası: okulun giriş adresinde (egitimevi.org/school/<okulun-adi>) giriş
    kartının üstünde duran tanıtım.
 
      GET  /api/okul-sayfa                   düzenleme ekranı: ayarlar, tanıtım, CSS, fotoğraflar

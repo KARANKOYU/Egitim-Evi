@@ -1,4 +1,4 @@
-/* Okul sayfası (egitimevi.org/<okulun-adi>):
+/* Okul sayfası (egitimevi.org/school/<okulun-adi>):
    - müdür ve "okul.sayfa" yetkisi olan (Kodlayıcı şablonu) düzenler; öteki öğretmen giremez;
    - ayarlar yalnızca izin verilen değerleri alır, bozuk renk varsayılana döner;
    - CSS temizlenir: url, @import, position, content, başka seçici, ters bölü atılır ve nedeni söylenir;

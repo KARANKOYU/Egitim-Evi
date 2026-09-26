@@ -1,4 +1,4 @@
-/* Okul sayfası: okulun giriş adresinde (egitimevi.org/<okulun-adi>) giriş
+/* Okul sayfası: okulun giriş adresinde (egitimevi.org/school/<okulun-adi>) giriş
    kartının üstünde duran tanıtım, ve onu düzenleme ekranı.
 
    Sayfanın yapısı sabittir (kapak, logo, ad, tanıtım, galeri); yazı düz
@@ -88,7 +88,7 @@ SAYFALAR['okul-sayfasi'] = function () {
   return api('/okul-sayfa').then(function (d) {
     OS.veri = d;
     OS.temizCss = d.temizCss || '';
-    var adres = location.host + '/' + d.okul.kisaAd;
+    var adres = location.host + okulYolu(d.okul.kisaAd);
     var a = d.ayarlar;
     var sec = function (id, deger, liste) {
       return '<select id="' + id + '">' + liste.map(function (s) {
@@ -107,7 +107,7 @@ SAYFALAR['okul-sayfasi'] = function () {
     var h = hero('OKUL SAYFASI', 'Okulunun giriş adresinde, giriş kartının üstünde görünür. Adresi bilen herkes görebilir.');
     h += '<div class="kart os-adres-kart"><div class="satir" style="border:0;padding:0"><div class="buyu">' +
       '<div class="alt">Sayfanın adresi</div><div class="ad">' + esc(adres) + '</div></div>' +
-      '<a class="btn gri kucuk" href="/' + esc(d.okul.kisaAd) + '" target="_blank" rel="noopener">Sayfayı aç</a></div></div>';
+      '<a class="btn gri kucuk" href="' + esc(okulYolu(d.okul.kisaAd)) + '" target="_blank" rel="noopener">Sayfayı aç</a></div></div>';
 
     h += '<div class="os-duzen"><div class="os-ayarlar">';
     /* ---- görünüm ---- */

@@ -3,11 +3,15 @@
      /                 açılış: Eğitim Evi nedir, neler var, rakamlar
      /hakkinda         proje, gizlilik, yapımcılar, iletişim
      /sss              sık sorulan sorular
-     /login            giriş kartı (+ "okulunu seç": öğrenci ve servisçi için)
-     /signup           kayıt kartı (yetişkin hesabı)
-     /<okulun-adi>     okulun giriş sayfası: kartın üstünde okulun adı,
+     /login  (/giris)  giriş kartı (+ "okulunu seç": öğrenci ve servisçi için)
+     /signup (/kayit)  kayıt kartı (yetişkin hesabı)
+     /school/<okul>    okulun giriş sayfası: kartın üstünde okulun adı,
                        giriş o okulun içinde aranır (aynı kullanıcı adı
                        başka okulda da olabilir)
+
+   Okul yalnızca /school/ ile başlayan adreste aranır; başka hiçbir adres okul
+   sayılmaz (sitenin sayfalarıyla karışmasın). Tanınmayan adres açılışı gösterir.
+   /hakkinda (/about) ve /sss (/faq) da iki adla açılır.
 
    Hepsi aynı index.html'dir; sunucu bilinmeyen yolda da onu döndürür.
    Üst şerit ve alt bilgi bütün dış sayfalarda aynıdır. Sayfalar arası
@@ -17,17 +21,23 @@
 var OKUL_ADRESI_DESENI = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
 
 /* Sitenin kendi sayfaları; bunlar okul adresi sayılmaz. */
-var SITE_SAYFALARI = { '': 'ana', 'hakkinda': 'hakkinda', 'sss': 'sss', 'login': 'giris', 'signup': 'kayit' };
+var SITE_SAYFALARI = { '': 'ana', 'hakkinda': 'hakkinda', 'about': 'hakkinda', 'sss': 'sss', 'faq': 'sss',
+  'login': 'giris', 'giris': 'giris', 'signup': 'kayit', 'kayit': 'kayit' };
+
+/* Okulun adresi: egitimevi.org/school/<okul-adi>. */
+function okulYolu(kisaAd) { return '/school/' + encodeURIComponent(kisaAd); }
 
 function adrestekiYol() {
   return String(location.pathname || '/').replace(/\/+$/, '').replace(/^\//, '').toLowerCase();
 }
 
-/* Adres çubuğundaki okul: "/doruk" ya da "/doruk/" -> "doruk". */
+/* Adres çubuğundaki okul: "/school/doruk" ya da "/school/doruk/" -> "doruk".
+   /school/ ile başlamayan hiçbir adres okul değildir. */
 function adrestenOkul() {
-  var yol = adrestekiYol();
-  if (!yol || yol.indexOf('/') >= 0 || yol === 'index.html' || SITE_SAYFALARI.hasOwnProperty(yol)) return '';
-  try { yol = decodeURIComponent(yol); } catch (e) { return ''; }
+  var m = /^school\/([^\/]+)$/.exec(adrestekiYol());
+  if (!m) return '';
+  var yol;
+  try { yol = decodeURIComponent(m[1]); } catch (e) { return ''; }
   return OKUL_ADRESI_DESENI.test(yol) ? yol : '';
 }
 
@@ -134,7 +144,7 @@ function okulBasligiCiz() {
 function sonOkulCiz() {
   var o = sonOkulOku();
   $('vSonOkul').innerHTML = o
-    ? '<a class="vitrin-son-okul" href="/' + esc(o.kisaAd) + '">' + ik('okul') +
+    ? '<a class="vitrin-son-okul" href="' + esc(okulYolu(o.kisaAd)) + '">' + ik('okul') +
       '<span><span class="alt">Son girdiğin okul</span><b>' + esc(o.ad) + '</b></span>' +
       '<span class="vitrin-son-git">Seç</span></a>'
     : '';
@@ -288,7 +298,7 @@ function vitrinAra() {
     h += '<ul class="vitrin-liste">';
     for (var i = 0; i < d.okullar.length; i++) {
       var o = d.okullar[i];
-      h += '<li><a href="/' + esc(o.kisaAd) + '" class="vitrin-okul">' +
+      h += '<li><a href="' + esc(okulYolu(o.kisaAd)) + '" class="vitrin-okul">' +
         '<span class="vitrin-okul-ad">' + aramaVurgula(o.ad, kelimeler, o.vurgu) + '</span>' +
         '<span class="vitrin-okul-yer">' + esc([o.ilce, o.il].filter(Boolean).join(', ')) + '</span></a></li>';
     }
@@ -382,7 +392,7 @@ function okulYolunuAyarla() {
     return;
   }
   if (adrestenOkul() === u.schoolSlug) return;
-  try { history.replaceState(null, '', '/' + u.schoolSlug + location.hash); } catch (e) { }
+  try { history.replaceState(null, '', okulYolu(u.schoolSlug) + location.hash); } catch (e) { }
   var son = sonOkulOku();
   if (!son || son.kisaAd !== u.schoolSlug) sonOkulYaz({ kisaAd: u.schoolSlug, ad: u.schoolName || '', il: '', ilce: '' });
 }
