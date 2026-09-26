@@ -133,3 +133,123 @@ function okulBasvurusuKur() {
   };
 }
 
+function ilceleriDoldur(il) {
+  var sec = $('bIlce');
+  if (!sec) return;
+  /* Okul listesi yüklenemediyse ilçe listesi de yok: ilçe elle yazılır
+     (yoksa "Okulum listede yok" ile başvuru hiç gönderilemezdi). */
+  if (!Object.keys(ilceHaritasi).length) {
+    if (sec.tagName !== 'INPUT') {
+      sec.outerHTML = '<input type="text" id="bIlce" placeholder="İlçe adını yaz" maxlength="60" autocomplete="off">';
+    }
+    return;
+  }
+  var liste = ilceHaritasi[il] || [];
+  if (!il) { sec.innerHTML = '<option value="">Önce il seç...</option>'; return; }
+  if (!liste.length) { sec.innerHTML = '<option value="Merkez">Merkez</option>'; return; }
+  var h = '<option value="">Tümü / seç...</option>';
+  for (var i = 0; i < liste.length; i++) {
+    h += '<option value="' + esc(liste[i]) + '">' + esc(liste[i]) + '</option>';
+  }
+  sec.innerHTML = h;
+}
+
+function okulAramaBaslat(gecikme) {
+  if (okulAramaSayaci) clearTimeout(okulAramaSayaci);
+  okulAramaSayaci = setTimeout(okulAramaYap, gecikme === undefined ? 250 : gecikme);
+}
+
+function okulAramaYap() {
+  var kutu = $('bOkulAra');
+  var sonucKap = $('bOkulSonuc');
+  if (!kutu || !sonucKap || seciliOkul) return;
+
+  var sorgu = kutu.value.trim();
+  var il = $('bIl').value;
+  var ilce = $('bIlce').value;
+  var tip = $('bOkulTip') ? $('bOkulTip').value : '';
+  var kelimeler = aramaSadeTR(sorgu).split(' ').filter(Boolean);
+  var benim = ++okulAramaDurum.sira;
+
+  sonucKap.classList.remove('yukleniyor');
+  if (!kelimeler.length && !il) { sonucKap.innerHTML = ''; return; }
+  if (!il && kelimeler.join('').length < 2) {
+    sonucKap.innerHTML = '<div class="okul-bilgi">En az iki harf yaz ya da önce ilini seç.</div>';
+    return;
+  }
+
+  var adres = '/okullar/ara?limit=25' +
+    '&q=' + encodeURIComponent(kelimeler.join(' ')) +
+    '&il=' + encodeURIComponent(il) +
+    '&ilce=' + encodeURIComponent(ilce) +
+    '&tip=' + encodeURIComponent(tip);
+  var ciz = function (d) {
+    if (benim !== okulAramaDurum.sira) return;
+    sonucKap.classList.remove('yukleniyor');
+    sonucKap.innerHTML = okulSonuclari(d, sorgu, kelimeler, [il, ilce, tip].filter(Boolean));
+  };
+  if (okulAramaDurum.onbellek[adres]) return ciz(okulAramaDurum.onbellek[adres]);
+
+  if (sonucKap.innerHTML) sonucKap.classList.add('yukleniyor');
+  else sonucKap.innerHTML = '<div class="okul-bilgi">Aranıyor...</div>';
+  api(adres).then(function (d) {
+    okulAramaDurum.onbellek[adres] = d;
+    okulAramaDurum.anahtarlar.push(adres);
+    if (okulAramaDurum.anahtarlar.length > 60) delete okulAramaDurum.onbellek[okulAramaDurum.anahtarlar.shift()];
+    ciz(d);
+  })['catch'](function (err) {
+    if (benim !== okulAramaDurum.sira) return;
+    sonucKap.classList.remove('yukleniyor');
+    sonucKap.innerHTML = '<div class="okul-bilgi hata">Arama yapılamadı: ' + esc(err.message) +
+      ' <button type="button" class="baglanti" data-act="okul-ara-tekrar">Tekrar dene</button></div>';
+  });
+}
+
+EYLEMLER['okul-ara-tekrar'] = function () { okulAramaBaslat(0); };
+EYLEMLER['okul-ara-genislet'] = function () {
+  $('bIl').value = '';
+  ilceleriDoldur('');
+  if ($('bOkulTip')) $('bOkulTip').value = '';
+  okulAramaBaslat(0);
+  $('bOkulAra').focus();
+};
+
+function okulSec(btn) {
+  seciliOkul = {
+    id: btn.getAttribute('data-okul-id'),
+    ad: btn.getAttribute('data-okul-ad'),
+    il: btn.getAttribute('data-okul-il'),
+    ilce: btn.getAttribute('data-okul-ilce'),
+    tip: btn.getAttribute('data-okul-tip')
+  };
+  okulAramaDurum.sira++;   // yoldaki arama sonucu seçimi silmesin
+  if (okulAramaSayaci) clearTimeout(okulAramaSayaci);
+  $('bOkulSonuc').innerHTML = '';
+  $('bOkulAra').value = '';
+  var kap = $('bOkulSecili');
+  kap.style.display = '';
+  kap.innerHTML = '<div class="secili-ic">' + ik('onay', 'secili-ikon') + '<div class="buyu">' +
+    '<div class="ad">' + esc(seciliOkul.ad) + '</div>' +
+    '<div class="yer">' + esc(seciliOkul.il) + ' / ' + esc(seciliOkul.ilce) + ' · ' + esc(seciliOkul.tip) + '</div>' +
+    '</div><button type="button" class="btn gri kucuk" id="bOkulKaldir">Değiştir</button></div>';
+  $('bOkulKaldir').onclick = okulSecimiTemizle;
+  alanTemizle($('bOkulAra').closest('.field'));
+  /* Seçilen okulun ili/ilçesi forma da yansısın. */
+  if ($('bIl').value !== seciliOkul.il) {
+    $('bIl').value = seciliOkul.il;
+    ilceleriDoldur(seciliOkul.il);
+  }
+  $('bIlce').value = seciliOkul.ilce;
+  if ($('bOkulAd')) $('bOkulAd').value = '';
+  $('bOkulAra').closest('.okul-ust').style.display = 'none';
+  $('bOkulKaldir').focus();
+}
+
+function okulSecimiTemizle() {
+  seciliOkul = null;
+  var kap = $('bOkulSecili');
+  kap.style.display = 'none';
+  kap.innerHTML = '';
+  $('bOkulAra').closest('.okul-ust').style.display = '';
+  $('bOkulAra').focus();
+}
