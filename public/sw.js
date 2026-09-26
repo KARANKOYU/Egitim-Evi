@@ -80,3 +80,37 @@ self.addEventListener('notificationclick', function (e) {
   }));
 });
 
+self.addEventListener('fetch', function (e) {
+  const istek = e.request;
+
+  /* Sadece kendi sunucumuzdaki GET isteklerine karışıyoruz. */
+  if (istek.method !== 'GET') return;
+  const url = new URL(istek.url);
+  if (url.origin !== self.location.origin) return;
+
+  /* API asla önbelleğe alınmaz. */
+  if (url.pathname.indexOf('/api/') === 0) return;
+
+  e.respondWith(
+    fetch(istek)
+      .then(function (yanit) {
+        /* Başarılı yanıtı bir kenara yaz, çevrimdışı için dursun. */
+        if (yanit && yanit.status === 200 && yanit.type === 'basic') {
+          const kopya = yanit.clone();
+          caches.open(SURUM).then(function (c) { c.put(istek, kopya); }).catch(function () {});
+        }
+        return yanit;
+      })
+      .catch(function () {
+        return caches.match(istek).then(function (bulunan) {
+          if (bulunan) return bulunan;
+          /* Gezinme isteğiyse en azından ana sayfayı ver. */
+          if (istek.mode === 'navigate') return caches.match('/index.html');
+          return new Response('Çevrimdışısın', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+          });
+        });
+      })
+  );
+});
