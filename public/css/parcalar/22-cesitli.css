@@ -190,3 +190,20 @@
   border-radius: 12px; background: var(--vurgu-acik); color: var(--vurgu-yazi); }
 .hatirlatici-ikon .ikon { width: 20px; height: 20px; }
 
+/* Sınıflarım (öğretmen): sınıf kartları, öğrenci listesi, öğrenci ayrıntısı. */
+.snf-kartlar { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.snf-kart { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 76px; padding: 12px 14px;
+  border: 1.5px solid var(--cizgi-koyu); border-radius: var(--r-kucuk); background: var(--kart); color: var(--yazi);
+  font: inherit; text-align: left; cursor: pointer; }
+.snf-kart.secili { border-color: var(--ana); background: var(--ana-acik); }
+.snf-kart:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; }
+.snf-ad { font-family: var(--f-baslik); font-weight: 700; font-size: 20px; }
+.snf-alt { font-size: 13px; color: var(--soluk); }
+.snf-ogrenci { width: 100%; border: 0; border-bottom: 1px solid var(--cizgi); background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.snf-ok { font-size: 22px; color: var(--soluk); }
+.snf-kisi { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.snf-kisi .ad { font-weight: 700; font-size: 17px; }
+.snf-ozet { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.snf-sinav { padding: 10px 0; border-bottom: 1px solid var(--cizgi); }
+.snf-sinav .ad { font-weight: 600; }
+.snf-ort { margin-top: 4px; font-size: 13.5px; }
