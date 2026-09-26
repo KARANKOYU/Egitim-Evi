@@ -96,6 +96,13 @@ async function bildirimYaz(liste) {
   yay(temiz.map(b => ({ kime: b.kime, metin: clean(b.metin, 300), baglanti: b.baglanti || '' })));
 }
 
+const veliyeGitsinMi = secenek => !secenek || secenek.veliye !== false;
+
+async function bildir(kullaniciId, metin, baglanti, secenek) {
+  if (!kullaniciId) return;
+  await cokluBildir([{ kime: kullaniciId, metin, baglanti: baglanti || '' }], secenek);
+}
+
 async function yoneticilereBildir(metin, baglanti) {
   const idler = (await sorgu("SELECT id FROM kullanicilar WHERE rol = 'admin'")).map(r => r.id);
   await topluBildir(idler, metin, baglanti);

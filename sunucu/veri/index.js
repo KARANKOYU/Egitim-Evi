@@ -122,6 +122,12 @@ async function baslat() {
   }
 }
 
+/* Sık kullanılan kısayollar */
+/* secenek: { veliye: false } -> öğrencinin bildiriminin kopyası velisine gitmez (depo/genel.js). */
+const bildir = (kimeId, metin, baglantiAdresi, secenek) => depo.genel.bildir(kimeId, metin, baglantiAdresi, secenek);
+const topluBildir = (idler, metin, baglantiAdresi, secenek) => depo.genel.topluBildir(idler, metin, baglantiAdresi, secenek);
+const cokluBildirim = (liste, secenek) => depo.genel.cokluBildir(liste, secenek);
+
 module.exports = Object.assign({
   baslat,
   okulKisaAdiBul,
