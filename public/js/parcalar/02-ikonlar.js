@@ -58,3 +58,117 @@ var IKONLAR = {
   alev: '<path d="M12 21a7 7 0 0 0 7-7c0-4.5-3.5-6.5-4.5-10-2 1.5-3.5 4-3 6.5-1.3-.6-2.3-2-2.5-3.5C6.5 9 5 11.3 5 14a7 7 0 0 0 7 7z"/><path d="M12 21a2.8 2.8 0 0 1-2.8-2.8c0-1.9 2.8-3.7 2.8-5.2 0 1.5 2.8 3.3 2.8 5.2A2.8 2.8 0 0 1 12 21z"/>'
 };
 
+/* ad: ikon adı, ek: ek CSS sınıfı */
+/* Profil fotoğrafı yerine baş harfler: "Ayşe Kaya" -> "AK", renkli bir
+   yuvarlakta. Renk kişinin kimliğinden (yoksa adından) türetilir; aynı kişi
+   her yerde aynı renkte görünür. Fotoğraf yüklenmez (KVKK: çocuk fotoğrafı). */
+var AVATAR_RENKLERI = ['#d62839', '#0a8f9c', '#d9820b', '#0a6f79', '#7b4ecf', '#2f855a', '#c2410c', '#3563c9'];
+
+function basHarfler(ad) {
+  var p = String(ad || '').trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return '?';
+  var ilk = p[0].charAt(0), son = p.length > 1 ? p[p.length - 1].charAt(0) : '';
+  return (ilk + son).toLocaleUpperCase('tr');
+}
+
+function avatar(ad, anahtar, ek) {
+  var s = String(anahtar || ad || ''), h = 0;
+  for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return '<span class="avatar' + (ek ? ' ' + ek : '') + '" style="--av:' + AVATAR_RENKLERI[h % AVATAR_RENKLERI.length] +
+    '" aria-hidden="true">' + esc(basHarfler(ad)) + '</span>';
+}
+
+function ik(ad, ek) {
+  var yol = IKONLAR[ad];
+  if (!yol) return '';
+  return '<svg class="ikon' + (ek ? ' ' + ek : '') + '" viewBox="0 0 24 24" ' +
+    'fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + yol + '</svg>';
+}
+
+function tarih(iso) {
+  if (!iso) return '-';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return esc(iso);
+  var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+  return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+function tarihSaat(iso) {
+  if (!iso) return '-';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return esc(iso);
+  var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+  return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+var HAFTA_GUNLERI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba',
+  'Perşembe', 'Cuma', 'Cumartesi'];
+var AY_ADI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+/* "4 Eylül 2026, Cuma" — hangi güne denk geldiği bir bakışta görünsün. */
+function tarihGun(iso) {
+  if (!iso) return '-';
+  var d = new Date(String(iso).length === 10 ? iso + 'T00:00:00' : iso);
+  if (isNaN(d.getTime())) return esc(iso);
+  return d.getDate() + ' ' + AY_ADI[d.getMonth()] + ' ' + d.getFullYear() +
+    ', ' + HAFTA_GUNLERI[d.getDay()];
+}
+
+/* Ödev satırlarında: "4 Eylül 2026, Cuma · 12:00" */
+function tarihGunSaat(iso, saat) {
+  var t = tarihGun(iso);
+  return saat ? t + ' · ' + esc(saat) : t;
+}
+
+/* Yalnızca gün adı: "Cuma" */
+function gunAdi(iso) {
+  if (!iso) return '';
+  var d = new Date(String(iso).length === 10 ? iso + 'T00:00:00' : iso);
+  return isNaN(d.getTime()) ? '' : HAFTA_GUNLERI[d.getDay()];
+}
+
+/* Teslim anı geçti mi? Saat de hesaba katılır. */
+function teslimGecti(iso, saat) {
+  if (!iso) return false;
+  var d = new Date(iso + 'T' + (saat || '12:00') + ':00');
+  return !isNaN(d.getTime()) && d.getTime() < Date.now();
+}
+
+/* Son güne kaç takvim günü var (bugün 0, yarın 1, dün -1). Yerel gece
+   yarısına göre sayılır; saat ayrıca teslimGecti ile denetlenir. */
+function gunFarki(iso) {
+  if (!iso) return null;
+  var d = new Date(String(iso).slice(0, 10) + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
+  var bugun = new Date();
+  bugun.setHours(0, 0, 0, 0);
+  return Math.round((d - bugun) / 86400000);
+}
+
+/* Aktif ödevin kalan süre etiketi: saat geçtiyse "Süresi doldu", son günse
+   "Bugün HH:MM'e kadar", yoksa "N gün kaldı". */
+function kalanEtiketi(a) {
+  if (teslimGecti(a.endAt, a.endTime)) return '<span class="etiket kirmizi">Süresi doldu</span>';
+  var kalan = gunFarki(a.endAt);
+  if (kalan === null) return '<span class="etiket mavi">Aktif</span>';
+  if (kalan <= 0) return '<span class="etiket turuncu">Bugün ' + esc(a.endTime || '12:00') + '\'e kadar</span>';
+  return '<span class="etiket ' + (kalan <= 1 ? 'turuncu' : 'mavi') + '">' + kalan + ' gün kaldı</span>';
+}
+
+/* Aramayı şapkasız/noktasız yazana da çalıştırmak için harfleri sadeleştirir:
+   "ögretmen", "OGRETMEN", "öğretmen" hepsi aynı sonucu verir. */
+var TR_SADE = {
+  'ı': 'i', 'İ': 'i', 'I': 'i', 'ş': 's', 'Ş': 's', 'ğ': 'g', 'Ğ': 'g',
+  'ü': 'u', 'Ü': 'u', 'ö': 'o', 'Ö': 'o', 'ç': 'c', 'Ç': 'c',
+  'â': 'a', 'Â': 'a', 'î': 'i', 'Î': 'i', 'û': 'u', 'Û': 'u'
+};
+function nrm(s) {
+  s = String(s === null || s === undefined ? '' : s);
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    var c = s.charAt(i);
+    out += (TR_SADE[c] !== undefined) ? TR_SADE[c] : c;
+  }
+  return out.toLowerCase().trim();
+}
+
