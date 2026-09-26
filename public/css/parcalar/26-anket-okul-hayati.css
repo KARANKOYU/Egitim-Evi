@@ -1,0 +1,42 @@
+/* Anketler; yemek listesi, servis, kulüpler; ödev teslim dosyaları. */
+
+/* ===== anket ===== */
+.anket-ust { display: flex; gap: 12px; align-items: flex-start; }
+.anket-ust .buyu { flex: 1; min-width: 0; }
+.anket-soru { font-size: 16px; font-weight: 600; margin-bottom: 3px; text-wrap: balance; }
+.anket-ust .alt { font-size: 12.5px; color: var(--soluk); }
+.anket-aciklama { margin: 10px 0 0; color: var(--soluk); font-size: 14px; line-height: 1.55; }
+.anket-secenekler { display: grid; gap: 8px; margin-top: 14px; }
+.anket-secenek {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  font: inherit; font-size: 14.5px; padding: 11px 13px; cursor: pointer;
+  background: var(--kart); color: inherit;
+  border: 1.5px solid var(--cizgi); border-radius: var(--r-kucuk);
+  transition: border-color var(--sure-kisa), background var(--sure-kisa);
+}
+.anket-secenek:hover:not(:disabled) { border-color: var(--ana); }
+.anket-secenek:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; }
+.anket-secenek.secili { border-color: var(--ana); background: var(--ana-acik); color: var(--ana-koyu); font-weight: 600; }
+.anket-secenek:disabled { opacity: .6; cursor: default; }
+.anket-isaret {
+  flex: 0 0 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid var(--cizgi); display: flex; align-items: center; justify-content: center;
+}
+.anket-secenek.secili .anket-isaret { background: var(--ana); border-color: var(--ana); color: var(--ustune-yazi); }
+.anket-isaret .ikon { width: 13px; height: 13px; }
+.anket-alt { margin-top: 10px; font-size: 13px; color: var(--soluk); }
+.anket-sonuclar { margin-top: 12px; display: grid; gap: 10px; }
+.anket-sonuc-ust { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
+.anket-sonuc-ust b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.anket-sonuc .cubuk { margin-top: 4px; }
+.anket-sonuc.benim .cubuk i { background: var(--yesil); }
+
+/* ===== kulüpler ===== */
+.kulup-dugmeler { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.kulup-dugmeler:empty { display: none; }
+
+@media (max-width: 520px) {
+  .hafta-gezgin .genis { display: none; }
+  .yemek-duzen { grid-template-columns: 1fr; }
+  .bilgi-satir > span { flex-basis: 70px; }
+}

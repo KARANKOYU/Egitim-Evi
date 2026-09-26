@@ -212,3 +212,30 @@ function anketSecenekKutusu(n) {
   return '<input type="text" class="aSecenek" maxlength="120" placeholder="' + n + '. seçenek" style="margin-bottom:6px">';
 }
 
+EYLEMLER['anket-secenek-ekle'] = function (el) {
+  var kap = $('aSecenekler');
+  var n = kap.querySelectorAll('.aSecenek').length;
+  if (n >= 10) { el.disabled = true; return; }
+  kap.insertAdjacentHTML('beforeend', anketSecenekKutusu(n + 1));
+  kap.lastChild.focus();
+  if (n + 1 >= 10) el.disabled = true;
+};
+
+EYLEMLER['anket-ac'] = function (el) {
+  var secenekler = [];
+  var kutular = document.querySelectorAll('.aSecenek');
+  for (var i = 0; i < kutular.length; i++) if (kutular[i].value.trim()) secenekler.push(kutular[i].value.trim());
+  var tur = $('aHedefTur').value;
+  var hedef = { tur: tur };
+  if (tur === 'rol') hedef.roller = secililer('.aRol');
+  if (tur === 'sinif') hedef.siniflar = secililer('.aSinif');
+
+  dugmeBekle(el, 'Açılıyor...');
+  return api('/anketler', 'POST', {
+    soru: $('aSoru').value, aciklama: $('aAciklama').value, secenekler: secenekler, hedef: hedef,
+    bitisGun: $('aBitis').value, bitisSaat: $('aBitisSaat').value, gizli: $('aGizli').checked
+  }).then(function (r) {
+    modalKapat();
+    git('anketler').then(function () { sayfaMesaji('iyi', r.message); });
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('aMesaj', 'hata', e.message); });
+};
