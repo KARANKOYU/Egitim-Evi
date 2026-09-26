@@ -197,6 +197,20 @@ async function kodVarMi(kod) {
   return !!(await tek('SELECT 1 FROM kullanicilar WHERE veli_kodu = $1 OR eslesme_kodu = $1', [kod]));
 }
 
+/* ---------------- listeler ---------------- */
+
+/* Okulun kullanıcıları. secim: { rol, roller, durum, sinifsiz } */
+async function okulun(okulId, secim) {
+  secim = secim || {};
+  const kosul = ['k.okul_id = $1'];
+  const p = [okulId];
+  if (secim.rol) { p.push(secim.rol); kosul.push('k.rol = $' + p.length); }
+  if (secim.roller) { p.push(secim.roller); kosul.push('k.rol = ANY($' + p.length + '::text[])'); }
+  if (secim.durum) { p.push(secim.durum); kosul.push('k.durum = $' + p.length); }
+  if (secim.sinifsiz) kosul.push('k.sinif_id IS NULL');
+  return coklu(kosul.join(' AND '), p);
+}
+
 /* ---------------- yazma ---------------- */
 async function ekle(u) {
   const s = e.kullaniciSutunlari(u);

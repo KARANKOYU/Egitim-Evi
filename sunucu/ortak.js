@@ -215,6 +215,32 @@ function dogumSorunu(deger, zorunlu) {
   return '';
 }
 
+function normEmail(e) { return metinYap(e).trim().toLowerCase(); }
+
+/* Şifre kuralı tek yerde: kayıt, şifre değiştirme ve okulun açtığı hesaplar
+   aynı kuralı kullansın. Sorun varsa metin döner, yoksa null.
+   Şifre kuralı iki düzeylidir:
+     - yetişkin hesabı (veli, öğretmen, müdür, yönetici): en az 8 karakter,
+       büyük harf, küçük harf, rakam ve özel karakter (! ? . * gibi);
+     - okulun açtığı öğrenci ve servisçi hesabı: en az 8 karakter, harf ve
+       rakam (küçük çocuklar için).
+   Kural yalnızca şifre belirlenirken uygulanır; eski şifreyle giriş sürer. */
+function sifreSorunu(pw, guclu) {
+  const s = metinYap(pw);
+  if (s.length < 8) return 'Şifre en az 8 karakter olmalı';
+  if (s.length > 200) return 'Şifre çok uzun';
+  if (!guclu) {
+    if (!/[0-9]/.test(s) || !/[a-zA-ZçğıöşüÇĞİÖŞÜ]/.test(s)) return 'Şifre en az bir harf ve bir rakam içermeli';
+    return null;
+  }
+  const eksik = [];
+  if (!/[A-ZÇĞİÖŞÜ]/.test(s)) eksik.push('bir büyük harf');
+  if (!/[a-zçğıöşü]/.test(s)) eksik.push('bir küçük harf');
+  if (!/[0-9]/.test(s)) eksik.push('bir rakam');
+  if (!/[^A-Za-z0-9çğıöşüÇĞİÖŞÜ\s]/.test(s)) eksik.push('bir özel karakter (! ? . * gibi)');
+  return eksik.length ? 'Şifrede ' + eksik.join(', ') + ' olmalı' : null;
+}
+
 /* Bu hesabın şifresi güçlü kurala mı tabi? Öğrenci ve servisçi dışında herkes. */
 const gucluSifreli = u => !u || (u.role !== 'student' && u.role !== 'servisci');
 /* Metin alanı bekliyoruz. İstemci nesne ya da dizi gönderirse bunu metne
