@@ -159,6 +159,21 @@
 .seri-yazi { font-weight: 600; font-size: 14.5px; line-height: 1.4; }
 .seri-yazi small { display: block; font-weight: 400; font-size: 12.5px; opacity: .85; margin-top: 2px; }
 
+/* Ders programından yoklama: telefonda tek elle, büyük düğmeler. */
+.yoklama-al { margin-top: 8px; width: 100%; justify-content: center; min-height: 44px; }
+.py-ust { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.py-ust .btn { margin-left: auto; }
+.py-liste { display: flex; flex-direction: column; gap: 10px; }
+.py-satir { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--cizgi); }
+.py-ad { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.py-secim { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.py-dugme { min-height: 48px; padding: 6px 8px; border-radius: var(--r-mini); border: 1.5px solid var(--cizgi-koyu);
+  background: var(--kart); color: var(--yazi); font: inherit; font-weight: 600; font-size: 13.5px; line-height: 1.2; cursor: pointer; }
+.py-dugme.var.secili { background: var(--yesil); border-color: var(--yesil); color: var(--ustune-yazi); }
+.py-dugme.izinli.secili { background: var(--mavi); border-color: var(--mavi); color: var(--ustune-yazi); }
+.py-dugme.yok.secili { background: var(--kirmizi); border-color: var(--kirmizi); color: var(--ustune-yazi); }
+.py-dugme:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; }
+
 /* Hatırlatıcı penceresi: sıklık ve gün seçimi yuvarlak düğmeler (içinde gerçek
    radyo/onay kutusu; klavye ve ekran okuyucu onu kullanır). */
 .secim-dugmeler { display: flex; flex-wrap: wrap; gap: 8px; }
