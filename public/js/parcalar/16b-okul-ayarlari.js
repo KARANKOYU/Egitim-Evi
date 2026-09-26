@@ -80,3 +80,12 @@ EYLEMLER['okul-adres-kaydet'] = function (el) {
   })['catch'](function (e) { dugmeBitir(el); alanHatasi(kutu, e.message); });
 };
 
+EYLEMLER['okul-konum-kaydet'] = function (el) {
+  var k = okulAyar.secim;
+  if (!k) return;
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/school/konum', 'POST', { enlem: k.enlem, boylam: k.boylam }).then(function (d) {
+    return git('okul-ayarlari').then(function () { sayfaMesaji('iyi', d.message); });
+  })['catch'](function (e) { dugmeBitir(el); mesajGoster('oaKonumMesaj', 'hata', e.message); });
+};
+
