@@ -103,6 +103,25 @@ async function bildir(kullaniciId, metin, baglanti, secenek) {
   await cokluBildir([{ kime: kullaniciId, metin, baglanti: baglanti || '' }], secenek);
 }
 
+/* Aynı bildirimi birden çok kişiye tek sorguda. */
+async function topluBildir(kullaniciIdleri, metin, baglanti, secenek) {
+  const idler = [...new Set(kullaniciIdleri.filter(Boolean))];
+  if (!idler.length) return;
+  await sorgu(
+    'INSERT INTO bildirimler (id, kullanici_id, metin, baglanti) ' +
+    'SELECT $1 || md5(random()::text || k), k, $3, $4 FROM unnest($2::text[]) AS k',
+    ['n_', idler, clean(metin, 300), baglanti || '']);
+  yay(idler.map(k => ({ kime: k, metin: clean(metin, 300), baglanti: baglanti || '' })));
+  if (veliyeGitsinMi(secenek)) await bildirimYaz(await veliKopyalari(idler.map(k => ({ kime: k, metin, baglanti }))));
+}
+
+/* Kişiye göre değişen metinler tek sorguda: liste = [{ kime, metin, baglanti }] */
+async function cokluBildir(liste, secenek) {
+  const temiz = liste.filter(b => b && b.kime);
+  if (!temiz.length) return;
+  await bildirimYaz(veliyeGitsinMi(secenek) ? temiz.concat(await veliKopyalari(temiz)) : temiz);
+}
+
 async function yoneticilereBildir(metin, baglanti) {
   const idler = (await sorgu("SELECT id FROM kullanicilar WHERE rol = 'admin'")).map(r => r.id);
   await topluBildir(idler, metin, baglanti);
