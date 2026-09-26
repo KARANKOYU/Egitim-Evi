@@ -164,6 +164,25 @@ function program(r) {
   return p;
 }
 
+/* ---------------- ödev ----------------
+   ogrenci_idler / sonuclar / sinif_idler / acilmalar sorguda json olarak
+   toplanır (odevler deposu). */
+function odev(r) {
+  if (!r) return null;
+  return {
+    id: r.id, teacherId: bos(r.ogretmen_id), schoolId: r.okul_id, subject: r.ders,
+    title: r.baslik, description: r.aciklama,
+    startAt: bos(r.baslangic), endAt: bos(r.bitis), endTime: r.bitis_saati,
+    startTime: r.baslangic_saati ? String(r.baslangic_saati).slice(0, 5) : '',
+    studentIds: r.ogrenci_idler || [],
+    classIds: r.sinif_idler || [],
+    results: r.sonuclar || {},
+    acilma: r.acilmalar || {},
+    status: r.durum, yilId: bos(r.yil_id),
+    createdAt: r.olusturma, finishedAt: r.sonuclanma || undefined
+  };
+}
+
 /* ---------------- sınav ---------------- */
 function sinavGrubu(r) {
   if (!r) return null;
