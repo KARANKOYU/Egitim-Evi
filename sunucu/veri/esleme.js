@@ -118,6 +118,27 @@ function kullaniciSutunlari(u) {
   return s;
 }
 
+/* ---------------- rol ---------------- */
+function rol(r, yetkiler, kapsamSatirlari) {
+  if (!r) return null;
+  const kapsam = {};
+  for (const k of kapsamSatirlari || []) {
+    if (!kapsam[k.yetki]) kapsam[k.yetki] = { dersler: [], siniflar: [] };
+    kapsam[k.yetki][k.tur === 'ders' ? 'dersler' : 'siniflar'].push(k.deger);
+  }
+  /* Kapsamda yalnızca biri tanımlıysa öteki "hepsi" demektir. */
+  for (const y in kapsam) {
+    if (!kapsam[y].dersler.length) kapsam[y].dersler = ['*'];
+    if (!kapsam[y].siniflar.length) kapsam[y].siniflar = ['*'];
+  }
+  const o = {
+    id: r.id, schoolId: r.okul_id, name: r.ad, tur: r.tur || 'ozel',
+    permissions: yetkiler || [], kapsam, createdAt: r.olusturma
+  };
+  if (r.kisi_sayisi !== undefined) o._kisiSayisi = r.kisi_sayisi;
+  return o;
+}
+
 /* ---------------- ders ve program ---------------- */
 function ders(r) {
   if (!r) return null;
