@@ -181,6 +181,28 @@ function iletisimCiz(il) {
   $('hIletisimBolum').hidden = !(il.eposta || il.telefon);
 }
 
+function iletisimleriDoldur() {
+  var il = siteBilgisi.iletisim;
+  if (!il) return;
+  var parcalar = [];
+  if (il.eposta) {
+    parcalar.push('<a class="site-iletisim-bag" data-act="site-eposta">' + ik('posta') + '<span></span></a>');
+  }
+  if (il.telefon) {
+    parcalar.push('<a class="site-iletisim-bag" href="tel:' + esc(il.telefon.replace(/[^0-9+]/g, '')) + '">' +
+      ik('telefon') + '<span>' + esc(il.telefon) + '</span></a>');
+  }
+  var html = parcalar.join('');
+  var yerler = [$('sIletisim'), $('hIletisim')].concat(Array.prototype.slice.call(document.querySelectorAll('[data-iletisim]')));
+  for (var i = 0; i < yerler.length; i++) {
+    if (!yerler[i]) continue;
+    yerler[i].innerHTML = html;
+    yerler[i].hidden = !html;
+    var ep = yerler[i].querySelector('[data-act="site-eposta"] span');
+    if (ep) ep.textContent = il.eposta;
+  }
+}
+
 /* Yapımcılar: üst şeritteki açılır liste ve Hakkında'daki liste. Liste
    gelmezse sayfadaki hazır satır (proje sahibi) kalır. */
 function yapimcilariCiz(liste) {

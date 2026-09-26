@@ -125,3 +125,11 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   gap: 8px;
 }
 
+/* İş süren düğme */
+.btn.bekliyor { cursor: progress; }
+
+/* Telefon: solda ülke kodu, sağda numara (04c-telefon.js). */
+.tel-kutu { display: flex; gap: 6px; align-items: stretch; }
+.field .tel-kutu .tel-ulke { width: auto; flex: 0 0 auto; padding-right: 6px; font-variant-numeric: tabular-nums; }
+.field .tel-kutu input { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
+

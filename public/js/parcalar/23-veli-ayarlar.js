@@ -267,6 +267,38 @@ function girisBilgileriKarti(hs) {
     '<button class="btn" data-act="benim-bilgi-kaydet">Kaydet</button><div id="hMesaj" style="margin-top:10px"></div></div>';
 }
 
+var HESAP_ALAN = { kullaniciAdi: 'hKadi', eposta: 'hEposta', telefon: 'hTelefon', sifre: 'hSifre' };
+
+EYLEMLER['benim-bilgi-kaydet'] = function (el) {
+  var kart = $('girisBilgiKart');
+  formHatalariniSil(kart);
+  var govde = { sifre: $('hSifre').value };
+  var degisti = false;
+  ['kullaniciAdi', 'eposta', 'telefon'].forEach(function (ad) {
+    var kutu = $(HESAP_ALAN[ad]);
+    var deger = ad === 'telefon' ? telefonOku(kutu) : kutu.value.trim();
+    if (ad === 'kullaniciAdi') deger = deger.replace(/İ/g, 'i').toLowerCase();
+    if (deger !== kutu.getAttribute('data-ilk')) { govde[ad] = deger; degisti = true; }
+  });
+  if (!degisti) { mesajGoster('hMesaj', 'bilgi', 'Değişiklik yok.'); return; }
+  if (govde.kullaniciAdi !== undefined && kullaniciAdiSorunuTR(govde.kullaniciAdi)) alanHatasi('hKadi', kullaniciAdiSorunuTR(govde.kullaniciAdi));
+  if (govde.eposta !== undefined && !EPOSTA_DESENI.test(govde.eposta)) alanHatasi('hEposta', 'Geçerli bir e-posta adresi yaz.');
+  if (govde.telefon !== undefined && telefonSorunuTR(govde.telefon)) alanHatasi('hTelefon', telefonSorunuTR(govde.telefon));
+  if (!govde.sifre) alanHatasi('hSifre', 'Mevcut şifreni yaz.');
+  if (kart.querySelector('.hatali')) { ilkHatayaGit(kart); return; }
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/hesap/bilgi', 'POST', govde).then(function (d) {
+    dugmeBitir(el);
+    if (!S.user.rolSatiri) { S.user.username = d.hesap.username; S.user.email = d.hesap.email; S.user.phone = d.hesap.phone; }
+    return SAYFALAR.profil().then(function () { mesajGoster('hMesaj', 'iyi', d.message); });
+  })['catch'](function (e) {
+    dugmeBitir(el);
+    var alan = e.veri && HESAP_ALAN[e.veri.alan];
+    if (alan) { alanHatasi(alan, e.message); $(alan).focus(); }
+    else mesajGoster('hMesaj', 'hata', e.message);
+  });
+};
+
 EYLEMLER['benim-hesap-sil'] = function (el) {
   var kutu = $('silSifre');
   alanTemizle(kutu.closest('.field'));

@@ -132,3 +132,27 @@ function telefonYaz(kutu, deger) {
   kutu.value = telefonGrupla(p[1], ulkeBilgisi(sec.value)[2]);
 }
 
+/* Kutudaki numara uluslararası biçimde; boşsa ''. */
+function telefonOku(kutu) {
+  if (!kutu) return '';
+  var sec = kutu.parentNode && kutu.parentNode.querySelector('.tel-ulke');
+  var rakam = kutu.value.replace(/\D/g, '');
+  if (!rakam) return '';
+  if (!sec) return telefonNorm(kutu.value);
+  if (sec.value === '90' && rakam.charAt(0) === '0') rakam = rakam.slice(1);
+  return '+' + sec.value + rakam;
+}
+
+/* Sayfadaki ve sonradan eklenen bütün telefon kutuları. */
+function telefonAlanlariniKur(kok) {
+  var kutular = (kok || document).querySelectorAll('input[type="tel"]:not([data-tel])');
+  for (var i = 0; i < kutular.length; i++) telefonAlaniKur(kutular[i]);
+}
+telefonAlanlariniKur(document);
+if (window.MutationObserver) {
+  new MutationObserver(function (degisenler) {
+    for (var i = 0; i < degisenler.length; i++) {
+      if (degisenler[i].addedNodes.length) { telefonAlanlariniKur(document); return; }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+}
