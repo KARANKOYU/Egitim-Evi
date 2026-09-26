@@ -14,34 +14,43 @@ SAYFALAR.siniflarim = function () {
         '<span class="snf-ad">' + esc(c.ad) + '</span>' +
         '<span class="snf-alt">' + esc(c.dersler.join(', ')) + ' · ' + c.ogrenciSayisi + ' öğrenci</span></button>';
     }
-    h += '</div><div id="snfOgrenciler"><div class="hint">Yükleniyor...</div></div>';
-    yaz(h);
-    return snfOgrencileriCiz();
+    h += '</div>';
+    /* Sayfa, seçili sınıfın öğrencileriyle birlikte tek seferde çizilir (liste sonradan gelip sayfayı kaydırmasın). */
+    return api('/teacher/sinif?id=' + encodeURIComponent(S.snfSinif)).then(function (s) {
+      yaz(h + '<div id="snfOgrenciler">' + snfListeHtml(s) + '</div>');
+    }, function (e) {
+      yaz(h + '<div id="snfOgrenciler"><div class="msg hata">' + esc(e.message) + '</div></div>');
+    });
   });
 };
 
-function snfOgrencileriCiz() {
-  return api('/teacher/sinif?id=' + encodeURIComponent(S.snfSinif)).then(function (d) {
-    var kap = $('snfOgrenciler');
-    if (!kap) return;
-    if (!d.ogrenciler.length) { kap.innerHTML = bosKutu('ogrenci', 'Bu sınıfta öğrenci yok.'); return; }
-    var h = '<h3 class="sb">' + esc(d.sinif.ad) + ' — ' + d.ogrenciler.length + ' öğrenci</h3><div class="kart" style="padding:0">';
-    for (var i = 0; i < d.ogrenciler.length; i++) {
-      var o = d.ogrenciler[i];
-      h += '<button type="button" class="satir tikla snf-ogrenci" data-act="snf-ogrenci" data-id="' + esc(o.id) + '" data-ara="' + esc(o.fullName + ' ' + o.okulNo) + '">' +
-        avatar(o.fullName, o.id) + '<div class="buyu"><div class="ad">' + esc(o.fullName) + '</div>' +
-        (o.okulNo ? '<div class="alt">No ' + esc(o.okulNo) + '</div>' : '') + '</div><span class="snf-ok" aria-hidden="true">›</span></button>';
-    }
-    kap.innerHTML = h + '</div>';
-  })['catch'](function (e) { var kap = $('snfOgrenciler'); if (kap) kap.innerHTML = '<div class="msg hata">' + esc(e.message) + '</div>'; });
+function snfListeHtml(d) {
+  if (!d.ogrenciler.length) return bosKutu('ogrenci', 'Bu sınıfta öğrenci yok.');
+  var h = '<h3 class="sb">' + esc(d.sinif.ad) + ' — ' + d.ogrenciler.length + ' öğrenci</h3><div class="kart" style="padding:0">';
+  for (var i = 0; i < d.ogrenciler.length; i++) {
+    var o = d.ogrenciler[i];
+    h += '<button type="button" class="satir tikla snf-ogrenci" data-act="snf-ogrenci" data-id="' + esc(o.id) + '" data-ara="' + esc(o.fullName + ' ' + o.okulNo) + '">' +
+      avatar(o.fullName, o.id) + '<div class="buyu"><div class="ad">' + esc(o.fullName) + '</div>' +
+      (o.okulNo ? '<div class="alt">No ' + esc(o.okulNo) + '</div>' : '') + '</div><span class="snf-ok" aria-hidden="true">›</span></button>';
+  }
+  return h + '</div>';
 }
 
+/* Sınıf değişirken eski liste soluk kalır; yenisi gelince yerine geçer (arada boşalıp kaymaz). */
 EYLEMLER['snf-sinif'] = function (el, id) {
   S.snfSinif = id;
   Array.prototype.forEach.call(document.querySelectorAll('.snf-kart'), function (k) { k.classList.toggle('secili', k.getAttribute('data-id') === id); });
   var kap = $('snfOgrenciler');
-  if (kap) kap.innerHTML = '<div class="hint">Yükleniyor...</div>';
-  return snfOgrencileriCiz();
+  if (kap) kap.classList.add('snf-bekliyor');
+  return api('/teacher/sinif?id=' + encodeURIComponent(id)).then(function (d) {
+    var k = $('snfOgrenciler');
+    if (!k || S.snfSinif !== id) return;
+    k.classList.remove('snf-bekliyor');
+    k.innerHTML = snfListeHtml(d);
+  })['catch'](function (e) {
+    var k = $('snfOgrenciler');
+    if (k) { k.classList.remove('snf-bekliyor'); k.innerHTML = '<div class="msg hata">' + esc(e.message) + '</div>'; }
+  });
 };
 
 EYLEMLER['snf-ogrenci'] = function (el, id) {

@@ -141,8 +141,13 @@
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .teslim-oge-boyut { font-size: 12.5px; color: var(--soluk); font-variant-numeric: tabular-nums; }
 .kucuk-baglanti { font-size: 12.5px; min-height: 32px; }
-.medya-kap { display: flex; justify-content: center; background: var(--medya-zemin); border-radius: var(--r-kucuk); overflow: hidden; }
-.medya-oge { display: block; max-width: 100%; max-height: 70vh; }
+/* Fotoğraf/video kutusu sabit yükseklikte: dosya yüklenince pencere büyüyüp kaymasın. */
+.medya-kap {
+  display: flex; justify-content: center; align-items: center; height: min(62vh, 560px);
+  background: var(--medya-zemin); border-radius: var(--r-kucuk); overflow: hidden;
+}
+.medya-kap.ses { height: auto; }
+.medya-oge { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
 .medya-oge.ses { width: 100%; background: var(--kart); }
 
 /* Ödev serisi şeridi (öğrenci): iyi · uyarı · bozuk */
@@ -191,6 +196,8 @@
 .hatirlatici-ikon .ikon { width: 20px; height: 20px; }
 
 /* Sınıflarım (öğretmen): sınıf kartları, öğrenci listesi, öğrenci ayrıntısı. */
+#snfOgrenciler { transition: opacity .15s; }
+#snfOgrenciler.snf-bekliyor { opacity: .55; pointer-events: none; }
 .snf-kartlar { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .snf-kart { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 76px; padding: 12px 14px;
   border: 1.5px solid var(--cizgi-koyu); border-radius: var(--r-kucuk); background: var(--kart); color: var(--yazi);

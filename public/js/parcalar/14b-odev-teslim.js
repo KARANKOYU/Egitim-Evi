@@ -254,7 +254,8 @@ EYLEMLER['teslim-oge'] = function (el, id) {
     var oge = tur === 'resim' ? '<img class="medya-oge" src="' + esc(d.yol) + '" alt="' + esc(ad) + '">'
       : tur === 'video' ? '<video class="medya-oge" src="' + esc(d.yol) + '" controls autoplay playsinline></video>'
       : '<audio class="medya-oge ses" src="' + esc(d.yol) + '" controls autoplay></audio>';
-    modalAc(ad, '<div class="medya-kap">' + oge + '</div><div class="hint">' + esc(mbYaz(boyut)) + '</div>',
+    /* Fotoğraf ve video sabit yükseklikte bir kutuda açılır: dosya yüklenince pencere büyüyüp kaymaz. */
+    modalAc(ad, '<div class="medya-kap' + (tur === 'resim' || tur === 'video' ? '' : ' ses') + '">' + oge + '</div><div class="hint">' + esc(mbYaz(boyut)) + '</div>',
       '<button class="btn gri" data-act="teslim-ogrenci" data-id="' + esc(teslimDurum.odevId) + '" data-ogrenci="' + esc(teslimDurum.ogrenciId) + '">Eklere dön</button>' +
       '<button class="btn ghost" data-act="teslim-indir" data-id="' + esc(id) + '" data-ad="' + esc(ad) + '">' + ik('indir') + 'İndir</button>');
   })['catch'](function (e) { el.disabled = false; hataGoster(e); });
