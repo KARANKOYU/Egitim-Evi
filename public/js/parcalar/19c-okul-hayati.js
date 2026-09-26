@@ -128,6 +128,52 @@ function servisAdayCiz() {
   $('svListe').innerHTML = h || '<div class="hint">Eşleşen öğrenci yok.</div>';
 }
 
+/* ================= kulüpler ================= */
+SAYFALAR.kulupler = function () {
+  return api('/kulupler').then(function (d) {
+    S.kulupVeri = d;
+    var h = hero('KULÜPLER', S.user.role === 'student' ? 'Okulun kulüpleri. Başvurusu açık kulübe katılabilirsin.' : 'Okulun kulüpleri ve danışman öğretmenleri.');
+
+    for (var c = 0; c < d.cocuklar.length; c++) {
+      var cc = d.cocuklar[c];
+      h += '<div class="kart"><h3>' + esc(cc.ad) + '</h3>' + (cc.kulupler.length
+        ? cc.kulupler.map(function (k) {
+          return '<div class="satir"><div class="buyu"><div class="ad">' + ik('kulup') + esc(k.ad) + '</div><div class="alt">' +
+            [k.danisman ? 'Danışman: ' + esc(k.danisman) : '', esc(k.gunSaat)].filter(Boolean).join(' · ') + '</div></div></div>';
+        }).join('') : '<div class="hint">Bir kulübe üye değil.</div>') + '</div>';
+    }
+
+    if (d.yonetir) {
+      h += '<div class="kart"><div class="satir" style="border:0;padding:0"><div class="buyu"><div class="ad">' +
+        (d.kulupler.length ? d.kulupler.length + ' kulüp' : 'Henüz kulüp yok') + '</div>' +
+        '<div class="alt">Başvuruyu kapatınca öğrenciler kendileri katılamaz ve ayrılamaz; danışman ya da yönetim düzenler.</div></div>' +
+        '<button class="btn" data-act="kulup-duzenle" data-id="">Yeni kulüp</button></div></div>';
+    }
+
+    if (!d.kulupler.length && !d.cocuklar.length && !d.yonetir) h += bosKutu('kulup', 'Okulda henüz kulüp yok.');
+
+    for (var i = 0; i < d.kulupler.length; i++) {
+      var k = d.kulupler[i];
+      var dolu = k.kontenjan && k.uyeSayisi >= k.kontenjan;
+      h += '<div class="kart kulup-kart"><div class="anket-ust"><div class="buyu">' +
+        '<div class="anket-soru">' + esc(k.ad) + (k.uyesin ? ' <span class="etiket yesil">Üyesin</span>' : '') + '</div>' +
+        '<div class="alt">' + [k.danisman ? 'Danışman: ' + esc(k.danisman) : 'Danışman atanmadı', esc(k.gunSaat),
+          k.uyeSayisi + (k.kontenjan ? ' / ' + k.kontenjan : '') + ' üye'].filter(Boolean).join(' · ') + '</div></div>' +
+        (!k.basvuruAcik ? '<span class="etiket gri">Başvuru kapalı</span>' : (dolu ? '<span class="etiket turuncu">Dolu</span>' : '')) + '</div>' +
+        (k.aciklama ? '<div class="anket-aciklama">' + esc(k.aciklama).replace(/\n/g, '<br>') + '</div>' : '') +
+        '<div class="kulup-dugmeler">';
+      if (S.user.role === 'student' && k.basvuruAcik) {
+        h += k.uyesin ? '<button class="btn kucuk gri" data-act="kulup-ayril" data-id="' + esc(k.id) + '">Ayrıl</button>'
+          : (dolu ? '' : '<button class="btn kucuk" data-act="kulup-katil" data-id="' + esc(k.id) + '">Katıl</button>');
+      }
+      if (k.uyeleriGorur) h += '<button class="btn kucuk ghost" data-act="kulup-uyeler" data-id="' + esc(k.id) + '">Üyeler</button>';
+      if (d.yonetir) h += '<button class="btn kucuk gri" data-act="kulup-duzenle" data-id="' + esc(k.id) + '">Düzenle</button>';
+      h += '</div></div>';
+    }
+    yaz(h);
+  });
+};
+
 EYLEMLER['kulup-katil'] = function (el, id) {
   el.disabled = true;
   return api('/kulupler/katil', 'POST', { id: id }).then(function (r) {
@@ -140,6 +186,33 @@ EYLEMLER['kulup-ayril'] = function (el, id) {
   el.disabled = true;
   return api('/kulupler/ayril', 'POST', { id: id }).then(function () { return SAYFALAR.kulupler(); })
     ['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+EYLEMLER['kulup-duzenle'] = function (el, id) {
+  var d = S.kulupVeri, k = null;
+  for (var i = 0; i < d.kulupler.length; i++) if (d.kulupler[i].id === id) k = d.kulupler[i];
+  k = k || { ad: '', aciklama: '', danismanId: '', kontenjan: 0, basvuruAcik: true, gunSaat: '' };
+  var secenek = '<option value="">— danışman yok —</option>';
+  for (var j = 0; j < (d.ogretmenler || []).length; j++) {
+    var t = d.ogretmenler[j];
+    secenek += '<option value="' + esc(t.id) + '"' + (t.id === k.danismanId ? ' selected' : '') + '>' + esc(t.ad) + '</option>';
+  }
+  var h = '<div class="field"><label for="kuAd">Kulüp adı</label><input type="text" id="kuAd" maxlength="80" value="' + esc(k.ad) +
+    '" placeholder="ör. Satranç Kulübü"></div>' +
+    '<div class="field"><label for="kuAciklama">Açıklama (isteğe bağlı)</label><textarea id="kuAciklama" rows="2" maxlength="1000">' +
+    esc(k.aciklama) + '</textarea></div>' +
+    '<div class="field"><label for="kuDanisman">Danışman öğretmen</label><select id="kuDanisman">' + secenek + '</select>' +
+    '<div class="hint">Danışman üye listesini görür, üye ekleyip çıkarabilir.</div></div>' +
+    '<div class="row2"><div class="field"><label for="kuKontenjan">Kontenjan</label><input type="number" id="kuKontenjan" min="1" max="1000" value="' +
+    (k.kontenjan || '') + '" placeholder="Boş: sınırsız"></div>' +
+    '<div class="field"><label for="kuGunSaat">Gün ve saat</label><input type="text" id="kuGunSaat" maxlength="60" value="' + esc(k.gunSaat) +
+    '" placeholder="ör. Çarşamba 15.00"></div></div>' +
+    '<label class="onay" style="margin-bottom:10px"><input type="checkbox" id="kuAcik"' + (k.basvuruAcik ? ' checked' : '') + '>' +
+    '<span>Başvuru açık (öğrenci kendisi katılıp ayrılabilir)</span></label><div id="kuMesaj"></div>';
+  modalAc(id ? k.ad : 'Yeni kulüp', h,
+    (id ? '<button class="btn tehlike" data-act="kulup-sil" data-id="' + esc(id) + '">Sil</button>' : '') +
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="kulup-kaydet" data-id="' + esc(id || '') + '">Kaydet</button>');
 };
 
 EYLEMLER['kulup-kaydet'] = function (el, id) {
