@@ -212,6 +212,64 @@ function nakilSonucu(d, rol) {
     '<button class="btn" data-act="hesap-bitti" data-rol="' + esc(rol) + '">Tamam</button>');
 }
 
+EYLEMLER['hesap-bitti'] = function () {
+  modalKapat();
+  return git(S.page);
+};
+
+/* ---------------- düzenleme ---------------- */
+function hesapDuzenleModal(id) {
+  var ilk = S._sinifListe ? Promise.resolve() : api('/school/classes').then(function (d) { S._sinifListe = d.classes; })['catch'](function () { S._sinifListe = []; });
+  return ilk.then(function () { return api('/school/hesap?id=' + encodeURIComponent(id)); }).then(function (d) {
+    var h = d.hesap;
+    S._duzenlenen = h;
+    if (h.bagli) return bagliOgretmenModal(h);
+    var sil = (h.rol === 'teacher' && yetkim('ogretmen.cikar')) || (h.rol === 'servisci' && yetkim('servis.yonet'));
+    var govde = hesapAlanlari(h.rol, h) +
+      '<button class="btn kucuk" data-act="hesap-bilgi-kaydet" data-id="' + esc(h.id) + '">Bilgileri kaydet</button>' +
+      '<div id="hesapMesaj" style="margin-top:9px"></div>' +
+      '<hr class="ayrac-cizgi">' +
+      '<h4 class="alt-baslik">Şifre</h4>' +
+      '<div class="hint" style="margin-bottom:9px">Şifreler geri döndürülemez biçimde saklanır, görüntülenemez. ' +
+      (h.sifreDegismeli ? 'Bu kişi henüz kendi şifresini belirlemedi. ' : '') +
+      (h.girisYapti ? '' : 'Hesaba hiç giriş yapılmadı. ') + 'Unuttuysa yenisini belirle.</div>' +
+      '<div class="sifre-satir">' +
+      '<input type="text" id="hfYeniSifre" placeholder="Yeni şifre" autocomplete="off" spellcheck="false">' +
+      '<button class="btn kucuk gri" data-act="hesap-sifre-uret">Rastgele üret</button>' +
+      '<button class="btn kucuk tehlike" data-act="hesap-sifre-kaydet" data-id="' + esc(h.id) + '">Şifreyi değiştir</button></div>' +
+      '<label class="onay-satiri"><input type="checkbox" id="hfDegistirsin" checked> ' +
+      '<span>İlk girişte kendi şifresini belirlesin</span></label>' +
+      (h.tc ? '<button class="btn kucuk ghost" data-act="hesap-sifre-tc" data-id="' + esc(h.id) + '">Şifreyi T.C. no yap</button>' : '') +
+      '<div id="hesapSifreMesaj" style="margin-top:9px"></div>';
+
+    if (h.rol === 'student') {
+      govde += '<hr class="ayrac-cizgi"><h4 class="alt-baslik">Veli kodu</h4>' +
+        '<div class="kod-goster">' + esc(kodBicimle(h.code)) + '</div>' +
+        '<div class="dugme-satir">' +
+        '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(kodBicimle(h.code)) + '">Kopyala</button>' +
+        '<button class="btn gri kucuk" data-act="kod-yenile" data-id="' + esc(h.id) + '">Yeni kod üret</button></div>' +
+        '<hr class="ayrac-cizgi"><h4 class="alt-baslik">Veliler</h4>' +
+        '<div id="hVeliler" data-ogrenci="' + esc(h.id) + '"><div class="okul-bilgi">Yükleniyor...</div></div>' +
+        '<div class="field" style="margin-top:9px"><label for="hVeliAra">Veli bağla</label>' +
+        '<div class="rolsuz-satir"><input type="text" id="hVeliAra" placeholder="Velinin T.C. kimlik no\'su ya da kullanıcı adı" ' +
+        'autocomplete="off" spellcheck="false" maxlength="40">' +
+        '<button class="btn kucuk" data-act="veli-bul" data-id="' + esc(h.id) + '">Bul</button></div>' +
+        '<div class="hint">Veli önce Eğitim Evi\'ne kaydolmuş olmalı. Veli kodu ile kendisi de bağlanabilir.</div></div>' +
+        '<div id="hVeliSonuc"></div>';
+    }
+    if (sil) {
+      govde += '<hr class="ayrac-cizgi"><h4 class="alt-baslik">Hesabı sil</h4>' +
+        '<div class="hint" style="margin-bottom:9px">' + (h.rol === 'teacher'
+          ? 'Öğretmenin dersleri öğretmensiz kalır; verdiği ödev ve sınavlar silinmez.'
+          : 'Servisçinin servis ataması kalkar; açık seferi varsa kapanır.') + '</div>' +
+        '<button class="btn kucuk tehlike" data-act="hesap-sil" data-id="' + esc(h.id) + '" data-ad="' + esc(h.fullName) + '">Hesabı sil</button>';
+    }
+    modalAc(h.fullName + ' — ' + (ROL_AD[h.rol] || 'Hesap'), govde);
+    hesapTcBagla();
+    if (h.rol === 'student') velileriYukle(h.id);
+  });
+}
+
 /* Kendi hesabıyla eklenmiş öğretmen: adı, e-postası, şifresi kendisinin.
    Okul yalnızca branşını değiştirir ya da onu okuldan çıkarır. */
 function bransSecici(secili) {
