@@ -81,6 +81,9 @@ function adaylar(baslik) {
   return liste.filter(Boolean);
 }
 
+/* Bir satırın sorunları tek metinde: her biri noktayla biter ("...olmalı. Böyle bir gün yok..."). */
+const cumleler = liste => liste.map(s => /[.!?]$/.test(s) ? s : s + '.').join(' ');
+
 function basliklariEsle(satir, sutunlar) {
   const harita = {};
   for (let i = 0; i < satir.length; i++) {
@@ -320,7 +323,7 @@ async function iceAktar(k) {
         for (const k2 of ['dogum', 'adres', 'telefon', 'okulNo', 'brans', 'rolId']) if (g[k2]) gu[k2] = g[k2];
         if (g.sinifId) gu.sinifId = g.sinifId;
         const s = await hesapDogrula(me, rol, gu, mevcut, dosya);
-        if (s.sorunlar.length) { ek(no, adGoster, 'hata', s.sorunlar.join('; ')); continue; }
+        if (s.sorunlar.length) { ek(no, adGoster, 'hata', cumleler(s.sorunlar)); continue; }
         if (dosya.tc.has(tc)) { ek(no, adGoster, 'hata', 'Bu T.C. no dosyada ' + dosya.tc.get(tc) + '. satırda da var'); continue; }
         dosya.tc.set(tc, no);
         if (s.d.okulNo) dosya.no.set(s.d.okulNo, no);
@@ -340,7 +343,7 @@ async function iceAktar(k) {
       delete g._yeniSinif; delete g._servisId;
       const s = await hesapDogrula(me, rol, g, null, dosya);
       const hepsi = sorunlar.concat(s.sorunlar);
-      if (hepsi.length) { ek(no, adGoster, 'hata', hepsi.join('; ')); continue; }
+      if (hepsi.length) { ek(no, adGoster, 'hata', cumleler(hepsi)); continue; }
       dosya.tc.set(s.d.tc, no);
       dosya.kadi.set(s.d.username, no);
       if (s.d.email) dosya.eposta.set(s.d.email, no);
