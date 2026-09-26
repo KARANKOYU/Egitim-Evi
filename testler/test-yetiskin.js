@@ -17,3 +17,9 @@ function kontrol(ad, sart, detay) {
 }
 const J = x => JSON.stringify(x).slice(0, 240);
 
+/* Girişin ilk adımı (kod istenip istenmediğini görmek için). */
+async function ilkAdim(kimlik, sifre, okul) {
+  const bot = await botCevabi();
+  return iste('/api/login', 'POST', { kimlik, password: sifre, okul, challengeId: bot.challengeId, challengeAnswer: bot.challengeAnswer });
+}
+
