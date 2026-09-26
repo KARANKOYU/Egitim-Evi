@@ -99,6 +99,29 @@
 }
 .yil-not { color: var(--turuncu); font-weight: 600; font-size: 13px; }
 
+/* Yöneticinin gizlediği yorum ve benzeri pasif satırlar */
+.soluk-satir { opacity: .55; }
+
+/* Özellikler sayfası: açık/kapalı anahtarı (içindeki gerçek onay kutusu
+   klavyeyle ve ekran okuyucuyla kullanılır, görünmez değil şeffaftır). */
+.ozellik-satir { cursor: pointer; gap: 14px; }
+.ozellik-satir .ad { font-weight: 600; }
+.anahtar { position: relative; flex: 0 0 auto; width: 48px; height: 28px; }
+.anahtar input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.anahtar-iz {
+  position: absolute; inset: 0; border-radius: 999px; background: var(--soluk);
+  transition: background .18s ease;
+}
+.anahtar-iz::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--kart); box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .18s ease;
+}
+.anahtar input:checked + .anahtar-iz { background: var(--yesil); }
+.anahtar input:checked + .anahtar-iz::after { transform: translateX(20px); }
+.anahtar input:focus-visible + .anahtar-iz { outline: 2px solid var(--ana); outline-offset: 2px; }
+.oz-durum { min-width: 48px; font-size: 13px; font-weight: 600; color: var(--soluk); text-align: right; }
+@media (prefers-reduced-motion: reduce) { .anahtar-iz, .anahtar-iz::after { transition: none; } }
+
 /* Öğretmenin ek penceresi: simge + ad + MB; tıklayınca açılır ya da iner. */
 .teslim-ogeler { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .teslim-oge-kap { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
