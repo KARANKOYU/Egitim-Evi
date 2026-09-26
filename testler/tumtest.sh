@@ -34,7 +34,7 @@ echo ""
 echo "==================== TESTLER ===================="
 
 # Sunucu gerektirmeyen paketler: xlsx motoru, telefon bildirimi şifrelemesi, yorum atıcı
-for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman; do
+for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman test-vekil-ip; do
   echo ""
   echo "--- $paket (sunucusuz) ---"
   cikti=$(node "$SP/$paket.js" 2>&1)

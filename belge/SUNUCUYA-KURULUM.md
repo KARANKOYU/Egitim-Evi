@@ -186,6 +186,11 @@ Kaydet: `Ctrl+O`, `Enter`, `Ctrl+X`
 > paylaşır ve koruma işe yaramaz. `guven: true` gerçek adresi vekilin
 > başlığından okutur.
 >
+> `x-forwarded-for` birden çok adres taşıyabilir ve baştakileri ziyaretçi kendisi
+> yazabilir. Uygulama bu yüzden **en sondaki** adresi alır: Caddy isteği geçirirken
+> ziyaretçinin gerçek adresini sona ekler. Caddy'nin önüne ikinci bir vekil (ör.
+> Cloudflare) koyarsan bu başlık yerine `cf-connecting-ip` kullan (aşağıda).
+>
 > **Ters vekil arkasında değilken bunu açma.** Açıkken herkes başlığı
 > uydurup hız sınırını aşabilir.
 

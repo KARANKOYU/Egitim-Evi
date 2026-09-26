@@ -207,6 +207,15 @@ function cevapla(soruMetni) {
   const sahteOturum = await iste('/api/login/dogrula', 'POST', { challengeId: 'yokboyle', code: '123456' });
   kontrol('gecersiz oturum kimligi reddediliyor', sahteOturum.status === 401);
 
+  /* Ön yüz parçaları tarayıcıya tek tek (yorumlarıyla) gitmez; yalnız birleşik dosyalar. */
+  const TABAN = process.env.EE_BASE || 'http://localhost:3000';
+  const durum = async yol => (await fetch(TABAN + yol)).status;
+  kontrol('parca dosyasi 404 (/js/parcalar/06-menu.js)', await durum('/js/parcalar/06-menu.js') === 404);
+  kontrol('buyuk harfle de 404 (/CSS/Parcalar/00-temel.css)', await durum('/CSS/Parcalar/00-temel.css') === 404);
+  kontrol('dolambacli yolla da 404 (/js/./parcalar, /js/x/../parcalar)', await durum('/js/./parcalar/01-yardimcilar.js') === 404 &&
+    await durum('/js/x/../parcalar/01-yardimcilar.js') === 404);
+  kontrol('birlesik app.js ve style.css aciliyor', await durum('/js/app.js') === 200 && await durum('/css/style.css') === 200);
+
   console.log('\n======================================');
   console.log('  GECTI: ' + gecti + '   KALDI: ' + kaldi);
   console.log('======================================\n');

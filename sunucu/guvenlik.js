@@ -303,9 +303,13 @@ function istemciIp(req) {
     let deger = req.headers[baslik];
     if (Array.isArray(deger)) deger = deger[0];
     if (typeof deger === 'string' && deger) {
-      /* X-Forwarded-For zinciri: ilk sıradaki gerçek istemcidir. */
-      const ilk = deger.split(',')[0].trim();
-      if (ipGibiMi(ilk)) ip = ilk;
+      /* X-Forwarded-For zincirinin baştaki girdilerini istemci kendisi yazabilir
+         (her istekte başka IP uydurup hız sınırını aşardı). Güvendiğimiz vekilin
+         eklediği SON girdi alınır; tek vekilde (Caddy) bu gerçek istemcidir.
+         Cloudflare gibi tek değer yazan başlıklarda (cf-connecting-ip) zaten tek girdi var. */
+      const zincir = deger.split(',').map(s => s.trim()).filter(Boolean);
+      const son = zincir[zincir.length - 1];
+      if (son && ipGibiMi(son)) ip = son;
     }
   }
 

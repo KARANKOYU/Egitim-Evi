@@ -219,6 +219,11 @@ async function bildirimler(token) {
   const d3 = await iste('/api/push/durum', 'POST', { endpoint: a1.endpoint }, o1.token);
   const d4 = await iste('/api/push/durum', 'POST', { endpoint: a1.endpoint }, o2.token);
   kontrol('aynı cihaz başka hesaba geçince eskisinden düşüyor', d3.body.benim === false && d4.body.benim === true, J(d3.body) + J(d4.body));
+  /* Adresi öğrenen başkası kendi anahtarıyla gönderip aboneliği devralamıyor. */
+  const sahte = abone();
+  const dev = await iste('/api/push/abone', 'POST', { endpoint: a1.endpoint, keys: sahte.keys }, o1.token);
+  const d3b = await iste('/api/push/durum', 'POST', { endpoint: a1.endpoint }, o2.token);
+  kontrol('başka anahtarla aynı adres devralınamıyor', dev.status === 409 && d3b.body.benim === true, dev.status + ' ' + J(d3b.body));
   const ip0 = await iste('/api/push/iptal', 'POST', { endpoint: a1.endpoint }, o1.token);
   const d5 = await iste('/api/push/durum', 'POST', { endpoint: a1.endpoint }, o2.token);
   kontrol('başkasının aboneliğini iptal edemiyor', ip0.status === 200 && d5.body.benim === true);

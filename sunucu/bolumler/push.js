@@ -38,7 +38,9 @@ async function pushUclari(k) {
     const keys = body.keys && typeof body.keys === 'object' ? body.keys : {};
     const anahtar = push.anahtarGecerli(keys.p256dh, keys.auth);
     if (!anahtar) return bad(res, 'Bu tarayıcının bildirim anahtarı geçersiz.');
-    await depo.push.aboneYaz(uid(), sahip, endpoint, anahtar.p256dh, anahtar.auth);
+    if (!await depo.push.aboneYaz(uid(), sahip, endpoint, anahtar.p256dh, anahtar.auth)) {
+      return bad(res, 'Bu bildirim adresi başka bir abonelikte kayıtlı. Bildirimleri kapatıp yeniden aç.', 409);
+    }
     await depo.push.fazlasiniSil(sahip, KISI_BASINA);
     return ok(res, { ok: true });
   }

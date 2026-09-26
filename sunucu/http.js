@@ -245,6 +245,8 @@ const MIME = {
   '.webmanifest': 'application/manifest+json'
 };
 
+const PARCA_KLASORLERI = [path.join(PUB, 'js', 'parcalar'), path.join(PUB, 'css', 'parcalar')].map(k => k.toLowerCase());
+
 function serveStatic(req, res, urlPath) {
   let rel;
   try { rel = decodeURIComponent(urlPath.split('?')[0]); } catch (e) { rel = '/'; }
@@ -258,6 +260,13 @@ function serveStatic(req, res, urlPath) {
   const full = path.join(PUB, path.normalize(rel).replace(/^(\.\.[\\/])+/, ''));
   /* Sadece startsWith(PUB) yetmez: "public" ile "publicgizli" de eslesirdi. */
   if (full !== PUB && !full.startsWith(PUB + path.sep)) return bad(res, 'Yasak', 403);
+  /* Ön yüz parçaları (public/js/parcalar, public/css/parcalar) tarayıcıya tek tek
+     gitmez: yalnızca yorumları atılmış birleşik /js/app.js ve /css/style.css gider. */
+  const kucuk = full.toLowerCase();
+  if (PARCA_KLASORLERI.some(k => kucuk === k || kucuk.startsWith(k + path.sep))) {
+    res.writeHead(404, baslikEkle({ 'Content-Type': 'text/plain; charset=utf-8' }));
+    return res.end('Bulunamadı');
+  }
   statikOku(full, (err, kayit) => {
     /* Dosya yoksa tek sayfalık uygulamanın kabuğunu döndür — adres
        çubuğuna doğrudan #/sayfa yazılınca da açılsın. */

@@ -1283,6 +1283,8 @@ systemd servisi yap, önüne Caddy koy (HTTPS'i kendisi halleder).
 > **`vekil.guven` neden var?** Ters vekil arkasında her isteğin IP'si
 > `127.0.0.1` görünür; o hâlde bütün ziyaretçiler tek hız-sınırı sayacını
 > paylaşır ve koruma çöker. Bu ayar gerçek adresi vekilin başlığından okutur.
+> `x-forwarded-for` zincirinde **en sondaki** adres alınır (Caddy'nin eklediği);
+> baştakileri ziyaretçi kendisi yazabildiği için onlara güvenilmez.
 > **Vekil arkasında değilken açma** — açıkken herkes başlığı uydurup sınırı aşar.
 
 İnternete açılınca uygulama olarak kurma, telefon bildirimi ve servisçinin konum

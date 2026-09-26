@@ -3,11 +3,15 @@
 
 const { sorgu, tek, calistir } = require('../baglanti');
 
-/* Abonelik yazılır; aynı cihaz (endpoint) başka hesaba geçtiyse yeni hesaba taşınır. */
-const aboneYaz = (id, kullaniciId, endpoint, p256dh, auth) => calistir(
+/* Abonelik yazılır. Aynı adres (endpoint) zaten kayıtlıysa yalnızca AYNI anahtarlarla
+   gelirse (aynı tarayıcı aboneliği) yeni hesaba taşınır; adresi bir yerden öğrenip
+   kendi anahtarıyla gönderen başkasının bildirimlerini devralamaz. Taşındıysa ya da
+   yeni yazıldıysa true döner. */
+const aboneYaz = async (id, kullaniciId, endpoint, p256dh, auth) => (await sorgu(
   'INSERT INTO push_abonelikleri (id, kullanici_id, endpoint, p256dh, auth) VALUES ($1, $2, $3, $4, $5) ' +
-  'ON CONFLICT (endpoint) DO UPDATE SET kullanici_id = EXCLUDED.kullanici_id, p256dh = EXCLUDED.p256dh, ' +
-  'auth = EXCLUDED.auth, olusturma = now()', [id, kullaniciId, endpoint, p256dh, auth]);
+  'ON CONFLICT (endpoint) DO UPDATE SET kullanici_id = EXCLUDED.kullanici_id, olusturma = now() ' +
+  'WHERE push_abonelikleri.p256dh = EXCLUDED.p256dh AND push_abonelikleri.auth = EXCLUDED.auth RETURNING id',
+  [id, kullaniciId, endpoint, p256dh, auth])).length > 0;
 
 /* Kişinin en fazla n aboneliği kalır (eskiler silinir). */
 const fazlasiniSil = (kullaniciId, n) => calistir(
