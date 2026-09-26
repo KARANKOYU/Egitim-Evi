@@ -71,9 +71,11 @@ const ADIM_METNI = {
   'giris|Hakkında': A(`Projenin ne olduğu, bilgilerin nerede durduğu, nasıl yapıldığı ve yapımcılar.`),
   'giris|Sık sorulan sorular': A(`Başlarken, hesap ve giriş, okul hayatı, gizlilik ve telefon başlıklarında sık sorulan sorular.`),
   'giris|Sık sorulan sorular — bir soru açık': A(`Soruya dokununca cevabı açılır: burada okul değiştiren öğrencinin kayıtlarının ne olduğu.`),
-  'giris|Android uygulaması — sürümler ve indirme': A(`Üstteki "Android uygulaması" düğmesi bu sayfayı açar
-    (egitimevi.org/indir). Son sürüm üstte büyük düğmeyle; altta bütün sürümler tarih, değişiklik notu, boyut ve
-    SHA-256 özetiyle bir tabloda. Liste uygulamanın GitHub deposundaki sürümlerden kendiliğinden gelir.`),
+  'giris|İndir — Android sürümleri ve iPhone': A(`Üstteki "İndir" düğmesi bu sayfayı açar (egitimevi.org/indir).
+    Android'in son sürümü üstte büyük düğmeyle; altta bütün sürümler tarih, değişiklik notu, boyut ve SHA-256 özetiyle
+    bir tabloda. Liste uygulamanın GitHub deposundaki sürümlerden kendiliğinden gelir.`),
+  "giris|İndir — iPhone'a ekle adımları": A(`iPhone ve iPad için App Store uygulaması yok: mavi "iPhone'a ekle" düğmesi
+    Safari'nin Paylaş → Ana Ekrana Ekle adımlarını gösterir. Ana ekrana eklenen Eğitim Evi simgesiyle açılır, bildirim alır.`),
   'giris|Kullanım koşulları (sorumluluğun sınırları)': A(`Hizmetin niteliği, kullanıcının yükümlülükleri ve sorumluluğun
     sınırlandırılması. Kayıtta ve koşullar güncellenince onay istenir.`),
   'giris|Aydınlatma metni (KVKK)': A(`Hangi kişisel verinin neden işlendiği, kimin gördüğü, ne kadar saklandığı ve kişinin
@@ -99,7 +101,7 @@ const ADIM_METNI = {
   'giris|Açılış (telefon)': A(`Açılış telefonda: kartlar alt alta dizilir, düğmeler parmakla basılacak büyüklüktedir.`),
   'giris|Hakkında (telefon)': A(`Hakkında sayfası telefonda.`),
   'giris|Sık sorulan sorular (telefon)': A(`Sık sorulan sorular telefonda.`),
-  'giris|Android uygulaması (telefon)': A(`İndirme sayfası telefonda: tablo satırları alt alta kartlara dönüşür.`),
+  'giris|İndir (telefon)': A(`İndirme sayfası telefonda: tablo satırları alt alta kartlara dönüşür.`),
   'giris|Okulun sayfası (telefon)': A(`Okulun sayfası telefonda; giriş kartı sayfanın altında.`),
   'giris|Kayıt ol (telefon)': A(`Kayıt kartı telefonda.`),
 

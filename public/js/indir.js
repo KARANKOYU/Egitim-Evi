@@ -71,6 +71,39 @@
     tablo.innerHTML = h + '</tbody></table>';
   }
 
+  /* ---- iPhone ve iPad: ana ekrana ekleme ---- */
+
+  /* Ana ekrandan açıldıysa (iPhone'da tam ekran) indirme sayfası değil site açılsın. */
+  var tamEkran = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (tamEkran) { location.replace('/'); return; }
+
+  var ua = navigator.userAgent || '';
+  /* iPadOS 13+ kendini Mac diye tanıtır; dokunmatik ekranından anlaşılır. */
+  var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  var safariDisi = /CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua);
+
+  var dugme = document.getElementById('iosEkle');
+  var adimlar = document.getElementById('iosAdimlar');
+  var not = document.getElementById('iosNot');
+  if (dugme && adimlar) {
+    dugme.addEventListener('click', function () {
+      var ac = adimlar.hidden;
+      adimlar.hidden = !ac;
+      dugme.setAttribute('aria-expanded', ac ? 'true' : 'false');
+      if (!ac) return;
+      if (!ios) {
+        not.textContent = 'Bu adımlar iPhone ya da iPad içindir. Telefonunda ' + location.host + '/indir adresini aç ve bu düğmeye orada bas.';
+      } else if (safariDisi) {
+        not.textContent = 'Safari dışında bir tarayıcıdasın. iOS 16.4 ve üstünde Chrome ve Edge de ana ekrana ekleyebilir; ' +
+          'Paylaş düğmesini bulamazsan sayfayı Safari ile aç.';
+      } else {
+        not.textContent = 'Aşağıdaki adımları izle; bir kez yapman yeterli.';
+      }
+      adimlar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
   if (!window.fetch) { ciz(null); return; }
   fetch('/api/uygulama', { credentials: 'omit' })
     .then(function (r) { return r.ok ? r.json() : null; })

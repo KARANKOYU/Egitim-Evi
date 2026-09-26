@@ -344,9 +344,12 @@ bağlanır, rol seçiminde *Veli — çocuğun adı* satırı çıkar.
 ### Açılış sayfası, giriş ve site ayarları
 
 Giriş yapmamış ziyaretçi şu sayfaları görür; hepsinde aynı üst şerit (sol
-üstte **Giriş** ve **Kayıt ol**, sağda **Android uygulaması**, ay/güneş, **Hakkında**, **SSS**
+üstte **Giriş** ve **Kayıt ol**, sağda **İndir**, ay/güneş, **Hakkında**, **SSS**
 ve **Yapımcılar**) ve alt bilgi (ortada GitHub'daki kaynak koduna bağlantı) vardır.
-**Android uygulaması** indirme sayfasını açar (**egitimevi.org/indir**, `/download` da olur): üstte
+**İndir** indirme sayfasını açar (**egitimevi.org/indir**, `/download` da olur). **iPhone ve iPad** bölümünde
+mavi **iPhone'a ekle** düğmesi Safari'nin **Paylaş → Ana Ekrana Ekle** adımlarını gösterir (App Store uygulaması
+yok; ana ekrana eklenen site simgesiyle açılır, iOS 16.4 ve üstünde bildirim alır; ana ekrandan açılınca indirme
+sayfası kendiliğinden siteye geçer). **Android** bölümünde üstte
 son sürüm ve büyük **İndir** düğmesi, altta PostgreSQL'in indirme sayfasındaki gibi bütün sürümlerin
 tablosu (sürüm, tarih, değişiklik notu, boyut, SHA-256 özeti, İndir) ve kurulum adımları. Tablo
 uygulama deposunun GitHub **Releases** bölümünden gelir: sunucu listeyi 15 dakikada bir alır, yalnızca
