@@ -147,7 +147,14 @@ function statikOku(tamYol, geri) {
 }
 
 function duzDosyaOku(tamYol, geri) {
-  fs.stat(tamYol, (hata, st) => {
+  /* Geçersiz yol (ör. içinde boş bayt) fs.stat'ta geri çağrıya değil, anında hata
+     olarak atılır; yakalanmazsa süreç düşer. Burada "dosya yok" gibi geri döner. */
+  try {
+    fs.stat(tamYol, statBitti);
+  } catch (e) {
+    return geri(e);
+  }
+  function statBitti(hata, st) {
     if (hata) return geri(hata);
     const imza = st.mtimeMs + ':' + st.size;
     const eski = statikOnbellek.get(tamYol);
@@ -160,7 +167,7 @@ function duzDosyaOku(tamYol, geri) {
       statikOnbellek.set(tamYol, kayit);
       geri(null, kayit);
     });
-  });
+  }
 }
 
 function sendJSON(res, code, obj) {
@@ -248,12 +255,55 @@ const MIME = {
 const PARCA_KLASORLERI = [path.join(PUB, 'js', 'parcalar'), path.join(PUB, 'css', 'parcalar')].map(k => k.toLowerCase());
 
 /* Tek sayfalık uygulamanın (index.html) açtığı adresler: açılış, giriş (/login, /giris),
-   kayıt (/signup, /kayit), Hakkında (/about), SSS (/faq) ve okul sayfası (/school/<okul>).
-   Bunların dışında dosyası olmayan her adres "Sayfa bulunamadı" (404) olur. */
-const UYGULAMA_YOLLARI = new Set(['', 'index.html', 'login', 'giris', 'signup', 'kayit', 'hakkinda', 'about', 'sss', 'faq']);
+   kayıt (/signup, /kayit), Hakkında (/hakkinda, /about), SSS (/sss/sss.html) ve okul
+   sayfası (/school/<okul>). Bunların dışında dosyası olmayan her adres "Sayfa bulunamadı" (404) olur. */
+const UYGULAMA_YOLLARI = new Set(['', 'index.html', 'login', 'giris', 'signup', 'kayit', 'hakkinda', 'about', 'sss/sss.html']);
 const OKUL_YOLU = /^school\/([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)$/;
 
 function sadeYol(rel) { return String(rel).replace(/^\/+|\/+$/g, '').toLowerCase(); }
+
+/* Sayfaların asıl adresi klasörlüdür (egitimevi.org/kvkk/kvkk.html); kısa ve eski
+   adresler oraya kalıcı olarak (301) yönlenir. Anahtar: baştaki ve sondaki "/"
+   atılmış, küçük harfli yol. Asıl adresin kendisi de listede: büyük harfle ya da
+   sonunda "/" ile yazılırsa asıl yazılışına döner (Linux'ta dosya adı harf duyarlı). */
+const YONLENDIRMELER = {
+  'kvkk': '/kvkk/kvkk.html', 'kvkk.html': '/kvkk/kvkk.html', 'kvkk/kvkk.html': '/kvkk/kvkk.html',
+  'kosullar': '/kosullar/kosullar.html', 'kosullar.html': '/kosullar/kosullar.html',
+  'kosullar/kosullar.html': '/kosullar/kosullar.html',
+  'indir': '/indir/indir.html', 'indir.html': '/indir/indir.html', 'download': '/indir/indir.html',
+  'indir/indir.html': '/indir/indir.html',
+  'sss': '/sss/sss.html', 'faq': '/sss/sss.html', 'sss/sss.html': '/sss/sss.html'
+};
+
+/* Tablodaki anahtar. Harf farkı Türkçe İ/ı için de önemsiz: 'İ'.toLowerCase() "i"
+   değil "i" + U+0307 (birleşik nokta) verir; Caps Lock açıkken Türkçe klavyeyle yazılan "İNDİR"
+   ya da "ındır" da /indir/indir.html'e gitsin. */
+function yonlendirmeAnahtari(rel) { return sadeYol(rel).replace(/i\u0307/g, 'i').replace(/ı/g, 'i'); }
+
+/* Yönlendirilecek adres ya da ''. Location yalnız tablodaki sabit yoldur; kullanıcının
+   yazdığından yalnız "?" sonrası eklenir, o da yalnız görünür ASCII ise (boşluk, CR/LF
+   ya da başka denetim karakteri varsa sorgu atılır; başlığa satır eklenemez). */
+function yonlendirmeAdresi(req, rel) {
+  const y = yonlendirmeAnahtari(rel);
+  if (!Object.prototype.hasOwnProperty.call(YONLENDIRMELER, y)) return '';
+  const hedef = YONLENDIRMELER[y];
+  if (rel === hedef) return '';   // zaten asıl adres
+  const ham = String(req.url || '');
+  const soru = ham.indexOf('?');
+  const sorgu = soru >= 0 ? ham.slice(soru + 1) : '';
+  return sorgu && /^[\x21-\x7e]+$/.test(sorgu) ? hedef + '?' + sorgu : hedef;
+}
+
+function yonlendir(res, hedef) {
+  const govde = 'Taşındı: ' + hedef;
+  res.writeHead(301, baslikEkle({
+    'Location': hedef,
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Content-Length': Buffer.byteLength(govde),
+    'Cache-Control': 'public, max-age=86400'
+  }));
+  res.end(govde);
+}
 
 function uygulamaYoluMu(rel) {
   const y = sadeYol(rel);
@@ -276,9 +326,19 @@ async function okulVarMi(kisa) {
 function serveStatic(req, res, urlPath) {
   let rel;
   try { rel = decodeURIComponent(urlPath.split('?')[0]); } catch (e) { rel = '/'; }
+  /* Boş bayt (%00) hiçbir dosyanın adında olamaz; dosya yoluna girerse fs anında hata
+     atar ve yakalanmazsa sunucu düşer. Böyle adres doğrudan "bulunamadı". */
+  if (rel.indexOf('\0') >= 0) {
+    res.writeHead(404, baslikEkle({ 'Content-Type': 'text/plain; charset=utf-8' }));
+    return res.end('Bulunamadı');
+  }
   if (rel === '/' || rel === '') rel = '/index.html';
-  /* Android uygulamasının indirme sayfası: egitimevi.org/indir (ya da /download). */
-  if (/^\/(indir|download)\/?$/i.test(rel)) rel = '/indir.html';
+  /* Kısa ve eski adresler (/kvkk, /kvkk.html, /indir, /download, /sss, /faq ...) asıl
+     adrese yönlenir; yalnız GET ve HEAD (öbürleri buraya zaten gelmez). */
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    const hedef = yonlendirmeAdresi(req, rel);
+    if (hedef) return yonlendir(res, hedef);
+  }
   /* "_" ile başlayan geliştirme dosyaları (ör. yerel deneme sayfası) ve
      nokta ile başlayan gizli dosyalar hiç sunulmaz (.well-known hariç). */
   if (/(^|[\\/])(_|\.(?!well-known[\\/]))/.test(rel)) {

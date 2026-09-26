@@ -9,7 +9,7 @@ iletisim:
   telefon: ""
 
 # Uygulama Play Store'a çıkınca oranın adresi (https://play.google.com/... ile başlamalı).
-# Doluysa egitimevi.org/indir sayfasında "Google Play'den yükle" düğmesi çıkar. Sürüm tablosu
+# Doluysa egitimevi.org/indir/indir.html sayfasında "Google Play'den yükle" düğmesi çıkar. Sürüm tablosu
 # her durumda GitHub'daki sürümlerden gelir.
 uygulama:
   playstore: ""

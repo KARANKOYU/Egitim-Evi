@@ -5,7 +5,7 @@
      /api/site      GET   { sayilar: { okul, kisi, cevrimici }, iletisim: { eposta, telefon },
                             yapimcilar: [{ ad, github, katki }] }
      /api/uygulama  GET   { playStore, sayfa, alindi, surumler: [{ surum, ad, tarih, notlar,
-                            apk: { ad, adres, boyut, sha256 } }] }   (egitimevi.org/indir)
+                            apk: { ad, adres, boyut, sha256 } }] }   (egitimevi.org/indir/indir.html)
 
    İletişim bilgileri depoda değil, sunucudaki data/config.yml dosyasındadır.
    Depo herkese açık olduğu için kişisel e-posta ve telefon koda yazılmaz;

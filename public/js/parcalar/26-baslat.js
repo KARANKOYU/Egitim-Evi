@@ -35,10 +35,10 @@ function kvkkOnayIste(d) {
     (ilk ? '<p>Hoş geldin. Devam etmeden önce kişisel verilerinin nasıl işlendiğini anlatan metni okuyup onaylaman gerekiyor.</p>'
       : '<p>Kişisel verilerin korunması aydınlatma metni yenilendi' + surum + '. ' +
         'Devam etmek için metni okuyup onaylaman gerekiyor.</p>') +
-    '<p><a href="/kvkk.html" target="_blank" rel="noopener">Aydınlatma metnini yeni sekmede aç</a></p>' +
+    '<p><a href="/kvkk/kvkk.html" target="_blank" rel="noopener">Aydınlatma metnini yeni sekmede aç</a></p>' +
     '<label class="onay-satiri"><input type="checkbox" id="kvkkYeniKutu"> ' +
     '<span>Aydınlatma metnini okudum, anladım ve kişisel verilerimin bu kapsamda işlenmesini kabul ediyorum. ' +
-    '<a href="/kosullar.html" target="_blank" rel="noopener">Kullanım koşullarını</a> kabul ediyorum.</span></label>' +
+    '<a href="/kosullar/kosullar.html" target="_blank" rel="noopener">Kullanım koşullarını</a> kabul ediyorum.</span></label>' +
     '<div id="kvkkYeniMesaj" style="margin-top:10px"></div>',
     '<button class="btn gri" data-act="cikis">Çıkış yap</button>' +
     '<button class="btn" data-act="kvkk-onayla">Onaylıyorum</button>');

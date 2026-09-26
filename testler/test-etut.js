@@ -187,10 +187,13 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
   kontrol('indirme sayfasının sürüm listesi girişsiz açık (testte dışarı istek yok)', uyg.status === 200 &&
     Object.keys(uyg.body).sort().join(',') === 'alindi,playStore,sayfa,surumler' && Array.isArray(uyg.body.surumler) &&
     uyg.body.alindi === false && /^https:\/\/github\.com\//.test(uyg.body.sayfa), J(uyg.body));
-  const sayfaHtml = await fetch(BASE + '/indir').then(r => r.text());
-  const sayfaHtml2 = await fetch(BASE + '/download/').then(r => r.text());
-  kontrol('/indir ve /download indirme sayfasını açıyor', /<h1>Eğitim Evi'ni indir<\/h1>/.test(sayfaHtml) &&
-    /\/js\/indir\.js/.test(sayfaHtml) && sayfaHtml2 === sayfaHtml);
+  /* Asıl adres /indir/indir.html; /indir ve /download oraya 301 ile yönlenir (ayrıntısı test-adresler.js). */
+  const sayfaHtml = await fetch(BASE + '/indir/indir.html').then(r => r.text());
+  const kisa = await fetch(BASE + '/indir', { redirect: 'manual' });
+  const kisa2 = await fetch(BASE + '/download/', { redirect: 'manual' });
+  kontrol('/indir/indir.html indirme sayfası; /indir ve /download oraya yönleniyor', /<h1>Eğitim Evi'ni indir<\/h1>/.test(sayfaHtml) &&
+    /\/js\/indir\.js/.test(sayfaHtml) && kisa.status === 301 && kisa.headers.get('location') === '/indir/indir.html' &&
+    kisa2.status === 301 && kisa2.headers.get('location') === '/indir/indir.html', kisa.status + ' ' + kisa2.status);
 
   /* Adresler: uygulamanın sayfaları ve /school/<okul> açılır; tanınmayan adres 404 "Sayfa bulunamadı". */
   const sayfa = async yol => { const r = await fetch(BASE + yol); return { durum: r.status, metin: await r.text() }; };
@@ -203,11 +206,11 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
   kontrol('olmayan okul 404 ve "Okul bulunamadı"', okulYok.durum === 404 && /Okul bulunamadı/.test(okulYok.metin) &&
     /Ana sayfaya dön/.test(okulYok.metin), okulYok.durum);
   const acilmayan = [];
-  for (const y of ['/giris', '/kayit', '/login', '/signup', '/about', '/faq', '/hakkinda', '/sss', '/school/test-ortaokulu', '/school/test-ortaokulu/']) {
+  for (const y of ['/giris', '/kayit', '/login', '/signup', '/about', '/hakkinda', '/sss/sss.html', '/school/test-ortaokulu', '/school/test-ortaokulu/']) {
     const s = await sayfa(y);
     if (s.durum !== 200 || !/id="authWrap"/.test(s.metin)) acilmayan.push(y + ' ' + s.durum);
   }
-  kontrol('uygulama adresleri açılıyor (giris/kayit/about/faq/school)', acilmayan.length === 0, acilmayan.join(', '));
+  kontrol('uygulama adresleri açılıyor (giris/kayit/about/sss/school)', acilmayan.length === 0, acilmayan.join(', '));
 
   console.log('=== 7) İNCELEMEDEN GELEN DÜZELTMELER ===');
   /* Rol vermek "rol yönetir" ister: öğretmen düzenleme yetkisi yetmez; kimse kendine rol veremez. */

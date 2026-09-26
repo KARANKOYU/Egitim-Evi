@@ -112,7 +112,7 @@ function altBilgi() {
   return '<div class="footer">' +
     '<p><b>Eğitim Evi</b> — okul yönetim sistemi</p>' +
     '<p style="margin-top:8px">' +
-    '<a href="/kvkk.html" target="_blank" rel="noopener">Aydınlatma metni</a>' +
+    '<a href="/kvkk/kvkk.html" target="_blank" rel="noopener">Aydınlatma metni</a>' +
     ' · <a href="#" data-act="kaynakca">Bu sistem hakkında</a></p>' +
     '<p class="footer-iletisim" data-iletisim hidden></p>' +
     '</div>';

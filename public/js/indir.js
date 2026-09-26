@@ -1,4 +1,4 @@
-/* egitimevi.org/indir: Android uygulamasının sürüm tablosu.
+/* egitimevi.org/indir/indir.html (kısaca /indir): Android uygulamasının sürüm tablosu.
    Sürümler sunucudan gelir (/api/uygulama; sunucu GitHub'daki sürümleri süzüp
    15 dakika saklar). İçerik Güvenlik Politikası satır içi betiğe izin vermediği
    için ayrı dosya. */

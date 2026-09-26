@@ -726,16 +726,16 @@ const DIS_ADIMLAR = [
   { ad: 'Üstteki ay düğmesi — açılış koyu görünümde', url: '/', tam: false, tema: 'serbest', eylem: `__tikla('.site-tema')` },
   { ad: 'Güneş düğmesi — açık görünüme döndü', url: '/', tam: false, tema: 'serbest', eylem: `__tikla('.site-tema')` },
   { ad: 'Hakkında', url: '/hakkinda' },
-  { ad: 'Sık sorulan sorular', url: '/sss' },
-  { ad: 'Sık sorulan sorular — bir soru açık', url: '/sss', tam: false,
+  { ad: 'Sık sorulan sorular', url: '/sss/sss.html' },
+  { ad: 'Sık sorulan sorular — bir soru açık', url: '/sss/sss.html', tam: false,
     eylem: `__tikla('.sss summary', 'okul değiştirirse'); ${bekleJs(300)}` },
-  { ad: 'İndir — Android sürümleri ve iPhone', url: '/indir', eylem: bekleJs(800) },
-  { ad: "İndir — iPhone'a ekle adımları", url: '/indir', tam: false,
+  { ad: 'İndir — Android sürümleri ve iPhone', url: '/indir/indir.html', eylem: bekleJs(800) },
+  { ad: "İndir — iPhone'a ekle adımları", url: '/indir/indir.html', tam: false,
     eylem: `${bekleJs(600)} __tikla('#iosEkle'); ${bekleJs(400)} document.getElementById('iphone').scrollIntoView();` },
-  { ad: 'Kullanım koşulları (sorumluluğun sınırları)', url: '/kosullar.html' },
-  { ad: 'Aydınlatma metni (KVKK)', url: '/kvkk.html' },
-  { ad: 'Aydınlatma metninde Yapımcılar — önce liste açılır', url: '/kvkk.html', tam: false,
-    eylem: `__tikla('#btnYapimcilar'); ${bekleJs(400)} if (location.pathname !== '/kvkk.html') throw new Error('sayfa değişti')` },
+  { ad: 'Kullanım koşulları (sorumluluğun sınırları)', url: '/kosullar/kosullar.html' },
+  { ad: 'Aydınlatma metni (KVKK)', url: '/kvkk/kvkk.html' },
+  { ad: 'Aydınlatma metninde Yapımcılar — önce liste açılır', url: '/kvkk/kvkk.html', tam: false,
+    eylem: `__tikla('#btnYapimcilar'); ${bekleJs(400)} if (location.pathname !== '/kvkk/kvkk.html') throw new Error('sayfa değişti')` },
   { ad: 'Giriş ve okul arama', url: '/login' },
   { ad: 'Okul arama — büyük/küçük harf ve yazım hatası', url: '/login', eylem: `__yaz('#vOkulAra', 'TeSt ortaoklu'); ${bekleJs(1500)}` },
   { ad: 'Okul arama — harfleri yer değiştirmiş kelime', url: '/login', eylem: `__yaz('#vOkulAra', 'deenme anadlou'); ${bekleJs(1500)}` },
@@ -753,7 +753,7 @@ const DIS_ADIMLAR = [
 ];
 const DIS_KOYU = [{ ad: 'Açılış (koyu)', url: '/' }, { ad: 'Okulun sayfası (koyu)', url: '/school/test-ortaokulu' }];
 const DIS_TELEFON = [{ ad: 'Açılış (telefon)', url: '/' }, { ad: 'Hakkında (telefon)', url: '/hakkinda' },
-  { ad: 'Sık sorulan sorular (telefon)', url: '/sss' }, { ad: 'İndir (telefon)', url: '/indir' },
+  { ad: 'Sık sorulan sorular (telefon)', url: '/sss/sss.html' }, { ad: 'İndir (telefon)', url: '/indir/indir.html' },
   { ad: 'Okulun sayfası (telefon)', url: '/school/test-ortaokulu' }, { ad: 'Kayıt ol (telefon)', url: '/signup' }];
 
 /* "sayfa|ad|eylem" kısaltmasını adıma çevirir */

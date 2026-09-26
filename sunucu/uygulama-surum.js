@@ -1,5 +1,5 @@
 'use strict';
-/* Android uygulamasının sürümleri (egitimevi.org/indir sayfasındaki tablo).
+/* Android uygulamasının sürümleri (egitimevi.org/indir/indir.html sayfasındaki tablo).
 
    Sürümler uygulamanın GitHub deposundaki "Releases" bölümünden okunur:
    her sürümün adı, tarihi, notu ve APK dosyası (boyut, SHA-256 özeti, indirme

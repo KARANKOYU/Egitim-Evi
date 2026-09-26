@@ -154,7 +154,7 @@ async function baglantiIste(email) {
   const bicimliGiris = await girisYap('bicimlitel@test.com', 'Test1234!');
   kontrol('telefon tek bicime (ulke koduyla) cevrildi', bicimliGiris.user.phone === '+905321234567', bicimliGiris.user.phone);
 
-  const kvkkSayfa = await iste('/kvkk.html');
+  const kvkkSayfa = await iste('/kvkk/kvkk.html');
   kontrol('aydinlatma metni yayinda', kvkkSayfa.status === 200,
     'status ' + kvkkSayfa.status);
 

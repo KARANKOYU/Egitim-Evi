@@ -2,7 +2,7 @@
 
      /                 açılış: Eğitim Evi nedir, neler var, rakamlar
      /hakkinda         proje, gizlilik, yapımcılar, iletişim
-     /sss              sık sorulan sorular
+     /sss/sss.html     sık sorulan sorular (/sss ve /faq sunucuda buraya yönlenir)
      /login  (/giris)  giriş kartı (+ "okulunu seç": öğrenci ve servisçi için)
      /signup (/kayit)  kayıt kartı (yetişkin hesabı)
      /school/<okul>    okulun giriş sayfası: kartın üstünde okulun adı,
@@ -11,7 +11,8 @@
 
    Okul yalnızca /school/ ile başlayan adreste aranır; başka hiçbir adres okul
    sayılmaz (sitenin sayfalarıyla karışmasın). Tanınmayan adres açılışı gösterir.
-   /hakkinda (/about) ve /sss (/faq) da iki adla açılır.
+   /hakkinda (/about) iki adla açılır. SSS'nin asıl adresi /sss/sss.html'dir; eski
+   geçmiş kaydında kalan /sss ve /faq da SSS sayılır.
 
    Hepsi aynı index.html'dir; sunucu bilinmeyen yolda da onu döndürür.
    Üst şerit ve alt bilgi bütün dış sayfalarda aynıdır. Sayfalar arası
@@ -21,8 +22,8 @@
 var OKUL_ADRESI_DESENI = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
 
 /* Sitenin kendi sayfaları; bunlar okul adresi sayılmaz. */
-var SITE_SAYFALARI = { '': 'ana', 'hakkinda': 'hakkinda', 'about': 'hakkinda', 'sss': 'sss', 'faq': 'sss',
-  'login': 'giris', 'giris': 'giris', 'signup': 'kayit', 'kayit': 'kayit' };
+var SITE_SAYFALARI = { '': 'ana', 'hakkinda': 'hakkinda', 'about': 'hakkinda', 'sss/sss.html': 'sss', 'sss': 'sss',
+  'faq': 'sss', 'login': 'giris', 'giris': 'giris', 'signup': 'kayit', 'kayit': 'kayit' };
 
 /* Okulun adresi: egitimevi.org/school/<okul-adi>. */
 function okulYolu(kisaAd) { return '/school/' + encodeURIComponent(kisaAd); }
@@ -83,6 +84,9 @@ function girisEkraniGoster() {
     document.title = { hakkinda: 'Hakkında — Eğitim Evi', sss: 'Sık sorulan sorular — Eğitim Evi' }[sayfa] || 'Eğitim Evi';
     return;
   }
+  /* Giriş/kayıt kartı: önceki sayfanın (SSS, Hakkında) adı sekmede kalmasın.
+     Okul adresindeyse okulBasligiCiz bunu okulun adıyla değiştirir. */
+  document.title = 'Eğitim Evi';
   okulBasligiCiz();
   /* "Okulunu seç" yalnızca okulsuz girişte: okul sayfasında zaten okul belli. */
   $('okulSecAlan').hidden = sayfa !== 'giris';
@@ -93,7 +97,7 @@ function girisEkraniGoster() {
 
 /* Üst şeritte bulunulan sayfanın bağlantısı işaretlenir. */
 function siteMenusuIsaretle(sayfa) {
-  var hedef = { ana: '/', hakkinda: '/hakkinda', sss: '/sss', giris: '/login', kayit: '/signup' }[sayfa] || '';
+  var hedef = { ana: '/', hakkinda: '/hakkinda', sss: '/sss/sss.html', giris: '/login', kayit: '/signup' }[sayfa] || '';
   var baglantilar = document.querySelectorAll('.site-ust [data-site]');
   for (var i = 0; i < baglantilar.length; i++) {
     var b = baglantilar[i];

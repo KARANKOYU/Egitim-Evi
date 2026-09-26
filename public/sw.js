@@ -9,7 +9,7 @@
       Böylece güncelleme yaptığında kullanıcı eski sürümde takılı kalmaz.
 */
 
-const SURUM = 'egitim-evi-v6';   // dosya listesi değişince artır
+const SURUM = 'egitim-evi-v7';   // dosya listesi ya da sayfa adresleri değişince artır (v7: /kvkk/kvkk.html ...)
 const KABUK = [
   '/',
   '/index.html',

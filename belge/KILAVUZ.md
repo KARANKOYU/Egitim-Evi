@@ -6,7 +6,7 @@ Bu belge projenin ne olduğunu, kurulumu, her bölümün nasıl çalıştığın
 kararlarını ve testleri anlatır. Her ekranın fotoğrafı ve müdürün gözünden anlatımı
 [ekran-goruntuleri/index.html](../ekran-goruntuleri/index.html)'de. Sunucuya (VPS) kurulum ve
 `egitimevi.org` adımları [SUNUCUYA-KURULUM.md](SUNUCUYA-KURULUM.md)'de; kişisel veriler
-[aydınlatma metninde](../public/kvkk.html), kurallar [kullanım koşullarında](../public/kosullar.html).
+[aydınlatma metninde](../public/kvkk/kvkk.html), kurallar [kullanım koşullarında](../public/kosullar/kosullar.html).
 
 ## Eğitim Evi nedir?
 
@@ -78,7 +78,7 @@ doğum tarihi eşleşirse aynı hesabı kendi okuluna alır. Eski okulun kayıtl
 ### Gizlilik ve güvenlik
 
 - Veriler okulun kullandığı sunucuda durur. Reklam, analiz ya da başka bir amaçla hiçbir
-  şirkete veri gönderilmez. [Aydınlatma metni (KVKK)](../public/kvkk.html) sitede herkese açıktır.
+  şirkete veri gönderilmez. [Aydınlatma metni (KVKK)](../public/kvkk/kvkk.html) sitede herkese açıktır (egitimevi.org/kvkk/kvkk.html).
 - T.C. kimlik numarasını yalnızca kişinin kendisi ve okul yönetimi görür.
 - Kendisi kaydolan kişinin e-posta adresi, gönderilen bağlantıyla doğrulanır; girişte
   e-postaya giden kodla iki adımlı doğrulama yapılır.
@@ -391,7 +391,7 @@ notuna bakmak için menüden o veli portalına geçilir.
 Giriş yapmamış ziyaretçi şu sayfaları görür; hepsinde aynı üst şerit (sol
 üstte **Giriş** ve **Kayıt ol**, sağda **İndir**, ay/güneş, **Hakkında**, **SSS**
 ve **Yapımcılar**) ve alt bilgi (ortada GitHub'daki kaynak koduna bağlantı) vardır.
-**İndir** indirme sayfasını açar (**egitimevi.org/indir**, `/download` da olur). **iPhone ve iPad** bölümünde
+**İndir** indirme sayfasını açar (**egitimevi.org/indir/indir.html**; `/indir` ve `/download` da oraya götürür). **iPhone ve iPad** bölümünde
 mavi **iPhone'a ekle** düğmesi Safari'nin **Paylaş → Ana Ekrana Ekle** adımlarını gösterir (App Store uygulaması
 yok; ana ekrana eklenen site simgesiyle açılır, iOS 16.4 ve üstünde bildirim alır; ana ekrandan açılınca indirme
 sayfası kendiliğinden siteye geçer). **Android** bölümünde üstte
@@ -414,10 +414,36 @@ basınca projede emeği geçenlerin listesi açılır; liste depodaki
 | Adres | Sayfa |
 |---|---|
 | `/` | Eğitim Evi nedir, neler var, kimin için; okul, kişi ve **şu an açık** sayısı |
-| `/hakkinda` | Proje, bilgilerin nerede tutulduğu, nasıl yapıldığı, yapımcılar, iletişim |
-| `/login` | Giriş; öğrenci ve servisçi için "okulunu seç" (seçince okulun sayfasına gider) |
-| `/signup` | Yetişkin hesabı açma |
+| `/hakkinda` (`/about`) | Proje, bilgilerin nerede tutulduğu, nasıl yapıldığı, yapımcılar, iletişim |
+| `/sss/sss.html` | Sık sorulan sorular |
+| `/login` (`/giris`) | Giriş; öğrenci ve servisçi için "okulunu seç" (seçince okulun sayfasına gider) |
+| `/signup` (`/kayit`) | Yetişkin hesabı açma |
 | `/school/okulun-adi` | Okulun giriş sayfası (aşağıda) |
+| `/kvkk/kvkk.html` | Aydınlatma metni (KVKK) |
+| `/kosullar/kosullar.html` | Kullanım koşulları |
+| `/indir/indir.html` | İndirme sayfası (Android sürümleri, iPhone'a ekleme) |
+
+**Sayfa adresleri ve kısa adlar.** Aydınlatma metni, kullanım koşulları, indirme sayfası ve
+SSS'nin asıl adresi kendi klasöründedir (`egitimevi.org/kvkk/kvkk.html`); adres çubuğunda bu
+görünür, sitedeki ve Android uygulamasındaki bütün bağlantılar bunu gösterir. Kısa ve eski
+adresler de çalışır: sunucu onları kalıcı yönlendirmeyle (301) asıl adrese gönderir.
+Büyük/küçük harf (Türkçe İ ve ı da: `/İNDİR`, `/ındır`) ve sondaki `/` fark etmez; adresin
+`?` sonrası (sorgu) korunur.
+
+| Asıl adres | Kısa ve eski adlar (301 ile asıl adrese) |
+|---|---|
+| `/kvkk/kvkk.html` | `/kvkk`, `/kvkk/`, `/kvkk.html` |
+| `/kosullar/kosullar.html` | `/kosullar`, `/kosullar/`, `/kosullar.html` |
+| `/indir/indir.html` | `/indir`, `/indir/`, `/indir.html`, `/download`, `/download/` |
+| `/sss/sss.html` | `/sss`, `/sss/`, `/faq`, `/faq/` |
+
+SSS ayrı bir dosya değildir: `/sss/sss.html` tek sayfalık uygulamanın (index.html) adresidir,
+açılış ve Hakkında'dan geçişte sayfa yeniden yüklenmez. Yönlendirme yalnız `GET` ve `HEAD`
+isteğinde olur; `Location` her zaman bu tablodaki sabit yoldur (başka siteye yönlendirilemez).
+Tabloda olmayan adres "Sayfa bulunamadı" (404) verir (ör. `/kvkk/olmayan.html`); içinde boş bayt
+(`%00`) olan adres de dosyaya bakılmadan 404 alır (eskiden tek böyle istek sunucuyu düşürüyordu). Adresler
+`sunucu/http.js` içindeki `YONLENDIRMELER` ve `UYGULAMA_YOLLARI` listelerindedir; denetimi
+`testler/test-adresler.js`.
 
 "Şu an açık": son 5 dakikada uygulamaya istek gönderen farklı kişi sayısı;
 yalnızca sayı tutulur, kimin açık olduğu tutulmaz. Rakamlar dakikada bir
@@ -1546,7 +1572,10 @@ eğitim evi/
 │
 ├── public/                    ← ÖN YÜZ (tarayıcıya giden her şey)
 │   ├── index.html             ← giriş ekranı + uygulama iskeleti
-│   ├── kvkk.html              ← aydınlatma metni
+│   ├── kvkk/kvkk.html         ← aydınlatma metni (egitimevi.org/kvkk/kvkk.html)
+│   ├── kosullar/kosullar.html ← kullanım koşulları
+│   ├── indir/indir.html       ← indirme sayfası (js/indir.js ile)
+│   ├── 404.html, okul-bulunamadi.html ← "Sayfa bulunamadı" ve "Okul bulunamadı"
 │   ├── manifest.json, sw.js   ← telefona kurulabilir uygulama (PWA)
 │   ├── js/tema.js             ← açık/koyu tema; sayfa çizilmeden önce çalışır
 │   ├── js/parcalar/           ← arayüz mantığı, 48 parça (00-durum ... 28-grafik; 04c-telefon, 19g-okul-sayfasi)

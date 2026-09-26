@@ -20,7 +20,7 @@ const DOSYALAR = [
   ...fs.readdirSync(path.join(KOK, 'public', 'js', 'parcalar')).filter(a => a.endsWith('.js')).sort()
     .map(a => path.join('public', 'js', 'parcalar', a)),
   path.join('public', 'index.html'),
-  path.join('public', 'kvkk.html')
+  path.join('public', 'kvkk', 'kvkk.html')
 ];
 
 /* Yaygin yazim hatalari: [yanlis, dogru] */

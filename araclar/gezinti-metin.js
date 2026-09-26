@@ -70,9 +70,9 @@ const ADIM_METNI = {
   'giris|Üstteki ay düğmesi — açılış koyu görünümde': A(`Ay düğmesiyle koyu görünüme geçilir. Seçim bu tarayıcıda hatırlanır.`),
   'giris|Güneş düğmesi — açık görünüme döndü': A(`Koyu görünümde aynı yerde güneş durur; basınca açık görünüme dönülür.`),
   'giris|Hakkında': A(`Projenin ne olduğu, bilgilerin nerede durduğu, nasıl yapıldığı ve yapımcılar.`),
-  'giris|Sık sorulan sorular': A(`Başlarken, hesap ve giriş, okul hayatı, gizlilik ve telefon başlıklarında sık sorulan sorular.`),
+  'giris|Sık sorulan sorular': A(`Adresi egitimevi.org/sss/sss.html (kısaca /sss). Başlarken, hesap ve giriş, okul hayatı, gizlilik ve telefon başlıklarında sık sorulan sorular.`),
   'giris|Sık sorulan sorular — bir soru açık': A(`Soruya dokununca cevabı açılır: burada okul değiştiren öğrencinin kayıtlarının ne olduğu.`),
-  'giris|İndir — Android sürümleri ve iPhone': A(`Üstteki "İndir" düğmesi bu sayfayı açar (egitimevi.org/indir).
+  'giris|İndir — Android sürümleri ve iPhone': A(`Üstteki "İndir" düğmesi bu sayfayı açar (egitimevi.org/indir/indir.html; kısaca egitimevi.org/indir yazılınca da açılır).
     Android'in son sürümü üstte büyük düğmeyle; altta bütün sürümler tarih, değişiklik notu, boyut ve SHA-256 özetiyle
     bir tabloda. Liste uygulamanın GitHub deposundaki sürümlerden kendiliğinden gelir.`),
   "giris|İndir — iPhone'a ekle adımları": A(`iPhone ve iPad için App Store uygulaması yok: mavi "iPhone'a ekle" düğmesi

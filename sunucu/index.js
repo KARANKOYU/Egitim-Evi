@@ -116,7 +116,15 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (method !== 'GET' && method !== 'HEAD') { res.writeHead(405); return res.end(); }
-  serveStatic(req, res, urlPath);
+  /* Statik dosya yolunda beklenmeyen eşzamanlı bir hata (ör. geçersiz yol)
+     bütün sunucuyu düşürmesin: yalnız o istek 500 alır, ayrıntı günlüğe. */
+  try {
+    serveStatic(req, res, urlPath);
+  } catch (err) {
+    console.error('Statik dosya hatası:', urlPath, (err && err.stack) || err);
+    if (res.headersSent) res.end();
+    else bad(res, 'Sunucu hatası', 500);
+  }
 });
 
 /* Slowloris: yavas istemci baglantilari acik tutup kaynak tuketemesin. */
