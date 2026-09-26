@@ -10,6 +10,27 @@ const { yilSuz, bakisKisisi } = require('./egitim-yili');
 const { odevBitisAni, odevSaati } = require('./odev');
 const { ekGorunumu } = require('./ekler');
 
+const yuvarla = n => Math.round(n * 100) / 100;
+
+/* ============ ödev serisi ============
+   Öğrenciyi teşvik için: sonuçlanan ödevlerinde arka arkaya kaç kez "Yaptı"
+   aldığı. "Yaptı" dışında bir sonuç (geç, eksik, yapmadı, gelmedi) seriyi
+   uyarıya düşürür; arka arkaya ikinci kez "Yaptı" alınmazsa seri bozulur.
+   Sıra: ödevin son teslim anı. */
+function odevSerisi(odevler, ogrenciId) {
+  const sonuclu = odevler.filter(a => a.status === 'finished' && a.results[ogrenciId])
+    .map(a => ({ r: a.results[ogrenciId], an: (odevBitisAni(a) || new Date(a.createdAt)).getTime() }))
+    .sort((x, y) => x.an - y.an);
+  let sayi = 0, enUzun = 0, kacan = 0;
+  for (const s of sonuclu) {
+    if (s.r === 'yapti') { sayi++; kacan = 0; if (sayi > enUzun) enUzun = sayi; } else {
+      kacan++;
+      if (kacan >= 2) sayi = 0;
+    }
+  }
+  return { sayi, enUzun, uyari: kacan === 1 && sayi > 0, bozuldu: kacan >= 2, toplam: sonuclu.length };
+}
+
 /* ============ ilerleyiş hesabı ============ */
 async function progressOf(studentId, bakan) {
   const st = await depo.kullanicilar.bul(studentId);
