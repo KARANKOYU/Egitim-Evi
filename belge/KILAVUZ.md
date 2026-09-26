@@ -1032,3 +1032,226 @@ Grup ortalaması = (80×50 + 80×50) / 100 = 80
 
 ---
 
+## İlerleyişim
+
+- **Ödevler grafiği**, iki görünüm:
+  - *Sonuçlara göre:* Yaptı · Geç yaptı · Eksik · Yapmadı · İzinli · Gelmedi · Belirsiz
+    sütunları. Eksen sayıya göre yuvarlanır (en büyük değer 174 ise 0–200, 50'şer).
+  - *Derslere göre:* her dersin sütunu sonuç renklerine bölünür, üstünde başarı oranı.
+  - **Grafiği gizle** düğmesi var; tercih tarayıcıda hatırlanır.
+- **Sınav grafiği:** şablon seçilir (ör. LGS Denemesi), o şablonla yapılmış sınavlar tarih
+  sırasıyla çizgi grafikte. Alttan hangi değerin çizileceği seçilir (LGS Puanı, Türkçe Net...).
+  **En düşük / en yüksek bandı** sınavı girenlerin aralığını ve ortalamasını gölge olarak
+  gösterir. **Liste** görünümü aynı veriyi tablo olarak verir.
+- **Sınavlar:** grupsuz sınavlar, ana değer ve öteki değerlerle.
+- **Sınav grubu ortalamaları:** 100 üzerinden, çubuk hâlinde.
+
+Başarı oranında yaptı tam, geç ve eksik yarım sayılır; izinli gelmemek oranı düşürmez.
+
+---
+
+## Veli tarafı
+
+1. Öğrenci **Ayarlar** sayfasında **veli kodunu** görür (örn. `7H39D-AAJQ7`).
+   Kod 10 karakterdir, yalnızca büyük harf ve rakam; karışabilen 0/O, 1/I yoktur.
+   Yanındaki **Kopyala** ile panoya alınır.
+2. Veli bu kodu başlangıç sayfasına ya da **Çocuklarım → Çocuk ekle** kısmına girer.
+   Büyük/küçük harf, boşluk ve tire fark etmez.
+3. Çocuğun kartına tıklayınca doğrudan onun portalı açılır:
+   ilerleyiş, ödevler, sınavlar, başarılar.
+
+Kod olmadan kimse başkasının çocuğunu göremez. Veli kodu dışında okul da veliyi
+bağlayabilir: öğrencinin **Hesap** penceresinde **Veliler** bölümünden velinin T.C.
+kimlik no'su ya da kullanıcı adıyla bulup bağlar, gerekirse kaldırır.
+
+## Eğitim Evi Aile (çocuğun telefonu)
+
+İsteğe bağlı Android uygulaması; ayrı depoda:
+[KARANKOYU/Egitim-Evi-App](https://github.com/KARANKOYU/Egitim-Evi-App). Çocuğun
+telefonuna kurulur, **velinin seçtiği aralıkla** telefonun konumunu ve **uygulama
+uygulama ekran süresini** gönderir. Veli bunları sitede **Çocuğumun telefonu** sayfasında
+görür. Uygulama hiçbir uygulamayı kapatmaz ya da kilitlemez; **sınır geçilince veliye
+bildirim** gider (günde bir kez).
+
+- **Bağlama:** uygulamada çocuğun **öğrenci hesabıyla** giriş yapılır; çocuk paylaşımı
+  kendisi onaylar. Sunucu telefona yalnızca konum ve süre göndermeye yarayan bir
+  **cihaz anahtarı** verir (hesaba giriş vermez; veritabanında özeti tutulur); öğrencinin
+  oturumu telefonda kalmaz. Öğrenci başına en fazla 3 telefon. Velilere "telefonunu bağladı"
+  bildirimi gider.
+- **İzinler (uygulama sırayla ister):** Konum — **Her zaman izin ver** (uygulama kapalıyken
+  de), **Kullanım erişimi** (ekran süresi), **Bildirimler**, **arka planda çalışma** (pil
+  kısıtlaması yok). Android, arka planda konum alan uygulamanın bildirim çubuğunda
+  görünmesini şart koşar: "Konumun ve ekran süren velinle paylaşılıyor".
+- **Sıklık:** veli Wi-Fi'de ve mobil veride ayrı seçer: 1, 5, 10, 15, 30 ya da 60 dakikada
+  bir (varsayılan Wi-Fi 5, mobil 15). İnternet yokken konumlar telefonda birikir (en fazla
+  5000), **bağlandığı ilk anda** 500'erli gönderilir. Telefon yeni ayarı en geç yarım saatte alır.
+- **Veli sayfası:** son konum haritada (son görülme, Wi-Fi/mobil, doğruluk, pil) ve önceki
+  birkaç nokta, Google Haritalar bağlantısı, çocuğun servisi; bugünün ekran süresi uygulama
+  uygulama, son 8 günün günlük toplamı; ayarlar: konum ve süre paylaşımı açık/kapalı, **günlük
+  toplam (ortak) sınır** ve **uygulama başına sınır**. Birden çok çocukta üstteki şeritten çocuk
+  seçilir; bildirimde hangi çocuk olduğu yazar.
+- **Kim görür:** yalnızca öğrenciye bağlı onaylı veliler. **Okul (müdür, öğretmen) görmez**;
+  öğrenci de siteden kendi özetine bakamaz (telefonunda uygulama durumunu görür).
+- **Saklama:** konum ve kullanım **7 gün** sonra silinir (salı günü bakan önceki salıdan
+  eskisini göremez); yedeğe ve dışarı aktarıma girmez.
+- **Bağlantıyı kaldırma:** öğrenci uygulamadan, veli sayfadan; anahtar hemen geçersiz olur,
+  uygulama göndermeyi bırakır.
+- iPhone'da çalışmaz: Apple öteki uygulamaların kullanım süresini okumaya yalnızca kendi
+  izniyle (Screen Time API) olanak veriyor.
+
+Uçlar: `POST /api/aile/cihaz` (öğrenci bağlar), `GET /api/aile/cihaz/ayar`,
+`POST /api/aile/cihaz/konum`, `POST /api/aile/cihaz/kullanim`, `POST /api/aile/cihaz/sil`
+(cihaz anahtarıyla, `X-Aile-Cihaz` başlığı), `GET /api/aile/ozet`, `POST /api/aile/ayar`,
+`POST /api/aile/cihaz-kaldir` (veli). Tablolar şema 026'da; testi `testler/test-aile.js`.
+
+---
+
+## Anketler ve duyuru okundu bilgisi
+
+**Duyuru okundu bilgisi:** Gönderilenler listesinde her duyurunun yanında
+"34 / 120 okudu" yazar. Duyuruyu açınca kimin okuduğu **tam liste** hâlinde, okuma
+zamanıyla görünür; rollere göre sayılar (Öğrenciler 20/30, Veliler 10/40), "Okuyanlar /
+Okumayanlar" süzgeci ve isim araması vardır. Velinin hangi çocuğu için aldığı yazar.
+Bunu duyuruyu gönderen ve okulun müdürü görür; alıcılar görmez.
+
+**Anketler:** Toplu mesaj yetkisi olan kişi **Anketler → Yeni anket** ile okula, rol
+grubuna ya da sınıflara tek soruluk anket açar (2-10 seçenek, bitiş günü ve saati,
+en fazla 90 gün). Öğrenciye açılan anket velisine de gider.
+
+- Hedefteki kişi bitişe kadar **bir** oy verir; fikrini değiştirebilir ya da geri alabilir.
+- Kimin oy verebileceği anket açılırken listeye yazılır. Oy yalnızca açık ankette, bu
+  listedeki kişi için ve anketin kendi seçeneğine kaydolur — bu veritabanında yabancı
+  anahtarla da bağlıdır.
+- Anketi açan ve müdür sonuçları ve katılımı (kim oy verdi, kim vermedi) her an görür;
+  oy verenler sonucu anket bitince görür.
+- **Gizli anket:** kimin neyi seçtiği hiç kimseye (açan dahil) gönderilmez, yalnızca sayılar.
+- Anket erken bitirilebilir ya da silinebilir.
+
+---
+
+## Yemek listesi, servis, kulüpler
+
+**Yemek listesi:** Haftalık görünüm (bugün vurgulu, hafta hafta gezilir). Müdür ya da
+yemek yetkisi verilen kişi **Bu haftayı düzenle** ile her güne satır satır yemek ve
+isteğe bağlı kalori yazar; boş bırakılan günün menüsü silinir. Okuldaki herkes görür;
+veli çocuğunun okulununkini görür.
+
+**Servis:** Müdür (ya da servis yetkisi olan) servis ekler: ad, plaka, servisçi hesabı,
+şoför ve rehber personel (adı, telefonu), sabah/akşam saati, güzergâh; öğrencileri
+durağıyla servise yazar. Bir öğrenci tek serviste olur (başkasına yazılınca taşınır).
+Öğrenci **Servisim** sayfasında kendi servisini, veli çocuğununkini görür; şoför telefonu
+yalnızca o servisteki öğrenciye, velisine ve yönetime gider.
+
+**Servis haritası ve canlı konum:**
+
+- **Servisçi** telefonundan okulun adresine girer; **Seferlerim** sayfasında "Okula gidiş"
+  ya da "Eve dönüş" seferini başlatır. Telefonun konumu birkaç saniyede bir (araç
+  dururken 20 saniyede bir) gönderilir; ekran kararmasın diye ekran kilidi tutulur.
+  **Seferi bitir** deyince konum kesilir. Servis başka servisçiye verilirse ya da
+  servisçi hesabı silinirse açık sefer kapanır. 45 dakika konum gelmeyen sefer kendiliğinden
+  kapanır; seferler 30 gün sonra silinir.
+- **Öğrenci ve velisi** haritada okulu, evi ve (sefer sürerken) aracı görür; 5 saniyede bir
+  yenilenir, "eve yaklaşık 1,2 km" yazar. Aracın yeri yalnızca açık seferde ve son 3
+  dakikada geldiyse gösterilir. Geçmiş iz saklanmaz, yalnızca son konum.
+- **Ev konumu:** öğrenci, velisi ya da okul yönetimi haritaya dokunarak (ya da "Bulunduğum
+  yeri kullan") işaretler. Servisçi evin yerini görür (yol tarifi bağlantısı) ama değiştiremez.
+- **Yaklaşma bildirimi:** servis eve **500 m** ve **100 m** kala öğrenciye ve velilerine
+  birer kez bildirim gider (her sefer için). GPS doğruluğu 150 m'den kötüyse gitmez.
+- Harita dış kütüphane kullanmaz: OpenStreetMap döşemeleri kendi küçük bileşenimizle
+  çizilir (sürükleme, iki parmakla ve tekerlekle yakınlaştırma, klavye). Her konumun
+  yanında **Google Haritalar'da aç** bağlantısı vardır.
+- Konum yalnızca **HTTPS**'te (ya da localhost'ta) alınabilir ve tarayıcı arka planda
+  konum vermez: servisçi uygulamayı açık tutmalıdır.
+
+**Kulüpler:** Müdür (ya da kulüp yetkisi olan) kulüp açar: danışman öğretmen,
+kontenjan, gün ve saat, başvurunun açık olup olmadığı. Öğrenci başvurusu açık kulübe
+kendisi katılır ya da ayrılır; başvuru kapalıyken yalnızca danışman ve yönetim üye
+ekleyip çıkarır. Kontenjan, kulüp satırı kilitlenerek denetlenir: aynı anda gelen iki
+istek son boş yeri ikisine birden vermez. Üye listesini yalnızca danışman ve yönetim
+görür; veli çocuğunun kulüplerini görür.
+
+---
+
+## Müdür yetkileri
+
+Müdür, öğretmenin yapabildiği **her şeyi** yapabilir (ödev verme, sınav açma, not girme)
+ve ek olarak:
+
+- Öğretmen başvurularını onaylar/reddeder
+- Okuldaki tüm öğrencileri görür
+- Sınıf açar, öğrencileri sınıflara yerleştirir, derslere öğretmen atar
+
+Öğretmen-öğrenci ilişkisi yalnızca **sınıf ve ders** üzerinden kurulur: bir öğretmen,
+dersine girdiği sınıfların öğrencilerinin öğretmenidir. Öğrenciyi tek tek öğretmene
+bağlayan bir düzen yoktur.
+
+Öğretmen sadece kendi branşında ders açabilir; müdür istediği dersi seçebilir.
+
+**Branşlar:** Matematik, Türkçe, İngilizce, Din Kültürü ve Ahlak Bilgisi,
+Sosyal Bilgiler, Fen Bilimleri, Müzik, Resim, Beden Eğitimi.
+Aynı branşta birden fazla öğretmen olabilir (2 fen öğretmeni gibi).
+
+---
+
+## Veriler
+
+Veriler **PostgreSQL** veritabanında tutulur. Şema okunur SQL dosyalarıyla sürümlenir
+(`sunucu/veri/sema/001-ilk.sql` ...); sunucu açılışta uygulanmamış olanları sırayla
+uygular ve hangisinin uygulandığını `sema_surumleri` tablosuna yazar.
+
+- 41 tablo: okullar, eğitim yılları, sınıflar, roller ve yetkileri, kullanıcılar,
+  okul davetleri, veli bağları, dersler, ders programı, ödevler, öğrencileri ve teslim
+  dosyaları, sınav şablonları, sınavlar, ölçümler ve değerler, devamsızlık, mesajlar,
+  alıcıları ve okunmaları, anketler (seçenek, hedef, oy), yemek listesi, servisler ve
+  öğrencileri, kulüpler ve üyeleri, takvim, bildirimler, oturumlar, işlem kaydı.
+- Yabancı anahtarlar uygulamanın silme kuralını taşır: sınıf silinince dersleri ve
+  programı gider (CASCADE), öğrenciler sınıfsız kalır (SET NULL).
+- CHECK kısıtları geçersiz veriyi veritabanı katında da durdurur (telefon biçimi, puan
+  aralığı, ödev sonucu türü...).
+- Sorgular yalnızca `$1, $2` parametreleriyle yazılır; kullanıcıdan gelen değer SQL
+  metnine karışmaz. `testler/sql-denetimi.js` bunu her çalıştırmada denetler.
+- Toplu işler (Excel ile 300 hesap açma, yoklama, mesaj alıcıları) tek işlemde
+  (transaction): yarıda hata olursa hiçbiri yazılmaz.
+- Oturum anahtarının kendisi değil SHA-256 özeti saklanır: veritabanı sızsa bile
+  açık oturumlar kullanılamaz.
+- Uygulama `postgres` süper kullanıcısıyla değil, yalnızca kendi veritabanına yetkili
+  `egitimevi` kullanıcısıyla bağlanır.
+- **Eski `data/db.json`** varsa ilk açılışta tek işlemde veritabanına aktarılır ve
+  `db.json.tasindi` adıyla saklanır.
+- **Yedek:** Yönetici → Yedekler (günlük otomatik, 14 tane saklanır; en yeniler
+  kalır). Adlar: `yedek-2026-09-26_0300.json` (otomatik), `yedek-elle-…` (elle alınan),
+  `yedek-geri-alma-…` (geri yüklemeden hemen önceki hâl). Yedek elle okunabilir
+  JSON'dur. Sunucuda bunun yanında
+  günlük `pg_dump` alınır (belge/SUNUCUYA-KURULUM.md).
+- **Ödev dosyaları** JSON yedeğe girmez (yalnızca bilgileri girer): dosyaların kendisi
+  `data/dosyalar/` klasöründedir, sunucu yedeğinde bu klasör de alınmalı.
+
+Şifreler `scrypt` ile şifrelenmiş olarak saklanır — düz metin şifre hiçbir yerde tutulmaz
+ve sunucudan dışarı çıkmaz.
+
+**Sunucudaki korumalar:**
+
+| Koruma | Ne yapar |
+|---|---|
+| Kaba kuvvet kilidi | 5 hatalı giriş sonrası o hesap+cihaz 15 dakika kilitlenir (e-posta ile kullanıcı adını sırayla denemek kilidi aşmaz); aynı bağlantıdan 15 dakikada en fazla 50 hatalı giriş, 25 yanlış giriş kodu |
+| Genel hız sınırı | Oturum başına dakikada 300 API isteği; aynı okul ağından (tek IP) gelen bir sınıf engellenmesin diye IP başına 1500 |
+| Bot doğrulaması | Kayıt formunda toplama sorusu; cevap sunucuda tutulur, tarayıcıya gönderilmez; yalnızca hesap açılınca harcanır |
+| Şifre değişimi | Şifre değişince o oturum dışındaki bütün oturumlar kapanır |
+| T.C. kimlik no | İsteğe bağlı, algoritmayla denetlenir; yalnızca kişinin kendisine gösterilir |
+| Veli kodu sınırı | Hesap başına dakikada 5, bağlantı başına saatte 30 yanlış kod — çok hesap açıp denemek de sayılır |
+| Oturum ömrü | Oturumlar 7 gün sonra kendiliğinden düşer, eskiler temizlenir |
+| Güvenlik başlıkları | CSP, X-Frame-Options, nosniff, Referrer-Policy — XSS ve çerçeveleme engeli |
+| Girdi temizliği | Gelen JSON'daki `__proto__` gibi tehlikeli anahtarlar ve NUL karakteri ayıklanır |
+| Hata gizliliği | Veritabanı hatasında tablo/kısıt adı istemciye gitmez; ayrıntı yalnızca günlükte |
+| Yavaş bağlantı koruması | Açık tutulan boş bağlantılar 20-30 sn sonra kapatılır (slowloris) |
+| Şifre politikası | En az 8 karakter, harf ve rakam zorunlu |
+| İki adımlı giriş | E-postası olan hesapta her girişte e-posta ile 6 haneli kod — kapatılamaz |
+| Dosya yükleme | Gövde okunmadan boyut/tür/kota/boş yer denetimi; 60 sn veri gelmezse kesilir; kişi başına aynı anda 3, saatte 60 yükleme |
+| Dosya indirme | Her indirmede yetki; ek olarak (octet-stream, nosniff, sandbox); dosya adları temizlenir |
+| Akıllı doğrulama sorusu | Girişte soru **yalnızca hatalı denemeden sonra** çıkar; normal kullanıcı hiç görmez, otomatik deneme aracı ikinci denemede takılır |
+| Kod koruması | 5 dk ömür, tek kullanım, 5 hatalı denemede iptal, yeniden gönderme 60 sn kilitli |
+
+Şifre doğrulama asenkron çalışır: çok sayıda eşzamanlı giriş denemesi sunucuyu kilitlemez.
+
+---
+
