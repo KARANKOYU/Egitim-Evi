@@ -119,6 +119,86 @@ SAYFALAR.takvim = function () {
   });
 };
 
+function takvimGunCiz(tarih) {
+  var alan = $('takvimGun');
+  if (!alan) return;
+  alan.innerHTML = '<div class="kart"><div class="hint">Yükleniyor...</div></div>';
+
+  var yol = '/takvim/gun?tarih=' + encodeURIComponent(tarih) +
+    takvimOgrenciParam();
+
+  return api(yol).then(function (d) {
+    var p = tarih.split('-');
+    var baslik = Number(p[2]) + ' ' + AY_ADLARI[Number(p[1]) - 1] + ' ' + p[0] +
+      ' · ' + d.gunAdi;
+
+    var h = '<div class="kart"><h3>' + baslik + '</h3>';
+
+    if (d.olaylar.length) {
+      h += '<div class="gun-olaylar">';
+      for (var i = 0; i < d.olaylar.length; i++) {
+        var o = d.olaylar[i];
+        h += '<div class="olay-satir ' + esc(o.tur) + '">' +
+          '<span class="olay-tur">' + (OLAY_AD[o.tur] || o.tur) + '</span>' +
+          '<span class="buyu">' + esc(o.baslik) +
+          (o.aciklama ? ' <span class="alt">' + esc(o.aciklama) + '</span>' : '') + '</span>' +
+          (o.silinebilir && d.yonetebilir
+            ? '<button class="btn kucuk ghost" data-act="takvim-etkinlik-sil" data-id="' +
+              esc(o.id) + '">Kaldır</button>' : '') +
+          '</div>';
+      }
+      h += '</div>';
+    }
+
+    /* teslim edilecek ödevler */
+    h += '<h4 class="alt-baslik">Bugün teslim edilecek</h4>';
+    if (!d.teslim.length) {
+      h += '<div class="hint">Bu gün teslim edilecek ödev yok.</div>';
+    } else {
+      for (var t = 0; t < d.teslim.length; t++) {
+        var od = d.teslim[t];
+        h += '<div class="satir tiklanir" data-nav="odevler">' +
+          '<div class="buyu"><div class="ad">' + esc(od.baslik) + '</div>' +
+          '<div class="alt">' + esc(od.ders) +
+          (od.saat ? ' · saat ' + esc(od.saat) : '') +
+          (od.durum === 'active' ? '' : ' · sonuçlandı') + '</div></div></div>';
+      }
+    }
+
+    if (d.yaklasan.length) {
+      h += '<h4 class="alt-baslik">Önümüzdeki 7 gün</h4>';
+      for (var y = 0; y < d.yaklasan.length; y++) {
+        var ya = d.yaklasan[y];
+        var yp = ya.tarih.split('-');
+        h += '<div class="satir"><div class="buyu">' +
+          '<div class="ad">' + esc(ya.baslik) + '</div>' +
+          '<div class="alt">' + esc(ya.ders) + ' · ' +
+          Number(yp[2]) + ' ' + AY_ADLARI[Number(yp[1]) - 1] + ' ' +
+          gunAdi(ya.tarih) + (ya.saat ? ' · ' + esc(ya.saat) : '') + '</div></div></div>';
+      }
+    }
+
+    if (d.dersler.length) {
+      h += '<h4 class="alt-baslik">O günün dersleri</h4>' +
+        '<div class="rapor-kaydir"><table class="rapor-tablo"><thead><tr>' +
+        '<th>Saat</th><th>Ders</th><th>Sınıf</th><th>Öğretmen</th>' +
+        '</tr></thead><tbody>';
+      for (var dd = 0; dd < d.dersler.length; dd++) {
+        var ders = d.dersler[dd];
+        h += '<tr><td>' + esc(ders.bas) + ' - ' + esc(ders.bit) + '</td>' +
+          '<td>' + esc(ders.ders) + '</td><td>' + esc(ders.sinif) + '</td>' +
+          '<td>' + esc(ders.ogretmen) + '</td></tr>';
+      }
+      h += '</tbody></table></div>';
+    }
+
+    h += '</div>';
+    alan.innerHTML = h;
+  })['catch'](function (e) {
+    alan.innerHTML = '<div class="kart"><div class="msg hata">' + esc(e.message) + '</div></div>';
+  });
+}
+
 function takvimEtkinlikModal() {
   var bugunT = S.takvimSecili || new Date().toISOString().slice(0, 10);
   var govde = '<div class="field"><label for="tkBaslik">Başlık</label>' +
