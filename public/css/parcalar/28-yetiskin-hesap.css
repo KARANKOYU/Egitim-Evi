@@ -49,6 +49,11 @@
 .ne-sec input:checked + span { border-color: var(--ana); background: var(--ana-acik); color: var(--ana-koyu); }
 .ne-sec input:focus-visible + span { box-shadow: 0 0 0 3px var(--odak); }
 
+/* açılış sayfası */
+.vitrin-kim-cizim { display: block; margin-bottom: 12px; color: var(--yazi); }
+.vitrin-kim-cizim .cizim { width: 64px; height: 64px; }
+.vitrin-kim-cizim:empty { display: none; }
+
 /* ================= rol seçimi ================= */
 .kisilik-bas {
   display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 16px;

@@ -253,3 +253,90 @@ function vitrinAra() {
   });
 }
 
+/* ---------------- açılışta bir kez ---------------- */
+/* Düğmeler bağlanır, çizimler konur, adresteki okul yüklenir. Söz, okul
+   bilgisi gelince biter. */
+function disSayfalariKur() {
+  var yerler = document.querySelectorAll('[data-cizim]');
+  for (var c = 0; c < yerler.length; c++) {
+    yerler[c].innerHTML = cizim(yerler[c].getAttribute('data-cizim'), yerler[c].getAttribute('data-cizim-sinif') || 'vitrin-cizim');
+  }
+  var ikonlar = document.querySelectorAll('[data-ikon]');
+  for (var k = 0; k < ikonlar.length; k++) ikonlar[k].innerHTML = ik(ikonlar[k].getAttribute('data-ikon'));
+
+  /* Üst şerit, alt bilgi ve sayfa içi dış bağlantılar: yeniden yüklemeden geçiş. */
+  $('dis').addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('a[data-site]') : null;
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    siteGit(a.getAttribute('data-site'));
+  });
+  /* Açık yapımcı listesi dışarı tıklayınca ya da Esc ile kapanır. */
+  document.addEventListener('click', function (e) {
+    if (!$('yapimciListe').hidden && !e.target.closest('.yapimci-kutu')) yapimcilarAcKapa(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('yapimciListe').hidden) { yapimcilarAcKapa(false); $('btnYapimcilar').focus(); }
+  });
+  window.addEventListener('popstate', function () {
+    if (S.user) return;
+    S.genelGiris = false;
+    okulAdresiniYenile().then(girisEkraniGoster);
+  });
+
+  $('vOkulAra').addEventListener('input', function () {
+    clearTimeout(vitrinArama.sayac);
+    vitrinArama.sayac = setTimeout(vitrinAra, 250);
+  });
+  $('vOkulForm').onsubmit = function (e) {
+    e.preventDefault();
+    clearTimeout(vitrinArama.sayac);
+    var ilk = document.querySelector('#vOkulSonuc .vitrin-okul');
+    if (ilk) location.assign(ilk.getAttribute('href'));
+    else vitrinAra();
+  };
+  $('btnOkulDegis').onclick = function () {
+    siteGit('/login').then(function () { $('vOkulAra').focus(); });
+  };
+
+  return okulAdresiniYenile();
+}
+
+/* Adresteki okulun bilgisi (açılışta ve çıkışta: kişi okul adresinden
+   girdiyse çıkınca o okulun giriş kartı açılsın). */
+function okulAdresiniYenile() {
+  var kisa = adrestenOkul();
+  if (!kisa) { S.okulAdresi = null; return Promise.resolve(); }
+  if (S.okulAdresi && S.okulAdresi.kisaAd === kisa) return Promise.resolve();
+  return api('/okul-adres?kisa=' + encodeURIComponent(kisa)).then(function (d) {
+    S.okulAdresi = d.okul;
+    S.okulAdresi.sayfa = d.sayfa || null;
+    sonOkulYaz(d.okul);
+  })['catch'](function (e) {
+    S.okulAdresi = null;
+    /* Okul yok: giriş sayfası açılır, okul oradan aranır. */
+    if (e.durum === 404) {
+      try { history.replaceState(null, '', '/login' + location.hash); } catch (x) { }
+      mesajGoster('authMesaj', 'hata', '"' + kisa + '" adresinde bir okul yok. Okulunu aşağıdan seç.');
+    }
+  });
+}
+
+/* Girişten sonra adres çubuğu kişinin okuluna döner: yenileyince aynı okulda
+   kalsın. Okulu olmayan (yetişkin hesabı, yönetici) için adres köke döner:
+   /login ya da /signup girişten sonra anlamsız. */
+function okulYolunuAyarla() {
+  var u = S.user;
+  if (!u) return;
+  var okulMu = u.schoolSlug && ['student', 'teacher', 'principal', 'servisci'].indexOf(u.role) >= 0;
+  if (!okulMu) {
+    if (SITE_SAYFALARI.hasOwnProperty(adrestekiYol()) && adrestekiYol() !== '') {
+      try { history.replaceState(null, '', '/' + location.hash); } catch (e) { }
+    }
+    return;
+  }
+  if (adrestenOkul() === u.schoolSlug) return;
+  try { history.replaceState(null, '', '/' + u.schoolSlug + location.hash); } catch (e) { }
+  var son = sonOkulOku();
+  if (!son || son.kisaAd !== u.schoolSlug) sonOkulYaz({ kisaAd: u.schoolSlug, ad: u.schoolName || '', il: '', ilce: '' });
+}
