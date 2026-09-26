@@ -560,3 +560,143 @@ function raporYaz(album, tum) {
   console.log('\n' + tum.length + ' adım, ' + sorunlu.length + ' adımda sorun -> ' + CIKTI + '  (rapor: ' + RAPOR + ')');
 }
 
+/* Görüntüleyici: fotoğrafa tıklayınca açılır; sol/sağ ok önceki/sonraki,
+   Esc kapatır; üstte rol, konu ve adımın adı ile anlatımı. Telefon
+   fotoğrafı telefon ekranı boyunda bir çerçevede, tekerlekle kaydırılır. */
+const ALBUM_JS = `
+(function () {
+  var kok = document.getElementById('gosterici'), cerceve = document.getElementById('gCerceve');
+  var resim = document.getElementById('gResim'), sira = -1, donus = null;
+  function goster(i) {
+    if (i < 0 || i >= FOTOLAR.length) return;
+    sira = i;
+    var f = FOTOLAR[i];
+    kok.classList.toggle('telefon', !!f.t);
+    resim.src = f.s;
+    resim.alt = f.b;
+    document.getElementById('gYer').textContent = (f.t ? 'Telefon' : 'Bilgisayar') + ' · ' + f.r + (f.a ? ' · ' + f.a : '');
+    document.getElementById('gBaslik').textContent = f.b;
+    document.getElementById('gMetin').innerHTML = f.m;
+    document.getElementById('gSayac').textContent = (i + 1) + ' / ' + FOTOLAR.length;
+    document.getElementById('gOnceki').disabled = i === 0;
+    document.getElementById('gSonraki').disabled = i === FOTOLAR.length - 1;
+    cerceve.scrollTop = 0;
+    document.getElementById('gSahne').scrollTop = 0;
+    if (FOTOLAR[i + 1]) { var on = new Image(); on.src = FOTOLAR[i + 1].s; }
+    try { history.replaceState(null, '', '#ekran-' + (i + 1)); } catch (e) {}
+  }
+  function ac(i, kaynak) {
+    donus = kaynak || null;
+    kok.hidden = false;
+    document.body.classList.add('gosterici-acik');
+    goster(i);
+    cerceve.focus();
+  }
+  function kapat() {
+    kok.hidden = true;
+    document.body.classList.remove('gosterici-acik');
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    if (donus) donus.focus();
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a.foto');
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    ac(Number(a.getAttribute('data-i')), a);
+  });
+  document.getElementById('gOnceki').onclick = function () { goster(sira - 1); cerceve.focus(); };
+  document.getElementById('gSonraki').onclick = function () { goster(sira + 1); cerceve.focus(); };
+  document.getElementById('gKapat').onclick = kapat;
+  document.addEventListener('keydown', function (e) {
+    if (kok.hidden) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); goster(sira + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); goster(sira - 1); }
+    else if (e.key === 'Escape') { e.preventDefault(); kapat(); }
+  });
+  var m = /^#ekran-(\\d+)$/.exec(location.hash);
+  if (m) ac(Number(m[1]) - 1);
+})();
+`;
+
+const ALBUM_CSS = [
+  ':root{--zemin:#f7f3f1;--kart:#fffdfc;--yazi:#231b1c;--soluk:#6d5f60;--cizgi:#e7dcda;--ana:#b3202f;--ana-acik:#fbe9ea;--golge:0 1px 2px rgba(60,20,24,.06),0 8px 24px rgba(60,20,24,.06);--perde:#1a1214}',
+  '@media (prefers-color-scheme:dark){:root{--zemin:#141112;--kart:#1d1819;--yazi:#efe6e5;--soluk:#a89a9b;--cizgi:#342b2c;--ana:#ff7a86;--ana-acik:#34191d;--golge:none;--perde:#0b0909}}',
+  '*{box-sizing:border-box}html{scroll-behavior:smooth}@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}',
+  'body{margin:0;background:var(--zemin);color:var(--yazi);font:16px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif}',
+  'body.gosterici-acik{overflow:hidden}',
+  '.ic{max-width:1180px;margin:0 auto;padding:0 16px}',
+  '.ust{padding:48px 0 28px;border-bottom:1px solid var(--cizgi)}',
+  '.etiket{margin:0 0 10px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ana)}',
+  'h1{margin:0 0 14px;font:700 clamp(28px,4.4vw,44px)/1.12 Georgia,"Times New Roman",serif;letter-spacing:-.01em;text-wrap:balance;max-width:22ch}',
+  '.giris{margin:0 0 12px;max-width:68ch;font-size:17.5px}.not{margin:0;max-width:68ch;color:var(--soluk);font-size:14.5px}',
+  'kbd{display:inline-block;min-width:1.7em;padding:0 5px;border:1px solid var(--cizgi);border-bottom-width:2px;border-radius:5px;background:var(--kart);font:600 13px/1.5 inherit;text-align:center;color:var(--yazi)}',
+  '.icindekiler{position:sticky;top:0;z-index:5;background:var(--zemin);border-bottom:1px solid var(--cizgi)}',
+  '.icindekiler .ic{display:flex;align-items:center;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px}',
+  '.ic-kisim{flex:0 0 auto;margin:0 4px 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soluk)}.ic-kisim:first-child{margin-left:0}',
+  '.icindekiler a{flex:0 0 auto;padding:6px 12px;border:1px solid var(--cizgi);border-radius:999px;color:var(--yazi);text-decoration:none;font-size:14px;background:var(--kart)}',
+  '.icindekiler a:hover,.icindekiler a:focus-visible{border-color:var(--ana);color:var(--ana);outline:none}',
+  'main{max-width:1180px;margin:0 auto;padding:8px 16px 72px}',
+  '.kisim{padding-top:44px}.kisim+.kisim{margin-top:40px;border-top:2px solid var(--cizgi)}',
+  '.kisim-bas{max-width:72ch}.kisim-bas p:last-child{margin:0;color:var(--soluk)}',
+  'h2{margin:0 0 8px;font:700 clamp(28px,3.6vw,38px)/1.15 Georgia,"Times New Roman",serif;text-wrap:balance}',
+  '.bolum{padding-top:34px;scroll-margin-top:60px}.bolum-bas{max-width:72ch}',
+  'h3{margin:0 0 8px;font:700 clamp(22px,2.6vw,27px)/1.2 Georgia,"Times New Roman",serif;text-wrap:balance}',
+  '.bolum-bas p{margin:0 0 6px;color:var(--soluk)}',
+  '.alt-bolum{margin:30px 0 4px;font-size:18px;text-wrap:balance}',
+  '.izgara{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:18px;margin-top:16px}',
+  '.izgara.tel{grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr))}',
+  'figure{margin:0;display:flex;flex-direction:column;background:var(--kart);border:1px solid var(--cizgi);border-radius:12px;overflow:hidden;box-shadow:var(--golge)}',
+  '.foto{display:block;max-height:340px;overflow:hidden;border-bottom:1px solid var(--cizgi);background:var(--zemin);cursor:zoom-in}',
+  '.izgara.tel .foto{max-height:440px}',
+  '.foto:focus-visible{outline:3px solid var(--ana);outline-offset:-3px}',
+  'figure img{width:100%;display:block}',
+  'figcaption{padding:12px 14px 14px}figcaption b{display:block;font-size:15px;line-height:1.35}',
+  'figcaption p{margin:6px 0 0;color:var(--soluk);font-size:14.5px;line-height:1.55}',
+  '.alt{border-top:1px solid var(--cizgi);padding:20px 0 28px;color:var(--soluk);font-size:14px}.alt a{color:var(--ana)}',
+  'code{font-size:13px}',
+  /* görüntüleyici */
+  '.gosterici{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:var(--perde);color:#f3ecea}',
+  '.gosterici[hidden]{display:none}',
+  '.g-ust{flex:0 0 auto;display:flex;align-items:flex-start;gap:16px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.35)}',
+  '.g-bilgi{flex:1;min-width:0}',
+  '.g-yer{margin:0;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ff9aa3}',
+  '.g-bilgi h2{margin:2px 0 2px;font:700 clamp(18px,2.2vw,23px)/1.25 Georgia,"Times New Roman",serif;color:#fff}',
+  '.g-metin{margin:0;max-width:90ch;font-size:14.5px;line-height:1.5;color:#d8cccb}',
+  '.g-dugmeler{flex:0 0 auto;display:flex;align-items:center;gap:8px}',
+  '.g-sayac{font-size:14px;color:#d8cccb;font-variant-numeric:tabular-nums;margin-right:4px}',
+  '.g-dugmeler button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;font-size:22px;line-height:1;cursor:pointer}',
+  '.g-dugmeler button:hover:not(:disabled),.g-dugmeler button:focus-visible{background:rgba(255,255,255,.18);outline:none;border-color:#ff9aa3}',
+  '.g-dugmeler button:disabled{opacity:.35;cursor:default}',
+  '.g-sahne{flex:1;min-height:0;overflow:auto;display:flex;justify-content:center;padding:16px}',
+  '.g-cerceve{width:100%;max-width:1440px;outline:none}',
+  '.g-cerceve img{display:block;width:100%;height:auto;border-radius:6px;background:#fff}',
+  /* telefon: gerçek telefon ekranı boyunda çerçeve, içinde tekerlekle kaydırılır */
+  '.gosterici.telefon .g-sahne{overflow:hidden;align-items:center}',
+  '.gosterici.telefon .g-cerceve{width:min(390px,100%);max-width:none;height:min(844px,100%);overflow-y:auto;overscroll-behavior:contain;' +
+    'border:10px solid #050505;border-radius:38px;background:#fff;box-shadow:0 0 0 2px #3a3a3a,0 20px 60px rgba(0,0,0,.6);scrollbar-width:thin}',
+  '.gosterici.telefon .g-cerceve img{border-radius:0}',
+  '.gosterici.telefon .g-cerceve:focus-visible{box-shadow:0 0 0 3px #ff9aa3,0 20px 60px rgba(0,0,0,.6)}',
+  '@media (max-width:700px){.g-ust{flex-direction:column;gap:8px}.g-metin{display:none}.gosterici.telefon .g-cerceve{border-width:0;border-radius:0;height:100%}}'
+].join('');
+
+
+/* node araclar/gezinti.js --album : tur yeniden çalışmadan, son turun kaydından
+   (testler/testdata/gezinti/gezinti.json) albümü yeniden yazar; metinler
+   (gezinti-metin.js) değişince yeter. */
+if (process.argv.includes('--album')) {
+  const tum = JSON.parse(fs.readFileSync(path.join(RAPOR, 'gezinti.json'), 'utf8'));
+  const gruplar = [];
+  for (const k of tum) {
+    let g = gruplar.find(x => x.klasor === k.rol);
+    if (!g) gruplar.push(g = { rol: k.rol, klasor: k.rol, kayitlar: [] });
+    g.kayitlar.push(k);
+  }
+  albumYaz(gruplar, tum);
+  console.log('albüm yeniden yazıldı: ' + path.join(CIKTI, 'index.html'));
+} else calistir().catch(e => {
+  console.error('HATA:', e.stack || e.message);
+  /* Tur yarıda kalsa da o ana kadar çekilenlerin albümü ve raporu yazılsın. */
+  try { if (akis.album) raporYaz(akis.album, akis.tumKayitlar); } catch (e2) { console.error('rapor yazılamadı:', e2.message); }
+  if (akis.tarayici) akis.tarayici.kapat();   // gizli tarayıcı açık kalmasın
+  setTimeout(() => process.exit(1), 500);
+});
