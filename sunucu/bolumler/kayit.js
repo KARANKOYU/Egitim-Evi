@@ -91,6 +91,28 @@ async function oturumCevabi(res, u, ek) {
     kvkkGuncel: kvkkGuncelMi(u), kvkkSurum: KVKK_SURUM }, ek || {}));
 }
 
+/* Yetişkin hesabıyla giriş: girilebilecek tek bir okul rolü varsa (ve velisi
+   olduğu çocuk yoksa) doğrudan o role girilir; birden çok seçenek varsa rol
+   seçim ekranı açılır. Öteki hesaplar (öğrenci, servisçi, yönetici) kendileridir. */
+async function girisOturumu(res, u) {
+  if (!depo.kullanicilar.yetiskinMi(u)) return oturumCevabi(res, u);
+  const k = await kisilikListesi(u);
+  const girilebilir = k.roller.filter(r => r.girilebilir);
+  /* Şifresini sistem yöneticisi vermişse (yöneticinin açtığı okulun müdürü)
+     oturum yetişkin hesabında açılır: kendi şifresini koymadan hiçbir role
+     geçemez. Şifreden sonra rol seçim ekranı açılır. */
+  if (u.sifreDegismeli) return oturumCevabi(res, u, { kisilikSec: girilebilir.length + k.cocuklar.length > 0 });
+  if (girilebilir.length === 1 && !k.cocuklar.length) {
+    const hedef = await depo.kullanicilar.bul(girilebilir[0].id);
+    if (hedef) {
+      await depo.kullanicilar.girisYazildi(u.id);
+      return oturumCevabi(res, hedef);
+    }
+  }
+  if (!girilebilir.length && k.cocuklar.length === 1) return oturumCevabi(res, u, { cocuk: k.cocuklar[0].id });
+  return oturumCevabi(res, u, { kisilikSec: girilebilir.length + k.cocuklar.length > 1 });
+}
+
 async function register(res, body, req) {
   /* Hata hangi alandaysa "alan" ile söylenir; form o kutuyu kırmızıya
      boyayıp mesajı altına yazar. */
@@ -215,6 +237,108 @@ async function epostaOnayi(res, body, req) {
   await depo.onaylar.adresinkileriSil(o.eposta, 'kayit');
   return ok(res, { tur: 'kayit', kullaniciAdi: u.username,
     message: 'Hesabın açıldı. Kullanıcı adın: ' + u.username + '. Şimdi giriş yapabilirsin.' });
+}
+
+/* Yetişkin hesabı okulunu kaydeder: müdür başvurusu. Okul önce resmi MEB
+   listesinden seçilir; listede olmayan (yeni açılmış) okul için ad yazılır.
+   Başvuru, hesaba bağlı "müdür" rol satırı açar; sistem yöneticisi onaylayana
+   kadar beklemede kalır. Hesap bu sırada öteki rolleriyle kullanılır. */
+async function mudurBasvurusu(res, me, body, req) {
+  const alanHata = (alan, mesaj) => sendJSON(res, 400, { error: mesaj, alan });
+  const ana = me.anaHesapId ? await depo.kullanicilar.bul(me.anaHesapId) : me;
+  if (!depo.kullanicilar.yetiskinMi(ana)) return bad(res, 'Okul başvurusunu yetişkin hesabınla yapabilirsin.', 403);
+  const mevcut = await depo.kullanicilar.rolleri(ana.id);
+  if (mevcut.some(r => r.role === 'principal' && r.status === 'pending')) {
+    return bad(res, 'Bekleyen bir okul başvurun var. Sonuçlanınca yenisini yapabilirsin.');
+  }
+
+  /* Okul müdürü 18 yaşından büyük olmalı. Doğum tarihi hesapta yoksa
+     başvuruda istenir ve hesaba yazılır. İnternette yaş kanıtlanamaz; bu bir
+     beyandır. Asıl denetim sistem yöneticisinin onayıdır: yönetici başvuranın
+     yaşını, hesabın ne zaman açıldığını, e-postasını ve telefonunu görür.
+     Şakasına art arda başvuruya karşı: hesap başına tek bekleyen başvuru
+     (yukarıda) ve aynı bağlantıdan günde en fazla 20 başvuru. */
+  const dogum = ana.dogum || String(body.dogum || '').trim();
+  const dogumHata = dogumSorunu(dogum, true);
+  if (dogumHata) {
+    return alanHata('dogum', dogum ? dogumHata : 'Doğum tarihini yaz: okul müdürü başvurusu 18 yaşından büyükler içindir.');
+  }
+  if (yasHesapla(dogum) < 18) return alanHata('dogum', 'Okul müdürü başvurusu için 18 yaşından büyük olmalısın.');
+  if (body.beyan !== true) return alanHata('beyan', 'Bu okulun yöneticisi olduğunu ve bilgilerin doğru olduğunu beyan etmen gerekiyor.');
+  if (req && !hizSinir('mudurBasvuru:' + istemciIp(req), 20, 24 * 60 * 60 * 1000)) {
+    return bad(res, 'Bu bağlantıdan bugün çok fazla okul başvurusu yapıldı. Yarın tekrar dene.', 429);
+  }
+  if (!ana.dogum) await depo.kullanicilar.guncelle(ana.id, { dogum });
+  if (mevcut.length >= 10) return bad(res, 'Bir hesap en fazla 10 okulda rol alabilir.');
+  if (!hizSinir('okulBasvuru:' + ana.id, 5, 24 * 60 * 60 * 1000)) {
+    return bad(res, 'Bugün çok fazla başvuru yaptın. Yarın tekrar dene.', 429);
+  }
+
+  const mebId = clean(body.mebSchoolId, 40);
+  let schoolName, schoolCity, schoolDistrict, schoolType = '';
+  if (mebId) {
+    const meb = okulKimlikBul(mebId);
+    if (!meb) return alanHata('okul', 'Seçtiğin okul listede bulunamadı, tekrar ara.');
+    schoolName = meb.ad; schoolCity = meb.il; schoolDistrict = meb.ilce; schoolType = meb.tip;
+  } else {
+    schoolName = clean(body.schoolName, 140);
+    schoolCity = clean(body.city, 60);
+    schoolDistrict = clean(body.district, 60);
+    if (!schoolName) return alanHata('okul', 'Listeden okulunu seç ya da "Okulum listede yok" bölümüne adını yaz.');
+    if (CITIES.indexOf(schoolCity) < 0) return alanHata('il', 'Okulunun ilini seç.');
+    if (!schoolDistrict) return alanHata('ilce', 'Okulunun ilçesini seç.');
+  }
+
+  /* Aynı okula ikinci bir müdür kaydolamaz. Ancak müdürü kaldırılmış okul
+     (öğretmen ve öğrencileri duruyor) yeni müdürü bekler: başvuru o okula
+     bağlanır, yeni okul açılmaz. */
+  const dup = await depo.okullar.cakisan(mebId, schoolCity, schoolName);
+  const sahipsiz = dup && dup.status === 'pending' && !(await depo.kullanicilar.okulunMuduruVarMi(dup.id));
+  if (dup && !sahipsiz) {
+    return alanHata('okul', dup.status === 'approved'
+      ? 'Bu okulun zaten kayıtlı bir müdürü var.'
+      : 'Bu okul için bekleyen bir müdür başvurusu zaten var.');
+  }
+
+  /* Kişinin o okulda zaten bir rolü (ör. öğretmenliği) varsa ikinci rol açılamaz. */
+  if (sahipsiz && (await depo.kullanicilar.rolleri(ana.id)).some(r => r.schoolId === dup.id)) {
+    return alanHata('okul', 'Bu okulda zaten bir rolün var. Müdür olarak atanman için sistem yöneticisiyle iletişime geç.');
+  }
+
+  const school = sahipsiz ? dup : {
+    id: uid('s'), mebId: mebId || '', name: schoolName, city: schoolCity,
+    district: schoolDistrict, type: schoolType, status: 'pending', createdAt: now()
+  };
+  /* Okulun adresi (egitimevi.org/<kısa ad>) adından önerilir; müdür sonra değiştirebilir. */
+  if (!sahipsiz) school.kisaAd = await okulKisaAdiBul(schoolName, schoolDistrict);
+  /* Okul ve müdür rol satırı birlikte yazılır: biri yazılıp öteki yarım kalmasın.
+     Yeni okulun ad alanında yetişkinin kullanıcı adı boştur; müdürsüz kalmış
+     okulda aynı ad başkasında olabilir, boş bir türevi seçilir. */
+  const rolSatiri = {
+    id: uid('u'), anaHesapId: ana.id, email: '', pass: 'kullanilmaz',
+    username: sahipsiz ? await depo.kullanicilar.okuldaBosAd(ana.username, school.id) : ana.username,
+    fullName: ana.fullName, phone: ana.phone || '', role: 'principal', status: 'pending', schoolId: school.id,
+    city: schoolCity, district: schoolDistrict, branch: 'Müdür', kvkk: ana.kvkk, createdAt: now()
+  };
+  try {
+    await islem(async () => {
+      if (!sahipsiz) await depo.okullar.ekle(school);
+      await depo.kullanicilar.ekle(rolSatiri);
+    });
+  } catch (e) {
+    /* Aynı anda gönderilen ikinci başvuru veritabanında durur (tek bekleyen başvuru). */
+    if (e && e.code === '23505' && e.constraint === 'kullanicilar_bekleyen_basvuru') {
+      return bad(res, 'Bekleyen bir okul başvurun var. Sonuçlanınca yenisini yapabilirsin.');
+    }
+    throw e;
+  }
+  await depo.genel.yoneticilereBildir('Yeni müdür başvurusu: ' + ana.fullName + ' - ' + schoolName +
+    ' (' + schoolCity + ' / ' + schoolDistrict + ')');
+  await islemYaz(rolSatiri, 'mudur.basvurdu', schoolName, req);
+  return ok(res, {
+    message: 'Başvurun alındı. Sistem yöneticisi onaylayınca "Hesap değiştir" ekranında "Müdür — ' +
+      schoolName + '" satırı açılır.'
+  });
 }
 
 /* ---- uçlar ---- */
