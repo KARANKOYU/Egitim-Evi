@@ -344,3 +344,50 @@ SAYFALAR.seferim = function () {
   });
 };
 
+function seferDurumCiz() {
+  var sf = S._sefer;
+  var kutular = document.querySelectorAll('.sefer-durum');
+  for (var i = 0; i < kutular.length; i++) {
+    var kendi = sf && kutular[i].id === 'seferDurum_' + sf.servisId;
+    var h;
+    if (!kendi) h = '<span>Sefer açık ama bu telefondan konum gitmiyor.</span>';
+    else if (sf.hata) h = '<span class="hata-yazi">' + esc(sf.hata) + '</span>';
+    else if (!sf.son) h = '<span>Konum bekleniyor...</span>';
+    else {
+      h = '<span class="canli-nokta"></span><span>Konum gönderiliyor · ' + (sf.yon === 'donus' ? 'eve dönüş' : 'okula gidiş') +
+        (sf.basariZaman ? ' · son gönderim ' + kacSaniyeOnce(new Date(sf.basariZaman).toISOString()) : '') +
+        (sf.son.dogruluk ? ' · ±' + sf.son.dogruluk + ' m' : '') + '</span>';
+    }
+    kutular[i].innerHTML = h;
+    kutular[i].classList.toggle('canli', !!(kendi && sf.son && !sf.hata));
+  }
+}
+
+EYLEMLER['sefer-basla'] = function (el, servisId) {
+  if (!window.isSecureContext || !navigator.geolocation) {
+    hataGoster(new Error('Bu bağlantıda konum alınamıyor. Okulun sitesine https ile gir.'));
+    return;
+  }
+  dugmeBekle(el, 'Başlatılıyor...');
+  var yon = el.getAttribute('data-yon');
+  return api('/servis/sefer-basla', 'POST', { servisId: servisId, yon: yon }).then(function (d) {
+    seferIzlemeyiBaslat({ id: d.sefer.id, servisId: servisId, yon: d.sefer.yon });
+    return git(S.page).then(function () { sayfaMesaji('iyi', d.message); });
+  })['catch'](function (e) { dugmeBitir(el); hataGoster(e); });
+};
+
+EYLEMLER['sefer-surdur'] = function (el, seferId) {
+  try {
+    seferIzlemeyiBaslat({ id: seferId, servisId: el.getAttribute('data-servis'), yon: el.getAttribute('data-yon') });
+  } catch (e) { hataGoster(e); return; }
+  return git(S.page);
+};
+
+EYLEMLER['sefer-bitir'] = function (el, seferId) {
+  if (!confirm('Sefer bitsin mi? Konumun artık paylaşılmaz.')) return;
+  dugmeBekle(el, 'Bitiriliyor...');
+  return api('/servis/sefer-bitir', 'POST', { seferId: seferId }).then(function (d) {
+    if (S._sefer && S._sefer.id === seferId) seferiDurdur();
+    return git(S.page).then(function () { sayfaMesaji('iyi', d.message); });
+  })['catch'](function (e) { dugmeBitir(el); hataGoster(e); });
+};

@@ -366,6 +366,19 @@
         (kendi kodun) ya da okulunu kaydetmeyi seçersin.</div>
     </form>
 
+    <!-- /login: okulun açtığı hesapla (öğrenci, servisçi) girecek kişi önce okulunu seçer -->
+    <div class="okul-sec" id="okulSecAlan" hidden>
+      <form class="vitrin-ara" id="vOkulForm" role="search" novalidate>
+        <label for="vOkulAra">Öğrenci ya da servisçiysen önce okulunu seç</label>
+        <input type="search" id="vOkulAra" placeholder="Okulun adı, ili ya da ilçesi" autocomplete="off"
+               spellcheck="false" enterkeyhint="search" aria-controls="vOkulSonuc">
+        <div id="vOkulSonuc" class="vitrin-sonuc" aria-live="polite"></div>
+      </form>
+      <div id="vSonOkul"></div>
+    </div>
+  </div>
+  </div>
+
   <footer class="site-alt">
     <div class="site-alt-ic">
       <div class="site-alt-marka"><b>Eğitim Evi</b><span>Okul portalı · 2026</span></div>

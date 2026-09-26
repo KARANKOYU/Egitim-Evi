@@ -45,6 +45,15 @@
 .yemek-gun ul { margin: 0 0 6px; padding-left: 18px; line-height: 1.6; font-size: 14px; }
 .yemek-duzen { display: grid; grid-template-columns: 1fr 96px; gap: 10px; align-items: start; }
 
+/* ===== servis ===== */
+.servis-kart h3 { display: flex; align-items: center; gap: 8px; }
+.bilgi-satir { display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--cizgi); font-size: 14px; }
+.bilgi-satir:last-child { border-bottom: 0; }
+.bilgi-satir > span { flex: 0 0 90px; color: var(--soluk); }
+.bilgi-satir a { color: var(--ana); font-weight: 600; font-variant-numeric: tabular-nums; }
+.servis-yonetim > .satir:first-child { padding-top: 0; }
+.satir.alt-satir { padding: 7px 0 7px 26px; font-size: 14px; }
+
 /* ===== kulüpler ===== */
 .kulup-dugmeler { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .kulup-dugmeler:empty { display: none; }

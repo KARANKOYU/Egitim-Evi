@@ -11,6 +11,103 @@
    Seçim public/js/tema.js tarafından sayfa çizilmeden önce uygulanır
    (aksi hâlde koyu temada bir an beyaz ekran yanıp söner). */
 
+:root {
+  /* Açılış ve giriş sayfalarının renk bandı (canlı kırmızıdan mercana). */
+  --bant-1: #d62839;
+  --bant-2: #ec3f45;
+  --bant-3: #ff7a4d;
+  --bant-yazi: #ffffff;
+  --bant-doku: rgba(255, 255, 255, .08);
+  --vurgu-sayi: #b36f00;     /* sarı vurgunun yazı olarak okunan koyu tonu */
+  /* --- marka: canlı kırmızı. Düğme, bağlantı, seçili menü. Beyaz yazı
+     üstünde okunur (4.7:1). --- */
+  --ana: #d62839;
+  --ana-koyu: #a51d2c;
+  --ana-acik: #fdecee;
+  --ana-cizgi: #f6c3c9;
+  --ustune-yazi: #ffffff;        /* marka zeminli düğme/rozet üstündeki yazı */
+
+  /* --- ikinci renk: turkuaz. Etiketler ve ikincil vurgular. Dolgu olarak
+     açık tonu, yazı olarak koyu tonu kullanılır (açık zeminde okunsun). --- */
+  --ikinci: #0fa3b1;
+  --ikinci-koyu: #0a6f79;
+  --ikinci-acik: #e2f6f8;
+
+  /* --- vurgu: güneş sarısı. "Yeni", okunmamış sayısı; üstüne koyu yazı. --- */
+  --vurgu: #f7b32b;
+  --vurgu-acik: #fff4d9;
+  --vurgu-yazi: #3b2a00;
+
+  /* --- zemin sıcak kırık beyaz; gri tonlar kırmızıya hafif kaçar ki ana
+     renkle aynı aileden görünsün. --- */
+  --zemin: #fff9f5;
+  --kart: #ffffff;
+  --kart-ust: #ffffff;           /* kart içinde bir kat daha yukarı (giriş kutusu vb.) */
+  --yazi: #1d1f24;
+  --soluk: #6b6566;
+  --cizgi: #f0e6e1;
+  --cizgi-koyu: #e2d5cf;
+  --medya-zemin: #000000;        /* video ve fotoğrafın çevresi (iki temada da siyah) */
+
+  /* --- anlam renkleri: markadan ayrı dursun. "Tehlike" kırmızısı markanın
+     kırmızısından daha parlak ki karışmasın. Her rengin bir de soluk zemini
+     ve o zemin üstüne yazı rengi var (etiketler, uyarı kutuları). --- */
+  --yesil: #15803d;   --yesil-zemin: #dcfce7;   --yesil-yazi: #14532d;
+  --kirmizi: #dc2626; --kirmizi-zemin: #fee2e2; --kirmizi-yazi: #991b1b;
+  --turuncu: #c2410c; --turuncu-zemin: #ffedd5; --turuncu-yazi: #9a3412;
+  --mavi: #1d4ed8;    --mavi-zemin: #dbeafe;    --mavi-yazi: #1e40af;
+  --mor: #7c3aed;
+  --gri-zemin: #eceaf3; --gri-zemin-koyu: #e0ddea;
+  --bordo: #7f1d1d;   --bordo-yazi: #ffffff;    /* "gelmedi (izinsiz)" */
+  --camgobegi: #0d9488;
+
+  /* --- ana sayfa kutucukları: dolu, düz renk (gradyan yok) --- */
+  --kutu-yazi: #ffffff;
+  --kutu-turuncu: #ea580c; --kutu-yesil: #16a34a; --kutu-kirmizi: #dc2626;
+  --kutu-sari: #b5b508;    --kutu-mor: #7c3aed;   --kutu-mavi: #0284c7;
+  --kutu-gri: #6b7280;     --kutu-camgobegi: #0d9488; --kutu-lacivert: #4338ca;
+  --kutu-rozet-zemin: rgba(255, 255, 255, .95);  /* kutucuk üstündeki sayı hapı, iki temada aynı */
+  --kutu-rozet-yazi: #1f2937;
+
+  /* --- harita: işaretler ve düğmeler döşemenin (hep açık renkli) üstünde
+     durur; bu yüzden iki temada aynı kalır. --- */
+  --harita-okul: #1d4ed8; --harita-ev: #15803d; --harita-servis: #d62839;
+  --harita-secim: #c2410c; --harita-ben: #0d9488;
+  --harita-beyaz: #ffffff; --harita-yazi: #241a1b; --harita-baglanti: #1d4ed8;
+  --harita-dugme-ust: #f4eeee; --harita-dugme-cizgi: rgba(0, 0, 0, .15);
+  --harita-etiket-zemin: rgba(255, 255, 255, .94); --harita-atif-zemin: rgba(255, 255, 255, .85);
+  --harita-golge: 0 2px 6px rgba(0, 0, 0, .35); --harita-golge-kucuk: 0 1px 3px rgba(0, 0, 0, .25);
+  --canli-halka: rgba(21, 128, 61, .5); --canli-halka-bos: rgba(21, 128, 61, 0);
+
+  /* --- gölge ve perde --- */
+  --golge: 0 1px 2px rgba(36, 26, 27, .06), 0 8px 22px rgba(36, 26, 27, .07);
+  --golge-yumusak: 0 1px 2px rgba(36, 26, 27, .05);
+  --golge-kalkik: 0 10px 28px rgba(36, 26, 27, .14);
+  --perde: rgba(31, 27, 46, .45);            /* açılır pencere arkası */
+  --odak: rgba(214, 40, 57, .18);            /* form alanı odak halkası */
+  --hata-odak: rgba(220, 38, 38, .18);
+
+  /* --- köşeler: yuvarlak ve yumuşak --- */
+  --r-buyuk: 28px;   /* ana sayfa kutucukları, açılır pencere, giriş kartı */
+  --r: 22px;         /* kartlar */
+  --r-kucuk: 14px;   /* düğmeler, form alanları, menü satırları */
+  --r-mini: 9px;     /* küçük rozetler, sekmeler, hücreler */
+
+  /* --- hareket: belirgin ama yumuşak --- */
+  --sure: 280ms;
+  --sure-kisa: 160ms;
+  --egri: cubic-bezier(.16, .84, .28, 1);
+  --kalkis: 3px;     /* kart/düğme üstüne gelince yükselme */
+
+  /* --- yazı tipleri --- */
+  --f-govde: 'IBM Plex Sans', "Segoe UI Variable Text", "Segoe UI", system-ui,
+             -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-baslik: 'Newsreader', Georgia, "Times New Roman", serif;
+  --f-kod: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+
+  color-scheme: light;
+}
+
 /* Koyu palet. Kırmızı ve turkuaz koyu zeminde bir ton açılır, anlam renkleri
    de açılır ki siyaha yakın zeminde okunsun. Marka zeminli düğmelerin yazısı
    koyuya döner. */
