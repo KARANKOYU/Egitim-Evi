@@ -40,6 +40,38 @@ const DINI_BAYRAMLAR = {
   ]
 };
 
+function tarihEkle(harita, tarih, kayit) {
+  if (!harita[tarih]) harita[tarih] = [];
+  harita[tarih].push(kayit);
+}
+
+/* Verilen ay için özel günleri tarih->liste haritası olarak döndürür. */
+function ozelGunler(yil, ay) {
+  const harita = {};
+  const iki = n => (n < 10 ? '0' : '') + n;
+
+  for (const g of SABIT_GUNLER) {
+    if (g.ay !== ay) continue;
+    tarihEkle(harita, yil + '-' + iki(g.ay) + '-' + iki(g.gun), {
+      tur: g.tatil ? 'tatil' : 'ozel', baslik: g.ad
+    });
+  }
+
+  for (const b of (DINI_BAYRAMLAR[yil] || [])) {
+    const bas = new Date(b.bas + 'T00:00:00');
+    const bit = new Date(b.bit + 'T00:00:00');
+    for (let d = new Date(bas); d <= bit; d.setDate(d.getDate() + 1)) {
+      if (d.getMonth() + 1 !== ay) continue;
+      const t = d.getFullYear() + '-' + iki(d.getMonth() + 1) + '-' + iki(d.getDate());
+      tarihEkle(harita, t, {
+        tur: 'tatil',
+        baslik: b.ad + (t === b.bas ? ' (arife)' : '')
+      });
+    }
+  }
+  return harita;
+}
+
 /* Takvimde hangi öğrencinin gözünden bakılıyor? */
 async function takvimHedefi(me, istenenId) {
   if (me.role === 'student') return me;
