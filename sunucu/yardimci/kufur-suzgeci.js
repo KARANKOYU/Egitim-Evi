@@ -60,4 +60,28 @@ function listeGuncel() {
   return liste;
 }
 
+/* Metinde listedeki bir kelime var mı? Varsa ilk bulunanı döndürür (günlük
+   için), yoksa ''. */
+function uygunsuzKelime(metin) {
+  const l = listeGuncel();
+  const sade = sadelestir(metin);
+  if (!sade) return '';
+  const kelimeler = sade.split(' ');
+  /* Harf harf aralıklı yazılmış kısımlar birleşik hâliyle de denenir. */
+  const ekler = [];
+  for (let i = 0; i < kelimeler.length;) {
+    let j = i;
+    while (j < kelimeler.length && kelimeler[j].length === 1) j++;
+    if (j - i >= 3) ekler.push(kelimeler.slice(i, j).join(''));
+    i = j > i ? j : i + 1;
+  }
+  for (const k of kelimeler.concat(ekler)) {
+    if (l.tek.has(k)) return k;
+    for (const o of l.onek) if (k.startsWith(o)) return o;
+  }
+  const bitisik = ' ' + sade + ' ';
+  for (const i of l.ikili) if (bitisik.indexOf(' ' + i) >= 0) return i;
+  return '';
+}
+
 module.exports = { uygunsuzKelime, sadelestir };
