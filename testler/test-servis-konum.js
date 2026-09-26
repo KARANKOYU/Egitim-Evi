@@ -24,3 +24,8 @@ const J = x => JSON.stringify(x).slice(0, 220);
 const EV = { enlem: 36.9, boylam: 30.7 };
 const kuzey = m => ({ enlem: Math.round((EV.enlem + m / 111195) * 1e6) / 1e6, boylam: EV.boylam });
 
+async function bildirimler(token) {
+  const r = await iste('/api/notifications', 'GET', null, token);
+  return (r.body.notifications || []).map(n => n.text || n.metin || '');
+}
+
