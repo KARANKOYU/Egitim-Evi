@@ -738,6 +738,59 @@ il=7&ilce=0&start=0&length=100000&draw=1
     </p>
   </section>
 
+  <section id="test">
+    <h2><span class="no">Bölüm 09</span>Test yaklaşımı</h2>
+    <p>
+      371 test var ve neredeyse hepsi <strong>uçtan uca</strong>: gerçek bir
+      sunucu ayağa kaldırılıyor, gerçek HTTP istekleri atılıyor, gerçek
+      dosyaya yazılıyor.
+    </p>
+    <p>
+      Birim testi yerine bunun seçilmesinin sebebi şu: bu projede hataların
+      çoğu tek bir fonksiyonun içinde değil, <em>katmanların arasında</em>
+      çıkıyor. "Yetki kontrolü doğru mu" sorusunun cevabı, yetki fonksiyonunu
+      tek başına çağırmakla değil, yetkisiz bir kullanıcının isteğinin
+      gerçekten 403 almasıyla anlaşılıyor.
+    </p>
+    <p>
+      Testler iki adımlı girişi de gerçekten geçiyor: e-posta ayarlı olmadığında
+      sunucu doğrulama kodunu kendi günlüğüne yazıyor, test de oradan okuyup
+      giriyor.
+    </p>
+
+    <h3>Paketler</h3>
+    <div class="tablo-kap">
+      <table>
+        <thead><tr><th>Paket</th><th class="sayisal">Test</th><th>Kapsam</th></tr></thead>
+        <tbody>
+          <tr><td>test-aktarim</td><td class="sayisal">48</td><td>Excel içe/dışa aktarım</td></tr>
+          <tr><td>test-program</td><td class="sayisal">43</td><td>Ders programı, çakışmalar</td></tr>
+          <tr><td>test-mesaj</td><td class="sayisal">39</td><td>Mesajlaşma, veli kopyası, izinler</td></tr>
+          <tr><td>guvenlik-test</td><td class="sayisal">38</td><td>Kayıt, giriş, hız sınırı, kilit</td></tr>
+          <tr><td>test-takvim</td><td class="sayisal">33</td><td>Takvim, tatiller, etkinlikler</td></tr>
+          <tr><td>test-xlsx</td><td class="sayisal">32</td><td>Zip ve XML motoru (sunucusuz)</td></tr>
+          <tr><td>test-yonetim</td><td class="sayisal">28</td><td>Okul yönetimi, onaylar</td></tr>
+          <tr><td>test-rol</td><td class="sayisal">25</td><td>Özel roller</td></tr>
+          <tr><td>test-devamsizlik</td><td class="sayisal">25</td><td>Yoklama ve görüntüleme yetkileri</td></tr>
+          <tr><td>test-sifre</td><td class="sayisal">23</td><td>Şifre sıfırlama, KVKK onayı</td></tr>
+          <tr><td>test-kapsam</td><td class="sayisal">20</td><td>Ders/sınıf kapsamlı yetkiler</td></tr>
+          <tr><td>test-yedek</td><td class="sayisal">17</td><td>Yedekleme ve geri yükleme</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Her paketten önce sunucu yeniden başlatılıyor — hız sınırı ve kilit
+      sayaçları bellekte tutulduğu için art arda çalışan paketler birbirini
+      kilitliyordu.
+    </p>
+    <p>
+      Buna ek olarak bir de <strong>tarayıcı taraması</strong> yapılıyor: beş
+      rolün tüm sayfaları (45 sayfa) tek tek geziliyor, JavaScript hatası ve
+      boş ekran aranıyor. Bu tarama, mesaj detayını tamamen çökertecek bir
+      hatayı ve velinin çocuğunun devamsızlığını göremediği bir eksiği yakaladı.
+    </p>
+  </section>
+
   <section id="yapmadik">
     <h2><span class="no">Bölüm 10</span>Neyi neden yapmadık</h2>
 
