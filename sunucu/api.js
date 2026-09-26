@@ -37,7 +37,7 @@ const yonetici = require('./bolumler/yonetici');
 
 /* Aydınlatma onayı beklenirken yine de kullanılabilen uçlar. */
 const KVKK_SERBEST = ['me', 'kvkk-onay', 'logout', 'meta', 'challenge', 'okullar', 'schools',
-  'login', 'register', 'sifre-unuttum', 'sifre-yenile', 'okul-adres', 'okul-foto', 'site', 'eposta-onay', 'yorumlar'];
+  'login', 'register', 'sifre-unuttum', 'sifre-yenile', 'okul-adres', 'okul-foto', 'site', 'uygulama', 'eposta-onay', 'yorumlar'];
 
 /* Şifresini okul ya da sistem yöneticisi belirlemiş (T.C. no ya da
    dağıtılan şifre) kişi, kendi şifresini koyana kadar yalnızca bunları
@@ -100,6 +100,7 @@ const BOLUM = {
   'sifre-yenile': kayit,
   'takvim': takvim,
   'teacher': ogretmen,
+  'uygulama': site,
   'yemek': okul_hayati,
   'yorumlar': yorum,
 };

@@ -8,7 +8,7 @@
 var AILE = { harita: null, veri: null };
 var AILE_ARALIK = [1, 5, 10, 15, 30, 60];
 var AILE_SINIR = [0, 30, 60, 90, 120, 180, 240, 300];
-var AILE_APK = 'https://github.com/KARANKOYU/Egitim-Evi-App/releases/latest/download/egitim-evi.apk';
+var AILE_APK = '/indir';
 
 function aileSure(dk) {
   dk = Number(dk) || 0;
@@ -73,7 +73,7 @@ function aileKurulumKarti(d) {
   var ad = esc(d.ogrenci.ad.split(' ')[0]);
   return '<div class="kart aile-kurulum"><h3>' + ad + '\'in telefonu henüz bağlı değil</h3><ol>' +
     '<li><b>Eğitim Evi Aile</b> uygulamasını ' + ad + '\'in Android telefonuna kur ' +
-    '(<a href="' + AILE_APK + '" target="_blank" rel="noopener">GitHub\'dan APK</a>).</li>' +
+    '(<a href="' + AILE_APK + '" target="_blank" rel="noopener">indirme sayfası</a>).</li>' +
     '<li>Uygulamada ' + ad + '\'in <b>öğrenci hesabıyla</b> giriş yap; paylaşımı ' + ad + ' kendisi onaylar.</li>' +
     '<li>İzinleri ver: <b>Konum — Her zaman izin ver</b>, <b>Kullanım erişimi</b>, <b>Bildirimler</b> ve ' +
     '<b>arka planda çalışma</b> (uygulamanın pil ayarında <b>Kısıtlamasız</b>).</li></ol>' +

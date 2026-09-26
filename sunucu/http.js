@@ -251,6 +251,8 @@ function serveStatic(req, res, urlPath) {
   let rel;
   try { rel = decodeURIComponent(urlPath.split('?')[0]); } catch (e) { rel = '/'; }
   if (rel === '/' || rel === '') rel = '/index.html';
+  /* Android uygulamasının indirme sayfası: egitimevi.org/indir (ya da /download). */
+  if (/^\/(indir|download)\/?$/i.test(rel)) rel = '/indir.html';
   /* "_" ile başlayan geliştirme dosyaları (ör. yerel deneme sayfası) ve
      nokta ile başlayan gizli dosyalar hiç sunulmaz (.well-known hariç). */
   if (/(^|[\\/])(_|\.(?!well-known[\\/]))/.test(rel)) {

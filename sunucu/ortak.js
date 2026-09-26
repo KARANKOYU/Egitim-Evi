@@ -130,7 +130,7 @@ function asciiYap(s) {
 const KISA_AD_YASAK = new Set(('api css js yazitipi kvkk sw manifest simge index admin yonetici giris kayit cikis ' +
   'okul okullar veli ogretmen ogrenci mudur servis servisci destek yardim hakkinda iletisim www static assets ' +
   'favicon robots sitemap egitimevi public sunucu data dosya dosyalar indir sifre hesap ayarlar login signup ' +
-  'logout register about gorsel sss kosullar kullanim-kosullari gizlilik cerez').split(' '));
+  'logout register about gorsel sss kosullar kullanim-kosullari gizlilik cerez indir download uygulama').split(' '));
 
 function kisaAdSorunu(s) {
   s = metinYap(s);

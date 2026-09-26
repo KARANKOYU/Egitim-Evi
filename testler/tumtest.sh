@@ -18,7 +18,7 @@ sunucu_durdur() {
 # yalnızca adı _test ile biten veritabanında çalışır; gerçek veri korunur.
 sunucu_baslat() {
   cd "$PROJE" || exit 1
-  (EE_DATA="$SP/testdata" EE_DB_SIFIRLA=1 EE_ADMIN_SIFRE=admin123 EE_PUSH_GONDERME=0 PORT=$PORT node server.js > "$SP/test-sunucu.log" 2>&1 &)
+  (EE_DATA="$SP/testdata" EE_DB_SIFIRLA=1 EE_ADMIN_SIFRE=admin123 EE_PUSH_GONDERME=0 EE_DIS_ISTEK=0 PORT=$PORT node server.js > "$SP/test-sunucu.log" 2>&1 &)
   # Şema kurulana kadar bekle (en fazla 20 sn).
   for i in $(seq 1 40); do
     if curl -s -o /dev/null "http://localhost:$PORT/api/meta"; then return 0; fi
@@ -34,7 +34,7 @@ echo ""
 echo "==================== TESTLER ===================="
 
 # Sunucu gerektirmeyen paketler: xlsx motoru, telefon bildirimi şifrelemesi, yorum atıcı
-for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman test-vekil-ip; do
+for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman test-vekil-ip test-uygulama-surum; do
   echo ""
   echo "--- $paket (sunucusuz) ---"
   cikti=$(node "$SP/$paket.js" 2>&1)

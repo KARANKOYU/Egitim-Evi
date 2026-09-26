@@ -346,8 +346,14 @@ bağlanır, rol seçiminde *Veli — çocuğun adı* satırı çıkar.
 Giriş yapmamış ziyaretçi şu sayfaları görür; hepsinde aynı üst şerit (sol
 üstte **Giriş** ve **Kayıt ol**, sağda **Android uygulaması**, ay/güneş, **Hakkında**, **SSS**
 ve **Yapımcılar**) ve alt bilgi (ortada GitHub'daki kaynak koduna bağlantı) vardır.
-**Android uygulaması** telefon uygulamasının son sürümünü (APK) indirir; Play Store'a
-çıkınca `data/config.yml` içinde `uygulama: android:` satırına oranın adresi yazılır. **Yapımcılar**'a
+**Android uygulaması** indirme sayfasını açar (**egitimevi.org/indir**, `/download` da olur): üstte
+son sürüm ve büyük **İndir** düğmesi, altta PostgreSQL'in indirme sayfasındaki gibi bütün sürümlerin
+tablosu (sürüm, tarih, değişiklik notu, boyut, SHA-256 özeti, İndir) ve kurulum adımları. Tablo
+uygulama deposunun GitHub **Releases** bölümünden gelir: sunucu listeyi 15 dakikada bir alır, yalnızca
+o deponun `.apk` dosyalarını gösterir (taslak ve ön sürüm yok); GitHub'a ulaşılamazsa son liste kalır.
+Yeni sürüm çıkarmak için GitHub'da sürüm açıp `egitim-evi.apk` eklemek yeter. Play Store'a çıkınca
+`data/config.yml` içinde `uygulama: playstore:` satırına oranın adresi yazılır, sayfada
+**Google Play'den yükle** düğmesi çıkar. Testlerde `EE_DIS_ISTEK=0` ile dışarı istek atılmaz. **Yapımcılar**'a
 basınca projede emeği geçenlerin listesi açılır; liste depodaki
 `yapimcilar.json` dosyasındadır, projeye katılan kendini oraya ekler:
 

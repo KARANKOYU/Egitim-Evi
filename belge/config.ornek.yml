@@ -6,7 +6,8 @@ iletisim:
   eposta: ""
   telefon: ""
 
-# Sitenin üst şeridindeki "Android uygulaması" düğmesi. Boşsa GitHub'daki son sürüm açılır;
-# Play Store'a çıkınca oranın adresi yazılır (https ile başlamalı).
+# Uygulama Play Store'a çıkınca oranın adresi (https://play.google.com/... ile başlamalı).
+# Doluysa egitimevi.org/indir sayfasında "Google Play'den yükle" düğmesi çıkar. Sürüm tablosu
+# her durumda GitHub'daki sürümlerden gelir.
 uygulama:
-  android: ""
+  playstore: ""

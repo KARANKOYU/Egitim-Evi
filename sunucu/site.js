@@ -2,8 +2,10 @@
 /* Herkese açık site bilgisi: açılış ve Hakkında sayfasındaki rakamlar ve
    sayfanın altındaki iletişim bilgileri.
 
-     /api/site   GET   { sayilar: { okul, kisi, cevrimici }, iletisim: { eposta, telefon },
-                         yapimcilar: [{ ad, github, katki }] }
+     /api/site      GET   { sayilar: { okul, kisi, cevrimici }, iletisim: { eposta, telefon },
+                            yapimcilar: [{ ad, github, katki }] }
+     /api/uygulama  GET   { playStore, sayfa, alindi, surumler: [{ surum, ad, tarih, notlar,
+                            apk: { ad, adres, boyut, sha256 } }] }   (egitimevi.org/indir)
 
    İletişim bilgileri depoda değil, sunucudaki data/config.yml dosyasındadır.
    Depo herkese açık olduğu için kişisel e-posta ve telefon koda yazılmaz;
@@ -23,6 +25,7 @@ const path = require('path');
 const { DATA } = require('./yollar');
 const { ok } = require('./http');
 const { depo } = require('./veri');
+const uygulamaSurum = require('./uygulama-surum');
 
 const CONFIG_DOSYASI = path.join(DATA, 'config.yml');
 const YAPIMCI_DOSYASI = path.join(__dirname, '..', 'yapimcilar.json');
@@ -56,8 +59,7 @@ function yamlOku(metin) {
 
 const EPOSTA = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-z]{2,}$/i;
 
-const ANDROID_VARSAYILAN = 'https://github.com/KARANKOYU/Egitim-Evi-App/releases/latest/download/egitim-evi.apk';
-let config = { iletisim: { eposta: '', telefon: '' }, android: ANDROID_VARSAYILAN };
+let config = { iletisim: { eposta: '', telefon: '' }, playStore: '' };
 let configZamani = -1;
 
 /* Dosya en fazla 30 saniyede bir yoklanır; değiştiyse yeniden okunur. */
@@ -75,14 +77,14 @@ function configGuncel() {
   const iletisim = ham.iletisim || {};
   const eposta = String(iletisim.eposta || '').trim().slice(0, 254);
   const telefon = String(iletisim.telefon || '').replace(/[^0-9+() -]/g, '').trim().slice(0, 24);
-  /* Android uygulamasının indirme bağlantısı (Play Store'a çıkınca oranın adresi). */
-  const android = String((ham.uygulama || {}).android || '').trim();
+  /* Uygulama Play Store'a çıkınca oranın adresi (indirme sayfasında düğme olur). */
+  const playStore = String((ham.uygulama || {}).playstore || '').trim();
   config = {
     iletisim: {
       eposta: EPOSTA.test(eposta) ? eposta : '',
       telefon: telefon.replace(/[^0-9]/g, '').length >= 7 ? telefon : ''
     },
-    android: /^https:\/\/[^\s"'<>]{4,300}$/.test(android) ? android : ANDROID_VARSAYILAN
+    playStore: /^https:\/\/play\.google\.com\/[^\s"'<>]{4,300}$/.test(playStore) ? playStore : ''
   };
   return config;
 }
@@ -143,6 +145,12 @@ async function veritabaniSayilari() {
 
 async function uclar(k) {
   const { res, p, method } = k;
+  if (p === 'uygulama' && method === 'GET') {
+    const s = await uygulamaSurum.surumler();
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return ok(res, { playStore: configGuncel().playStore, sayfa: uygulamaSurum.SAYFA_ADRESI,
+      alindi: s.alindi, surumler: s.surumler });
+  }
   if (p !== 'site' || method !== 'GET') return false;
   const s = await veritabaniSayilari();
   res.setHeader('Cache-Control', 'public, max-age=60');
@@ -150,7 +158,6 @@ async function uclar(k) {
     /* Kayıtlı kişi sayısı bir dakika önbellekte; açık olan ondan büyük görünmesin. */
     sayilar: { okul: s.okul, kisi: s.kisi, cevrimici: Math.min(acikSayisi(), s.kisi) },
     iletisim: configGuncel().iletisim,
-    android: configGuncel().android,
     yapimcilar: yapimcilariGuncel()
   });
 }

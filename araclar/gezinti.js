@@ -694,6 +694,7 @@ const DIS_ADIMLAR = [
   { ad: 'Sık sorulan sorular', url: '/sss' },
   { ad: 'Sık sorulan sorular — bir soru açık', url: '/sss', tam: false,
     eylem: `__tikla('.sss summary', 'okul değiştirirse'); ${bekleJs(300)}` },
+  { ad: 'Android uygulaması — sürümler ve indirme', url: '/indir', eylem: bekleJs(800) },
   { ad: 'Kullanım koşulları (sorumluluğun sınırları)', url: '/kosullar.html' },
   { ad: 'Aydınlatma metni (KVKK)', url: '/kvkk.html' },
   { ad: 'Aydınlatma metninde Yapımcılar — önce liste açılır', url: '/kvkk.html', tam: false,
@@ -715,7 +716,7 @@ const DIS_ADIMLAR = [
 ];
 const DIS_KOYU = [{ ad: 'Açılış (koyu)', url: '/' }, { ad: 'Okulun sayfası (koyu)', url: '/test-ortaokulu' }];
 const DIS_TELEFON = [{ ad: 'Açılış (telefon)', url: '/' }, { ad: 'Hakkında (telefon)', url: '/hakkinda' },
-  { ad: 'Sık sorulan sorular (telefon)', url: '/sss' },
+  { ad: 'Sık sorulan sorular (telefon)', url: '/sss' }, { ad: 'Android uygulaması (telefon)', url: '/indir' },
   { ad: 'Okulun sayfası (telefon)', url: '/test-ortaokulu' }, { ad: 'Kayıt ol (telefon)', url: '/signup' }];
 
 /* "sayfa|ad|eylem" kısaltmasını adıma çevirir */

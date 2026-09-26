@@ -7,9 +7,9 @@
    - gelmeyen öğrenciye ve velisine bildirim gider; öğrenci ve veli görür;
    - sonuçlanmış ödevin kendisi düzeltilebilir (yalnızca sahibi);
    - gönderilmiş mesajı yalnızca gönderen düzeltir; "düzenlendi" görünür;
-   - /api/site girişsiz açık, yalnızca sayılar, iletişim, Android uygulamasının indirme adresi
-     ve yapımcılar (yapimcilar.json) döner. */
-const { iste, girisYap, hesapAc, mudurYap, okulHesabi } = require('./giris');
+   - /api/site girişsiz açık, yalnızca sayılar, iletişim ve yapımcılar (yapimcilar.json) döner;
+   - /api/uygulama (indirme sayfasının sürüm tablosu) girişsiz açık; testte dışarı istek atılmaz. */
+const { BASE, iste, girisYap, hesapAc, mudurYap, okulHesabi } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -178,11 +178,19 @@ const saatYaz = dk => iki(Math.floor(dk / 60)) + ':' + iki(dk % 60);
   const site = await iste('/api/site', 'GET', null, null);
   kontrol('girişsiz açık; okul, kişi ve şu an açık sayısı', site.status === 200 && site.body.sayilar.okul >= 1 &&
     site.body.sayilar.kisi >= 4 && site.body.sayilar.cevrimici >= 1, J(site.body));
-  kontrol('yalnızca sayılar, iletişim, uygulama adresi ve yapımcılar dönüyor (kişi bilgisi yok)',
-    Object.keys(site.body).sort().join(',') === 'android,iletisim,sayilar,yapimcilar' &&
-    /^https:\/\//.test(site.body.android) &&
+  kontrol('yalnızca sayılar, iletişim ve yapımcılar dönüyor (kişi bilgisi yok)',
+    Object.keys(site.body).sort().join(',') === 'iletisim,sayilar,yapimcilar' &&
     Object.keys(site.body.iletisim).sort().join(',') === 'eposta,telefon' &&
     site.body.yapimcilar.every(y => Object.keys(y).sort().join(',') === 'ad,github,katki'), J(site.body));
+
+  const uyg = await iste('/api/uygulama', 'GET', null, null);
+  kontrol('indirme sayfasının sürüm listesi girişsiz açık (testte dışarı istek yok)', uyg.status === 200 &&
+    Object.keys(uyg.body).sort().join(',') === 'alindi,playStore,sayfa,surumler' && Array.isArray(uyg.body.surumler) &&
+    uyg.body.alindi === false && /^https:\/\/github\.com\//.test(uyg.body.sayfa), J(uyg.body));
+  const sayfaHtml = await fetch(BASE + '/indir').then(r => r.text());
+  const sayfaHtml2 = await fetch(BASE + '/download/').then(r => r.text());
+  kontrol('/indir ve /download indirme sayfasını açıyor', /Eğitim Evi Android uygulaması/.test(sayfaHtml) &&
+    /\/js\/indir\.js/.test(sayfaHtml) && sayfaHtml2 === sayfaHtml);
 
   console.log('=== 7) İNCELEMEDEN GELEN DÜZELTMELER ===');
   /* Rol vermek "rol yönetir" ister: öğretmen düzenleme yetkisi yetmez; kimse kendine rol veremez. */
