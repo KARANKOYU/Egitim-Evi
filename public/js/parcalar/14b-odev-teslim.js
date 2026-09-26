@@ -217,6 +217,18 @@ function mbYaz(b) {
   return mb < 0.1 ? '0,1 MB\'tan küçük' : (Math.round(mb * 10) / 10).toLocaleString('tr-TR') + ' MB';
 }
 
+function teslimOgesi(f) {
+  var tur = teslimMedyaTuru(f.ad);
+  var simge = tur === 'video' ? 'oynat' : tur === 'ses' ? 'muzik' : tur === 'resim' ? 'resim' : 'belge';
+  var ne = tur === 'video' ? 'Video — oynat' : tur === 'ses' ? 'Ses — dinle' : tur === 'resim' ? 'Fotoğraf — aç' : 'Dosya — indir';
+  return '<div class="teslim-oge-kap"><button type="button" class="teslim-oge ' + (tur || 'dosya') + '" data-act="teslim-oge" data-id="' + esc(f.id) +
+    '" data-ad="' + esc(f.ad) + '" data-tur="' + tur + '" data-boyut="' + esc(f.boyut) + '" title="' + esc(ne) + '">' +
+    '<span class="teslim-oge-ikon">' + ik(simge) + '</span>' +
+    '<span class="teslim-oge-ad">' + esc(f.ad) + '</span>' +
+    '<span class="teslim-oge-boyut">' + esc(mbYaz(f.boyut)) + '</span></button>' +
+    '<button type="button" class="baglanti kucuk-baglanti" data-act="teslim-sil" data-id="' + esc(f.id) + '">Sil</button></div>';
+}
+
 function teslimOgrenciAc(el, odevId, ogrenciId) {
   return api('/odev-dosya?odev=' + encodeURIComponent(odevId)).then(function (d) {
     teslimDurum.odevId = odevId;
