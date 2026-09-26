@@ -15,3 +15,15 @@ async function ekle(o) {
       o.telefon || '', o.tc || null, o.adres || '', o.kvkkSurum || null, o.bitis]);
 }
 
+/* Süresi geçmemiş onay satırı. */
+const bul = ozet => tek('SELECT * FROM eposta_onaylari WHERE anahtar_ozeti = $1 AND bitis > now()', [ozet]);
+
+const sil = ozet => calistir('DELETE FROM eposta_onaylari WHERE anahtar_ozeti = $1', [ozet]);
+
+/* Aynı adres için bekleyen eski bağlantılar düşer: son gönderilen geçerli. */
+const adresinkileriSil = (eposta, tur) => calistir('DELETE FROM eposta_onaylari WHERE eposta = $1 AND tur = $2', [eposta, tur]);
+
+/* Hesabın bekleyen e-posta değişikliği bağlantıları. */
+const hesabinkileriSil = kullaniciId => calistir("DELETE FROM eposta_onaylari WHERE kullanici_id = $1 AND tur = 'eposta'", [kullaniciId]);
+
+module.exports = { ekle, bul, sil, adresinkileriSil, hesabinkileriSil, suresiGecenleriSil };

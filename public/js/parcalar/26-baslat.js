@@ -120,6 +120,22 @@ konsolUyarisi();
 /* Kurulum akışı girişten bağımsız: giriş ekranındayken de yüklenebilsin. */
 pwaKur();
 
+/* Şifre sıfırlama bağlantısıyla gelindiyse doğrudan o ekranı aç.
+   Anahtar adresin # kısmında; sunucuya hiç gitmiyor. */
+var sifirlamaAnahtari = (function () {
+  var m = /[#&?]t=([a-f0-9]{64})/i.exec(location.hash || '');
+  return (m && /yeni-sifre/.test(location.hash)) ? m[1] : '';
+})();
+/* E-postadaki onay bağlantısıyla gelindi (#/eposta-onay?t=...): kayıtta hesap
+   açılır, e-posta değişikliğinde adres değişir. Anahtar adresin # kısmında. */
+var onayAnahtari = (function () {
+  var m = /[#&?]t=([a-f0-9]{64})/i.exec(location.hash || '');
+  return (m && /eposta-onay/.test(location.hash)) ? m[1] : '';
+})();
+var onaySonucu = !onayAnahtari ? Promise.resolve(null) : api('/eposta-onay', 'POST', { token: onayAnahtari })
+  .then(function (d) { return { tur: 'iyi', d: d }; })['catch'](function (e) { return { tur: 'hata', d: { message: e.message } }; });
+if (onayAnahtari) { try { history.replaceState(null, '', location.pathname); } catch (e) { } }
+
 var kayitli = sifirlamaAnahtari ? null : tokenOku();
 disSayfalariKur().then(function () { return onaySonucu; }).then(function (onay) {
   /* Onay sonucu: giriş ekranındaysa kartın üstünde, uygulamadaysa sayfada. */
