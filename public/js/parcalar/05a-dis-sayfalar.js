@@ -238,6 +238,30 @@ function yildizCiz(n) {
   return h + '</span>';
 }
 
+function yorumlariYukle() {
+  if (yorumBilgisi.yuklendi) return;
+  yorumBilgisi.yuklendi = true;
+  api('/yorumlar').then(function (d) {
+    if (!d.sayi) {
+      /* Henüz yorum yok: bölüm yine görünür, ilk yorumu yazmaya çağırır. */
+      $('vYorumOzet').innerHTML = '';
+      $('vYorumListe').innerHTML = '<p class="v-yorum-bos">Henüz yorum yok. İlk yorumu sen yaz.</p>';
+      return;
+    }
+    $('vYorumOzet').innerHTML = '<b>' + String(d.ortalama).replace('.', ',') + '</b>' + yildizCiz(Math.round(d.ortalama)) +
+      '<span>' + d.sayi + ' yorum</span>';
+    $('vYorumListe').innerHTML = d.yorumlar.map(function (y) {
+      return '<figure class="v-yorum">' + yildizCiz(y.yildiz) +
+        '<blockquote>' + esc(y.metin) + '</blockquote>' +
+        '<figcaption>' + avatar(y.adKisa, y.adKisa + y.rol) + '<span><b>' + esc(y.adKisa) + '</b>' +
+        '<small>' + esc(y.rol) + ' · ' + tarihGun(y.tarih) + '</small></span></figcaption></figure>';
+    }).join('');
+  })['catch'](function () {
+    yorumBilgisi.yuklendi = false;
+    $('vYorumListe').innerHTML = '<p class="v-yorum-bos">Yorumlar şu an yüklenemedi.</p>';
+  });
+}
+
 EYLEMLER['site-eposta'] = function () {
   if (siteBilgisi.eposta) location.href = 'mailto:' + siteBilgisi.eposta;
 };
