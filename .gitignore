@@ -1,57 +1,82 @@
-# --- ASLA depoya girmeyecekler ---
-# Kişisel veri ve gizli bilgi. Depo herkese açık; bunlar çıkarsa
-# öğrenci/veli bilgileri ve e-posta şifresi dünyaya açılır.
-data/db.json
-data/ayarlar.json
-data/yedek/
-data/dosyalar/
-data/push-anahtar.json
-veri/db.*
-veri/ayarlar.json
-veri/yedek/
-sunucu.log
-*.log
+# =====================================================================
+#  ASLA depoya girmeyecekler. Depo herkese açık: bunlardan biri çıkarsa
+#  öğrenci/veli bilgileri, yüklenen dosyalar ya da şifreler dünyaya açılır.
+# =====================================================================
+
+# --- Veri klasörü: BÜTÜNÜYLE dışarıda ---
+# Ayarlar (veritabanı şifresi), yönetici hesapları (admins.json), site
+# ayarları (config.yml), telefon bildirimi anahtarı, yedekler, ödev
+# dosyaları, mesaj ekleri, okul fotoğrafları, okul listesi... Sunucu bu
+# klasöre sonradan yeni dosya yazsa da hiçbiri depoya giremez.
+# Örnekleri belge/ altında: config.ornek.yml, admins.ornek.json.
+/data/
+/veri/
 testler/testdata/
-testler/deneme.xlsx
-testler/chrome-*/
-testler/*.birlesik.*
 
-# Veri dosyasının bozuk/taşınmış kopyaları (içlerinde gerçek kişisel veri var)
-data/*.bozuk-*
-data/*.tasindi
-data/*.tmp
+# Yönetici hesapları dosyası nerede durursa dursun (yanlış yere kopyalansa bile)
+admins.json
 
-# Ortam değişkenleri ve paketler (pg gelince)
+# --- Gizli anahtarlar, sertifikalar, şifre dosyaları ---
 .env
 .env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+imza.properties
+id_rsa*
+id_ed25519*
+.npmrc
+.netrc
+
+# --- Veritabanı dökümleri ve yedek kopyaları ---
+*.sql.gz
+*.dump
+*.backup
+*.sqlite
+*.sqlite3
+yedek-*.json
+*.bozuk-*
+*.tasindi
+
+# --- Günlükler ---
+*.log
+npm-debug.log*
+
+# --- Paketler ve üretilenler ---
 node_modules/
-
-# Tarayıcı profilleri (araçlar oluşturur, içinde oturum çerezi kalır)
-araclar/chrome-profil/
-araclar/chrome-profil-tema/
-
-# Üretilen görüntüler (yeniden üretilebilir, depoyu şişirir)
+coverage/
 belge/ekran-goruntuleri/
 tasarim/ornekler/
 
-# Yerel kısayollar ve okul listesi (depoya girmez).
+# --- Tarayıcı profilleri (araçlar oluşturur; içinde oturum çerezi kalır) ---
+araclar/chrome-profil/
+araclar/chrome-profil-tema/
+testler/chrome-*/
+
+# --- Test ve deneme çıktıları ---
+testler/deneme.xlsx
+testler/*.birlesik.*
+
+# --- Yerel kısayollar ve okul listesi aracı ---
 # Okul listesi MEB'den çekilir; araç ve çıkan liste yalnızca kurulum
-# yapılan bilgisayarda durur, sunucuya ayrıca kopyalanır.
+# yapılan bilgisayarda durur, sunucuya ayrıca kopyalanır (data/okullar.json).
 *.bat
 araclar/okullari-cek.js
-data/okullar.json
 
-# Geçici
+# --- Geçici ve yerel geliştirme dosyaları ---
 *.tmp
-public/_*.html
-public/_*.js
-public/_*.xlsx
+*.bak
+*.swp
+public/_*
 Thumbs.db
+desktop.ini
 .DS_Store
+.vscode/
+.idea/
 
-# Kullanıcının örnek listeleri ve yerel araç ayarları
+# --- Kullanıcının örnek listeleri ve yerel araç ayarları ---
 yapi/
 .claude/
-
-# Site ayarları (iletişim e-postası ve telefonu); örneği belge/config.ornek.yml
-data/config.yml
