@@ -52,6 +52,10 @@ function kontrol(ad, sart, detay) {
   await iste(quizYolu + '/cevap', 'POST', { soruId: qb.sorular[1].id, metin: 'Yedekteki cevap' }, o1.token);
   await iste(quizYolu + '/bitir', 'POST', {}, o1.token);
 
+  /* Okulun disk sınırı (şema 035) yedeğe girer: yedekten önce 3 GB, sonra 4 GB. */
+  const okulId = mat.user.schoolId;
+  await iste('/api/admin/okul-disk-siniri', 'POST', { okulId, mb: 3072 }, T);
+
   console.log('=== 1) YEDEK ALMA ===');
   const al = await iste('/api/admin/backup-now', 'POST', {}, T);
   kontrol('elle yedek alindi', al.status === 200 && !!al.body.yedek.ad,
@@ -69,6 +73,8 @@ function kontrol(ad, sart, detay) {
   kontrol('yedek indirilebiliyor', indir.status === 200, 'status ' + indir.status);
   kontrol('icerik gecerli JSON', Array.isArray(indir.body.users), 'kullanici ' +
     ((indir.body.users || []).length));
+  const yedekOkul = (indir.body.schools || []).find(s => s.id === okulId) || {};
+  kontrol('yedekte okulun disk sınırı var', yedekOkul.diskSiniriMb === 3072, JSON.stringify(yedekOkul).slice(0, 160));
 
   console.log('=== 3) YOL KACISI ===');
   const kotu = await iste('/api/admin/backup-download?ad=' +
@@ -90,6 +96,7 @@ function kontrol(ad, sart, detay) {
   /* Once bir degisiklik yap: yeni sinif ac */
   const yeniSinif = await iste('/api/school/class', 'POST', { name: 'YEDEK-DENEME' }, mudur.token);
   kontrol('gecici sinif acildi', yeniSinif.status === 200);
+  await iste('/api/admin/okul-disk-siniri', 'POST', { okulId, mb: 4096 }, T);
 
   /* Yöneticinin /admin çerezi (oturumu yedekte var: yedekten önce açıldı). */
   const TABAN = process.env.EE_BASE || 'http://localhost:3000';
@@ -133,6 +140,9 @@ function kontrol(ad, sart, detay) {
   const kulupGeri = (await iste('/api/kulupler', 'GET', null, o1b.token)).body.kulupler.find(k => k.id === kulup.body.id);
   kontrol('kulüp, danışmanı ve üyeliği geri geldi', !!kulupGeri && kulupGeri.uyesin && kulupGeri.kontenjan === 12 &&
     kulupGeri.danisman === 'Ayşe Kaya', JSON.stringify(kulupGeri));
+  const okulGeri = ((await iste('/api/admin/overview', 'GET', null, T)).body.schools || []).find(s => s.id === okulId) || { disk: {} };
+  kontrol('okulun disk sınırı yedekteki değere döndü (3 GB)', okulGeri.disk.siniriMb === 3072 && okulGeri.disk.ozel === true,
+    JSON.stringify(okulGeri.disk));
   const dosyaGeri = await iste('/api/odev-dosya?odev=' + odev, 'GET', null, o1b.token);
   kontrol('teslim dosyasının kaydı geri geldi', (dosyaGeri.body.dosyalar || []).some(d => d.id === dosyaId && d.ad === 'yedek.txt'),
     JSON.stringify(dosyaGeri.body).slice(0, 160));

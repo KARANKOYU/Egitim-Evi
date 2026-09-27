@@ -301,13 +301,14 @@ gerekmez.
 | **Bildirim yoklama aralığı** | Açık sayfanın yeni bildirimleri sorma aralığı (aşağıda "Otomatik bildirimler") | 1–30 dakika, varsayılan 5 |
 | **Çevrimiçi sayma süresi** | Açılış sayfasındaki **şu an açık** sayısı: son bu kadar dakikada uygulamaya istek gönderen farklı kişi | 1–60 dakika, varsayılan 5. Yoklama aralığından kısa olamaz: sunucu en az yoklama aralığı + 1 dakika kullanır (varsayılanlarla 6). Kart kullanılan süreyi kutunun altına yazar; kaydedilen (ya da config.yml'deki) süre bu yüzden kullanılamıyorsa ayrıca uyarır |
 | **admins.json okuma aralığı** | Sunucunun `data/admins.json`'a bakma aralığı (yukarıda "Yönetici dosyası") | 1–60 dakika, varsayılan 1 |
+| **Varsayılan okul disk sınırı** | Kendine ayrı sınır verilmemiş okulların dosya alanı (aşağıda "Okul disk sınırı") | 1 MB – 10 TB (kutuya MB ya da GB yazılır; MB olarak saklanır), varsayılan 5 GB. `data/config.yml`'de yoktur: panelden kaydedilmemişse sunucunun `EE_OKUL_DOSYA_GB` ortam değişkeni (GB, ör. `20` ya da `0.5`), o da yoksa 5 GB |
 | **Okul adresleri** | Okulların `egitimevi.org/school/<ad>` adresleri | Aşağıda |
 
 - **Değer nereden gelir?** Öncelik: panelden kaydedilen değer (veritabanı, `site_ayarlari`
   tablosu, şema 030) > sunucudaki `data/config.yml` (örneği `belge/config.ornek.yml`) > kodun
   varsayılanı. Yapımcılarda ikinci adım depodaki `yapimcilar.json` dosyasıdır. Her kart
   değerin nereden geldiğini yazar (*Panelden kaydedildi*, *data/config.yml*,
-  *yapimcilar.json*, *Varsayılan*); panelden kaydedildiyse kaydeden kişi ve zaman da görünür.
+  *yapimcilar.json*, *EE_OKUL_DOSYA_GB ortam değişkeni*, *Varsayılan*); panelden kaydedildiyse kaydeden kişi ve zaman da görünür.
 - **Varsayılana dön** (yapımcılarda **yapimcilar.json listesine dön**) panelden kaydedilen
   değeri siler; ayar `data/config.yml`'deki değere, orada da yoksa varsayılana döner. Panel
   `data/config.yml`'i hiçbir zaman yazmaz. Dosya elle düzenlenir ve değişince en geç 30 saniyede
@@ -325,8 +326,9 @@ gerekmez.
   değişse de bu değer kalır. İşlem kaydına "1 → 1 dk" değil "1 dk (varsayılan değeri panelden
   sabitlendi)" yazılır.
 - Her değişiklik işlem kaydına okulsuz yazılır (`site.iletisim`, `site.yapimcilar`,
-  `site.playstore`, `site.aralik`, `okul.adres-yonetici`); bunları yalnız sistem yöneticisi
-  görür. Site ayarları yedeğe girmez; yedekten geri yüklemede olduğu gibi kalır.
+  `site.playstore`, `site.aralik`, `site.okul-disk-siniri`, `okul.adres-yonetici`,
+  `okul.disk-siniri`); bunları yalnız sistem yöneticisi görür. Site ayarları yedeğe girmez;
+  yedekten geri yüklemede olduğu gibi kalır (okulun kendi disk sınırı ise okulla birlikte yedeğe girer).
 
 **Okul adresleri.** Kartta bütün okullar adresleriyle listelenir (üstteki arama kutusu
 süzer; müdürü kaldırılmış okulda *Müdür bekliyor* yazar). **Adresi değiştir** penceresinde
@@ -339,7 +341,7 @@ durur (aşağıda "Okul adresi").
 
 | Uç (yalnız yönetici; başkasına bilinmeyen adres gibi 404) | Ne yapar |
 |---|---|
-| `GET /api/admin/site-ayarlari` | Her ayarın değeri, kaynağı (`veritabani`, `config`, `dosya`, `varsayilan`), son değiştiren ve zamanı; aralıklarda sınırlar ve varsayılan, çevrimiçi sürede kullanılan süre ve uyarı |
+| `GET /api/admin/site-ayarlari` | Her ayarın değeri, kaynağı (`veritabani`, `config`, `dosya`, `ortam`, `varsayilan`), son değiştiren ve zamanı; aralıklarda ve varsayılan okul disk sınırında (`okulDiskMb`) sınırlar ve kodun varsayılanı, çevrimiçi sürede kullanılan süre ve uyarı |
 | `POST /api/admin/site-ayarlari {anahtar, deger}` ya da `{anahtar, sifirla: true}` | Kaydeder ya da panelden kaydedileni siler; hatada `400 {error, alan}` |
 | `GET /api/admin/okul-adresleri` | Okullar ve adresleri |
 | `POST /api/admin/okul-adres {okulId, kisaAd}` | Okulun adresini değiştirir; hatada `alan: kisaAd` (400) ya da `okulId` (404) |
@@ -714,7 +716,7 @@ Adres değişince eski adres hemen çalışmaz ("Okul bulunamadı").
 
 | Ne | Nasıl |
 |---|---|
-| Fotoğraflar | Kapak, logo ve en fazla 8 galeri fotoğrafı; PNG, JPEG ya da WebP, en fazla 3 MB |
+| Fotoğraflar | Kapak, logo ve en fazla 8 galeri fotoğrafı; PNG, JPEG ya da WebP, en fazla 3 MB. Büyük fotoğraf yüklenmeden önce tarayıcıda küçültülür (aşağıda "Telefonda küçültme"); 3 MB sınırı küçülmüş hâline uygulanır |
 | Tanıtım yazısı | Düz metin, en fazla 1500 karakter; paragraflar boş satırla ayrılır |
 | Görünüm | Ana renk, zemin, yazı rengi; okul adının boyu ve yeri; kapak yüksekliği; sayfa genişliği; galeride yan yana kaç fotoğraf |
 | Kendi CSS'i | İsteğe bağlı, kısıtlı (aşağıda) |
@@ -944,10 +946,15 @@ koduyla** atanır.
    e-postasının kısaltılmış hâli
    (`fa****@gmail.com`) ve kaç okulda rolü olduğu görünür. Kod değişirse yeniden **Bul**
    gerekir; **Okulu aç** yalnızca bulunan kodla gider.
-4. **Okulu aç**: okul ve müdürlük onaylı açılır, kişinin kodu aynı işlemde yenilenir (tek
+4. **Dosya alanı**: okulun disk sınırı verilir (kutu + MB/GB seçici). **Öğrenci sayısı
+   (yaklaşık)** yazılırsa öneri "öğrenci sayısı × 10 MB, en az 2 GB" olur ve sınır kutusu
+   (elle değiştirilmediyse) öneriyi alır; yazılmazsa öneri varsayılan sınırdır (Site
+   Ayarları). **Öneriyi kullan** öneriyi kutuya yazar. Sınır sonradan **Okullar** listesinde
+   **Düzenle** ile değişir (aşağıda "Okul disk sınırı").
+5. **Okulu aç**: okul ve müdürlük onaylı açılır, kişinin kodu aynı işlemde yenilenir (tek
    kullanımlık). Kişiye "… okulunun müdürü olarak eklendin. Sol üstteki menüden okuluna
-   geçebilirsin." bildirimi gider, işlem kaydına yazılır (`okul.acildi`). Sonuç penceresinde
-   okulun adresi (**Kopyala**) ve müdürün adı görünür.
+   geçebilirsin." bildirimi gider, işlem kaydına yazılır (`okul.acildi`, disk sınırıyla).
+   Sonuç penceresinde okulun adresi (**Kopyala**), müdürün adı ve disk sınırı görünür.
 
 Kurallar sunucuda (`sunucu/bolumler/yonetici-okul.js`, `POST /api/admin/kisi-bul` ve
 `POST /api/admin/okul-ac`):
@@ -958,6 +965,8 @@ Kurallar sunucuda (`sunucu/bolumler/yonetici-okul.js`, `POST /api/admin/kisi-bul
   devralınır ve kendi adresini koruyabilir; kişinin o okulda başka bir rolü (ör.
   öğretmenlik) varsa önce o rol çıkarılmalıdır.
 - Bir kişi en fazla 10 okulda rol alabilir.
+- Disk sınırı (`diskMb`, MB) isteğe bağlıdır: verilmezse okul varsayılanı kullanır; bozuk
+  değer `400 {alan: "diskMb"}`. Devralınan (sahipsiz) okulda verilmezse eski sınırı kalır.
 - Kod tahminine karşı: **Bul** yönetici başına dakikada 30; aynı bağlantıdan saatte en
   fazla 30 yanlış kod (**Bul** ve **Okulu aç** birlikte sayılır). Yanlış kodda "Bu kodla bir
   hesap yok." denir. Kod adrese ve sunucu günlüğüne düşmesin diye istekler POST'tur.
@@ -1290,8 +1299,9 @@ satıra tıklayınca çocuğunun dosyalarını görür.
 | Kim yükler | yalnızca ödevdeki öğrenci, öğretmen dosya yüklemeyi açtıysa (yeni ödevde varsayılan kapalı) |
 | Öğrenci başına, bir ödevde | en fazla 10 dosya, toplam 50 MB (tek dosya da en fazla 50 MB) |
 | Saklama | ödevin son tesliminden 7 gün sonra silinir; son teslimi yoksa ödev sonuçlandırıldıktan 7 gün sonra, hiç sonuçlandırılmazsa yüklendikten 60 gün sonra. Öğrenci ve öğretmen dosya satırında "N gün sonra silinir" görür |
-| Okul başına | 20 GB (`EE_OKUL_DOSYA_GB` ile değişir); %80'i geçince müdüre ve sistem yöneticisine bir kez "Okulun dosya alanının %80'i doldu" bildirimi, dolunca yükleme "Okulun dosya alanı doldu" hatasıyla (507) durur ve ikisine bir kez daha bildirim gider |
+| Okul başına | okulun disk sınırı (aşağıda "Okul disk sınırı"; ekler ve okul sayfası fotoğraflarıyla birlikte sayılır): %80'i geçince müdüre ve sistem yöneticisine bir kez "Okulun dosya alanının %80'i doldu" bildirimi, dolunca yükleme "Okulunun dosya alanı doldu. Okul yönetimi eski dosyaları sildirebilir ya da yöneticiden alan isteyebilir." hatasıyla (507, `okulDolu: true`) durur ve ikisine bir kez daha bildirim gider |
 | Türler | belge, tablo, sunum, resim, ses, video, zip, Scratch/GeoGebra, kod dosyaları (`.exe` gibi çalıştırılabilirler yok) |
+| Büyük fotoğraf | yüklenmeden önce telefonda küçültülür (aşağıda "Telefonda küçültme"): yükleme satırında "Küçültülüyor…", sonra "8,4 MB → 620 KB"; sınırlar küçülmüş boyuta uygulanır |
 | Ne zaman | ödev başladıktan teslim saatine kadar; ödev sonuçlandırılınca kapanır |
 
 - **Silinme zamanı ödevden hesaplanır** (`sunucu/veri/depo/odev-dosyalari.js`
@@ -1303,10 +1313,8 @@ satıra tıklayınca çocuğunun dosyalarını görür.
   7 gün daha kalır. Öğretmen son teslimi yanlışlıkla geçmişe yazarsa (yılı 2025 gibi) saatlik
   temizlik bütün teslimleri hemen silmez; tarihi düzeltmeye zaman kalır. Ödevi düzenle
   penceresi de bunu yazar.
-- **Okulun dosya alanı uyarısı** `okul_dosya_uyarilari` tablosunda tutulur (hangi uyarı
-  verildi: %80 ya da dolu); kullanım %70'in altına inince saatlik temizlikte silinir, alan
-  yeniden dolarsa bildirim yeniden gider. Kota yalnızca öğrenci teslim dosyalarını sayar
-  (mesaj ve ödev ekleri 7 günde kendiliğinden silindiği için sayılmaz).
+- **Okulun dosya alanı** okulun bütün dosyalarını sayar (teslim dosyaları, ekler, okul sayfası
+  fotoğrafları); kurallar aşağıda "Okul disk sınırı".
 
 - Dosyalar `data/dosyalar/` altında, `public/` dışında, 32 haneli rastgele adla durur;
   her indirmede yetki yeniden denetlenir (öğrencinin kendisi, velisi, ödevi veren
@@ -1337,7 +1345,9 @@ listesini görür; mesaj alıcısı mesajın altında görür.
 | Bir mesajda ya da ödevde | toplam en fazla 50 MB (tek dosya da en fazla 50 MB), en fazla 20 dosya |
 | Doluluk | dosya eklenince kutunun altında "Dosya alanın · 32 / 50 MB" çubuğu; dolunca bırakma kutusu gizlenir, "Bu mesaj için dosya alanın doldu (50 MB). Yer açmak için bir dosyanı kaldır." yazar (ödevde "Bu ödev için") |
 | Saklama | 7 gün, sonra dosya silinir (satırda "N gün sonra silinir", sonra "süresi doldu" yazar) |
+| Büyük fotoğraf | yüklenmeden önce telefonda küçültülür (aşağıda "Telefonda küçültme"): satırda "Küçültülüyor…", sonra "8,4 MB → 620 KB · yüklendi"; 50 MB denetimi küçülmüş boyutla yapılır |
 | Kim indirir | mesajın göndereni ve alıcıları; ödevin öğretmeni, öğrencileri, velileri ve müdür |
+| Okul başına | ek (gönderilmemiş taslak da) yükleyenin okulunun disk sınırına sayılır; dolunca yükleme 507 ve "Okulunun dosya alanı doldu…" iletisiyle durur (aşağıda "Okul disk sınırı") |
 
 Yüklenen dosya önce "taslak"tır; mesaj gönderilince ya da ödev kaydedilince bağlanır.
 Bağlanmayan taslaklar 6 saat sonra silinir. Başkasının taslağı bağlanamaz. Yüklerken
@@ -1345,6 +1355,122 @@ taslağın hangi mesaja gideceği belli olmadığı için bir mesajın 50 MB'ı 
 çubuğu, düzeltmede var olan ekler dahil) ve kaydederken denetlenir; yüklemede yalnızca
 kişinin gönderilmemiş bütün taslaklarının toplamı sınırlıdır (150 MB, disk dolmasın). Başka
 bir pencerede bırakılmış taslak yeni mesajın eklerini engellemez.
+
+### Dosya küçültme ve disk sınırı
+
+#### Okul disk sınırı
+
+Her okulun dosyaları kendi sınırına sayılır, bir diskin bölümleri gibi: bir okul dolunca
+yalnız o okulda yeni yükleme durur, öbür okullar etkilenmez.
+
+- **Sayılanlar**: ödev teslim dosyaları (ödevin okulu), ödev ve mesaj ekleri (yükleyenin
+  okulu; gönderilmemiş taslaklar da), okul sayfası fotoğrafları. Kayıttaki boyut sayılır: dosya
+  küçültülünce kayıt da küçülür, sayım düşer. Veritabanı (yazılar, notlar, öbür kayıtlar)
+  sayılmaz; yönetim panelinde ayrıca yaklaşık gösterilir. Kullanım dosya kayıtlarından
+  toplanır, dizin gezilmez (`sunucu/veri/depo/okul-disk.js`).
+- **Sınır** okulda durur (`okullar.disk_siniri_mb`, MB, şema 035). Boşsa **Varsayılan okul disk
+  sınırı** geçerlidir (Site Ayarları; panelden kaydedilmemişse `EE_OKUL_DOSYA_GB`, o da yoksa
+  5 GB). Yönetici sınırı okulu açarken verir; öneri **öğrenci sayısı × 10 MB, en az 2 GB**
+  (öğrenci sayısı yoksa varsayılan). 1 MB – 10 TB.
+- **Okullar** sayfasında her okulun satırında doluluk çubuğu durur (**3,2 GB / 5 GB**; %80'de
+  turuncu, %95'te kırmızı; altında *Varsayılan* ya da *Özel sınır*). **Düzenle** okul ekranını
+  açar: okulun bilgisi, doluluk çubuğu, dağılım (teslim dosyaları, ekler, fotoğraflar),
+  **Varsayılan sınırı kullan** kutusu ve okula özel sınır (sayı + MB/GB, **Öneriyi kullan**).
+  Değişiklik işlem kaydına yazılır (`okul.disk-siniri`, "okul: 3 GB → 2 GB").
+- **Sınır küçültülürse** var olan dosya silinmez; kullanım sınırı aşıyorsa yalnız yeni yükleme
+  durur (cevap bunu söyler).
+- **Müdür** okulunun doluluğunu ana sayfasındaki **Okulun dosya alanı** kartında görür (çubuk,
+  dağılım; %80'de uyarı, dolunca aşağıdaki ileti). Öğretmen ve öbür yetkililer görmez.
+- **Bildirim**: kullanım sınırın %80'ini geçince müdüre ve sistem yöneticisine bir kez
+  ("Okulun dosya alanının %80'i doldu (4,1 GB / 5 GB)…"), dolunca bir kez daha ("Okulun dosya
+  alanı doldu (5 GB)…"; yöneticiye "Sınırı Okullar sayfasından büyütebilirsin."). Hangi
+  uyarının verildiği `okul_dosya_uyarilari` tablosundadır (şema 033); kullanım sınırın %70'inin
+  altına inince (saatlik mutabakatta ya da sınır değişince) silinir, alan yeniden dolarsa
+  bildirim yeniden gider.
+- **Dolunca** teslim dosyası, ek ve okul sayfası fotoğrafı yüklemesi `507 {error, okulDolu: true}`
+  ile durur: "Okulunun dosya alanı doldu. Okul yönetimi eski dosyaları sildirebilir ya da
+  yöneticiden alan isteyebilir." Denetim yüklemeye başlamadan yapılır; süren yüklemelerin
+  baytı okul başına ayrılır (üç tür birlikte), aynı anda başlayan yüklemeler birlikte sınırı
+  aşamaz. Kapak ve logo eskisinin yerine geçtiği için yalnız fark sayılır.
+- **Sistem geneli** (Okullar sayfasının üstündeki **Disk** kartı): okullara ayrılan toplam
+  (kapatılmamış okulların sınırları), okulların kullandığı, diskteki gerçek boş yer (veri
+  klasörünün diski), veritabanının yaklaşık boyutu ve son mutabakat. Ayrılan alanın henüz
+  kullanılmayan kısmı diskteki boş yerden fazlaysa uyarı çıkar; bu yalnız uyarıdır, sınır yine
+  kaydedilir. Diskte 2 GB'tan az yer kalacaksa yükleme her durumda reddedilir ("Sunucuda yer
+  kalmadı").
+- **Saatlik mutabakat** (açılıştan bir dakika sonra, sonra saatte bir; teslim ve ek
+  temizliğinden sonra): kayıtlar `data/dosyalar`, `data/ekler` ve `data/okul-fotolari`
+  klasörlerindeki dosyalarla karşılaştırılır. Kaydı olmayan (sahipsiz), dosyası olmayan ve
+  boyutu tutmayan dosyalar sayılır, sunucu günlüğüne yazılır ("! Dosya mutabakatı: …") ve
+  **Disk** kartında görünür. Sahipsiz dosyaları her türün kendi temizliği siler (1–2 saatten
+  eskiyse).
+- **Yedek ve aktarım**: okulun sınırı okulla birlikte yedeğe girer (`schools[].diskSiniriMb`);
+  geri yüklemede ve `db.json` aktarımında geçerliyse korunur, bozuksa okul varsayılana düşer.
+
+| Uç (yalnız yönetici; başkasına bilinmeyen adres gibi 404) | Ne yapar |
+|---|---|
+| `GET /api/admin/overview` | Okullar: her okulda `disk` (`kullanilan`, `sinir`, `siniriMb` (boşsa varsayılan), `ozel`, `dagilim` {`teslim`, `ek`, `foto`}, `oran`, `oneriMb`); sistem geneli `disk` (`ayrilan`, `kullanilan`, `bos`, `diskToplam`, `veritabani`, `varsayilanMb`, `asim`, `uyari`, `mutabakat`) |
+| `POST /api/admin/okul-disk-siniri {okulId, mb}` | Okulun sınırı: `mb` MB (tam sayı) ya da `null` (varsayılan); hatada `400 {alan: "mb"}` ya da `404 {alan: "okulId"}`; cevapta okulun yeni `disk`'i, `sistem` ve `uyari` |
+| `POST /api/admin/okul-ac {…, diskMb}` | Okulu açarken sınır (yukarıda "Admin: okul açma") |
+
+Müdürün `GET /api/school/ozet` cevabında `disk` (aynı alanlar) vardır. Kod:
+`sunucu/bolumler/okul-disk.js`, `sunucu/veri/depo/okul-disk.js`; ön yüz
+`public/js/parcalar/08d-okul-disk.js` (çubuk, müdür kartı) ve `public/js/yonetim/09d-okul-disk.js`
+(Disk kartı, okul ekranı, sınır kutusu). Test: `testler/test-okul-disk.js`.
+
+#### Telefonda küçültme (yüklemeden önce)
+
+Ödev teslim dosyaları, ödev ve mesaj ekleri ve okul sayfası fotoğrafları yüklenmeden önce
+tarayıcıda (telefonda) küçültülür: internet ve okulun dosya alanı daha az harcanır. Kod:
+`public/js/parcalar/04f-resim-kucult.js`; bağlandığı yerler `04d-ekler.js`,
+`14b-odev-teslim.js`, `19g-okul-sayfasi.js`.
+
+| Kural | Değer |
+|---|---|
+| Hangi dosyalar | JPEG, PNG, WebP; tarayıcı açabiliyorsa HEIC/HEIF (iPhone). 500 KB'tan küçük dosyaya, hareketli PNG (APNG) ve WebP'ye (tuvale yalnız ilk kare çizilir) ve HEIC resim dizisine dokunulmaz |
+| Boyut | uzun kenar en çok 2048 px; kısa kenar 1024 px'in altına inmez (kaydırmalı ekran görüntüsündeki yazı okunur kalsın; yalnız 2:1'den uzun resimlerde fark eder). Tuval en çok 16 MP (iPhone sınırı). 60 MP'den büyük resim tarayıcıda açılmaz, olduğu gibi gider |
+| Kalite | JPEG 0,82 |
+| Yön ve meta veri | EXIF yönü uygulanır (fotoğraf yan yatmaz). Resim yeniden çizildiği için içindeki konum (GPS), tarih ve cihaz bilgisi gider |
+| PNG | saydamsa PNG kalır; fotoğraf gibiyse JPEG olur ve adı `.jpg` olur; ekran görüntüsü, yazılı sayfa ya da çizim gibiyse PNG kalır |
+| WebP | fotoğraf gibiyse JPEG (`.jpg`); saydamsa ya da ekran görüntüsü gibiyse olduğu gibi gider |
+| HEIC | JPEG (`.jpg`) olur; tarayıcı açamıyorsa (Windows'ta Chrome ve Edge) olduğu gibi gider |
+| Küçülmezse | sonuç asıl dosyadan en az %20 küçük değilse asıl dosya olduğu gibi gider (meta veriyi sunucu siler) |
+| Kullanıcı görür | yükleme satırında önce "Küçültülüyor…", sonra "8,4 MB → 620 KB". Teslimde liste yenilenince "küçültülerek yüklendi, 8,4 MB → 620 KB" bir kez görünür; okul sayfasında "Fotoğraf küçültülerek yüklendi (…)." |
+| Sınırlar | dosya ve alan sınırı (50 MB; okul sayfasında 3 MB) küçülmüş boyuta uygulanır: 8 MB'lık fotoğraf 1 MB boş yeri olan ödeve küçülünce sığıyorsa yüklenir |
+
+- **Fotoğraf mı, ekran görüntüsü mü?** Resim en yakın nokta yöntemiyle (yumuşatmasız, gerçek
+  renkler karışmasın) en çok 256 px'e indirilir; bu örnekte iki şey ölçülür: farklı renklerin
+  nokta sayısına oranı (**renk**) ve yan yana iki noktanın aynı renk olma oranı (**eşit**).
+  **Fotoğraf gibi**: renk ≥ 0,03 ve eşit < 0,6; ya da eşit < 0,2 (siyah-beyaz fotoğraf,
+  gürültülü taranmış sayfa: az renk ama her nokta komşusundan farklı). Saydamlık önce dosyanın
+  başından (PNG renk türü ve `tRNS`, WebP `VP8X`/`VP8L` bayrağı), gerekirse örnekteki
+  noktalardan anlaşılır.
+- **Eşikler** başsız Edge'de gerçek tuvalle ölçüldü (2026-09). Windows'un fotoğraf ve 3B çizim
+  duvar kâğıtları (26 resim; fotoğrafın en zor hâli: düz, az tonlu, geniş karanlık alanlı):
+  renk 0,063–0,51, eşit 0,14–0,51. Ekran görüntüleri (arayüz, belge, sohbet, tablo, kod,
+  harita; açık ve koyu tema), çizim, grafik, el yazısı: renk ≤ 0,015, eşit ≥ 0,86. Fotoğraflı
+  ekran görüntüleri (ekranın %30–90'ı fotoğraf): renk 0,07–0,18, eşit 0,70–0,88 (PNG kalır).
+  Eğimli zeminli slayt: 0,013 / 0,29 (PNG kalır). Gürültülü taranmış sayfa: eşit 0,003–0,05
+  (JPEG olur). Sonuç: 26 fotoğrafın JPEG hâlleri %71–93, PNG hâlleri (hepsi JPEG oldu)
+  %92–99 küçüldü; ekran görüntülerinin, çizimlerin ve fotoğraflı ekran görüntülerinin hiçbiri
+  JPEG olmadı.
+- **Arayüz donmaz.** Çözme `createImageBitmap` ile ana iş parçacığının dışında yapılır (yoksa
+  `<img>` ve `data:` adresiyle; sitenin güvenlik kuralı `blob:` resme izin vermez), adımlar
+  arasında sayfaya sıra verilir, kodlama `toBlob` ile arka planda. Yüksek kaliteli yumuşatmayı
+  (`imageSmoothingQuality`) bilen tarayıcı tek adımda küçültür, bilmeyen (Firefox) yarıya
+  yarıya iner. Ölçülen (başsız Edge, ekran kartsız, birkaç koşu): 7–9 MP fotoğraf 0,1–0,16
+  saniye, en uzun takılma 40–95 ms; 25 MP fotoğraf ~0,26 saniye, en uzun takılma 60–125 ms.
+  Aynı anda tek resim işlenir (telefonun belleği şişmesin); birçok dosya seçilince sırayla
+  küçültülür.
+- **Yön**: tarayıcının EXIF yönünü kendisi uygulayıp uygulamadığı bir kez denenir (yönü 6
+  yazılmış 2×1'lik bir JPEG 1×2 çözülüyor mu); uygulamıyorsa (eski tarayıcı) yön elle çevrilir.
+- **Bir şey ters giderse** (açılamayan dosya, bellek, eski tarayıcı) hata verilmez; asıl dosya
+  olduğu gibi yüklenir.
+- Küçültülürken dosya **kaldırılır** ya da **iptal** edilirse gönderilmez. Mesaj ve ödev
+  penceresi küçültme bitene kadar kaydetmez ("Dosyalar yükleniyor; bitince…").
+- Telefon uygulaması (Android) aynı kuralı sonra kendi tarafında uygulayacak.
+
+Test: `testler/test-resim-kucult.js` (sunucusuz; aşağıda "Testler ve denetimler").
 
 ### Quiz
 
@@ -2066,7 +2192,7 @@ ve sunucudan dışarı çıkmaz.
 | Yavaş bağlantı koruması | Açık tutulan boş bağlantılar 20-30 sn sonra kapatılır (slowloris) |
 | Şifre politikası | Yetişkin hesabında en az 8 karakter; büyük ve küçük harf, rakam ve özel karakter zorunlu. Öğrenci ve servisçide en az 8 karakter, harf ve rakam |
 | İki adımlı giriş | E-postası olan hesapta her girişte e-posta ile 6 haneli kod — kapatılamaz |
-| Dosya yükleme | Gövde okunmadan boyut/tür/kota/boş yer denetimi; 60 sn veri gelmezse kesilir; kişi başına aynı anda 3, saatte 60 yükleme |
+| Dosya yükleme | Gövde okunmadan boyut/tür/okulun disk sınırı/boş yer denetimi; 60 sn veri gelmezse kesilir; kişi başına aynı anda 3, saatte 60 yükleme |
 | Dosya indirme | Her indirmede yetki; ek olarak (octet-stream, nosniff, sandbox); dosya adları temizlenir |
 | Akıllı doğrulama sorusu | Girişte soru **yalnızca hatalı denemeden sonra** çıkar: o hesaba o bağlantıdan bir hata, hesaba her yerden 3 hata ya da o bağlantıdan 15 dakikada 50 hata (o zaman bağlantıdaki herkese). Normal kullanıcı hiç görmez; okulda birkaç kişinin yanlış yazması öbürlerini durdurmaz, en kötü soru çıkar. Soru (toplama) hazır araçları eler ama bir betik onu kolayca çözer: otomatik şifre taramasını soru değil hesap kilitleri ve bağlantının hata sınırı durdurur |
 | Kod koruması | 5 dk ömür, tek kullanım, 5 hatalı denemede iptal, yeniden gönderme 60 sn kilitli |
@@ -2237,7 +2363,7 @@ eğitim evi/
 │   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
 │   │   ├── sema.js            ← şema dosyalarını sırayla uygular
 │   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
-│   │   ├── sema/002...034     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   ├── sema/002...035     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
 │   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
 │   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
 │   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
@@ -2252,7 +2378,8 @@ eğitim evi/
 │   │   │                        e-posta/kullanıcı adı/T.C. kuralları ve yönetici adı tetikleyicisi,
 │   │   │                        032 kişi kodu 16 karakter, 4'erli tireli gruplar,
 │   │   │                        033 ödevde öğrencinin dosya yükleme izni, okulun dosya alanı uyarısı,
-│   │   │                        034 teslim dosyalarının en erken silinme anı)
+│   │   │                        034 teslim dosyalarının en erken silinme anı,
+│   │   │                        035 okul başına disk sınırı)
 │   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
 │   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
 │   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)
@@ -2271,6 +2398,7 @@ eğitim evi/
 │   │   ├── kayit.js           ← kayıt, giriş, şifre, profil, bildirimler
 │   │   ├── kisilik.js         ← yetişkin hesabı: portallar, + Ekle, kişi kodu, hesap bilgisi, hesabı sil
 │   │   ├── yonetici.js        ← /api/admin: müdürler, okullar, yedekler, yönetici dosyası
+│   │   ├── okul-disk.js       ← okul başına disk sınırı: sayım, %80 ve dolu, sistem geneli, saatlik mutabakat
 │   │   ├── site-ayarlari.js   ← /api/admin/site-ayarlari, okul-adresleri, okul-adres: Site Ayarları
 │   │   ├── yonetici-okul.js   ← /api/admin/kisi-bul ve okul-ac: yöneticinin okulu kişi koduyla açması
 │   │   ├── okul-sayfasi.js    ← /api/okul-sayfa, /api/okul-foto: okulun giriş sayfası
@@ -2524,6 +2652,18 @@ adresi), `test-yonetici-dosyasi.js` (`admins.json`, canlı okuma; yalnız
 `testler/testdata/` altında) ve `test-cakisma.js` (aynı e-posta, kullanıcı adı ve T.C.;
 aynı anda gelen istekler). Hepsi `tumtest.sh` listesindedir.
 
+`test-resim-kucult.js` (sunucusuz): tarayıcıda resim küçültmeyi (`04f-resim-kucult.js`)
+başsız Edge'de (yoksa Chrome; yol `EE_TARAYICI` ile verilebilir) gerçek tuvalle dener:
+boyut ve ad kuralları, fotoğraf / ekran görüntüsü / çizim / taranmış sayfa / saydam ayrımı,
+dosya başı (JPEG boyutu, büyük ve küçük sonlu EXIF yönü, PNG `tRNS`, hareketli PNG ve WebP,
+WebP boyutu, HEIC), yönün
+uygulanması (tarayıcının kendisi ve elle: 3, 6, 8), EXIF / GPS / cihaz bilgisinin gitmesi,
+en uzun takılma, 500 KB altı ve küçülmeyen dosyaya dokunulmaması, PNG → JPEG, saydam PNG,
+WebP, açılamayan HEIC, tek sıra; ekler, ödev teslimi ve okul sayfasında "Küçültülüyor…" ve
+"8,4 MB → 620 KB", yeni adla gönderme, küçülmüş boyutla yer denetimi, kaldırma ve iptal.
+Tarayıcı `--remote-debugging-pipe` ile sürülür, port açılmaz; test resimleri sayfada
+üretilir (en büyüğü ~4 MB). Tarayıcı yoksa paket "ATLANDI" der ve 0 sayar.
+
 `test-okul-agi.js`: okul ağı yük ve saldırı paketi. Test veritabanına 300 öğrenci yazar;
 öğrenciler tek IP'den (`::1`), 5 saniyeye yayılarak tarayıcıda ölçülen istek dizisiyle
 girer (her biri kendi 6 bağlantısıyla). 429, 503 ve kesilen bağlantı olmamalı. Ardından
@@ -2546,9 +2686,10 @@ EE_AG_OLCUM=1 EE_BASE=http://localhost:3200 EE_LOG=testler/test-sunucu.log node 
 `x-forwarded-for`; öğrenciler vekil gibi ortak bir bağlantı havuzundan gelir).
 
 Bir paketin sunucusu ek ortam değişkeniyle açılabilir (`tumtest.sh` `paket_ortami`):
-`test-odev-dosya` okulun dosya alanını 1 MB'a indirir (`EE_OKUL_DOSYA_GB=0.001`) ki %80
-uyarısı ve "doldu" küçük dosyalarla denensin. Tek başına çalıştırırken aynı değişkeni ver
-(verilmezse o bölüm atlanır).
+`test-okul-disk` varsayılan okul disk sınırını `EE_OKUL_DOSYA_GB=0.001` (1 MB) ile verir ki
+ortam değişkeninin kaynak olarak göründüğü denensin. Tek başına çalıştırırken aynı değişkeni
+ver (verilmezse varsayılanın 5 GB olduğu denenir). `test-okul-disk` ve `test-odev-dosya`
+%80 uyarısını ve "doldu"yu küçük dosyalarla dener: yönetici okulun sınırını 1–2 MB yapar.
 
 ---
 

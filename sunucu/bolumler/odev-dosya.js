@@ -9,9 +9,9 @@
    Sınırlar: tek dosya ve bir öğrencinin bir ödevdeki dosyalarının toplamı
    50 MB, en fazla 10 dosya. Dosya son teslimden 7 gün sonra silinir (son
    teslimi yoksa sonuçlandırılınca + 7 gün, hiç sonuçlandırılmazsa yüklemeden
-   60 gün sonra; depo/odev-dosyalari.js SILINME). Okulun dosya alanı
-   (EE_OKUL_DOSYA_GB) %80'i geçince ve dolunca müdüre ve sistem yöneticisine
-   birer kez bildirim gider.
+   60 gün sonra; depo/odev-dosyalari.js SILINME). Dosya okulun disk sınırına
+   sayılır (okul-disk.js): dolunca yükleme durur; %80'i geçince ve dolunca
+   müdüre ve sistem yöneticisine birer kez bildirim gider.
 
    Güvenlik:
      - Dosya public klasörünün dışında, 32 haneli rastgele adla durur. Adres
@@ -19,7 +19,7 @@
      - İndirme her zaman "ek" olarak (attachment, octet-stream, nosniff,
        sandbox) gider: yüklenen HTML ya da SVG tarayıcıda çalıştırılamaz.
      - Yükleme gövdesi JSON okuyucusundan geçmez, diske akarak yazılır;
-       bildirilen boyut, dosya ve öğrenci başına sınır, okul kotası ve
+       bildirilen boyut, dosya ve öğrenci başına sınır, okulun disk sınırı ve
        diskteki boş yer yüklemeye başlamadan denetlenir. Sayı ve toplam
        boyut son olarak veritabanında kilitli satırla bir kez daha denetlenir.
      - Teslim süresi dolunca, ödev sonuçlandırılınca ya da öğretmen dosya
@@ -37,13 +37,12 @@ const { clean } = require('../ortak');
 const { depo } = require('../veri');
 const { DATA } = require('../yollar');
 const { odevBitisAni } = require('./odev');
+const okulDisk = require('./okul-disk');
 
 const KLASOR = path.join(DATA, 'dosyalar');
 const MB = 1024 * 1024;
 const DOSYA_SINIR = 50 * MB;
 const OGRENCI_SINIR = { adet: 10, toplam: 50 * MB };         // bir öğrencinin bir ödevde (toplam 50 MB)
-const OKUL_SINIR = Math.round((Number(process.env.EE_OKUL_DOSYA_GB) || 20) * 1024 * MB);
-const OKUL_UYARI = 0.8, OKUL_UYARI_SIFIRLA = 0.7;              // %80'de bir kez uyarı; %70'in altına inince yeniden kurulur
 const BOS_YER_PAYI = 2 * 1024 * MB;                           // diskte her zaman kalacak boş yer
 const ZIP_SINIR = 3500 * MB;                                   // zip32 sınırının altında
 const BOSTA_MS = 60 * 1000;                                    // bu kadar veri gelmezse yükleme kesilir
@@ -58,20 +57,21 @@ const UZANTILAR = new Set(('pdf doc docx odt rtf txt xls xlsx ods csv ppt pptx o
   'mp3 m4a wav ogg aac flac mp4 mov m4v webm avi mkv 3gp ' +
   'zip rar 7z sb3 ggb py ipynb html css js java c cpp').split(' '));
 
-/* Süren yüklemeler: kişi ve okul başına sayı, ayrılmış bayt. Boş yer ve okul
-   kotası denetimi süren yüklemeleri de sayar; aynı anda başlayan yüklemeler
+/* Süren yüklemeler: kişi ve okul başına sayı, ayrılmış bayt. Boş yer ve okulun
+   disk sınırı denetimi süren yüklemeleri de sayar (okulun baytı okul-disk.js'te,
+   ekler ve okul fotoğraflarıyla birlikte); aynı anda başlayan yüklemeler
    birlikte sınırı aşamaz. */
-const suren = { kisi: new Map(), okul: new Map(), okulBayt: new Map(), toplam: 0, bayt: 0 };
+const suren = { kisi: new Map(), okul: new Map(), toplam: 0, bayt: 0 };
 const artir = (harita, anahtar, n) => {
   const v = (harita.get(anahtar) || 0) + n;
   if (v > 0) harita.set(anahtar, v); else harita.delete(anahtar);
 };
 function ayir(kisiId, okulId, boyut) {
-  artir(suren.kisi, kisiId, 1); artir(suren.okul, okulId, 1); artir(suren.okulBayt, okulId, boyut);
+  artir(suren.kisi, kisiId, 1); artir(suren.okul, okulId, 1); okulDisk.ayir(okulId, boyut);
   suren.toplam++; suren.bayt += boyut;
 }
 function birak(kisiId, okulId, boyut) {
-  artir(suren.kisi, kisiId, -1); artir(suren.okul, okulId, -1); artir(suren.okulBayt, okulId, -boyut);
+  artir(suren.kisi, kisiId, -1); artir(suren.okul, okulId, -1); okulDisk.birak(okulId, boyut);
   suren.toplam--; suren.bayt -= boyut;
 }
 
@@ -129,14 +129,6 @@ function dosyaAdi(ham) {
 
 /* "32,5 MB" (bir ondalık, Türkçe virgül). */
 const mbYaz = n => (Math.round(n / MB * 10) / 10).toLocaleString('tr-TR') + ' MB';
-/* "16,1 / 20 GB" ya da küçük sınırda "0,8 / 1 MB": birim sınıra göre seçilir. */
-function alanYaz(kullanilan, sinir) {
-  const gb = sinir >= 1024 * MB, bol = gb ? 1024 * MB : MB;
-  const yaz = n => (Math.round(n / bol * 10) / 10).toLocaleString('tr-TR');
-  return yaz(kullanilan) + ' / ' + yaz(sinir) + (gb ? ' GB' : ' MB');
-}
-/* "20 GB" ya da küçük sınırda "1 MB". */
-const sinirYaz = n => n >= 1024 * MB ? (Math.round(n / (1024 * MB) * 10) / 10).toLocaleString('tr-TR') + ' GB' : mbYaz(n);
 
 const DOSYA_KAPALI = 'Bu ödev için dosya yüklenmiyor.';
 const ALAN_DOLDU = 'Bu ödev için dosya alanın doldu (' + mbYaz(OGRENCI_SINIR.toplam) + '). Yer açmak için bir dosyanı sil.';
@@ -178,22 +170,6 @@ async function gorebilir(me, a, ogrenciId) {
 /* bitis: dosyanın silineceği an (ödevden hesaplanır; depo SILINME). */
 const gorunum = d => ({ id: d.id, ad: d.ad, boyut: Number(d.boyut), yuklenme: d.yuklenme, bitis: d.silinme,
   ogrenciId: d.ogrenci_id, ogrenci: d.ogrenci_adi || '' });
-
-/* Okulun dosya alanı: %80'i geçince (seviye 80) ve dolunca (100) müdüre ve
-   sistem yöneticilerine bildirim. Her seviye bir kez gider (okul_dosya_uyarilari);
-   kullanım %70'in altına inince temizlikte sıfırlanır. */
-async function okulUyar(okulId, seviye, kullanilan) {
-  if (!okulId || !await depo.odevDosyalari.uyariYaz(okulId, seviye)) return;
-  const [okul, mudur] = await Promise.all([depo.okullar.bul(okulId), depo.kullanicilar.okulunMuduru(okulId)]);
-  const alan = alanYaz(kullanilan, OKUL_SINIR), sinir = sinirYaz(OKUL_SINIR);
-  const metin = seviye >= 100
-    ? 'Okulun dosya alanı doldu (' + sinir + '). Öğrenciler ödeve dosya yükleyemiyor; eski teslim dosyaları silindikçe yer açılır.'
-    : "Okulun dosya alanının %80'i doldu (" + alan + '). Teslim dosyaları son teslimden 7 gün sonra kendiliğinden silinir.';
-  if (mudur) await depo.genel.bildir(mudur.id, metin, '');
-  await depo.genel.yoneticilereBildir((okul ? okul.name : 'Bir okul') + ': ' + (seviye >= 100
-    ? 'dosya alanı doldu (' + sinir + '), öğrenciler ödeve dosya yükleyemiyor. Sınır EE_OKUL_DOSYA_GB ile büyütülür.'
-    : "dosya alanının %80'i doldu (" + alan + ').'), '');
-}
 
 async function bosYer() {
   try {
@@ -296,15 +272,15 @@ async function yukle(k) {
   const kullanilan = onceki.reduce((t, d) => t + Number(d.boyut), 0);
   if (onceki.length >= OGRENCI_SINIR.adet) return reddet(req, res, SAYI_DOLDU);
   if (kullanilan + boyut > OGRENCI_SINIR.toplam) return reddet(req, res, sigmiyor(kullanilan), 413);
-  const okulToplam = Number(await depo.odevDosyalari.okulToplami(a.schoolId));
+  const okulAlani = await okulDisk.durum(a.schoolId);
   await fs.promises.mkdir(KLASOR, { recursive: true });
   const bos = await bosYer();
 
   /* Buradan ayırmaya kadar await yok: iki yükleme aynı boş yeri paylaşamaz.
      Okulun alanı dolduysa müdüre ve yöneticiye bir kez haber gider (beklenmez). */
-  if (okulToplam + (suren.okulBayt.get(a.schoolId) || 0) + boyut > OKUL_SINIR) {
-    okulUyar(a.schoolId, 100, okulToplam).catch(() => { /* bildirim gitmezse yükleme yine reddedilir */ });
-    return reddet(req, res, 'Okulun dosya alanı doldu. Öğretmenine haber ver.', 507);
+  if (okulDisk.sigmaz(okulAlani, boyut)) {
+    okulDisk.doldu(okulAlani);
+    return reddet(req, res, okulDisk.OKUL_DOLU, 507, { okulDolu: true });
   }
   if (bos !== null && bos - suren.bayt - boyut < BOS_YER_PAYI) return reddet(req, res, 'Sunucuda yer kalmadı. Biraz sonra dene.', 507);
   if ((suren.kisi.get(me.id) || 0) >= AYNI_ANDA_KISI || (suren.okul.get(a.schoolId) || 0) >= AYNI_ANDA_OKUL ||
@@ -345,9 +321,7 @@ async function yukle(k) {
         durum === 'yok' ? 404 : durum === 'boyut' ? 413 : 400);
     }
     /* Okulun alanı %80'i geçtiyse müdüre ve yöneticiye bir kez haber gider. */
-    if (okulToplam + sonuc.boyut >= OKUL_UYARI * OKUL_SINIR) {
-      await okulUyar(a.schoolId, 80, okulToplam + sonuc.boyut).catch(() => { /* bildirim gitmezse yükleme yine tamam */ });
-    }
+    await okulDisk.yuklendi(okulAlani, sonuc.boyut);
     return ok(res, { dosya: { id, ad, boyut: sonuc.boyut, yuklenme: new Date().toISOString() }, message: ad + ' yüklendi.' });
   } finally {
     birak(me.id, a.schoolId, boyut);
@@ -631,13 +605,12 @@ async function uclar(k) {
 
 /* Artık temizliği: silinme anı gelen teslim dosyaları (son teslim + 7 gün;
    depo SILINME), yarıda kalmış yüklemeler (2 saatten eski) ve kaydı silinmiş
-   dosyalar (1 saatten eski) diskten silinir. Okulun alanı %70'in altına indiyse
-   dosya alanı uyarısı sıfırlanır. */
+   dosyalar (1 saatten eski) diskten silinir. (Okulun dosya alanı uyarısını
+   saatlik mutabakat sıfırlar: okul-disk.js.) */
 async function dosyaSupur() {
   for (const id of await depo.odevDosyalari.eskileriSil()) {
     await fs.promises.unlink(path.join(KLASOR, id)).catch(() => {});
   }
-  await depo.odevDosyalari.uyarilariSifirla(Math.floor(OKUL_UYARI_SIFIRLA * OKUL_SINIR));
   let adlar;
   try { adlar = await fs.promises.readdir(KLASOR); } catch (e) { return 0; }
   const simdi = Date.now();

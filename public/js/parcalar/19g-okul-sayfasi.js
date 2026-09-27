@@ -135,8 +135,9 @@ SAYFALAR['okul-sayfasi'] = function () {
 
     /* ---- fotoğraflar ---- */
     h += '<div class="kart"><h3>Fotoğraflar</h3>' +
-      '<p class="hint" style="margin-top:0">PNG, JPEG ya da WebP, en fazla 3 MB. Fotoğraftaki konum ve cihaz bilgisi ' +
-      'kaydedilmeden önce silinir. Öğrencilerin yüzü görünen fotoğraflar için velilerin iznini almayı unutma.</p>' +
+      '<p class="hint" style="margin-top:0">PNG, JPEG ya da WebP. Büyük fotoğraf yüklenmeden önce küçültülür; küçülmüş hâli ' +
+      'en fazla 3 MB olabilir. Fotoğraftaki konum ve cihaz bilgisi kaydedilmeden önce silinir. Öğrencilerin yüzü görünen ' +
+      'fotoğraflar için velilerin iznini almayı unutma.</p>' +
       '<div id="osFotolar"></div>' +
       '<input type="file" id="osDosya" accept="image/png,image/jpeg,image/webp" hidden>' +
       '<div id="osFotoMesaj"></div></div>';
@@ -264,22 +265,32 @@ EYLEMLER['os-foto-sec'] = function (el, yer) {
   $('osDosya').click();
 };
 
+/* Büyük fotoğraf önce küçültülür (04f-resim-kucult.js); 3 MB sınırı küçülmüş
+   hâline uygulanır. */
 function osDosyaSecildi() {
   var dosya = this.files && this.files[0];
+  var yer = OS.yuklenecekYer;
   if (!dosya) return;
   if (['image/png', 'image/jpeg', 'image/webp'].indexOf(dosya.type) < 0) {
     mesajGoster('osFotoMesaj', 'hata', 'Yalnızca PNG, JPEG ya da WebP fotoğraf yüklenebilir.');
     return;
   }
-  if (dosya.size > 3 * 1024 * 1024) {
-    mesajGoster('osFotoMesaj', 'hata', 'Fotoğraf 3 MB\'tan büyük. Telefonda küçültüp ya da ekran görüntüsünü alıp yeniden dene.');
-    return;
-  }
-  mesajGoster('osFotoMesaj', 'bilgi', 'Yükleniyor...');
-  fetch('/api/okul-sayfa/foto?yer=' + encodeURIComponent(OS.yuklenecekYer), {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + S.token, 'Content-Type': dosya.type },
-    body: dosya
+  var kucult = resimKucultulebilir(dosya);
+  if (kucult) mesajGoster('osFotoMesaj', 'bilgi', 'Küçültülüyor…');
+  var not = '';
+  (kucult ? resimKucult(dosya) : Promise.resolve(null)).then(function (k) {
+    var govde = k ? k.dosya : dosya, tur = k ? k.tur : dosya.type;
+    not = kucultmeYazisi(k);
+    if (govde.size > 3 * 1024 * 1024) {
+      throw new Error(not ? 'Fotoğraf küçültülünce de 3 MB\'tan büyük (' + not + '). Daha küçük bir fotoğraf seç.'
+        : 'Fotoğraf 3 MB\'tan büyük. Telefonda küçültüp ya da ekran görüntüsünü alıp yeniden dene.');
+    }
+    mesajGoster('osFotoMesaj', 'bilgi', 'Yükleniyor...' + (not ? ' (' + not + ')' : ''));
+    return fetch('/api/okul-sayfa/foto?yer=' + encodeURIComponent(yer), {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + S.token, 'Content-Type': tur },
+      body: govde
+    });
   }).then(function (r) {
     return r.json()['catch'](function () { return {}; }).then(function (j) {
       if (!r.ok) throw new Error(j.error || ('Yüklenemedi (' + r.status + ')'));
@@ -290,7 +301,8 @@ function osDosyaSecildi() {
       OS.veri.fotolar = OS.veri.fotolar.filter(function (f) { return f.yer !== j.foto.yer; });
     }
     OS.veri.fotolar.push(j.foto);
-    $('osFotoMesaj').innerHTML = '';
+    if (not) mesajGoster('osFotoMesaj', 'iyi', 'Fotoğraf küçültülerek yüklendi (' + not + ').');
+    else $('osFotoMesaj').innerHTML = '';
     osFotolariCiz();
     osOnizlemeCiz();
     S.okulAdresi = null;   // giriş sayfası yenisini alsın

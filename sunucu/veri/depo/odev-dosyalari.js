@@ -36,12 +36,6 @@ const odevin = (odevId, ogrenciId) => sorgu(
   "WHERE d.odev_id = $2 AND ($3 = '' OR d.ogrenci_id = $3) ORDER BY k.ad_soyad, d.yuklenme",
   [yerelFark(), odevId, ogrenciId || '']);
 
-/* Okulun diskte tuttuğu toplam (okul kotası için). */
-async function okulToplami(okulId) {
-  return (await tek('SELECT COALESCE(sum(d.boyut), 0)::bigint AS n FROM odev_dosyalari d ' +
-    'JOIN odevler o ON o.id = d.odev_id WHERE o.okul_id = $1', [okulId])).n;
-}
-
 /* Dosya kaydı: öğrencinin ödev satırı kilitlenir, dosya sayısı ve toplam
    boyut aynı işlemde denetlenir (aynı anda gelen iki yükleme sınırı aşamaz).
    Dönen: 'tamam' | 'yok' (öğrenci ödevde değil) | 'sayi' | 'boyut' */
@@ -75,20 +69,6 @@ async function eskileriSil() {
     'RETURNING d.id', [yerelFark()])).map(r => r.id);
 }
 
-/* Okulun dosya alanı uyarısı (033): bu seviyedeki (80 ya da 100) uyarı daha
-   önce verilmediyse yazar ve true döner; verildiyse false (bildirim bir kez gider).
-   Aynı anda gelen iki yükleme ikisi birden bildirim göndermez. */
-async function uyariYaz(okulId, seviye) {
-  return !!(await tek('INSERT INTO okul_dosya_uyarilari (okul_id, seviye) VALUES ($1, $2) ' +
-    'ON CONFLICT (okul_id) DO UPDATE SET seviye = EXCLUDED.seviye, zaman = now() ' +
-    'WHERE okul_dosya_uyarilari.seviye < EXCLUDED.seviye RETURNING okul_id', [okulId, seviye]));
-}
+/* Okulun dosya alanı (disk sınırı, %80 ve "doldu" uyarısı): depo/okul-disk.js. */
 
-/* Kullanımı sinirin (bayt) altına inen okulların uyarısı silinir: alan yeniden
-   dolarsa uyarı yeniden gider. */
-async function uyarilariSifirla(sinir) {
-  await calistir('DELETE FROM okul_dosya_uyarilari u WHERE (SELECT COALESCE(sum(d.boyut), 0) FROM odev_dosyalari d ' +
-    'JOIN odevler o ON o.id = d.odev_id WHERE o.okul_id = u.okul_id) < $1', [sinir]);
-}
-
-module.exports = { bul, odevin, okulToplami, ekle, sil, kayitlilar, eskileriSil, uyariYaz, uyarilariSifirla };
+module.exports = { bul, odevin, ekle, sil, kayitlilar, eskileriSil };

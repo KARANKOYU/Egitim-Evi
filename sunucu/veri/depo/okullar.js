@@ -11,10 +11,14 @@ async function bul(id) {
 }
 
 async function ekle(s) {
-  await sorgu('INSERT INTO okullar (id, meb_kodu, ad, il, ilce, tur, durum, olusturma, kisa_ad) ' +
-    'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-    [s.id, s.mebId || '', s.name, s.city, s.district || '', s.type || '', s.status, s.createdAt, s.kisaAd || null]);
+  await sorgu('INSERT INTO okullar (id, meb_kodu, ad, il, ilce, tur, durum, olusturma, kisa_ad, disk_siniri_mb) ' +
+    'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+    [s.id, s.mebId || '', s.name, s.city, s.district || '', s.type || '', s.status, s.createdAt, s.kisaAd || null,
+      s.diskSiniriMb || null]);
 }
+
+/* Okulun disk sınırı (MB; null: site ayarındaki varsayılan; şema 035). */
+const diskSiniriYaz = (id, mb) => calistir('UPDATE okullar SET disk_siniri_mb = $2 WHERE id = $1', [id, mb === null ? null : mb]);
 
 async function durumYaz(id, durum) {
   await calistir('UPDATE okullar SET durum = $1 WHERE id = $2', [durum, id]);
@@ -118,7 +122,7 @@ async function yilAktifYap(okulId, id) {
 }
 
 module.exports = {
-  bul, ekle, durumYaz, cakisan, kayitIcin, genelBakis,
+  bul, ekle, diskSiniriYaz, durumYaz, cakisan, kayitIcin, genelBakis,
   kisaAdla, kisaAdVarMi, kisaAdYaz, kisaAdsizlar, adresliOkullar, adresListesi, mudurKimlikleri, konumYaz, servisSaatleriYaz,
   yillari, yilBul, yilEkle, yilAktifYap
 };

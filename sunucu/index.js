@@ -199,12 +199,20 @@ require('./push').baslat();
 
 /* Ödev teslim dosyaları silinme anında (son teslim + 7 gün; depo/odev-dosyalari.js
    SILINME), mesaj ve ödev ekleri yüklendikten 7 gün sonra silinir; artıklar da
-   temizlenir: açılıştan sonra ve saatte bir. */
+   temizlenir: açılıştan sonra ve saatte bir. Temizlikten sonra okulların dosya
+   alanı mutabakatı: kayıtlar diskteki dosyalarla karşılaştırılır, sahipsiz
+   dosyalar raporlanır, %80 uyarısı yeniden kurulur (bolumler/okul-disk.js). */
 const { dosyaSupur } = require('./bolumler/odev-dosya');
 const { ekSupur } = require('./bolumler/ekler');
-const supurSayaci = setInterval(() => { dosyaSupur().catch(() => {}); ekSupur().catch(() => {}); }, 60 * 60 * 1000);
+const { mutabakat: diskMutabakati } = require('./bolumler/okul-disk');
+function dosyaTemizligi() {
+  Promise.allSettled([dosyaSupur(), ekSupur()])
+    .then(() => diskMutabakati())
+    .catch(e => console.error('Dosya mutabakatı:', e.message));
+}
+const supurSayaci = setInterval(dosyaTemizligi, 60 * 60 * 1000);
 if (supurSayaci.unref) supurSayaci.unref();
-setTimeout(() => { dosyaSupur().catch(() => {}); ekSupur().catch(() => {}); }, 60 * 1000);
+setTimeout(dosyaTemizligi, 60 * 1000);
 
 /* Okul sayfası fotoğraflarının artıkları: aynı düzenle. */
 const { fotoSupur } = require('./bolumler/okul-sayfasi');

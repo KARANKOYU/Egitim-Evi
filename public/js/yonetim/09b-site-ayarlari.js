@@ -1,7 +1,7 @@
 /* Yönetim paneli > Site Ayarları: herkese görünen iletişim bilgileri,
    yapımcılar, Play Store bağlantısı, zamanlamalar (bildirim yoklama aralığı,
-   çevrimiçi sayma süresi, admins.json okuma aralığı) ve okulların giriş
-   adresleri.
+   çevrimiçi sayma süresi, admins.json okuma aralığı), varsayılan okul disk
+   sınırı ve okulların giriş adresleri.
 
    Bir ayarın değeri üç yerden birinden gelir: panelden kaydedilen
    (veritabanı), sunucudaki data/config.yml ya da varsayılan (yapımcılarda
@@ -12,7 +12,8 @@
 
 var SA = { veri: null, yapimcilar: [], okullar: [], siteAdresi: '' };
 
-var SA_KAYNAK = { veritabani: 'Panelden kaydedildi', config: 'data/config.yml', dosya: 'yapimcilar.json', varsayilan: 'Varsayılan' };
+var SA_KAYNAK = { veritabani: 'Panelden kaydedildi', config: 'data/config.yml', dosya: 'yapimcilar.json',
+  ortam: 'EE_OKUL_DOSYA_GB ortam değişkeni', varsayilan: 'Varsayılan' };
 
 var SA_ARALIK = [
   { k: 'bildirimAralikDk', id: 'saBildirim', ad: 'Bildirim yoklama aralığı',
@@ -26,7 +27,7 @@ var SA_ARALIK = [
 
 /* Sunucunun hata cevabındaki alan -> kutu (yapımcı satırları ayrıca). */
 var SA_ALAN = { eposta: 'saEposta', telefon: 'saTelefon', playStore: 'saPlay',
-  bildirimAralikDk: 'saBildirim', cevrimiciDk: 'saCevrimici', adminsAralikDk: 'saAdmins' };
+  bildirimAralikDk: 'saBildirim', cevrimiciDk: 'saCevrimici', adminsAralikDk: 'saAdmins', okulDiskMb: 'saDiskDeger' };
 
 /* Sunucudaki kuralların aynısı (sunucu/site.js). */
 var SA_EPOSTA = /^[!#-&(-;=?A-~]{1,64}@[!#-&(-;=?A-~]{1,190}\.[a-z]{2,}$/i;
@@ -50,7 +51,8 @@ function saAralik(anahtar) {
 function saMesajYeri(anahtar) {
   var t = saAralik(anahtar);
   if (t) return t.id + 'Mesaj';
-  return { iletisim: 'saIletisimMesaj', yapimcilar: 'saYapimciMesaj', playStore: 'saPlayMesaj' }[anahtar] || 'saIletisimMesaj';
+  return { iletisim: 'saIletisimMesaj', yapimcilar: 'saYapimciMesaj', playStore: 'saPlayMesaj', okulDiskMb: 'saDiskMesaj' }[anahtar] ||
+    'saIletisimMesaj';
 }
 
 SAYFALAR['site-ayarlari'] = function () {
@@ -63,7 +65,7 @@ SAYFALAR['site-ayarlari'] = function () {
       'sunucuyu yeniden başlatmak gerekmez.') +
       '<div class="msg bilgi">Panelden kaydedilmemiş bir ayar sunucudaki <b>data/config.yml</b> dosyasından, orada da yoksa ' +
       'varsayılandan gelir. Her kartta değerin nereden geldiği yazar.</div>' +
-      saIletisimKarti() + saYapimciKarti() + saPlayKarti() + saAralikKarti() + saOkulKarti());
+      saIletisimKarti() + saYapimciKarti() + saPlayKarti() + saAralikKarti() + saDiskKarti() + saOkulKarti());
   });
 };
 
@@ -237,6 +239,23 @@ function saAralikKarti() {
   return h + '</div>';
 }
 
+/* ---------------- varsayılan okul disk sınırı ---------------- */
+function saDiskKarti() {
+  var a = SA.veri.ayarlar.okulDiskMb;
+  return '<div class="kart ayar-kart" id="saKartDisk"><h3>' + ik('kutu') + 'Varsayılan okul disk sınırı</h3>' +
+    '<p class="hint kart-aciklama">Okulun dosyaları (ödev teslim dosyaları, ekler, okul sayfası fotoğrafları) okulun disk sınırına ' +
+    'sayılır. Okul açılırken ve <b>Okullar</b> listesinde her okula ayrı sınır verilebilir; ayrı sınırı olmayan okullar bu değeri ' +
+    'kullanır. Sınır küçülürse var olan dosyalar silinmez, yalnız yeni yükleme durur.</p>' +
+    saKaynak(a) +
+    diskSiniriAlani('saDisk', a.deger, null, 'Sınır', true) +
+    '<div class="hint">1 MB ile 10 TB arası; kodun varsayılanı ' + esc(diskYaz(a.varsayilan * OKUL_DISK_MB)) + '. Panelden kaydedilmediyse ' +
+    'sunucudaki EE_OKUL_DOSYA_GB ortam değişkeni (verilmişse) geçerlidir.</div>' +
+    saDugmeler('okulDiskMb', a) +
+    '<div class="dugme-satir"><span class="hint">Her okulun sınırı, doluluğu ve diskteki boş yer:</span>' +
+    '<button type="button" class="btn kucuk ghost" data-nav="okullar">Okullar</button></div>' +
+    '<div id="saDiskMesaj"></div></div>';
+}
+
 /* ---------------- kaydet / varsayılana dön ---------------- */
 /* Kartın kutularından ayarın değeri. Sorun varsa kutunun altına yazılır
    (kart .hatali taşır). Yapımcılarda { liste, sira }: sira[k] gönderilen
@@ -280,6 +299,10 @@ function saDegerOku(anahtar) {
     }
     return { liste: liste, sira: sira };
   }
+  if (anahtar === 'okulDiskMb') {
+    var mb = diskSiniriOku('saDisk');
+    return mb === null ? 0 : mb;
+  }
   var t = saAralik(anahtar), a = SA.veri.ayarlar[anahtar];
   var v = $(t.id).value.trim();
   if (!/^\d{1,4}$/.test(v) || Number(v) < a.en || Number(v) > a.cok) {
@@ -307,7 +330,9 @@ EYLEMLER['sa-sifirla'] = function (el) {
   var anahtar = el.getAttribute('data-anahtar');
   if (!confirm(anahtar === 'yapimcilar'
     ? 'Panelden kaydedilen yapımcı listesi silinsin mi?\n\nListe depodaki yapimcilar.json dosyasından gelir.'
-    : 'Panelden kaydedilen değer silinsin mi?\n\nAyar sunucudaki data/config.yml dosyasındaki değere, orada da yoksa varsayılana döner.')) return;
+    : anahtar === 'okulDiskMb'
+      ? 'Panelden kaydedilen varsayılan okul disk sınırı silinsin mi?\n\nSunucuda EE_OKUL_DOSYA_GB verilmişse o, verilmemişse 5 GB geçerli olur.'
+      : 'Panelden kaydedilen değer silinsin mi?\n\nAyar sunucudaki data/config.yml dosyasındaki değere, orada da yoksa varsayılana döner.')) return;
   dugmeBekle(el, 'Siliniyor...');
   return api('/admin/site-ayarlari', 'POST', { anahtar: anahtar, sifirla: true }).then(function (d) {
     saSonuc(anahtar, d);
@@ -330,6 +355,8 @@ function saSonuc(anahtar, d) {
     yapimcilariCiz(yeni.deger || []);
   } else if (anahtar === 'playStore') {
     saKartDegistir('saKartPlay', saPlayKarti());
+  } else if (anahtar === 'okulDiskMb') {
+    saKartDegistir('saKartDisk', saDiskKarti());
   } else {
     /* Aralık kartı bütünüyle çizilir (çevrimiçi uyarısı yoklama aralığına
        bağlı); öbür kutulara yazılıp kaydedilmemiş sayılar kalır. */

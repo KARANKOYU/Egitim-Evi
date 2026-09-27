@@ -211,7 +211,8 @@ const cerezAl = r => {
   const app = (await ham('/js/app.js', 'GET', {})).govde.toString();
   const yonetimKlasoru = path.join(__dirname, '..', 'public', 'js', 'yonetim');
   if (fs.existsSync(yonetimKlasoru)) {
-    const yasakli = ['/admin', 'yorumlar/hepsi', 'yorumlar/gizle', 'backup-restore', 'site-ayarlari', 'yonetici-dosyasi', 'okul-adresleri']
+    const yasakli = ['/admin', 'yorumlar/hepsi', 'yorumlar/gizle', 'backup-restore', 'site-ayarlari', 'yonetici-dosyasi', 'okul-adresleri',
+      'okul-disk-siniri']
       .filter(x => app.indexOf(x) >= 0);
     kontrol('app.js\'te yönetim ucu ve /admin adresi yok', !yasakli.length, yasakli.join(', '));
     kontrol('yönetim kodu /admin/yonetim.js\'te', js.govde.toString().indexOf('/admin/') >= 0);
@@ -273,7 +274,7 @@ const cerezAl = r => {
   };
   const uclar = [['GET', '/api/admin/overview'], ['GET', '/api/admin/site-ayarlari'], ['POST', '/api/admin/site-ayarlari'],
     ['GET', '/api/admin/yonetici-dosyasi'], ['POST', '/api/admin/yonetici-dosyasi/oku'], ['POST', '/api/admin/okul-adres'],
-    ['GET', '/api/admin/okul-adresleri'], ['POST', '/api/admin/backup-restore'], ['GET', '/api/admin/olmayan-alt-uc'],
+    ['GET', '/api/admin/okul-adresleri'], ['POST', '/api/admin/backup-restore'], ['POST', '/api/admin/okul-disk-siniri'], ['GET', '/api/admin/olmayan-alt-uc'],
     ['GET', '/api/yorumlar/hepsi'], ['POST', '/api/yorumlar/gizle'], ['GET', '/api/admin']];
   const ayrilan = [];
   for (const kisi of Object.keys(kisiler)) {

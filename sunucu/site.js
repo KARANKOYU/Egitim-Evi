@@ -22,6 +22,10 @@
      cevrimiciDk       "şu an açık" sayma süresi (1-60, varsayılan 5); yoklama
                        aralığından kısa olamaz: en az yoklama aralığı + 1 dk kullanılır
      adminsAralikDk    data/admins.json dosyasına bakma aralığı (1-60, varsayılan 1)
+     okulDiskMb        varsayılan okul disk sınırı (MB, 1 MB - 10 TB): özel sınırı olmayan
+                       okullar bunu kullanır (sunucu/bolumler/okul-disk.js). config.yml'de
+                       yoktur; panelden kaydedilmediyse EE_OKUL_DOSYA_GB ortam değişkeni
+                       (GB, ör. 20 ya da 0.5), o da yoksa 5 GB
 
    Ayar değişince sunucu yeniden başlamadan geçerli olur (bellekteki önbellek
    güncellenir; tek süreçli sunucu varsayılır).
@@ -54,6 +58,8 @@ const ARALIKLAR = {
   cevrimiciDk: { en: 1, cok: 60, varsayilan: 5, config: 'cevrimici_dk' },
   adminsAralikDk: { en: 1, cok: 60, varsayilan: 1, config: 'admins_dk' }
 };
+/* Varsayılan okul disk sınırı (MB). */
+const OKUL_DISK = { en: 1, cok: 10485760, varsayilan: 5120 };
 const YAPIMCI_EN_COK = 50;
 const YAPIMCI_AD_EN_COK = 60;
 const YAPIMCI_KATKI_EN_COK = 80;
@@ -110,6 +116,19 @@ function aralikTemizle(anahtar, v) {
   const t = ARALIKLAR[anahtar];
   const n = typeof v === 'number' ? v : (/^\s*\d{1,4}\s*$/.test(String(v == null ? '' : v)) ? Number(v) : NaN);
   return Number.isInteger(n) && n >= t.en && n <= t.cok ? n : null;
+}
+
+/* Okul disk sınırı (MB): tam sayı ve sınır içindeyse sayı, değilse null. */
+function okulDiskTemizle(v) {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && /^\s*\d{1,8}\s*$/.test(v) ? Number(v) : NaN;
+  return Number.isInteger(n) && n >= OKUL_DISK.en && n <= OKUL_DISK.cok ? n : null;
+}
+
+/* EE_OKUL_DOSYA_GB ortam değişkeni (GB; ör. 20 ya da 0.001) MB olarak; yoksa ya da bozuksa null. */
+function ortamOkulDiskMb() {
+  const gb = Number(process.env.EE_OKUL_DOSYA_GB);
+  if (!(gb > 0) || !isFinite(gb)) return null;
+  return Math.min(OKUL_DISK.cok, Math.max(OKUL_DISK.en, Math.round(gb * 1024)));
 }
 
 let config = { iletisim: { eposta: '', telefon: '' }, playStore: '', araliklar: {}, iletisimVar: false, playStoreVar: false };
@@ -179,9 +198,9 @@ function yapimcilariGuncel() {
 /* ---------------- site ayarları: veritabanı > config.yml > varsayılan ----------------
    ayarKaynakli(anahtar) -> { deger, kaynak, guncelleyen, zaman }
      kaynak: 'veritabani' (yöneticinin kaydettiği), 'config' (data/config.yml),
-             'dosya' (yapimcilar.json), 'varsayilan'
+             'dosya' (yapimcilar.json), 'ortam' (EE_OKUL_DOSYA_GB), 'varsayilan'
    ayar(anahtar)         -> yalnız değer */
-const AYAR_ANAHTARLARI = ['iletisim', 'yapimcilar', 'playStore'].concat(Object.keys(ARALIKLAR));
+const AYAR_ANAHTARLARI = ['iletisim', 'yapimcilar', 'playStore'].concat(Object.keys(ARALIKLAR), ['okulDiskMb']);
 
 function ayarKaynakli(anahtar) {
   const db = depo.siteAyarlari.oku(anahtar);
@@ -198,6 +217,13 @@ function ayarKaynakli(anahtar) {
   if (anahtar === 'yapimcilar') {
     if (db && Array.isArray(db.deger)) return dbden(yapimcilariTemizle(db.deger));
     return { deger: yapimcilariGuncel(), kaynak: 'dosya', guncelleyen: '', zaman: null };
+  }
+  if (anahtar === 'okulDiskMb') {
+    const n = db ? okulDiskTemizle(db.deger) : null;
+    if (n !== null) return dbden(n);
+    const ortam = ortamOkulDiskMb();
+    if (ortam !== null) return { deger: ortam, kaynak: 'ortam', guncelleyen: '', zaman: null };
+    return { deger: OKUL_DISK.varsayilan, kaynak: 'varsayilan', guncelleyen: '', zaman: null };
   }
   if (ARALIKLAR[anahtar]) {
     const n = db ? aralikTemizle(anahtar, db.deger) : null;
@@ -289,6 +315,6 @@ function iletisimVarMi() {
 
 module.exports = {
   uclar, goruldu, acikSayisi, yamlOku, iletisimVarMi,
-  ARALIKLAR, AYAR_ANAHTARLARI, EPOSTA, PLAY_STORE, GITHUB_ADI, YAPIMCI_EN_COK, YAPIMCI_AD_EN_COK, YAPIMCI_KATKI_EN_COK,
+  ARALIKLAR, AYAR_ANAHTARLARI, OKUL_DISK, okulDiskTemizle, EPOSTA, PLAY_STORE, GITHUB_ADI, YAPIMCI_EN_COK, YAPIMCI_AD_EN_COK, YAPIMCI_KATKI_EN_COK,
   ayar, ayarKaynakli, cevrimiciEtkinDk, istemciAyarlari, configGuncel
 };

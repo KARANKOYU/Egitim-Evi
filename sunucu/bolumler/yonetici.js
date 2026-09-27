@@ -1,7 +1,7 @@
 'use strict';
 /* Sistem yöneticisi uçları (/api/admin).
-   Okul açma ve kişi koduyla kişi bulma (yonetici-okul.js), müdürler, okullar,
-   yedek alma ve geri yükleme, site ayarları ve okul adresleri
+   Okul açma ve kişi koduyla kişi bulma (yonetici-okul.js), müdürler, okullar
+   ve disk sınırları (okul-disk.js), yedek alma ve geri yükleme, site ayarları ve okul adresleri
    (site-ayarlari.js), yönetici dosyası (data/admins.json). Müdür başvurusu
    yoktur: okulu yönetici açar. Yönetici olmayan bu uçları hiç göremez: api.js
    ona bilinmeyen adresle aynı 404'ü verir. */
@@ -16,6 +16,7 @@ const {
 } = require('../veri');
 const { islemYaz } = require('./islem-kaydi');
 const { kisiBul, okulAc } = require('./yonetici-okul');
+const okulDisk = require('./okul-disk');
 const siteAyarlari = require('./site-ayarlari');
 const yoneticiDosyasi = require('../yonetici-dosyasi');
 const site = require('../site');
@@ -32,6 +33,8 @@ async function uclar(k) {
     /* Yönetici okulu açar ve kişiyi kişi koduyla müdür yapar (yonetici-okul.js). */
     if (sub === 'okul-ac' && method === 'POST') return okulAc(req, res, me, body);
     if (sub === 'kisi-bul' && method === 'POST') return kisiBul(req, res, me, body);
+    /* Okulun disk sınırı: MB ya da null (varsayılan); işlem kaydına yazılır (okul-disk.js). */
+    if (sub === 'okul-disk-siniri' && method === 'POST') return okulDisk.siniriDegistir(req, res, me, body);
 
     /* ---------- site ayarları ve okul adresleri (site-ayarlari.js) ---------- */
     if (sub === 'site-ayarlari' && !segs[3]) {
@@ -147,8 +150,11 @@ async function uclar(k) {
       return ok(res, { silinen: u.fullName, okul: u._okulAdi || '' });
     }
 
+    /* Okullar ekranı: her okulun sayıları ve dosya alanı (doluluk, sınır, dağılım,
+       öneri), sistem geneli (okullara ayrılan, diskteki boş yer, veritabanı, mutabakat). */
     if (sub === 'overview' && method === 'GET') {
-      const [sayi, okullar] = await Promise.all([depo.kullanicilar.sayimlar(), depo.okullar.genelBakis()]);
+      const [sayi, okullar, disk] = await Promise.all([depo.kullanicilar.sayimlar(), depo.okullar.genelBakis(),
+        depo.okulDisk.hepsi()]);
       return ok(res, {
         stats: {
           okul: sayi.okul, mudur: sayi.mudur, ogretmen: sayi.ogretmen,
@@ -158,8 +164,11 @@ async function uclar(k) {
           id: s.id, name: s.name, city: s.city, district: s.district, status: s.status,
           principal: s._mudur || '-',
           students: s._ogrenci,
-          teachers: s._ogretmen
-        }))
+          teachers: s._ogretmen,
+          disk: Object.assign(okulDisk.gorunum(disk.get(s.id) || { kullanilan: 0, siniriMb: s.diskSiniriMb,
+            dagilim: { teslim: 0, ek: 0, foto: 0 } }), { oneriMb: okulDisk.oneriMb(s._ogrenci) })
+        })),
+        disk: await okulDisk.sistem(disk)
       });
     }
   }

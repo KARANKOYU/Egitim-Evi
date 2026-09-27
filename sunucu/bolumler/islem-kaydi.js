@@ -67,7 +67,9 @@ const ISLEM_AD = {
   'site.yapimcilar': 'Yapımcılar listesi değişti',
   'site.playstore': 'Play Store bağlantısı değişti',
   'site.aralik': 'Site aralık ayarı değişti',
-  'okul.adres-yonetici': 'Okulun adresi yönetici tarafından değişti'
+  'site.okul-disk-siniri': 'Varsayılan okul disk sınırı değişti',
+  'okul.adres-yonetici': 'Okulun adresi yönetici tarafından değişti',
+  'okul.disk-siniri': 'Okulun disk sınırı değişti'
 };
 
 /* Kayıt yazılamazsa asıl işlem bozulmasın: hata yalnızca günlüğe düşer. */

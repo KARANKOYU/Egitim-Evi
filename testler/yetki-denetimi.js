@@ -89,6 +89,9 @@ function bekleniyor(ad, cevap, izinliMi) {
   const denSv = await iste('/api/servis/kaydet', 'POST', { ad: 'Denetim yoklama servisi' }, M);
   if (denSv.body.id) await iste('/api/servis/ogrenci', 'POST', { servisId: denSv.body.id, ogrenciId: o1.id }, M);
 
+  /* Okulun disk sınırı ucu için okulun kimliği (yönetici genel bakışından). */
+  const denOkulId = (((await iste('/api/admin/overview', 'GET', null, A)).body.schools || [])[0] || {}).id || 'yok';
+
   /* uc: [ad, yol, method, govde, izinliRoller] */
   const UCLAR = [
     /* --- okul yonetimi: sadece mudur --- */
@@ -118,6 +121,7 @@ function bekleniyor(ad, cevap, izinliMi) {
     ['yedek listesi', '/api/admin/backups', 'GET', null, ['admin']],
     ['yedek al', '/api/admin/backup-now', 'POST', {}, ['admin']],
     ['yonetici genel bakis', '/api/admin/overview', 'GET', null, ['admin']],
+    ['okulun disk siniri', '/api/admin/okul-disk-siniri', 'POST', { okulId: denOkulId, mb: null }, ['admin']],
     ['mudur listesi (yonetici)', '/api/admin/principals', 'GET', null, ['admin']],
     ['site ayarlari', '/api/admin/site-ayarlari', 'GET', null, ['admin']],
     ['site ayari kaydet', '/api/admin/site-ayarlari', 'POST', { anahtar: 'bildirimAralikDk', deger: 5 }, ['admin']],

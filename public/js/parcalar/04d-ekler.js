@@ -4,7 +4,9 @@
    çok dosya olur. Her dosya seçilir seçilmez yüklenir (taslak); mesaj
    gönderilince ya da ödev kaydedilince ona bağlanır. Eklerin toplamı en
    fazla 50 MB (alanın altında "32 / 50 MB" doluluk çubuğu); dosyalar 7 gün
-   sonra silinir. Sunucu: sunucu/bolumler/ekler.js
+   sonra silinir. Büyük fotoğraf yüklenmeden önce küçültülür (04f-resim-kucult.js):
+   satırda önce "Küçültülüyor…", sonra "8,4 MB → 620 KB"; yer denetimi küçülmüş
+   boyutla yapılır. Sunucu: sunucu/bolumler/ekler.js
 
    Kullanım:
      ekAlani('mesaj', 'mesaj')            HTML
@@ -63,7 +65,7 @@ function ekAlani(kimlik, tur, mevcut) {
   return '<div class="ek-alan" id="ekAlan-' + kimlik + '">' +
     '<label class="ek-birak" for="ekDosya-' + kimlik + '">' + ik('ek') +
     '<span><b>Dosya ekle</b>: buraya sürükle ya da basıp seç</span>' +
-    '<small>Birden çok dosya olur. Toplam en fazla 50 MB; dosyalar 7 gün sonra silinir.</small></label>' +
+    '<small>Birden çok dosya olur. Toplam en fazla 50 MB; dosyalar 7 gün sonra silinir. Büyük fotoğraflar küçültülerek yüklenir.</small></label>' +
     '<input type="file" id="ekDosya-' + kimlik + '" multiple hidden>' +
     '<div id="ekDoluluk-' + kimlik + '"></div>' +
     '<ul class="ek-liste" id="ekListe-' + kimlik + '"></ul></div>';
@@ -84,8 +86,17 @@ function ekAlaniKur(kimlik) {
   ekListesiCiz(kimlik);
 }
 
+/* Yüklenen ve yüklenmekte olanlar sayılır; hatalılar ve küçültülmekte olanlar
+   (boyutları henüz belli değil) sayılmaz. */
 function ekToplam(kimlik) {
-  return EKLER[kimlik].dosyalar.reduce(function (t, d) { return t + (d.durum === 'hata' ? 0 : d.boyut); }, 0);
+  return EKLER[kimlik].dosyalar.reduce(function (t, d) {
+    return t + (d.durum === 'hata' || d.durum === 'kucultuluyor' ? 0 : d.boyut);
+  }, 0);
+}
+
+function ekSigmiyor(kimlik, boyut) {
+  var kalan = EK_SINIR - ekToplam(kimlik);
+  return boyut > kalan ? (kalan > 0 ? 'Sığmıyor: ' + boyutYazi(kalan) + ' boş yer kaldı.' : 'Dosya alanın doldu.') : '';
 }
 
 function ekDosyalariEkle(kimlik, liste) {
@@ -93,22 +104,39 @@ function ekDosyalariEkle(kimlik, liste) {
   for (var i = 0; liste && i < liste.length; i++) {
     var f = liste[i];
     var n = f.name.lastIndexOf('.'), u = n > 0 ? f.name.slice(n + 1).toLowerCase() : '';
-    var kalan = EK_SINIR - ekToplam(kimlik);
+    /* Büyük fotoğrafın yer denetimi küçültüldükten sonra yapılır. */
+    var kucult = EK_UZANTILAR.indexOf(u) >= 0 && resimKucultulebilir(f);
     var sorun = !f.size ? 'Boş dosya.' : EK_UZANTILAR.indexOf(u) < 0 ? 'Bu dosya türü eklenemez.'
-      : f.size > kalan ? (kalan > 0 ? 'Sığmıyor: ' + boyutYazi(kalan) + ' boş yer kaldı.' : 'Dosya alanın doldu.') : '';
-    var d = { ad: f.name, boyut: f.size, durum: sorun ? 'hata' : 'yukleniyor', hata: sorun, yuzde: 0 };
+      : kucult ? '' : ekSigmiyor(kimlik, f.size);
+    var d = { ad: f.name, boyut: f.size, durum: sorun ? 'hata' : kucult ? 'kucultuluyor' : 'yukleniyor', hata: sorun, yuzde: 0 };
     s.dosyalar.push(d);
-    if (!sorun) ekYukle(kimlik, d, f);
+    if (kucult) ekKucultYukle(kimlik, d, f);
+    else if (!sorun) ekYukle(kimlik, d, f, f.name);
   }
   ekListesiCiz(kimlik);
 }
 
-function ekYukle(kimlik, d, dosya) {
+function ekKucultYukle(kimlik, d, f) {
+  resimKucult(f).then(function (k) {
+    /* Bu arada kaldırıldıysa ya da pencere kapanıp yeniden açıldıysa yüklenmez. */
+    if (d.kaldirildi || !EKLER[kimlik] || EKLER[kimlik].dosyalar.indexOf(d) < 0) return;
+    var sorun = ekSigmiyor(kimlik, k.sonra);   // d henüz toplamda sayılmıyor
+    d.ad = k.ad;
+    d.boyut = k.sonra;
+    d.kucultme = kucultmeYazisi(k);
+    d.durum = sorun ? 'hata' : 'yukleniyor';
+    d.hata = sorun;
+    if (!sorun) ekYukle(kimlik, d, k.dosya, k.ad);
+    ekListesiCiz(kimlik);
+  });
+}
+
+function ekYukle(kimlik, d, dosya, ad) {
   var xhr = new XMLHttpRequest();
   d.xhr = xhr;
   xhr.open('POST', '/api/ek/yukle?tur=' + encodeURIComponent(EKLER[kimlik].tur));
   if (S.token) xhr.setRequestHeader('Authorization', 'Bearer ' + S.token);
-  xhr.setRequestHeader('X-Dosya-Adi', encodeURIComponent(dosya.name));
+  xhr.setRequestHeader('X-Dosya-Adi', encodeURIComponent(ad));
   xhr.upload.onprogress = function (e) {
     if (!e.lengthComputable) return;
     d.yuzde = Math.round(e.loaded / e.total * 100);
@@ -141,8 +169,9 @@ function ekListesiCiz(kimlik) {
   }
   kap.innerHTML = s.dosyalar.map(function (d, i) {
     return '<li class="ek-satir' + (d.durum === 'hata' ? ' hatali' : '') + '">' + ik('belge') +
-      '<span class="ek-ad"><b>' + esc(d.ad) + '</b><small>' + boyutYazi(d.boyut) +
-      (d.durum === 'yukleniyor' ? ' · yükleniyor' : d.durum === 'hata' ? ' · ' + esc(d.hata) : d.mevcut ? '' : ' · yüklendi') + '</small>' +
+      '<span class="ek-ad"><b>' + esc(d.ad) + '</b><small>' +
+      (d.durum === 'kucultuluyor' ? 'Küçültülüyor…' : (d.kucultme || boyutYazi(d.boyut)) +
+        (d.durum === 'yukleniyor' ? ' · yükleniyor' : d.durum === 'hata' ? ' · ' + esc(d.hata) : d.mevcut ? '' : ' · yüklendi')) + '</small>' +
       (d.durum === 'yukleniyor' ? '<span class="ek-cubuk"><i data-ek-yuzde="' + kimlik + '-' + i + '" style="width:' + (d.yuzde || 0) + '%"></i></span>' : '') +
       '</span><button type="button" class="btn kucuk gri" data-act="ek-kaldir" data-alan="' + kimlik + '" data-id="' + i + '" ' +
       'aria-label="' + esc(d.ad) + ' dosyasını kaldır">Kaldır</button></li>';
@@ -153,6 +182,7 @@ EYLEMLER['ek-kaldir'] = function (el, sira) {
   var kimlik = el.getAttribute('data-alan'), s = EKLER[kimlik];
   var d = s && s.dosyalar[Number(sira)];
   if (!d) return;
+  d.kaldirildi = true;   // küçültülüyorsa bitince yüklenmesin
   if (d.xhr) d.xhr.abort();
   if (d.mevcut) s.silinecek.push(d.id);
   else if (d.id) api('/ek/sil', 'POST', { id: d.id })['catch'](function () { /* taslak zaten 6 saatte silinir */ });
@@ -166,7 +196,7 @@ function ekIdleri(kimlik) {
 }
 function ekSilinecekler(kimlik) { return EKLER[kimlik] ? EKLER[kimlik].silinecek.slice() : []; }
 function ekYukleniyor(kimlik) {
-  return !!EKLER[kimlik] && EKLER[kimlik].dosyalar.some(function (d) { return d.durum === 'yukleniyor'; });
+  return !!EKLER[kimlik] && EKLER[kimlik].dosyalar.some(function (d) { return d.durum === 'yukleniyor' || d.durum === 'kucultuluyor'; });
 }
 
 /* Okuma tarafı: mesajın ya da ödevin ekleri, indirme düğmesiyle.

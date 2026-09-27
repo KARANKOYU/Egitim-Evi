@@ -223,7 +223,7 @@ const KOTU = [
   let ayar500 = '';
   /* Oturum başına dakikada 300 istek sınırı var: gerçek anahtarlar bütün kötü değerlerle,
      kötü anahtarlar tek değerle (~200 istek). */
-  const ayarAnahtarlari = ['iletisim', 'yapimcilar', 'playStore', 'bildirimAralikDk', 'cevrimiciDk', 'adminsAralikDk', 'yok'];
+  const ayarAnahtarlari = ['iletisim', 'yapimcilar', 'playStore', 'bildirimAralikDk', 'cevrimiciDk', 'adminsAralikDk', 'okulDiskMb', 'yok'];
   const ayarDegerleri = KOTU.concat([{ eposta: KOTU[7], telefon: KOTU[10] }, [{ ad: KOTU[8], github: KOTU[11], katki: KOTU[7] }],
     [null, 5, 'x'], { eposta: ['a'], telefon: { b: 1 } }]);
   const ayarDenemeleri = [];
@@ -234,7 +234,7 @@ const KOTU = [
     if (c.status >= 500) { ayar500 = JSON.stringify(govde).slice(0, 50) + ' -> ' + c.status; break; }
   }
   kontrol('site ayarlarina bozuk deger 500 dondurmuyor', !ayar500, ayar500);
-  for (const anahtar of ayarAnahtarlari.slice(0, 6)) await iste('/api/admin/site-ayarlari', 'POST', { anahtar, sifirla: true }, A);
+  for (const anahtar of ayarAnahtarlari.slice(0, 7)) await iste('/api/admin/site-ayarlari', 'POST', { anahtar, sifirla: true }, A);
   const siteSonra = await iste('/api/site');
   kontrol('bozuk denemelerden sonra /api/site saglam', siteSonra.status === 200 && Array.isArray(siteSonra.body.yapimcilar) &&
     typeof siteSonra.body.bildirimAralikDk === 'number', JSON.stringify(siteSonra.body).slice(0, 120));
@@ -244,6 +244,22 @@ const KOTU = [
     if (c.status >= 500 || c.status === 200) { adres500 = JSON.stringify(v).slice(0, 30) + ' -> ' + c.status; break; }
   }
   kontrol('okul adresi ucuna bozuk deger 500 ve 200 dondurmuyor', !adres500, adres500);
+  /* Okulun disk sınırı: bozuk okul ya da sınır 500 ve 200 döndürmez; okul açmada bozuk sınır da. */
+  const denOkul = (((await iste('/api/admin/overview', 'GET', null, A)).body.schools || [])[0] || {}).id || 'yok';
+  let disk500 = '';
+  for (const v of KOTU) {
+    const gecerli = v === null || (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 10485760);
+    const c1 = await iste('/api/admin/okul-disk-siniri', 'POST', { okulId: v, mb: 100 }, A);
+    const c2 = await iste('/api/admin/okul-disk-siniri', 'POST', { okulId: denOkul, mb: v }, A);
+    /* Kişi kodu boş: sınır denetiminden sonra kod aranmaz (yanlış kod sayacı dolmasın). */
+    const c3 = await iste('/api/admin/okul-ac', 'POST', { schoolName: 'Girdi Okulu', city: 'Ankara', district: 'Çankaya',
+      kisaAd: 'girdi-okulu', mudurKodu: '', diskMb: v }, A);
+    const kotu = [c1, c2, c3].find(c => c.status >= 500) || (c1.status === 200 ? c1 : null) ||
+      (c2.status === 200 && !gecerli ? c2 : null) || (c3.status === 200 ? c3 : null);
+    if (kotu) { disk500 = JSON.stringify(v === undefined ? 'undefined' : v).slice(0, 30) + ' -> ' + kotu.status; break; }
+  }
+  await iste('/api/admin/okul-disk-siniri', 'POST', { okulId: denOkul, mb: null }, A);
+  kontrol('okul disk siniri ucuna bozuk deger 500 ve 200 dondurmuyor', !disk500, disk500);
 
   console.log('=== 7) BUYUK GOVDE ===');
   let devDurum = 0, devHata = '';

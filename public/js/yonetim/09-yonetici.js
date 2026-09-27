@@ -125,14 +125,19 @@ EYLEMLER['mudur-sil'] = function (el, id) {
 
 SAYFALAR.okullar = function () {
   return api('/admin/overview').then(function (d) {
+    ADMIN_OKULLAR.liste = d.schools;
+    ADMIN_OKULLAR.disk = d.disk;
     var h = hero('KAYITLI OKULLAR', d.schools.length + ' okul kayıtlı.');
     h += '<div class="kart"><div class="satir" style="border:0;padding:0"><div class="buyu"><div class="ad">Okul aç</div>' +
-      '<div class="alt">Okulunu açtırmak isteyen kişi kişi kodunu sana verir. Okulu seç, adresini yaz, müdürü koduyla bul.</div></div>' +
+      '<div class="alt">Okulunu açtırmak isteyen kişi kişi kodunu sana verir. Okulu seç, adresini yaz, müdürü koduyla bul, ' +
+      'dosya alanını (disk sınırı) ver.</div></div>' +
       '<button class="btn" data-act="admin-okul-ac">Okul aç</button></div></div>';
+    /* Sistem geneli: okullara ayrılan, diskteki boş yer (09d-okul-disk.js). */
+    if (d.disk) h += okulDiskSistemKarti(d.disk);
     if (!d.schools.length) { yaz(h + bosKutu('okul', 'Henüz okul yok.')); return; }
-    h += '<div class="kart"><div class="tablo-sar"><table class="t"><thead><tr>' +
-      '<th>Okul</th><th>İl / İlçe</th><th>Müdür</th><th>Öğretmen</th><th>Öğrenci</th><th>Durum</th>' +
-      '</tr></thead><tbody>';
+    h += '<div class="kart"><div class="tablo-sar"><table class="t okul-tablo"><thead><tr>' +
+      '<th>Okul</th><th>İl / İlçe</th><th>Müdür</th><th>Öğretmen</th><th>Öğrenci</th><th>Dosya alanı</th><th>Durum</th>' +
+      '<th><span class="gizli-etiket">Düzenle</span></th></tr></thead><tbody>';
     for (var i = 0; i < d.schools.length; i++) {
       var s = d.schools[i];
       var dur = s.status === 'approved' ? '<span class="etiket yesil">Açık</span>'
@@ -140,7 +145,9 @@ SAYFALAR.okullar = function () {
           : '<span class="etiket kirmizi">Kapalı</span>';
       h += '<tr data-ara="' + esc(s.name + ' ' + s.city + ' ' + s.principal) + '"><td><b>' + esc(s.name) + '</b></td><td>' +
         esc(s.city) + ' / ' + esc(s.district) + '</td><td>' + esc(s.principal) + '</td><td>' +
-        s.teachers + '</td><td>' + s.students + '</td><td>' + dur + '</td></tr>';
+        esc(s.teachers) + '</td><td>' + esc(s.students) + '</td><td class="disk-hucre">' + okulDiskHucresi(s) + '</td><td>' + dur + '</td>' +
+        '<td><button class="btn kucuk ghost" data-act="okul-ekrani" data-id="' + esc(s.id) + '" ' +
+        'aria-label="' + esc(s.name) + ' okulunu düzenle">Düzenle</button></td></tr>';
     }
     yaz(h + '</tbody></table></div></div>' +
       '<div class="dugme-satir yonetim-gecis"><span class="hint">Okulların giriş adreslerini Site Ayarları sayfasında değiştirebilirsin.</span>' +
@@ -153,7 +160,9 @@ SAYFALAR.okullar = function () {
    kişi kodunu yöneticiye verir. Yönetici kişiyi dışarıdan (telefon, e-posta)
    doğrular; okulu MEB listesinden seçer (ya da adını yazar), okulun adresini
    yazar, müdürün kişi kodunu girip "Bul" ile kime ait olduğuna bakar (tam ad,
-   maskeli e-posta). Okul açılınca kişi müdür olur; kodu yenilenir. */
+   maskeli e-posta) ve okulun dosya alanını (disk sınırı) verir: öneri öğrenci
+   sayısı × 10 MB, en az 2 GB; öğrenci sayısı yazılmazsa varsayılan
+   (09d-okul-disk.js). Okul açılınca kişi müdür olur; kodu yenilenir. */
 
 /* "Bul" ile bulunan kişinin kodu: okul yalnız bu kodla açılır. */
 var adminKisi = { kod: '' };
@@ -172,10 +181,28 @@ EYLEMLER['admin-okul-ac'] = function () {
     '<div class="rolsuz-satir">' + kisiKoduGirdisi('aoKod') +
     '<button class="btn" data-act="admin-kisi-bul">Bul</button></div></div>' +
     '<div id="aoKisi"></div>' +
+    '<hr class="ayrac-cizgi"><h4 class="alt-baslik">Dosya alanı</h4>' +
+    '<div class="hint" style="margin-bottom:10px">Okulun dosyaları (ödev teslim dosyaları, ekler, okul sayfası fotoğrafları) ' +
+    'bu sınıra sayılır; dolunca okulda yeni yükleme durur. Sonradan Okullar listesinde değiştirilir.</div>' +
+    '<div class="field"><label for="aoOgrenci">Öğrenci sayısı (yaklaşık)</label>' +
+    '<input type="number" id="aoOgrenci" min="0" max="100000" step="1" inputmode="numeric" autocomplete="off" ' +
+    'placeholder="Bilmiyorsan boş bırak"></div>' +
+    diskSiniriAlani('aoDisk', diskVarsayilanMb(), null) +
     '<div id="aoMesaj"></div></div>',
     '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
     '<button class="btn" data-act="admin-okul-ac-kaydet">Okulu aç</button>');
   okulSecimiKur();
+  /* Öğrenci sayısı yazıldıkça öneri güncellenir; sınır kutusu elle değiştirilmediyse öneriyi alır. */
+  var diskElle = false;
+  $('aoDiskDeger').addEventListener('input', function () { diskElle = true; });
+  $('aoDiskBirim').addEventListener('change', function () { diskElle = true; });
+  $('aoOgrenci').addEventListener('input', function () {
+    var n = /^\d{1,6}$/.test(this.value.trim()) ? Number(this.value.trim()) : 0;
+    $('aoDiskOneri').textContent = diskOneriYazisi(n || null);
+    var dugme = document.querySelector('[data-act="disk-oneri-kullan"][data-onek="aoDisk"]');
+    if (dugme) dugme.setAttribute('data-ogrenci', n ? String(n) : '');
+    if (!diskElle) diskSiniriYaz('aoDisk', diskOneriMb(n) || diskVarsayilanMb());
+  });
   $('aoKisa').addEventListener('focus', function () {
     if (this.value) return;
     var ad = seciliOkul ? seciliOkul.ad : $('bOkulAd').value;
@@ -223,6 +250,8 @@ EYLEMLER['admin-okul-ac-kaydet'] = function (el) {
   var sorun = kisiKoduDenetle(g.mudurKodu, 'Müdürün kişi kodu');
   if (sorun) alanHatasi('aoKod', sorun);
   else if (adminKisi.kod !== g.mudurKodu) alanHatasi('aoKod', 'Önce "Bul" ile kodun kime ait olduğuna bak.');
+  var disk = diskSiniriOku('aoDisk');
+  if (disk !== null) g.diskMb = disk;
   if (kart.querySelector('.hatali')) { ilkHatayaGit(kart); return; }
   dugmeBekle(el, 'Açılıyor...');
   return api('/admin/okul-ac', 'POST', g).then(function (d) {
@@ -233,13 +262,16 @@ EYLEMLER['admin-okul-ac-kaydet'] = function (el) {
     modalAc('Okul açıldı', '<div class="msg iyi">' + esc(d.message) + '</div>' +
       satir('Okulun adresi', location.host + okulYolu(d.okul.kisaAd), true) +
       satir('Müdür', d.mudur.ad + ' (' + d.mudur.kullaniciAdi + ')') +
+      satir('Disk sınırı', diskYaz((d.okul.diskSiniriMb || diskVarsayilanMb()) * OKUL_DISK_MB) +
+        (d.okul.diskSiniriMb ? '' : ' (varsayılan)')) +
       '<div class="hint">Müdüre bildirim gitti; okuluna sol üstteki menüden geçer.</div>',
       '<button class="btn" data-act="admin-okul-bitti">Tamam</button>');
   })['catch'](function (e) {
     dugmeBitir(el);
     var v = e.veri || {};
     /* Sunucunun söylediği alan (aynı adres, aynı okul, kişinin okulda zaten rolü var). */
-    var hedef = { okul: 'bOkulAra', il: 'bIl', ilce: 'bIlce', kisaAd: 'aoKisa', mudurKodu: 'aoKod', kod: 'aoKod' }[v.alan];
+    var hedef = { okul: 'bOkulAra', il: 'bIl', ilce: 'bIlce', kisaAd: 'aoKisa', mudurKodu: 'aoKod', kod: 'aoKod',
+      diskMb: 'aoDiskDeger' }[v.alan];
     if (v.alan === 'mudurKodu' || v.alan === 'kod') { adminKisi.kod = ''; $('aoKisi').innerHTML = ''; }
     if (hedef) { alanHatasi(hedef, e.message); ilkHatayaGit(kart); }
     else mesajGoster('aoMesaj', 'hata', e.message);

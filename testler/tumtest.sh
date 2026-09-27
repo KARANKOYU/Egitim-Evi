@@ -17,8 +17,9 @@ sunucu_durdur() {
 # Paketin sunucusuna ve kendisine verilen ek ortam değişkeni (yalnız o paket için).
 paket_ortami() {
   case "$1" in
-    # Okulun dosya alanı 1 MB: %80 uyarısı ve "doldu" küçük dosyalarla denenir.
-    test-odev-dosya) echo "EE_OKUL_DOSYA_GB=0.001" ;;
+    # Varsayılan okul disk sınırı ortam değişkeninden (1 MB): "ortam" kaynağı ve
+    # varsayılanla açılan okul küçük dosyalarla denenir.
+    test-okul-disk) echo "EE_OKUL_DOSYA_GB=0.001" ;;
   esac
 }
 
@@ -42,8 +43,9 @@ TOPLAM_KALDI=0
 echo ""
 echo "==================== TESTLER ===================="
 
-# Sunucu gerektirmeyen paketler: xlsx motoru, telefon bildirimi şifrelemesi, yorum atıcı, saat hesapları, quiz ayrıştırıcısı
-for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman test-servis-pencere test-vekil-ip test-uygulama-surum test-quiz-metin test-gizli-dosyalar; do
+# Sunucu gerektirmeyen paketler: xlsx motoru, telefon bildirimi şifrelemesi, yorum atıcı, saat hesapları, quiz ayrıştırıcısı,
+# tarayıcıda resim küçültme (başsız Edge; yoksa atlanır)
+for paket in test-xlsx test-push test-kucult test-resim-kucult test-hatirlatici-zaman test-servis-pencere test-vekil-ip test-uygulama-surum test-quiz-metin test-gizli-dosyalar; do
   echo ""
   echo "--- $paket (sunucusuz) ---"
   cikti=$(node "$SP/$paket.js" 2>&1)
@@ -62,7 +64,7 @@ for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman test-servis-
   TOPLAM_KALDI=$((TOPLAM_KALDI + ${k:-0}))
 done
 
-for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-aktarim test-sifre test-mesaj test-devamsizlik test-takvim test-odev-saat test-egitim-yili test-sinav test-bildirim test-giris-kayit test-veli-coklu test-giris-bilgisi test-anket test-okul-hayati test-servis-konum test-servis-yoklama test-yetiskin test-kisi-kodu test-etut test-adresler test-okul-sayfasi test-yorum-ek test-nakil test-ozellikler test-hatirlatici test-siniflarim test-aile test-odev-dosya test-quiz test-yonetici-dosyasi test-admin-gizli test-site-ayarlari test-cakisma test-okul-agi guvenlik-test; do
+for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-aktarim test-sifre test-mesaj test-devamsizlik test-takvim test-odev-saat test-egitim-yili test-sinav test-bildirim test-giris-kayit test-veli-coklu test-giris-bilgisi test-anket test-okul-hayati test-servis-konum test-servis-yoklama test-yetiskin test-kisi-kodu test-etut test-adresler test-okul-sayfasi test-yorum-ek test-nakil test-ozellikler test-hatirlatici test-siniflarim test-aile test-odev-dosya test-okul-disk test-quiz test-yonetici-dosyasi test-admin-gizli test-site-ayarlari test-cakisma test-okul-agi guvenlik-test; do
   sunucu_durdur
   rm -rf "$SP/testdata"
   mkdir -p "$SP/testdata"

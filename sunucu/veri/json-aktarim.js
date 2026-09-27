@@ -106,9 +106,11 @@ async function iceAktar(veri) {
       const enlem = koordinat(s.enlem, 90), boylam = koordinat(s.boylam, 180);
       /* Servis saatleri geçerliyse korunur; yoksa (eski yedek) varsayılan. */
       const ss = s.servisSaatleri && typeof s.servisSaatleri === 'object' && !saatlerSorunu(s.servisSaatleri) ? s.servisSaatleri : null;
+      /* Okulun disk sınırı (MB, 035): geçerliyse korunur; yoksa ya da bozuksa varsayılan (boş). */
+      const disk = Number.isInteger(s.diskSiniriMb) && s.diskSiniriMb >= 1 && s.diskSiniriMb <= 10485760 ? s.diskSiniriMb : null;
       await ekle('okullar', Object.assign({ id: s.id, meb_kodu: meb, ad: metin(s.name, 140) || 'Adsız okul',
         il: metin(s.city, 60), ilce: metin(s.district, 60), tur: metin(s.type, 60), durum,
-        kisa_ad: kisaYaz, enlem: enlem !== null && boylam !== null ? enlem : null,
+        kisa_ad: kisaYaz, disk_siniri_mb: disk, enlem: enlem !== null && boylam !== null ? enlem : null,
         boylam: enlem !== null && boylam !== null ? boylam : null,
         olusturma: zaman(s.createdAt) }, ss ? { servis_sabah_bas: ss.sabahBas, servis_sabah_bit: ss.sabahBit,
         servis_aksam_bas: ss.aksamBas, servis_aksam_bit: ss.aksamBit } : {}));

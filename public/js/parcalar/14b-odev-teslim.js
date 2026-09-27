@@ -5,8 +5,12 @@
    üstünde doluluk çubuğu ("32 / 50 MB") durur. Veli çocuğunun dosyalarını,
    ödevi veren öğretmen bütün teslimleri görür ve indirir; her dosyanın
    satırında "N gün sonra silinir" yazar. Sınırlar ve yetki sunucuda
-   denetlenir; buradaki ön kontroller yalnızca boşuna yükleme yapılmasın diye. */
+   denetlenir; buradaki ön kontroller yalnızca boşuna yükleme yapılmasın diye.
+   Büyük fotoğraf yüklenmeden önce küçültülür (04f-resim-kucult.js): yükleme
+   satırında önce "Küçültülüyor…", sonra "8,4 MB → 620 KB". */
 
+/* hatalar: liste yenilenince bir kez gösterilecek satırlar (reddedilen dosyalar,
+   küçültülerek yüklenenlerin notu). */
 var teslimDurum = { odevId: '', ogrenciId: '', veri: null, yukleniyor: 0, hatalar: [] };
 
 /* Ödev penceresinin altına teslim bölümü (öğrenci ve öğrenci portalına bakan veli). */
@@ -52,7 +56,7 @@ function teslimCiz(odevId, ogrenciId) {
           h += '<input type="file" id="teslimDosya" multiple hidden>' +
             '<label class="ek-birak" id="teslimBirak" for="teslimDosya">' + ik('yukle') +
             '<span><b>Dosya yükle</b>: buraya sürükle ya da basıp seç</span>' +
-            '<small>En fazla ' + d.sinir.adet + ' dosya, toplam 50 MB. ' + esc(d.saklama || '') +
+            '<small>En fazla ' + d.sinir.adet + ' dosya, toplam 50 MB; büyük fotoğraflar küçültülerek yüklenir. ' + esc(d.saklama || '') +
             ' Teslim süresi dolana kadar silip yeniden yükleyebilirsin.</small></label>';
         }
       } else if (d.kapali && !kapaliYukleme && !ogrenciId && S.user.role === 'student') {
@@ -111,7 +115,15 @@ EYLEMLER['teslim-sil'] = function (el, id) {
   })['catch'](function (e) { el.disabled = false; hataGoster(e); });
 };
 
-/* Seçilen dosyalar sırayla yüklenir; her biri kendi ilerleme çubuğuyla. */
+/* Bir dosya bu ödevdeki alana sığıyor mu ('' = sığıyor; toplam: ayrılmış yer). */
+function teslimBoyutSorunu(boyut, sinir, toplam) {
+  var bos = sinir.toplam - toplam;
+  return boyut > sinir.dosya ? 'bir dosya en fazla 50 MB olabilir' :
+    boyut > bos ? (bos > 0 ? 'sığmıyor: bu ödev için ' + boyutYazi(bos) + ' boş yerin kaldı' : 'bu ödev için dosya alanın doldu (50 MB)') : '';
+}
+
+/* Seçilen dosyalar sırayla yüklenir; her biri kendi ilerleme çubuğuyla. Büyük
+   fotoğrafın yer denetimi küçültüldükten sonra, küçülmüş boyutla yapılır. */
 function teslimKuyruk(dosyalar) {
   var d = teslimDurum.veri, izinli = {}, kalan = d.sinir.adet - d.dosyalar.length;
   if (!d.yukleyebilir) return;
@@ -121,74 +133,104 @@ function teslimKuyruk(dosyalar) {
   var gidecek = [];
   for (var j = 0; j < dosyalar.length; j++) {
     var f = dosyalar[j], u = (f.name.lastIndexOf('.') > 0 ? f.name.slice(f.name.lastIndexOf('.') + 1) : '').toLowerCase();
-    var bos = d.sinir.toplam - toplam;
-    var sorun = !f.size ? 'boş dosya' : f.size > d.sinir.dosya ? 'bir dosya en fazla 50 MB olabilir' :
-      f.size > bos ? (bos > 0 ? 'sığmıyor: bu ödev için ' + boyutYazi(bos) + ' boş yerin kaldı' : 'bu ödev için dosya alanın doldu (50 MB)') :
-      !izinli[u] ? 'bu tür yüklenemez' : gidecek.length >= kalan ? 'en fazla ' + d.sinir.adet + ' dosya yüklenir' : '';
-    if (!sorun) toplam += f.size;
+    var kucult = !!izinli[u] && resimKucultulebilir(f);
+    var sorun = !f.size ? 'boş dosya' : (kucult ? '' : teslimBoyutSorunu(f.size, d.sinir, toplam)) ||
+      (!izinli[u] ? 'bu tür yüklenemez' : gidecek.length >= kalan ? 'en fazla ' + d.sinir.adet + ' dosya yüklenir' : '');
     if (sorun) {
       var satir = '<div class="yukleme-satir hata"><b>' + esc(f.name) + '</b> — ' + sorun + '</div>';
       kap.insertAdjacentHTML('beforeend', satir);
       teslimDurum.hatalar.push(satir);
       continue;
     }
-    gidecek.push(f);
+    if (!kucult) toplam += f.size;
+    gidecek.push({ dosya: f, kucult: kucult });
   }
+  /* Küçülen fotoğrafa yer: sığarsa ayrılır, sığmazsa nedeni döner. */
+  var yerAyir = function (k) {
+    var s = teslimBoyutSorunu(k.sonra, d.sinir, toplam);
+    if (!s) toplam += k.sonra;
+    return s;
+  };
   var sira = 0;
   var sonraki = function () {
     if (sira >= gidecek.length) { if (gidecek.length) teslimCiz(teslimDurum.odevId, ''); return; }
-    teslimTekYukle(gidecek[sira++], sonraki);
+    var g = gidecek[sira++];
+    teslimTekYukle(g.dosya, g.kucult ? yerAyir : null, sonraki);
   };
   sonraki();
 }
 
-function teslimTekYukle(f, bitince) {
+/* yerAyir verildiyse dosya önce küçültülür (satırda "Küçültülüyor…"), sonra
+   küçülmüş hâli yüklenir (satırda "8,4 MB → 620 KB"). */
+function teslimTekYukle(f, yerAyir, bitince) {
   var kap = $('teslimYuklemeler');
   if (!kap) return;
   var satirId = 'yk' + Date.now() + Math.floor(Math.random() * 1000);
   kap.insertAdjacentHTML('beforeend', '<div class="yukleme-satir" id="' + satirId + '"><div class="yukleme-ust"><b>' + esc(f.name) +
-    '</b><span class="yuzde">%0</span><button class="baglanti" data-act="teslim-iptal" data-id="' + satirId + '">İptal</button></div>' +
+    '</b><span class="kucultme"></span><span class="yuzde">' + (yerAyir ? 'Küçültülüyor…' : '%0') + '</span>' +
+    '<button class="baglanti" data-act="teslim-iptal" data-id="' + satirId + '">İptal</button></div>' +
     '<div class="cubuk"><i style="width:0%"></i></div></div>');
-  var satir = $(satirId);
-  var xhr = new XMLHttpRequest();
-  satir.__xhr = xhr;
+  var satir = $(satirId), ad = f.name, not = '', bitti = false;
   teslimDurum.yukleniyor++;
-  xhr.open('POST', '/api/odev-dosya/yukle?odev=' + encodeURIComponent(teslimDurum.odevId));
-  xhr.setRequestHeader('Authorization', 'Bearer ' + S.token);
-  xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-  xhr.setRequestHeader('X-Dosya-Adi', encodeURIComponent(f.name));
-  xhr.upload.onprogress = function (e) {
-    if (!e.lengthComputable) return;
-    var y = Math.floor(100 * e.loaded / e.total);
-    satir.querySelector('.cubuk i').style.width = y + '%';
-    satir.querySelector('.yuzde').textContent = '%' + y;
-  };
   var son = function (hata) {
+    if (bitti) return;
+    bitti = true;
     teslimDurum.yukleniyor--;
     var iptal = satir.querySelector('[data-act="teslim-iptal"]');
     if (iptal) iptal.remove();
     if (hata) {
       satir.classList.add('hata');
       satir.querySelector('.yuzde').textContent = hata;
-      teslimDurum.hatalar.push('<div class="yukleme-satir hata"><b>' + esc(f.name) + '</b> — ' + esc(hata) + '</div>');
+      teslimDurum.hatalar.push('<div class="yukleme-satir hata"><b>' + esc(ad) + '</b> — ' + esc(hata) + '</div>');
     } else {
+      if (not) teslimDurum.hatalar.push('<div class="yukleme-satir"><b>' + esc(ad) + '</b> — küçültülerek yüklendi, ' + esc(not) + '</div>');
       satir.parentNode.removeChild(satir);
     }
     bitince();
   };
-  xhr.onload = function () {
-    var j = {};
-    try { j = JSON.parse(xhr.responseText || '{}'); } catch (e) { j = {}; }
-    son(xhr.status === 200 ? '' : (j.error || 'Yüklenemedi (' + xhr.status + ')'));
+  var gonder = function (govde) {
+    var xhr = new XMLHttpRequest();
+    satir.__xhr = xhr;
+    xhr.open('POST', '/api/odev-dosya/yukle?odev=' + encodeURIComponent(teslimDurum.odevId));
+    xhr.setRequestHeader('Authorization', 'Bearer ' + S.token);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.setRequestHeader('X-Dosya-Adi', encodeURIComponent(ad));
+    xhr.upload.onprogress = function (e) {
+      if (!e.lengthComputable) return;
+      var y = Math.floor(100 * e.loaded / e.total);
+      satir.querySelector('.cubuk i').style.width = y + '%';
+      satir.querySelector('.yuzde').textContent = '%' + y;
+    };
+    xhr.onload = function () {
+      var j = {};
+      try { j = JSON.parse(xhr.responseText || '{}'); } catch (e) { j = {}; }
+      son(xhr.status === 200 ? '' : (j.error || 'Yüklenemedi (' + xhr.status + ')'));
+    };
+    xhr.onerror = function () { son('Bağlantı koptu'); };
+    xhr.onabort = function () { son('İptal edildi'); };
+    xhr.send(govde);
   };
-  xhr.onerror = function () { son('Bağlantı koptu'); };
-  xhr.onabort = function () { son('İptal edildi'); };
-  xhr.send(f);
+  if (!yerAyir) return gonder(f);
+  satir.__iptal = function () { son('İptal edildi'); };
+  resimKucult(f).then(function (k) {
+    if (bitti) return;   // küçültülürken iptal edildi
+    satir.__iptal = null;
+    ad = k.ad;
+    not = kucultmeYazisi(k);
+    satir.querySelector('b').textContent = ad;
+    satir.querySelector('.kucultme').textContent = not;
+    satir.querySelector('.yuzde').textContent = '%0';
+    var sorun = yerAyir(k);
+    if (sorun) return son(sorun);
+    gonder(k.dosya);
+  });
 }
 
 EYLEMLER['teslim-iptal'] = function (el, id) {
   var satir = $(id);
-  if (satir && satir.__xhr) satir.__xhr.abort();
+  if (!satir) return;
+  if (satir.__xhr) satir.__xhr.abort();
+  else if (satir.__iptal) satir.__iptal();
 };
 
 /* Yükleme sürerken pencere kapanmasın diye uyarı. */

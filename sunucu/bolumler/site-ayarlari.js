@@ -21,6 +21,7 @@ const { clean, epostaSorunu, kisaAdSorunu, telefonSorunu } = require('../ortak')
 const site = require('../site');
 const { depo, topluBildir } = require('../veri');
 const { islemYaz } = require('./islem-kaydi');
+const okulDisk = require('./okul-disk');
 
 const AD = {
   iletisim: 'İletişim bilgileri',
@@ -28,11 +29,13 @@ const AD = {
   playStore: 'Play Store bağlantısı',
   bildirimAralikDk: 'Bildirim yoklama aralığı',
   cevrimiciDk: 'Çevrimiçi sayma süresi',
-  adminsAralikDk: 'admins.json okuma aralığı'
+  adminsAralikDk: 'admins.json okuma aralığı',
+  okulDiskMb: 'Varsayılan okul disk sınırı'
 };
 const ISLEM = {
   iletisim: 'site.iletisim', yapimcilar: 'site.yapimcilar', playStore: 'site.playstore',
-  bildirimAralikDk: 'site.aralik', cevrimiciDk: 'site.aralik', adminsAralikDk: 'site.aralik'
+  bildirimAralikDk: 'site.aralik', cevrimiciDk: 'site.aralik', adminsAralikDk: 'site.aralik',
+  okulDiskMb: 'site.okul-disk-siniri'
 };
 
 /* Ekrandaki görünüm: her ayarın değeri, nereden geldiği, son değiştiren. */
@@ -44,6 +47,9 @@ function gorunum() {
     const t = site.ARALIKLAR[k];
     if (t) Object.assign(liste[k], { en: t.en, cok: t.cok, varsayilan: t.varsayilan });
   }
+  /* Varsayılan okul disk sınırı (MB): sınırlar ve kodun varsayılanı. Panelden
+     kaydedilmemişse EE_OKUL_DOSYA_GB (kaynak "ortam"), o da yoksa 5 GB. */
+  Object.assign(liste.okulDiskMb, { en: site.OKUL_DISK.en, cok: site.OKUL_DISK.cok, varsayilan: site.OKUL_DISK.varsayilan });
   /* Çevrimiçi sayma süresi yoklama aralığından kısa olamaz: kullanılan değer (etkin)
      ve ekranda kutunun altındaki not. Uyarı kutusu (uyari) yalnız yöneticinin
      kaydettiği (ya da config.yml'deki) süre kullanılamadığında çıkar; varsayılanlarla
@@ -120,6 +126,12 @@ function dogrula(anahtar, deger) {
     return { deger: s };
   }
 
+  if (anahtar === 'okulDiskMb') {
+    const n = site.okulDiskTemizle(deger);
+    if (n === null) return { hata: 'Varsayılan okul disk sınırı 1 MB ile 10 TB arasında olmalı (MB olarak tam sayı).', alan: anahtar };
+    return { deger: n };
+  }
+
   const t = site.ARALIKLAR[anahtar];
   if (t) {
     const n = typeof deger === 'number' ? deger : (typeof deger === 'string' && /^\s*\d{1,4}\s*$/.test(deger) ? Number(deger) : NaN);
@@ -136,12 +148,13 @@ function ozet(anahtar, deger) {
   if (anahtar === 'iletisim') return 'e-posta: ' + (deger.eposta || '(boş)') + ', telefon: ' + (deger.telefon || '(boş)');
   if (anahtar === 'yapimcilar') return deger.length + ' yapımcı' + (deger.length ? ': ' + deger.map(y => y.ad).join(', ') : '');
   if (anahtar === 'playStore') return deger || '(boş)';
+  if (anahtar === 'okulDiskMb') return okulDisk.boyutYaz(deger * okulDisk.MB);
   return deger + ' dk';
 }
 
 /* İşlem kaydında değerin geldiği yer. */
 function kaynakAdi(kaynak) {
-  return kaynak === 'config' ? 'config.yml' : kaynak === 'dosya' ? 'yapimcilar.json' : 'varsayılan';
+  return kaynak === 'config' ? 'config.yml' : kaynak === 'dosya' ? 'yapimcilar.json' : kaynak === 'ortam' ? 'EE_OKUL_DOSYA_GB' : 'varsayılan';
 }
 
 async function ayarKaydet(req, res, me, body) {
@@ -176,7 +189,8 @@ async function ayarKaydet(req, res, me, body) {
   const sabitlendi = !ayni && degerAyni;
   if (!ayni) {
     await depo.siteAyarlari.yaz(anahtar, d.deger, me);
-    const eski = site.ARALIKLAR[anahtar] && !sabitlendi ? onceki.deger + ' → ' : '';
+    const eski = sabitlendi ? '' : site.ARALIKLAR[anahtar] ? onceki.deger + ' → '
+      : anahtar === 'okulDiskMb' ? ozet(anahtar, onceki.deger) + ' → ' : '';
     await islemYaz(me, ISLEM[anahtar], AD[anahtar] + ': ' + eski + ozet(anahtar, d.deger) +
       (sabitlendi ? ' (' + kaynakAdi(onceki.kaynak) + ' değeri panelden sabitlendi)' : ''), req);
     if (anahtar === 'adminsAralikDk') require('../yonetici-dosyasi').aralikDegisti();

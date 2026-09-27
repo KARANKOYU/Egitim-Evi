@@ -25,6 +25,8 @@ function okul(r) {
       sabahBas: r.servis_sabah_bas || '07:00', sabahBit: r.servis_sabah_bit || '09:20',
       aksamBas: r.servis_aksam_bas || '16:30', aksamBit: r.servis_aksam_bit || '19:00'
     },
+    /* Okulun disk sınırı (MB; şema 035). null: site ayarındaki varsayılan. */
+    diskSiniriMb: r.disk_siniri_mb === undefined || r.disk_siniri_mb === null ? null : Number(r.disk_siniri_mb),
     createdAt: r.olusturma
   };
 }

@@ -115,6 +115,9 @@ SAYFALAR.ana = function () {
         stat(o.ogretmen, 'Öğretmen') +
         stat(o.sinif, 'Sınıf') + '</div>';
 
+      /* Okulun dosya alanı (disk sınırı): yalnız müdüre gelir (08d-okul-disk.js). */
+      if (o.disk) h += okulDiskKarti(o.disk);
+
       /* Okul yeni kurulduysa nereden başlayacağını söyle. */
       if (!o.sinif) {
         h += '<div class="msg bilgi">Henüz sınıf açmadın. ' +

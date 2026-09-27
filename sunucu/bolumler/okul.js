@@ -17,6 +17,7 @@ const {
 } = require('../ortak');
 const { girisBasarili, hizSinir } = require('../guvenlik');
 const { hashPw, hashPwToplu } = require('../sifre');
+const okulDisk = require('./okul-disk');
 const { depo, bildir, islem } = require('../veri');
 const {
   OGRETMEN_VARSAYILAN, ROL_SABLONLARI, TUM_YETKILER, YETKILER, kapsamTemizle, ogrenciKapsamindaMi, pub, rolOzeti,
@@ -472,7 +473,9 @@ async function uclar(k) {
         return bad(res, 'Bu işlem için yetkin yok', 403);
       }
       const s = await depo.kullanicilar.okulSayimlari(me.schoolId);
-      return ok(res, s);
+      /* Müdür okulun dosya alanını da görür (ana sayfa kartı; okul-disk.js). */
+      if (me.role !== 'principal') return ok(res, s);
+      return ok(res, Object.assign({}, s, { disk: okulDisk.gorunum(await okulDisk.durum(me.schoolId)) }));
     }
     if (sub === 'teacher-list' && method === 'GET') {
       if (!yetkiGerek('ders.ogretmen-ata')) return;

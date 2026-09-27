@@ -13,7 +13,8 @@
    Düzenleyen: müdür ya da "okul.sayfa" yetkisi verilen kişi (hazır şablon:
    "Kodlayıcı"). Serbest HTML ve betik yok: sayfanın yapısı sabit, yazı düz
    metin, görünüm ayarlarla ve kısıtlı CSS ile değişir (css-temizle.js).
-   Fotoğrafın türü baytlarından denetlenir, konum bilgisi silinir (resim.js). */
+   Fotoğrafın türü baytlarından denetlenir, konum bilgisi silinir (resim.js).
+   Fotoğraflar okulun disk sınırına sayılır (okul-disk.js): dolunca yükleme durur. */
 
 const crypto = require('crypto');
 const fs = require('fs');
@@ -27,6 +28,7 @@ const { yetkiVarMi } = require('../yetki');
 const { cssTemizle } = require('../yardimci/css-temizle');
 const { resmiTemizle } = require('../yardimci/resim');
 const { islemYaz } = require('./islem-kaydi');
+const okulDisk = require('./okul-disk');
 
 const KLASOR = path.join(DATA, 'okul-fotolari');
 const FOTO_SINIR = 3 * 1024 * 1024;
@@ -164,14 +166,27 @@ async function fotoYukle(k) {
   const resim = resmiTemizle(ham);
   if (!resim) return bad(res, 'Bu dosya fotoğraf olarak tanınmadı. PNG, JPEG ya da WebP yükle.');
 
+  /* Okulun disk sınırı: kapak ve logo eskisinin yerine geçtiği için yalnız fark sayılır. */
+  const yerine = yer === 'galeri' ? 0 : eskiler.filter(f => f.yer === yer).reduce((t, f) => t + Number(f.boyut || 0), 0);
+  const okulAlani = await okulDisk.durum(me.schoolId);
+  const artis = resim.veri.length - yerine;
+  if (okulDisk.sigmaz(okulAlani, artis)) {
+    okulDisk.doldu(okulAlani);
+    return sendJSON(res, 507, { error: okulDisk.OKUL_DOLU, okulDolu: true });
+  }
+  okulDisk.ayir(me.schoolId, resim.veri.length);
   const id = crypto.randomBytes(16).toString('hex');
-  await fs.promises.mkdir(KLASOR, { recursive: true });
-  await fs.promises.writeFile(dosyaYolu(id), resim.veri, { flag: 'wx', mode: 0o600 });
   try {
-    await depo.okulSayfalari.fotoEkle({ id, okulId: me.schoolId, yer, tur: resim.tur, boyut: resim.veri.length });
-  } catch (e) {
-    await fotoDosyasiniSil(id);
-    throw e;
+    await fs.promises.mkdir(KLASOR, { recursive: true });
+    await fs.promises.writeFile(dosyaYolu(id), resim.veri, { flag: 'wx', mode: 0o600 });
+    try {
+      await depo.okulSayfalari.fotoEkle({ id, okulId: me.schoolId, yer, tur: resim.tur, boyut: resim.veri.length });
+    } catch (e) {
+      await fotoDosyasiniSil(id);
+      throw e;
+    }
+  } finally {
+    okulDisk.birak(me.schoolId, resim.veri.length);
   }
   /* Kapak ve logo tektir: yenisi gelince eskisi gider. */
   if (yer !== 'galeri') {
@@ -180,6 +195,8 @@ async function fotoYukle(k) {
       await fotoDosyasiniSil(f.id);
     }
   }
+  /* Okulun alanı %80'i geçtiyse müdüre ve yöneticiye bir kez haber gider. */
+  await okulDisk.yuklendi(okulAlani, artis);
   await islemYaz(me, 'okul-sayfa.foto', yer + ' fotoğrafı yüklendi', req);
   return ok(res, { foto: { id, yer, aciklama: '' } });
 }

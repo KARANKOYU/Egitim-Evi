@@ -16,7 +16,8 @@
    diskten silinir (mesaj ve ödev kalır, "süresi doldu" yazar). Güvenlik
    ödev teslim dosyalarıyla aynı (odev-dosya.js): izinli uzantılar, rastgele
    dosya adı, akışla diske yazma, "ek" olarak indirme (tarayıcı açmaz),
-   boş yer ve aynı anda yükleme sınırı. */
+   boş yer ve aynı anda yükleme sınırı. Ek, yükleyenin okulunun disk sınırına
+   sayılır (okul-disk.js; taslaklar da): dolunca yükleme durur. */
 
 const crypto = require('crypto');
 const fs = require('fs');
@@ -28,6 +29,7 @@ const { depo } = require('../veri');
 const { DATA } = require('../yollar');
 const { yetkiVarMi } = require('../yetki');
 const { akisiYaz, reddet, ekBasliklari, dosyaAdi, uzanti, UZANTILAR, biletVer, biletKullan } = require('./odev-dosya');
+const okulDisk = require('./okul-disk');
 
 const KLASOR = path.join(DATA, 'ekler');
 const MB = 1024 * 1024;
@@ -91,13 +93,22 @@ async function yukle(k) {
     return reddet(req, res, 'Gönderilmemiş eklerin toplamı en fazla ' + mbYaz(TASLAK_SINIR) + ' olabilir. Başka bir mesajda ' +
       'ya da ödevde bıraktığın ekleri kaldır; gönderilmeyen ekler 6 saat sonra kendiliğinden silinir.', 413);
   }
+  /* Ek, yükleyenin okulunun disk sınırına sayılır (okulsuz hesapta sınır yok). */
+  const okulId = me.schoolId || '';
+  const okulAlani = await okulDisk.durum(okulId);
   await fs.promises.mkdir(KLASOR, { recursive: true });
   const bos = await bosYer();
+  /* Buradan ayırmaya kadar await yok: aynı anda başlayan yüklemeler birlikte sınırı aşamaz. */
+  if (okulDisk.sigmaz(okulAlani, boyut)) {
+    okulDisk.doldu(okulAlani);
+    return reddet(req, res, okulDisk.OKUL_DOLU, 507, { okulDolu: true });
+  }
   if (bos !== null && bos - suren.bayt - boyut < BOS_YER_PAYI) return reddet(req, res, 'Sunucuda yer kalmadı. Biraz sonra dene.', 507);
   if ((suren.adet.get(me.id) || 0) >= AYNI_ANDA_KISI || suren.toplam >= AYNI_ANDA_TOPLAM) {
     return reddet(req, res, 'Aynı anda çok fazla yükleme var. Biri bitince dene.', 429);
   }
   artir(suren.adet, me.id, 1); artir(suren.kisiBayt, me.id, boyut); suren.toplam++; suren.bayt += boyut;
+  okulDisk.ayir(okulId, boyut);
 
   const id = crypto.randomBytes(16).toString('hex');
   const gecici = path.join(KLASOR, id + '.yukleniyor');
@@ -106,10 +117,13 @@ async function yukle(k) {
     let sonuc;
     try { sonuc = await akisiYaz(req, gecici, boyut); } catch (e) { return reddet(req, res, e.message, e.kod || 400); }
     await fs.promises.rename(gecici, kalici);
-    await depo.ekler.ekle({ id, yukleyenId: me.id, okulId: me.schoolId || '', tur, ad, boyut: sonuc.boyut, sha256: sonuc.sha256 });
+    await depo.ekler.ekle({ id, yukleyenId: me.id, okulId, tur, ad, boyut: sonuc.boyut, sha256: sonuc.sha256 });
+    /* Okulun alanı %80'i geçtiyse müdüre ve yöneticiye bir kez haber gider. */
+    await okulDisk.yuklendi(okulAlani, sonuc.boyut);
     return ok(res, { ek: { id, ad, boyut: sonuc.boyut }, message: ad + ' eklendi.' });
   } finally {
     artir(suren.adet, me.id, -1); artir(suren.kisiBayt, me.id, -boyut); suren.toplam--; suren.bayt -= boyut;
+    okulDisk.birak(okulId, boyut);
   }
 }
 

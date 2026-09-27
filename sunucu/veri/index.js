@@ -40,6 +40,7 @@ const depo = {
   servisYoklama: require('./depo/servis-yoklama'),
   cihazlar: require('./depo/cihazlar'),
   odevDosyalari: require('./depo/odev-dosyalari'),
+  okulDisk: require('./depo/okul-disk'),
   etutler: require('./depo/etutler'),
   onaylar: require('./depo/onaylar'),
   okulSayfalari: require('./depo/okul-sayfalari'),

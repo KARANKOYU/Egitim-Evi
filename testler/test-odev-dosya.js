@@ -13,8 +13,10 @@
      teslimsiz ödevde yüklemeden 60 gün, sonuçlandırılınca + 7 gün; son teslim
      yanlışlıkla geçmişe yazılınca en erken düzenlemeden 7 gün sonra (saatlik
      temizliğin silme sorgusu test veritabanında doğrudan denenir);
-   - okulun dosya alanı (tumtest EE_OKUL_DOSYA_GB=0.001 verir): %80'i geçince
-     müdüre ve yöneticiye bir kez bildirim, dolunca 507 ve bir kez "doldu". */
+   - okulun disk sınırı (yönetici bu test için okula 1 MB verir, sonunda
+     varsayılana döndürür): %80'i geçince müdüre ve yöneticiye bir kez
+     bildirim, dolunca 507 (okulDolu) ve bir kez "doldu". Ekler ve okul sayfası
+     fotoğrafları: test-okul-disk.js. */
 const http = require('http');
 const zlib = require('zlib');
 const crypto = require('crypto');
@@ -22,7 +24,6 @@ const { iste, girisYap, hesapAc } = require('./giris');
 
 const BASE = process.env.EE_BASE || 'http://localhost:3000';
 const MB = 1024 * 1024;
-const OKUL_GB = Number(process.env.EE_OKUL_DOSYA_GB) || 0;   // sunucuya da aynısı verilmiş olmalı
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
   if (sart) { gecti++; console.log('  GECTI  ' + ad); }
@@ -320,20 +321,22 @@ function zipOku(buf) {
   kontrol('tarih düzeltilince silinme yine son teslim + 7 gün', yakin(gDuzelt.dosyalar[0].bitis, an(gun(20), '10:00') + 7 * GUN),
     J(gDuzelt.dosyalar[0]));
 
-  console.log('=== 8) OKULUN DOSYA ALANI (%80 VE DOLU) ===');
-  if (!OKUL_GB) {
-    console.log('  (EE_OKUL_DOSYA_GB verilmedi: okul alanı bölümü atlandı; tumtest.sh 0.001 verir)');
-  } else {
-    const KOTA = Math.round(OKUL_GB * 1024 * MB);
+  console.log('=== 8) OKULUN DİSK SINIRI (%80 VE DOLU) ===');
+  {
+    const KOTA = 1 * MB;
     const M = (await girisYap('mudur@test.com', 'Test1234!')).token;
     const A = (await girisYap('admin@egitimevi.com', 'admin123')).token;
     const say = async (tok, parca) => ((await iste('/api/notifications', 'GET', null, tok)).body.notifications || [])
       .filter(n => n.text.indexOf(parca) >= 0).length;
-    /* Okulda bu testin yüklediklerinden başka teslim dosyası yok: kullanım öğretmenin ödevlerinden. */
-    let kullanim = 0;
-    for (const a of (await iste('/api/assignments', 'GET', null, mat.token)).body.assignments || []) {
-      kullanim += (await iste('/api/odev-dosya?odev=' + a.id, 'GET', null, mat.token)).body.toplam || 0;
-    }
+    /* Yönetici okulun sınırını 1 MB yapar; kullanım okulun bütün dosyalarından (yönetim paneli). */
+    const okulId = mat.user.schoolId;
+    const sinirYaz = await iste('/api/admin/okul-disk-siniri', 'POST', { okulId, mb: 1 }, A);
+    kontrol('yönetici okulun disk sınırını 1 MB yaptı', sinirYaz.status === 200 && sinirYaz.body.okul.disk.sinir === KOTA,
+      J(sinirYaz.body));
+    const genel = (await iste('/api/admin/overview', 'GET', null, A)).body;
+    const kullanim = ((genel.schools || []).find(x => x.id === okulId) || { disk: {} }).disk.kullanilan;
+    kontrol('okulun kullanımı sınırın altında (%80 denemesi yapılabilir)', typeof kullanim === 'number' && kullanim < 0.8 * KOTA - 5000,
+      'kullanım ' + kullanim);
     const kotaOdev = await odevAc('Kota ödevi ' + z, gun(3));
     const esik = Math.ceil(0.8 * KOTA);
     const alt = esik - kullanim - 1000;
@@ -348,8 +351,9 @@ function zipOku(buf) {
       await say(M, "dosya alanının %80'i doldu") === 1 && await say(A, "dosya alanının %80'i doldu") === 1, J(k3.body));
     const kalan = KOTA - (kullanim + alt + 3000);
     const dolu = await buyukBildir(o1.token, kotaOdev, kalan + 1000);
-    kontrol('okulun alanı dolunca yükleme açık hatayla durur (507)', dolu.status === 507 && /Okulun dosya alanı doldu/.test(dolu.body),
-      dolu.status + ' ' + dolu.body);
+    kontrol('okulun alanı dolunca yükleme açık hatayla durur (507, okulDolu)', dolu.status === 507 &&
+      /Okulunun dosya alanı doldu\. Okul yönetimi eski dosyaları sildirebilir ya da yöneticiden alan isteyebilir\./.test(dolu.body) &&
+      /"okulDolu":true/.test(dolu.body), dolu.status + ' ' + dolu.body);
     let mDolu = 0, aDolu = 0;
     for (let i = 0; i < 20 && !(mDolu && aDolu); i++) {
       await new Promise(r => setTimeout(r, 150));
@@ -360,6 +364,13 @@ function zipOku(buf) {
     await new Promise(r => setTimeout(r, 400));
     kontrol('"doldu" bildirimi de bir kez gider', dolu2.status === 507 && await say(M, 'Okulun dosya alanı doldu') === 1 &&
       await say(A, 'dosya alanı doldu (') === 1, dolu2.status);
+    /* Sınır küçüldü diye var olan dosya silinmez; varsayılana dönünce yükleme yeniden açılır. */
+    const liste = (await iste('/api/odev-dosya?odev=' + kotaOdev, 'GET', null, o2.token)).body;
+    const geri = await iste('/api/admin/okul-disk-siniri', 'POST', { okulId, mb: null }, A);
+    const sonra = await yukle(o2.token, kotaOdev, 'kota4.pdf', crypto.randomBytes(1000));
+    kontrol('dolu alanda yüklenmiş dosyalar duruyor; sınır varsayılana dönünce yükleme açılıyor',
+      (liste.dosyalar || []).length === 3 && geri.status === 200 && geri.body.okul.disk.ozel === false && sonra.status === 200,
+      J(liste.dosyalar && liste.dosyalar.length) + ' ' + J(geri.body) + ' ' + J(sonra.body));
   }
 
   console.log('');

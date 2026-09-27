@@ -9,7 +9,9 @@
    kodunu girer. "Bul" ile kodun kime ait olduğunu görür (tam ad, maskeli
    e-posta). Okul ve müdür rolü onaylı açılır; kişinin kodu aynı işlemde
    yenilenir (tek kullanımlık). Kişi okuluna sol üstteki menüden geçer.
-   E-postayla ya da yeni hesap açarak müdür yapma yolu yoktur. */
+   E-postayla ya da yeni hesap açarak müdür yapma yolu yoktur.
+   Yönetici okulun disk sınırını da verir (diskMb, MB; boşsa varsayılan:
+   okul-disk.js). Formdaki öneri: öğrenci sayısı × 10 MB, en az 2 GB. */
 
 const { ok, sendJSON, okulOnbellekBosalt } = require('../http');
 const { CITIES, clean, kisaAdSorunu, kisiKoduSade, now, uid } = require('../ortak');
@@ -17,6 +19,7 @@ const { okulKimlikBul } = require('../okullar');
 const { hataSay, hataSiniriDoldu, hizSinir, istemciIp } = require('../guvenlik');
 const { cakisma, depo, bildir, islem } = require('../veri');
 const { islemYaz } = require('./islem-kaydi');
+const okulDisk = require('./okul-disk');
 
 /* Kişi kodunun sahibi. Kod tahmin aracına dönmesin: aynı bağlantıdan saatte
    en fazla 30 yanlış kod (bul ve aç birlikte sayılır); "Bul" ayrıca yönetici
@@ -58,7 +61,7 @@ async function kisiBul(req, res, me, body) {
     rolSayisi: roller.length });
 }
 
-/* POST /api/admin/okul-ac { mebSchoolId | schoolName, city, district, kisaAd, mudurKodu } */
+/* POST /api/admin/okul-ac { mebSchoolId | schoolName, city, district, kisaAd, mudurKodu, diskMb? } */
 async function okulAc(req, res, me, body) {
   const alanHata = (alan, mesaj, durum) => sendJSON(res, durum || 400, { error: mesaj, alan });
 
@@ -87,6 +90,9 @@ async function okulAc(req, res, me, body) {
       : 'Bu okul zaten kayıtlı; müdürünü "Müdürler" listesinde bul.');
   }
   if (await depo.okullar.kisaAdVarMi(kisaAd, sahipsiz ? dup.id : '')) return alanHata('kisaAd', 'Bu adres başka bir okulda. Başka bir ad dene.');
+  /* Disk sınırı (MB); boşsa varsayılan. Devralınan okulda verilmezse eskisi kalır. */
+  const disk = okulDisk.mbOku(body.diskMb, true);
+  if (disk.hata) return alanHata('diskMb', disk.hata);
 
   /* ---- müdür: kişi koduyla ---- */
   if (!clean(body.mudurKodu, 40)) return alanHata('mudurKodu', 'Müdürün kişi kodunu yaz.');
@@ -101,7 +107,8 @@ async function okulAc(req, res, me, body) {
   if (roller.length >= 10) return alanHata('mudurKodu', 'Bu kişi en fazla sayıda okulda (10) rol almış.');
 
   const okul = sahipsiz ? dup : { id: uid('s'), mebId: mebId || '', name: ad, city: il, district: ilce, type: tur,
-    status: 'approved', createdAt: now() };
+    status: 'approved', createdAt: now(), diskSiniriMb: disk.mb };
+  const diskVerildi = !(body.diskMb === undefined || body.diskMb === null || body.diskMb === '');
   const yeniKod = await depo.kullanicilar.yeniKisiKodu();
   let tuketildi;
   try {
@@ -113,6 +120,7 @@ async function okulAc(req, res, me, body) {
       else {
         await depo.okullar.kisaAdYaz(okul.id, kisaAd);
         await depo.okullar.durumYaz(okul.id, 'approved');
+        if (diskVerildi) await depo.okullar.diskSiniriYaz(okul.id, disk.mb);
       }
       await depo.kullanicilar.ekle({
         id: uid('u'), anaHesapId: ana.id, email: '', pass: 'kullanilmaz', fullName: ana.fullName, phone: ana.phone || '',
@@ -134,10 +142,12 @@ async function okulAc(req, res, me, body) {
   }
   if (!tuketildi) return alanHata('mudurKodu', 'Bu kod az önce kullanıldı. Kişiden yeni kodunu iste.', 404);
   okulOnbellekBosalt();   // adres az önce "yok" diye önbelleğe girmiş olabilir
-  await islemYaz(me, 'okul.acildi', ad + ' (' + kisaAd + ') — müdür ' + ana.username, req);
+  const diskSon = sahipsiz && !diskVerildi ? dup.diskSiniriMb : disk.mb;
+  await islemYaz(me, 'okul.acildi', ad + ' (' + kisaAd + ') — müdür ' + ana.username + ', disk sınırı ' +
+    okulDisk.sinirAdi(diskSon), req);
   await bildir(ana.id, ad + ' okulunun müdürü olarak eklendin. Sol üstteki menüden okuluna geçebilirsin.');
   return ok(res, {
-    okul: { id: okul.id, ad, kisaAd },
+    okul: { id: okul.id, ad, kisaAd, diskSiniriMb: diskSon },
     mudur: { ad: ana.fullName, kullaniciAdi: ana.username },
     message: ad + ' açıldı. ' + ana.fullName + ' okulun müdürü oldu.'
   });

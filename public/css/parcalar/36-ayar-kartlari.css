@@ -46,3 +46,24 @@
 @media (pointer: coarse) {
   .ayar-kart .btn.kucuk, .yonetim-gecis .btn.kucuk { min-height: 44px; }
 }
+
+/* ---- okulun dosya alanı (disk sınırı) ----
+   Doluluk çubuğu 02-form.css'teki .doluluk; okulda %80 turuncu (az-kaldi),
+   %95 kırmızı (dolu). Sınır kutusu: sayı + MB/GB seçici. */
+/* Okul alanında olağan doluluk yeşil (ana renk kırmızı: "dolu" ile karışmasın). */
+.doluluk.okul-disk .doluluk-cubuk i { background: var(--yesil); }
+.doluluk.okul-disk.az-kaldi .doluluk-cubuk i { background: var(--turuncu); }
+.doluluk.okul-disk.dolu .doluluk-cubuk i { background: var(--kirmizi); }
+.field .sayi-satir select { width: auto; flex: 0 0 auto; }
+.disk-siniri .sayi-satir input:disabled, .disk-siniri .sayi-satir select:disabled { opacity: .55; }
+.okul-disk-kart .doluluk { margin: 4px 0 8px; }
+.okul-disk-kart .msg { margin: 10px 0 0; }
+/* Okullar tablosundaki hücre: sıkı, en az 150 piksel. */
+.doluluk.sikisik { margin: 0; min-width: 150px; }
+.doluluk.sikisik .doluluk-ust { font-size: 12px; }
+.okul-tablo td { vertical-align: middle; }
+/* Sistem geneli: okullara ayrılan, kullanılan, boş yer, veritabanı. */
+.disk-ozet { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0 0 12px; }
+.disk-ozet div { padding: 10px 12px; border: 1.5px solid var(--cizgi); border-radius: var(--r-kucuk); background: var(--kart-ust); }
+.disk-ozet dt { font-size: 12px; color: var(--soluk); }
+.disk-ozet dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
