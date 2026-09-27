@@ -348,7 +348,10 @@ async function iceAktar(veri) {
         baslangic: bas, baslangic_saati: bas ? (saat(a.startTime) || null) : null,
         bitis: bit, bitis_saati: saat(a.endTime) || '12:00',
         durum: secim(a.status, ['active', 'finished'], 'active'), yil_id: yilId(a.yilId),
-        olusturma: zaman(a.createdAt), sonuclanma: a.finishedAt ? zaman(a.finishedAt) : null });
+        olusturma: zaman(a.createdAt), sonuclanma: a.finishedAt ? zaman(a.finishedAt) : null,
+        /* 033'ten önceki yedeklerde alan yok: o ödevlerde dosya yükleme açıktı. */
+        dosya_yukleme: a.dosyaYukleme !== false,
+        dosya_saklama: a.dosyaSaklama ? zaman(a.dosyaSaklama) : null });
       for (const cid of new Set(dizi(a.classIds))) {
         if (sinif.has(cid)) await ekle('odev_siniflari', { odev_id: a.id, sinif_id: cid });
       }

@@ -15,7 +15,7 @@ const {
   SUBJECTS, adDuzelt, clean, dogumSorunu, gunTarih, kisiKoduBicim, kullaniciAdiSorunu, normEmail,
   normKullaniciAdi, now, sifreSorunu, tcSorunu, uid
 } = require('../ortak');
-const { hizSinir } = require('../guvenlik');
+const { girisBasarili, hizSinir } = require('../guvenlik');
 const { hashPw, hashPwToplu } = require('../sifre');
 const { depo, bildir, islem } = require('../veri');
 const {
@@ -568,6 +568,8 @@ async function uclar(k) {
         kullaniciAdi: u.username, sifre: rastgeleSifre(), veliKodu: kodGorur ? u.code : '' }));
       const ozetler = await hashPwToplu(satirlar.map(s => s.sifre));
       await islem(() => depo.kullanicilar.topluSifreYaz(me.schoolId, satirlar.map((s, i) => ({ id: s.id, ozet: ozetler[i] }))));
+      /* Yeni şifre verilen hesapta eski şifreye yapılan denemelerin hesap kilidi kalkar. */
+      for (const s of satirlar) girisBasarili('', s.id);
       await depo.genel.cokluBildir(satirlar.map(s => ({ kime: s.id,
         metin: 'Giriş bilgilerin okul yönetimi tarafından yenilendi. Şifreni Ayarlar sayfasından değiştirebilirsin.',
         baglanti: '#/profil' })));

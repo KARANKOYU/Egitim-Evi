@@ -225,10 +225,23 @@ bölümü yanına ekle (ya da varsa doldur):
 
 Kaydet: `Ctrl+O`, `Enter`, `Ctrl+X`
 
-> **`vekil.guven` neden önemli?** Ters vekil arkasında her isteğin IP'si
-> `127.0.0.1` görünür. O hâlde bütün ziyaretçiler tek hız-sınırı sayacını
-> paylaşır ve koruma işe yaramaz. `guven: true` gerçek adresi vekilin
-> başlığından okutur.
+> **`vekil.guven` neden önemli? Bu ayar yanlışsa site yoğun saatte herkese kapanır.**
+> Ters vekil (Caddy) arkasında her isteğin IP'si `127.0.0.1` görünür. `guven`
+> kapalıysa bütün site tek IP sayılır: IP başına sınırlar (dakikada 6000 API isteği,
+> 15 dakikada 50-300 hatalı giriş...) bir okula değil **bütün kullanıcılara birden**
+> uygulanır. Uygulama okul ağına göre ayarlı: büyük bir okulda 300 öğrenci aynı
+> dakikada, okulun tek IP'sinden girer ve sınırlar buna yeter. Ama bütün site tek IP
+> sayılırsa iki üç okul aynı anda girdiğinde herkes "Çok fazla istek gönderdin"
+> alır; biri 300 kez yanlış şifre denerse bütün sitede giriş 15 dakika durur.
+> `guven: true` gerçek adresi vekilin başlığından okutur: her okul, her ev kendi
+> sayacını kullanır.
+>
+> Doğru çalıştığını denetle: servisi yeniden başlatınca günlükte
+> `Vekil guveni acik (x-forwarded-for)` satırı görünmeli
+> (`journalctl -u egitimevi | grep "Vekil guveni"`). Sonra müdür hesabıyla kayda geçen bir
+> işlem yap (ör. **Okul Sayfası**'nda Kaydet) ve **İşlem Kaydı** sayfasındaki IP sütununa
+> bak: kendi bağlantının adresi görünmeli. `127.0.0.1` ya da `::1` görünüyorsa ayar
+> okunmamıştır.
 >
 > `x-forwarded-for` birden çok adres taşıyabilir ve baştakileri ziyaretçi kendisi
 > yazabilir. Uygulama bu yüzden **en sondaki** adresi alır: Caddy isteği geçirirken
@@ -293,6 +306,7 @@ WorkingDirectory=/opt/egitimevi
 ExecStart=/usr/bin/node sunucu/index.js
 Environment=PORT=3000
 Environment=HOST=127.0.0.1
+Environment=TZ=Europe/Istanbul
 Restart=always
 RestartSec=5
 User=egitimevi
@@ -310,6 +324,13 @@ WantedBy=multi-user.target
 
 > `HOST=127.0.0.1` sayesinde uygulama doğrudan internete açılmaz; yalnızca
 > Caddy üzerinden erişilir.
+
+> **`TZ=Europe/Istanbul` şart.** Ödevin son teslim saati ("12:00") sunucunun yerel
+> saatiyle okunur; teslimin kapanması ve teslim dosyalarının silinme anı buna göre
+> hesaplanır. VPS'ler çoğunlukla UTC ile gelir: bu satır olmazsa ödevler 3 saat geç
+> kapanır. Sunucu Türkiye saatinde değilse uygulama açılışta günlüğe
+> `Sunucu Turkiye saatinde degil` yazar. (Hatırlatıcılar ve servis saatleri sunucunun
+> saat diliminden bağımsız olarak Türkiye saatiyle çalışır.)
 
 > **Tek süreç.** Uygulama tek süreç olarak çalışır: panelden kaydedilen site ayarları,
 > `data/admins.json` yoklaması, hız sınırları ve "şu an açık" sayısı o sürecin belleğindedir.
@@ -498,10 +519,19 @@ Yönetim panelinin adresini (`/admin`) herkese açık yerlerde paylaşma; `data/
 
 ## Saldırı ve aşırı yük (DDoS) koruması
 
-Uygulama tek başına şunlara karşı korunur: IP ve oturum başına hız sınırı, girişte
-kaba kuvvet kilidi ve bot sorusu, aynı anda en fazla 400 API isteği, sunucu boğulunca
-yeni API isteklerini `503` ile geri çevirme, gövdesini yavaş gönderen isteği 30 saniyede
-kesme, en fazla 1024 bağlantı. Bunlar **tek makineden gelen** saldırıyı durdurur.
+Uygulama tek başına şunlara karşı korunur: oturum başına hız sınırı (asıl sınır) ve okul
+ölçeğinde IP sınırları, girişte hesap başına kaba kuvvet kilidi ve bot sorusu, aynı anda
+en fazla 1000 API isteği, sunucu boğulunca yeni API isteklerini `503` ile geri çevirme,
+gövdesini yavaş gönderen isteği 30 saniyede kesme, en fazla 8192 bağlantı. Bunlar
+**tek makineden gelen** saldırıyı durdurur. IP sınırları okul ağına göre geniştir
+(300 öğrenci tek IP'den aynı dakikada girebilir; sayılar ve ölçüm KILAVUZ.md "Yük ve
+saldırı koruması"nda).
+
+Uygulamayı Caddy olmadan **doğrudan internete açma** (`HOST=0.0.0.0`). Vekilsiz kurulumda
+okul ağı 300 öğrenciyle ~1800 bağlantı açtığı için IP başına bağlantı sınırı 2048'dir; tek bir
+adres toplamın (8192) dörtte birini tutabilir. Caddy önündeyken tarayıcılar Caddy'ye bağlanır,
+uygulamaya Caddy'nin az sayıda bağlantısı gelir; IP başına bağlantı sınırı uygulanmaz ve TLS de
+Caddy'dedir.
 
 Binlerce makineden gelen gerçek DDoS'u sunucuya ulaşmadan durdurmak için önüne
 **Cloudflare** koy (ücretsiz plan yeter):
@@ -510,8 +540,10 @@ Binlerce makineden gelen gerçek DDoS'u sunucuya ulaşmadan durdurmak için ön�
 2. Alan adı panelinde (GoDaddy vb.) ad sunucularını Cloudflare'in verdikleriyle değiştir.
 3. Cloudflare **DNS**: `@` ve `www` A kayıtları VPS'in IP'si, **turuncu bulut açık** (Proxied).
 4. **SSL/TLS → Overview: Full (strict)** (Caddy'nin sertifikası geçerli olduğu için).
-5. **Security → WAF → Rate limiting rules**: `/api/login` ve `/api/register` için
-   IP başına dakikada 20 istek, aşan 10 dakika engellensin.
+5. İstersen **Security → WAF → Rate limiting rules** ile `/api/register` için IP başına
+   dakikada 20 istek koy. `/api/login`'e dar kural **koyma**: okul ağında yüzlerce öğrenci
+   aynı IP'den aynı dakikada girer, "dakikada 20" bütün okulu durdurur. Koyacaksan IP başına
+   dakikada en az 1000 olsun; hatalı denemeleri uygulama hesap başına sayar ve kilitler.
 6. Saldırı anında **Security → Settings → Under Attack Mode**'u aç.
 
 Cloudflare arkasında `data/ayarlar.json` şöyle olmalı:

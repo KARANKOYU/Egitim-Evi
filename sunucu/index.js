@@ -6,7 +6,7 @@ const http = require('http');
 const { monitorEventLoopDelay } = require('perf_hooks');
 const { handleApi } = require('./api');
 const { ayarlar, ayarlariYukle, epostaKurulu } = require('./ayarlar');
-const { guvenlikTemizle, hizSinir, istekAnahtari, istemciIp } = require('./guvenlik');
+const { genelIstekSiniri, guvenlikTemizle, istekAnahtari, istemciIp } = require('./guvenlik');
 const { HATIRLATMA_ARALIK_MS, hatirlatmalariCalistir } = require('./hatirlatma');
 const { bad, baslikEkle, sendJSON, serveStatic } = require('./http');
 const { okullariYukle } = require('./okullar');
@@ -25,7 +25,12 @@ okullariYukle();
      - Olay döngüsü gecikmesi ölçülür; sunucu boğulmaya başlayınca yeni API
        istekleri kuyruğa girip her şeyi yavaşlatmak yerine hemen 503 alır.
      - Aynı anda işlenen API isteği sayısı sınırlıdır.
-     - Vekil yoksa tek IP'nin açık tutabileceği bağlantı sayısı sınırlıdır. */
+     - Vekil yoksa tek IP'nin açık tutabileceği bağlantı sayısı sınırlıdır.
+   Sayılar okul ağına göre: büyük bir okulda 300 öğrenci aynı anda, tek IP'den
+   (NAT) girer. testler/test-okul-agi.js bu açılışı gerçek istek dizisiyle ölçer:
+   ilk açılışta öğrenci başına ~10 API ve ~24 dosya isteği, tarayıcı başına
+   6'ya kadar bağlantı; 300 kişi bir saniyede başlasa bile hiçbiri 429 ya da
+   503 almamalı. */
 const gecikmeOlcer = monitorEventLoopDelay({ resolution: 20 });
 gecikmeOlcer.enable();
 let yogun = false;
@@ -34,9 +39,12 @@ const yukSayaci = setInterval(() => {
   gecikmeOlcer.reset();
 }, 1000);
 if (yukSayaci.unref) yukSayaci.unref();
-const EN_FAZLA_SUREN_API = 400;
+const EN_FAZLA_SUREN_API = 1000;
 let surenApi = 0;
-const IP_BAGLANTI_SINIRI = 256;
+/* Vekilsiz kurulumda bir IP en çok toplamın dörtte birini tutabilir: sunucuyu
+   bağlantıyla doldurmak için en az dört ayrı adres gerekir (eskiden 256 / 1024). */
+const IP_BAGLANTI_SINIRI = 2048;
+const EN_FAZLA_BAGLANTI = 8192;
 const ipBaglanti = new Map();
 
 const server = http.createServer((req, res) => {
@@ -58,25 +66,26 @@ const server = http.createServer((req, res) => {
   }
 
   /* Genel hız sınırı: tek kaynak sunucuyu istek yağmuruna tutamasın.
-     Okulda bütün sınıf aynı ağdan (tek IP) girer; eskiden IP başına
-     dakikada 300 istek vardı ve dosyalar da sayılıyordu: 30 öğrenci sayfayı
-     birlikte açınca hepsi "çok fazla istek" alıyordu. Şimdi:
-       - dosyalar (bellekten, tarayıcıda önbellekli) ayrı ve bol sınırla,
-       - API IP başına dakikada 1500 ile,
-       - ayrıca her oturum kendi başına dakikada 300 ile sınırlı: tek hesap
-         sınırı zorlasa bile aynı ağdaki öbürleri etkilenmez. */
-  const apiMi = urlPath.indexOf('/api/') === 0;
-  const oturum = apiMi ? istekAnahtari(req) : '';
-  const asildi = apiMi
-    ? !hizSinir('genelApi:' + ip, 1500, 60 * 1000) ||
-      (oturum && !hizSinir('genelOturum:' + oturum.slice(0, 24), 300, 60 * 1000))
-    : !hizSinir('genelDosya:' + ip, 3000, 60 * 1000);
-  if (asildi) {
+     Okulda bütün öğrenciler aynı ağdan (tek IP) girer: 300 öğrencinin aynı
+     dakikadaki ilk açılışı ~3.100 API ve ~7.200 dosya isteği. Bu yüzden:
+       - dosyalar (bellekten, tarayıcıda önbellekli) ve herkese açık okul
+         fotoğrafları IP başına dakikada 15000,
+       - API IP başına dakikada 6000 (oturumsuz sel burada durur),
+       - asıl sınır oturumda: her oturum kendi başına dakikada 300. Sınırı
+         aşan oturumun isteği IP sayacından geri düşülür: tek hesap sel yapsa
+         bile aynı ağdaki öbürleri etkilenmez.
+     IP önce denetlenir: IP sınırı dolmuşken oturum sayacı hiç açılmaz, uydurma
+     anahtarlarla (biçime uyan her Bearer değeri) bellek şişirilemez; sayaçların
+     haritası da üst sınırlıdır (guvenlik.js genelIstekSiniri, genelSinir).
+     Cevaptaki "sinir" hangi sınırın dolduğunu söyler (dosya, oturum, ip). */
+  const dosyaMi = urlPath.indexOf('/api/') !== 0 || urlPath.indexOf('/api/okul-foto/') === 0;
+  const sinir = genelIstekSiniri(ip, dosyaMi, dosyaMi ? '' : istekAnahtari(req));
+  if (sinir) {
     res.writeHead(429, baslikEkle({
       'Content-Type': 'application/json; charset=utf-8',
       'Retry-After': '60'
     }));
-    return res.end(JSON.stringify({ error: 'Çok fazla istek gönderdin. Bir dakika bekle.' }));
+    return res.end(JSON.stringify({ error: 'Çok fazla istek gönderdin. Bir dakika bekle.', sinir }));
   }
 
   if (urlPath.indexOf('/api/') === 0) {
@@ -131,17 +140,20 @@ const server = http.createServer((req, res) => {
 
 /* Slowloris: yavas istemci baglantilari acik tutup kaynak tuketemesin. */
 server.headersTimeout = 20 * 1000;
-/* Dosya yüklemesi (200 MB'a kadar, okul ağında) dakikalar sürebilir. JSON
+/* Dosya yüklemesi (50 MB'a kadar, yavaş bir okul ağında) dakikalar sürebilir. JSON
    gövdeleri kendi 30 saniyelik sınırına sahip (http.js readBody); yükleme de
    60 saniye veri gelmezse kesilir (odev-dosya.js). */
 server.requestTimeout = 65 * 60 * 1000;
 server.keepAliveTimeout = 10 * 1000;
 server.maxHeadersCount = 60;
-server.maxConnections = 1024;
+server.maxConnections = EN_FAZLA_BAGLANTI;
 
 /* Vekil arkasında bütün bağlantılar vekilden gelir; IP sınırı yalnızca
-   sunucu doğrudan internete açıkken uygulanır. Okul ağında bütün sınıf tek
-   IP'den gelebildiği için sınır bol tutuldu. */
+   sunucu doğrudan internete açıkken uygulanır. Okul ağında bütün okul tek
+   IP'den gelir ve her tarayıcı 6'ya kadar bağlantı açar (300 kişi ~1800):
+   sınır bol tutuldu; tek IP yine de toplamın ancak dörtte birini tutar. Vekil
+   (Caddy) arkasında tarayıcılar vekile bağlanır, uygulamaya vekilin az sayıda
+   bağlantısı gelir. */
 server.on('connection', soket => {
   if (ayarlar.vekil && ayarlar.vekil.guven) return;
   const ip = soket.remoteAddress || '';
@@ -185,8 +197,9 @@ if (aileSayaci.unref) aileSayaci.unref();
 /* Bildirim yazılınca aboneliği olan kişinin telefonuna da gider. */
 require('./push').baslat();
 
-/* Ödev teslim dosyaları ve ekler 7 gün sonra silinir; artıklar da temizlenir:
-   açılıştan sonra ve saatte bir. */
+/* Ödev teslim dosyaları silinme anında (son teslim + 7 gün; depo/odev-dosyalari.js
+   SILINME), mesaj ve ödev ekleri yüklendikten 7 gün sonra silinir; artıklar da
+   temizlenir: açılıştan sonra ve saatte bir. */
 const { dosyaSupur } = require('./bolumler/odev-dosya');
 const { ekSupur } = require('./bolumler/ekler');
 const supurSayaci = setInterval(() => { dosyaSupur().catch(() => {}); ekSupur().catch(() => {}); }, 60 * 60 * 1000);
@@ -237,6 +250,13 @@ server.listen(PORT, HOST, () => {
   }
   if (ayarlar.vekil && ayarlar.vekil.guven) {
     console.log('     Vekil guveni acik (' + ayarlar.vekil.baslik + ') - ters vekil arkasinda');
+  }
+  /* Ödevin son teslim saati sunucunun yerel saatiyle okunur (odev.js odevBitisAni,
+     teslim dosyalarının silinme anı da): sunucu Türkiye saatinde değilse ödevler
+     saatler kayarak kapanır. Kurulum belgesi TZ=Europe/Istanbul verir. */
+  if (new Date().getTimezoneOffset() !== -180) {
+    console.log('     ! Sunucu Turkiye saatinde degil (UTC' + (new Date().getTimezoneOffset() > 0 ? '-' : '+') +
+      Math.abs(new Date().getTimezoneOffset() / 60) + '): odev son teslim saatleri kayar. TZ=Europe/Istanbul ile baslat.');
   }
   if (epostaKurulu()) {
     console.log('     Giris kodlari e-posta ile gonderilecek (' + ayarlar.eposta.sunucu + ')');

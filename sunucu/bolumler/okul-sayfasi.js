@@ -185,9 +185,11 @@ async function fotoYukle(k) {
 }
 
 /* Herkese açık fotoğraf. Kimliği 32 haneli rastgele sayı, değişmez: tarayıcı
-   uzun süre önbellekte tutabilir. */
+   uzun süre önbellekte tutabilir. Okulun adresinden giren herkes giriş
+   sayfasında hepsini bir kez indirir (kapak, logo, 8'e kadar galeri); okul
+   ağında yüzlerce öğrenci aynı dakikada tek IP'den gelir. */
 async function fotoGonder(req, res, id) {
-  if (!hizSinir('okulFotoOku:' + istemciIp(req), 600, 60 * 1000)) return bad(res, 'Çok fazla istek. Biraz bekle.', 429);
+  if (!hizSinir('okulFotoOku:' + istemciIp(req), 4000, 60 * 1000)) return bad(res, 'Çok fazla istek. Biraz bekle.', 429);
   if (!FOTO_ID.test(id)) return bad(res, 'Fotoğraf bulunamadı', 404);
   const f = await depo.okulSayfalari.foto(id);
   if (!f) return bad(res, 'Fotoğraf bulunamadı', 404);

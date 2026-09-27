@@ -1,9 +1,17 @@
 'use strict';
 /* Ödev teslim dosyaları (/api/odev-dosya).
 
-   Öğrenci ödevine dosya yükler; ödevi veren öğretmen ve okulun müdürü
-   dosyaları tek tek ya da hepsini bir zip olarak indirir; veli çocuğunun
-   dosyalarını görür ve indirir.
+   Öğrenci ödevine dosya yükler (öğretmen ödevde "Öğrenciler bu ödeve dosya
+   yükleyebilsin" dediyse); ödevi veren öğretmen ve okulun müdürü dosyaları
+   tek tek ya da hepsini bir zip olarak indirir; veli çocuğunun dosyalarını
+   görür ve indirir.
+
+   Sınırlar: tek dosya ve bir öğrencinin bir ödevdeki dosyalarının toplamı
+   50 MB, en fazla 10 dosya. Dosya son teslimden 7 gün sonra silinir (son
+   teslimi yoksa sonuçlandırılınca + 7 gün, hiç sonuçlandırılmazsa yüklemeden
+   60 gün sonra; depo/odev-dosyalari.js SILINME). Okulun dosya alanı
+   (EE_OKUL_DOSYA_GB) %80'i geçince ve dolunca müdüre ve sistem yöneticisine
+   birer kez bildirim gider.
 
    Güvenlik:
      - Dosya public klasörünün dışında, 32 haneli rastgele adla durur. Adres
@@ -14,7 +22,8 @@
        bildirilen boyut, dosya ve öğrenci başına sınır, okul kotası ve
        diskteki boş yer yüklemeye başlamadan denetlenir. Sayı ve toplam
        boyut son olarak veritabanında kilitli satırla bir kez daha denetlenir.
-     - Teslim süresi dolunca ya da ödev sonuçlandırılınca yükleme kapanır.
+     - Teslim süresi dolunca, ödev sonuçlandırılınca ya da öğretmen dosya
+       yüklemeyi kapatınca yükleme kapanır (403, dosyaKapali).
      - Yarıda kalan ya da kaydı silinmiş dosyalar periyodik temizlikte silinir. */
 
 const crypto = require('crypto');
@@ -23,7 +32,7 @@ const path = require('path');
 const zlib = require('zlib');
 const { once } = require('events');
 const { hizSinir } = require('../guvenlik');
-const { bad, baslikEkle, ok } = require('../http');
+const { bad, baslikEkle, ok, sendJSON } = require('../http');
 const { clean } = require('../ortak');
 const { depo } = require('../veri');
 const { DATA } = require('../yollar');
@@ -31,10 +40,10 @@ const { odevBitisAni } = require('./odev');
 
 const KLASOR = path.join(DATA, 'dosyalar');
 const MB = 1024 * 1024;
-const DOSYA_SINIR = 150 * MB;
-const OGRENCI_SINIR = { adet: 10, toplam: 150 * MB };        // bir öğrencinin bir ödevde (toplam 150 MB)
-const SAKLAMA_GUN = 7;                                         // teslim dosyası 7 gün sonra silinir
-const OKUL_SINIR = (Number(process.env.EE_OKUL_DOSYA_GB) || 20) * 1024 * MB;
+const DOSYA_SINIR = 50 * MB;
+const OGRENCI_SINIR = { adet: 10, toplam: 50 * MB };         // bir öğrencinin bir ödevde (toplam 50 MB)
+const OKUL_SINIR = Math.round((Number(process.env.EE_OKUL_DOSYA_GB) || 20) * 1024 * MB);
+const OKUL_UYARI = 0.8, OKUL_UYARI_SIFIRLA = 0.7;              // %80'de bir kez uyarı; %70'in altına inince yeniden kurulur
 const BOS_YER_PAYI = 2 * 1024 * MB;                           // diskte her zaman kalacak boş yer
 const ZIP_SINIR = 3500 * MB;                                   // zip32 sınırının altında
 const BOSTA_MS = 60 * 1000;                                    // bu kadar veri gelmezse yükleme kesilir
@@ -118,6 +127,33 @@ function dosyaAdi(ham) {
   return ad;
 }
 
+/* "32,5 MB" (bir ondalık, Türkçe virgül). */
+const mbYaz = n => (Math.round(n / MB * 10) / 10).toLocaleString('tr-TR') + ' MB';
+/* "16,1 / 20 GB" ya da küçük sınırda "0,8 / 1 MB": birim sınıra göre seçilir. */
+function alanYaz(kullanilan, sinir) {
+  const gb = sinir >= 1024 * MB, bol = gb ? 1024 * MB : MB;
+  const yaz = n => (Math.round(n / bol * 10) / 10).toLocaleString('tr-TR');
+  return yaz(kullanilan) + ' / ' + yaz(sinir) + (gb ? ' GB' : ' MB');
+}
+/* "20 GB" ya da küçük sınırda "1 MB". */
+const sinirYaz = n => n >= 1024 * MB ? (Math.round(n / (1024 * MB) * 10) / 10).toLocaleString('tr-TR') + ' GB' : mbYaz(n);
+
+const DOSYA_KAPALI = 'Bu ödev için dosya yüklenmiyor.';
+const ALAN_DOLDU = 'Bu ödev için dosya alanın doldu (' + mbYaz(OGRENCI_SINIR.toplam) + '). Yer açmak için bir dosyanı sil.';
+const SAYI_DOLDU = 'Bir ödeve en fazla ' + OGRENCI_SINIR.adet + ' dosya yükleyebilirsin. Yer açmak için bir dosyanı sil.';
+/* Öğrencinin bu ödevdeki alanına sığmayan dosya. */
+function sigmiyor(kullanilan) {
+  const kalan = OGRENCI_SINIR.toplam - kullanilan;
+  return kalan <= 0 ? ALAN_DOLDU
+    : 'Bu dosya sığmıyor: bu ödev için ' + mbYaz(kalan) + ' boş yerin kaldı (en fazla ' + mbYaz(OGRENCI_SINIR.toplam) + ').';
+}
+
+/* Teslim dosyalarının ne zaman silineceği (depo/odev-dosyalari.js SILINME ile aynı kural). */
+function saklamaYazisi(a) {
+  return a.endAt ? 'Dosyalar son teslimden 7 gün sonra silinir.'
+    : 'Dosyalar ödev sonuçlandırıldıktan 7 gün sonra silinir; sonuçlandırılmazsa yüklendikten 60 gün sonra.';
+}
+
 /* Ödev teslime açık mı? Kapalıysa nedenini döner. */
 function teslimKapali(a) {
   if (a.status !== 'active') return 'Ödev sonuçlandırıldı; dosya yüklenemez.';
@@ -139,9 +175,25 @@ async function gorebilir(me, a, ogrenciId) {
   return me.role !== 'student' && depo.kullanicilar.bagliMi(me.id, ogrenciId);
 }
 
-const gorunum = d => ({ id: d.id, ad: d.ad, boyut: Number(d.boyut), yuklenme: d.yuklenme,
-  bitis: new Date(new Date(d.yuklenme).getTime() + SAKLAMA_GUN * 24 * 60 * 60 * 1000).toISOString(),
+/* bitis: dosyanın silineceği an (ödevden hesaplanır; depo SILINME). */
+const gorunum = d => ({ id: d.id, ad: d.ad, boyut: Number(d.boyut), yuklenme: d.yuklenme, bitis: d.silinme,
   ogrenciId: d.ogrenci_id, ogrenci: d.ogrenci_adi || '' });
+
+/* Okulun dosya alanı: %80'i geçince (seviye 80) ve dolunca (100) müdüre ve
+   sistem yöneticilerine bildirim. Her seviye bir kez gider (okul_dosya_uyarilari);
+   kullanım %70'in altına inince temizlikte sıfırlanır. */
+async function okulUyar(okulId, seviye, kullanilan) {
+  if (!okulId || !await depo.odevDosyalari.uyariYaz(okulId, seviye)) return;
+  const [okul, mudur] = await Promise.all([depo.okullar.bul(okulId), depo.kullanicilar.okulunMuduru(okulId)]);
+  const alan = alanYaz(kullanilan, OKUL_SINIR), sinir = sinirYaz(OKUL_SINIR);
+  const metin = seviye >= 100
+    ? 'Okulun dosya alanı doldu (' + sinir + '). Öğrenciler ödeve dosya yükleyemiyor; eski teslim dosyaları silindikçe yer açılır.'
+    : "Okulun dosya alanının %80'i doldu (" + alan + '). Teslim dosyaları son teslimden 7 gün sonra kendiliğinden silinir.';
+  if (mudur) await depo.genel.bildir(mudur.id, metin, '');
+  await depo.genel.yoneticilereBildir((okul ? okul.name : 'Bir okul') + ': ' + (seviye >= 100
+    ? 'dosya alanı doldu (' + sinir + '), öğrenciler ödeve dosya yükleyemiyor. Sınır EE_OKUL_DOSYA_GB ile büyütülür.'
+    : "dosya alanının %80'i doldu (" + alan + ').'), '');
+}
 
 async function bosYer() {
   try {
@@ -152,10 +204,10 @@ async function bosYer() {
 
 /* Reddedilen yüklemede gövdenin geri kalanı okunmaz: cevap yazılır, bağlantı
    kısa süre sonra kapatılır (istemci cevabı görebilsin). */
-function reddet(req, res, mesaj, kod) {
+function reddet(req, res, mesaj, kod, ek) {
   if (res.headersSent || res.destroyed) return;
   res.setHeader('Connection', 'close');
-  bad(res, mesaj, kod || 400);
+  sendJSON(res, kod || 400, Object.assign({ error: mesaj }, ek));
   if (!req.complete) {
     try { req.pause(); } catch (e) { /* yoksay */ }
     setTimeout(() => { try { req.destroy(); } catch (e) { /* yoksay */ } }, 1500);
@@ -227,12 +279,13 @@ async function yukle(k) {
 
   const a = await depo.odevler.bul(clean(q.get('odev'), 60));
   if (!a || a.studentIds.indexOf(me.id) < 0) return reddet(req, res, 'Ödev bulunamadı', 404);
+  if (!a.dosyaYukleme) return reddet(req, res, DOSYA_KAPALI, 403, { dosyaKapali: true });
   const kapali = teslimKapali(a);
   if (kapali) return reddet(req, res, kapali);
 
   const boyut = Number(req.headers['content-length']);
   if (!Number.isSafeInteger(boyut) || boyut <= 0) return reddet(req, res, 'Dosya boş ya da boyutu bildirilmedi', 411);
-  if (boyut > DOSYA_SINIR) return reddet(req, res, 'Bir dosya en fazla 150 MB olabilir', 413);
+  if (boyut > DOSYA_SINIR) return reddet(req, res, 'Bir dosya en fazla ' + mbYaz(DOSYA_SINIR) + ' olabilir.', 413);
   const ad = dosyaAdi(req.headers['x-dosya-adi']);
   if (!ad) return reddet(req, res, 'Dosya adı geçersiz');
   if (!UZANTILAR.has(uzanti(ad))) {
@@ -240,16 +293,17 @@ async function yukle(k) {
   }
 
   const onceki = await depo.odevDosyalari.odevin(a.id, me.id);
-  if (onceki.length >= OGRENCI_SINIR.adet) return reddet(req, res, 'Bir ödeve en fazla ' + OGRENCI_SINIR.adet + ' dosya yükleyebilirsin');
-  if (onceki.reduce((t, d) => t + Number(d.boyut), 0) + boyut > OGRENCI_SINIR.toplam) {
-    return reddet(req, res, 'Bir ödeve yüklediğin dosyaların toplamı en fazla 150 MB olabilir', 413);
-  }
+  const kullanilan = onceki.reduce((t, d) => t + Number(d.boyut), 0);
+  if (onceki.length >= OGRENCI_SINIR.adet) return reddet(req, res, SAYI_DOLDU);
+  if (kullanilan + boyut > OGRENCI_SINIR.toplam) return reddet(req, res, sigmiyor(kullanilan), 413);
   const okulToplam = Number(await depo.odevDosyalari.okulToplami(a.schoolId));
   await fs.promises.mkdir(KLASOR, { recursive: true });
   const bos = await bosYer();
 
-  /* Buradan ayırmaya kadar await yok: iki yükleme aynı boş yeri paylaşamaz. */
+  /* Buradan ayırmaya kadar await yok: iki yükleme aynı boş yeri paylaşamaz.
+     Okulun alanı dolduysa müdüre ve yöneticiye bir kez haber gider (beklenmez). */
   if (okulToplam + (suren.okulBayt.get(a.schoolId) || 0) + boyut > OKUL_SINIR) {
+    okulUyar(a.schoolId, 100, okulToplam).catch(() => { /* bildirim gitmezse yükleme yine reddedilir */ });
     return reddet(req, res, 'Okulun dosya alanı doldu. Öğretmenine haber ver.', 507);
   }
   if (bos !== null && bos - suren.bayt - boyut < BOS_YER_PAYI) return reddet(req, res, 'Sunucuda yer kalmadı. Biraz sonra dene.', 507);
@@ -277,13 +331,22 @@ async function yukle(k) {
       await fs.promises.unlink(gecici).catch(() => {});
       return bad(res, 'Teslim kapandı; dosya kaydedilmedi.');
     }
+    if (!simdiki.dosyaYukleme) {
+      await fs.promises.unlink(gecici).catch(() => {});
+      return sendJSON(res, 403, { error: 'Öğretmen bu ödevde dosya yüklemeyi kapattı; dosya kaydedilmedi.', dosyaKapali: true });
+    }
     await fs.promises.rename(gecici, kalici);
     const durum = await depo.odevDosyalari.ekle({ id, odevId: a.id, ogrenciId: me.id, ad,
       boyut: sonuc.boyut, crc32: sonuc.crc32, sha256: sonuc.sha256 }, OGRENCI_SINIR);
     if (durum !== 'tamam') {
       await fs.promises.unlink(kalici).catch(() => {});
-      return bad(res, { yok: 'Ödev bulunamadı', sayi: 'Bir ödeve en fazla ' + OGRENCI_SINIR.adet + ' dosya yükleyebilirsin',
-        boyut: 'Bir ödeve yüklediğin dosyaların toplamı en fazla 150 MB olabilir' }[durum], durum === 'yok' ? 404 : 400);
+      return bad(res, { yok: 'Ödev bulunamadı', sayi: SAYI_DOLDU,
+        boyut: 'Bu dosya sığmıyor: bu ödev için dosya alanın en fazla ' + mbYaz(OGRENCI_SINIR.toplam) + '.' }[durum],
+        durum === 'yok' ? 404 : durum === 'boyut' ? 413 : 400);
+    }
+    /* Okulun alanı %80'i geçtiyse müdüre ve yöneticiye bir kez haber gider. */
+    if (okulToplam + sonuc.boyut >= OKUL_UYARI * OKUL_SINIR) {
+      await okulUyar(a.schoolId, 80, okulToplam + sonuc.boyut).catch(() => { /* bildirim gitmezse yükleme yine tamam */ });
     }
     return ok(res, { dosya: { id, ad, boyut: sonuc.boyut, yuklenme: new Date().toISOString() }, message: ad + ' yüklendi.' });
   } finally {
@@ -512,15 +575,21 @@ async function uclar(k) {
     if (!a) return bad(res, 'Ödev bulunamadı', 404);
     if (yonetir(me, a) && !q.get('ogrenci')) {
       const dosyalar = (await depo.odevDosyalari.odevin(a.id)).map(gorunum);
-      return ok(res, { dosyalar, yonetir: true, toplam: dosyalar.reduce((t, d) => t + d.boyut, 0) });
+      return ok(res, { dosyalar, yonetir: true, toplam: dosyalar.reduce((t, d) => t + d.boyut, 0),
+        dosyaYukleme: a.dosyaYukleme, saklama: saklamaYazisi(a) });
     }
     const ogrenciId = me.role === 'student' ? me.id : clean(q.get('ogrenci'), 60);
     if (!await gorebilir(me, a, ogrenciId)) return bad(res, 'Bu dosyaları görme yetkin yok', 403);
-    const kapali = teslimKapali(a);
+    /* Dosya yükleme kapalıysa önceden yüklenenler kalır ve teslim donar:
+       öğrenci ne yeni dosya yükleyebilir ne yüklediğini silebilir. */
+    const teslim = teslimKapali(a);
+    const kapali = a.dosyaYukleme ? teslim : DOSYA_KAPALI;
+    const dosyalar = (await depo.odevDosyalari.odevin(a.id, ogrenciId)).map(gorunum);
     return ok(res, {
-      dosyalar: (await depo.odevDosyalari.odevin(a.id, ogrenciId)).map(gorunum),
-      yukleyebilir: me.id === ogrenciId && !kapali, kapali,
-      sinir: { dosya: DOSYA_SINIR, adet: OGRENCI_SINIR.adet, toplam: OGRENCI_SINIR.toplam, gun: SAKLAMA_GUN, uzantilar: [...UZANTILAR] }
+      dosyalar, dosyaYukleme: a.dosyaYukleme,
+      yukleyebilir: me.id === ogrenciId && !kapali, silebilir: me.id === ogrenciId && !teslim && a.dosyaYukleme, kapali,
+      kullanilan: dosyalar.reduce((t, d) => t + d.boyut, 0), saklama: saklamaYazisi(a),
+      sinir: { dosya: DOSYA_SINIR, adet: OGRENCI_SINIR.adet, toplam: OGRENCI_SINIR.toplam, uzantilar: [...UZANTILAR] }
     });
   }
 
@@ -548,6 +617,9 @@ async function uclar(k) {
       if (me.id !== d.ogrenci_id) return bad(res, 'Bu dosyayı silme yetkin yok', 403);
       const kapali = teslimKapali(a);
       if (kapali) return bad(res, kapali + ' Dosya silinemez.');
+      /* Öğretmen dosya yüklemeyi kapattıysa teslim donar: öğretmen değerlendirirken
+         dosya kaybolmasın (yalnız öğretmen silebilir). */
+      if (!a.dosyaYukleme) return sendJSON(res, 403, { error: 'Öğretmen bu ödevde dosya yüklemeyi kapattı; dosyan artık silinemez.', dosyaKapali: true });
     }
     await depo.odevDosyalari.sil(d.id);
     await fs.promises.unlink(path.join(KLASOR, d.id)).catch(() => {});
@@ -557,12 +629,15 @@ async function uclar(k) {
   return false;
 }
 
-/* Artık temizliği: 7 günü dolan teslim dosyaları, yarıda kalmış yüklemeler
-   (2 saatten eski) ve kaydı silinmiş dosyalar (1 saatten eski) diskten silinir. */
+/* Artık temizliği: silinme anı gelen teslim dosyaları (son teslim + 7 gün;
+   depo SILINME), yarıda kalmış yüklemeler (2 saatten eski) ve kaydı silinmiş
+   dosyalar (1 saatten eski) diskten silinir. Okulun alanı %70'in altına indiyse
+   dosya alanı uyarısı sıfırlanır. */
 async function dosyaSupur() {
-  for (const id of await depo.odevDosyalari.eskileriSil(SAKLAMA_GUN)) {
+  for (const id of await depo.odevDosyalari.eskileriSil()) {
     await fs.promises.unlink(path.join(KLASOR, id)).catch(() => {});
   }
+  await depo.odevDosyalari.uyarilariSifirla(Math.floor(OKUL_UYARI_SIFIRLA * OKUL_SINIR));
   let adlar;
   try { adlar = await fs.promises.readdir(KLASOR); } catch (e) { return 0; }
   const simdi = Date.now();

@@ -5,10 +5,11 @@
 
 const crypto = require('crypto');
 const {
-  ONAY_OMRU_MS, basarisizDeneme, botCevapDogru, botSoruTuket, botSoruUret, denemeSifirla, epostaAlaniVarMi, epostaMaskele,
+  ONAY_OMRU_MS, botCevapDogru, botSoruTuket, botSoruUret, epostaAlaniVarMi, epostaMaskele,
   girisKodlari, kodOzeti, onayBaglantisiGonder,
+  girisBasarili, girisHatasi, girisIpEngeli, girisKilitSn, girisSoruLazim, girisTanidik,
   girisKoduDogrula, girisKoduGonder, hataSay, hataSiniriDoldu, hizSinir, istekAnahtari, istemciIp, kalanDeneme, kayitSayaci,
-  kilitliMi, sifirlamaGonder, sifirlamaKayit, sifirlamaTemizle, soruGerekliMi
+  sifirlamaGonder, sifirlamaKayit, sifirlamaTemizle
 } = require('../guvenlik');
 const { bad, ok, sendJSON } = require('../http');
 const { childrenOf } = require('../iliskiler');
@@ -29,7 +30,7 @@ const yonetimCerezi = require('../yonetim-cerezi');
 
 /* Aydınlatma metninin sürümü. Metin değişirse burayı da artır:
    kullanıcıların onayı yeniden istenmelidir. */
-const KVKK_SURUM = '1.12';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
+const KVKK_SURUM = '1.13';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
                             // 1.4: ödev dosyaları, anket, servis, kulüp, son giriş;
                             // 1.5: okulun açtığı hesapta T.C., ev ve servis konumu, telefon bildirimi;
                             // 1.6: e-posta onayı, müdür başvurusunda yaş, okul sayfası, ödev yıldızı;
@@ -45,6 +46,9 @@ const KVKK_SURUM = '1.12';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C.
                             //       sekme/uygulama değiştirme kaydı: kaç kez, toplam kaç sn); kim görür (hepsini ödevi
                             //       veren öğretmen; öğrenci kendisininkini, puanı ve doğruları sonuç açılınca; veli
                             //       yalnız durum ve sonuç açılınca puan); ödev silinince silinir
+                            // 1.13: ödev teslim dosyaları yalnız öğretmen dosya yüklemeyi açtıysa (50 MB);
+                            //       saklama: son teslim + 7 gün (son teslimsiz ödevde sonuçlandırılınca
+                            //       + 7 gün, hiç sonuçlandırılmazsa yüklemeden 60 gün)
 
 /* ============ kayıt ============ */
 /* Kendisi kaydolan tek tür hesap yetişkin hesabıdır: veli, öğretmen ve müdür
@@ -369,7 +373,9 @@ async function uclar(k) {
      Adresten okulun adı (giriş ekranında görünsün) ve ana sayfadaki okul
      arama. Yalnızca onaylı, adresi olan okullar; başka bilgi verilmez. */
   if (p === 'okul-adres' && method === 'GET') {
-    if (!hizSinir('okulAdres:' + istemciIp(req), 300, 60 * 1000)) return bad(res, 'Çok fazla istek. Biraz bekle.', 429);
+    /* Okulun adresinden giren herkes giriş sayfasında bir kez sorar; okul ağında
+       yüzlerce öğrenci aynı dakikada, tek IP'den gelir. */
+    if (!hizSinir('okulAdres:' + istemciIp(req), 3000, 60 * 1000)) return bad(res, 'Çok fazla istek. Biraz bekle.', 429);
     if (segs[2] === 'ara') {
       /* MEB aramasıyla aynı motor: büyük/küçük harf, Türkçe harf ve yazım
          hatası fark etmez. Adres (kısa ad) da aranır. */
@@ -422,8 +428,9 @@ async function uclar(k) {
 
   /* Kayıt formundaki bot doğrulama sorusu */
   if (p === 'challenge' && method === 'GET') {
-    /* Okul ağında bütün sınıf tek IP'den kayıt olabilir; sınır bol tutuldu. */
-    if (!hizSinir('soru:' + istemciIp(req), 300, 10 * 60 * 1000)) {
+    /* Okul ağında bütün okul tek IP'den gelir: kayıt formu, şifremi unuttum ve
+       girişte hatalı denemeden sonra (bağlantıdan çok hata gelince herkese) soru. */
+    if (!hizSinir('soru:' + istemciIp(req), 1500, 10 * 60 * 1000)) {
       return bad(res, 'Çok fazla istek. Biraz bekle.', 429);
     }
     return ok(res, botSoruUret());
@@ -434,7 +441,9 @@ async function uclar(k) {
      yoksa bu uç kullanıcı adı doğrulama aracına dönerdi. */
   if (p === 'sifre-unuttum' && method === 'POST') {
     const ip = istemciIp(req);
-    if (!hizSinir('sifirlama:' + ip, 5, 15 * 60 * 1000)) {
+    /* Okul ağında öğretmenler aynı IP'den gelir; aynı adrese yağdırmayı ayrıca
+       adres başına sınır (saatte 3) durdurur. */
+    if (!hizSinir('sifirlama:' + ip, 20, 15 * 60 * 1000)) {
       return bad(res, 'Çok fazla istek. 15 dakika sonra tekrar dene.', 429);
     }
     if (!botCevapDogru(body.challengeId, body.challengeAnswer)) {
@@ -468,7 +477,7 @@ async function uclar(k) {
 
   /* Şifremi unuttum — 2. adım: yeni şifreyi yaz. */
   if (p === 'sifre-yenile' && method === 'POST') {
-    if (!hizSinir('sifreYenile:' + istemciIp(req), 10, 15 * 60 * 1000)) {
+    if (!hizSinir('sifreYenile:' + istemciIp(req), 30, 15 * 60 * 1000)) {
       return bad(res, 'Çok fazla deneme. Biraz bekle.', 429);
     }
     sifirlamaTemizle();
@@ -499,6 +508,11 @@ async function uclar(k) {
     });
     console.log('  Şifre sıfırlandı: ' + u.email + ' (' + kapanan + ' oturum kapatıldı)');
     await islemYaz(u, 'sifre.sifirlandi', kapanan + ' oturum kapatıldı', req);
+    /* E-postadaki bağlantıyı açan hesabın sahibidir: eski şifreye yapılan
+       denemelerin hesap kilidi kalkar, bu bağlantı tanıdık olur. Hesabı
+       başkaları kilitlediyse sahibi "Şifremi unuttum" ile hemen girebilir. */
+    girisBasarili('', u.id);
+    if (u.status !== 'rejected' && u.status !== 'pending') girisTanidik(istemciIp(req), u.id, !depo.kullanicilar.yetiskinMi(u));
     return ok(res, {
       message: 'Şifren güncellendi. Yeni şifrenle giriş yapabilirsin.'
     });
@@ -522,18 +536,22 @@ async function uclar(k) {
       if (!okul) return sendJSON(res, 400, { error: 'Bu okul adresi bulunamadı. Ana sayfadan okulunu seç.', alan: 'kimlik' });
       okulId = okul.id;
     }
-    /* Bağlantı (IP) başına iki sınır. Okulda bütün sınıf aynı ağdan (tek IP)
-       girer; başarılı girişler bol tutulur (5 dakikada 300). Çok hesabı birer
-       kez deneyen şifre taramasına karşı asıl sınır HATALI girişlerde:
-       15 dakikada 50. Hesap başına kilit (5 hata) ayrıca var. */
-    const ipHata = 'girisHataIp:' + istemciIp(req);
-    if (hataSiniriDoldu(ipHata, 50) || !hizSinir('girisIp:' + istemciIp(req), 300, 5 * 60 * 1000)) {
+    /* Okulda bütün öğrenciler aynı ağdan (tek IP) girer: bağlantı sınırları
+       okul ölçeğinde, asıl koruma hesapta (guvenlik.js "giriş sınırları").
+       Bağlantı 15 dakikada 50 hatada durur; o bağlantıdan son 30 günde giren
+       her okul hesabı (öğrenci, servisçi) için 2 hata daha, en çok 300 (okulun
+       ağı). 5 dakikada 1200
+       denemede de durur; 50 hatadan sonra oradan her girişte soru sorulur. */
+    const ip = istemciIp(req);
+    if (girisIpEngeli(ip)) {
       return bad(res, 'Bu bağlantıdan çok fazla giriş denemesi yapıldı. Biraz bekleyip tekrar dene.', 429);
     }
 
     /* Kaba kuvvet koruması: aynı IP + hesap için 5 hatalı denemeden sonra
-       kilit. Anahtar hesabın kendisi: e-posta ile kullanıcı adını sırayla
-       deneyerek kilit ikiye katlanmasın. */
+       kilit; hesaba her yerden 20 hatada hesap, sahibinin girmediği
+       bağlantılardan kilitli (sahibi tanıdık bağlantısından girebilir).
+       Anahtar hesabın kendisi: e-posta ile kullanıcı adını sırayla deneyerek
+       kilit ikiye katlanmasın. */
     const bulunan = await depo.kullanicilar.girisKimligiyle(kimlik, okulId);
     if (bulunan.belirsiz) {
       return sendJSON(res, 400, {
@@ -542,8 +560,9 @@ async function uclar(k) {
       });
     }
     let u = bulunan.u;
-    const kilitAnahtar = 'giris:' + istemciIp(req) + ':' + (u ? u.id : (okulId + ':' + kimlik));
-    const kalanSn = kilitliMi(kilitAnahtar);
+    const hesapId = u ? u.id : '';
+    const kilitAnahtar = 'giris:' + ip + ':' + (u ? u.id : (okulId + ':' + kimlik));
+    const kalanSn = girisKilitSn(kilitAnahtar, hesapId, ip);
     if (kalanSn) {
       const sure = kalanSn < 90 ? kalanSn + ' saniye' : Math.ceil(kalanSn / 60) + ' dakika';
       return sendJSON(res, 429, {
@@ -551,13 +570,15 @@ async function uclar(k) {
         kilitli: true
       });
     }
-    /* Doğrulama sorusu yalnızca daha önce hatalı deneme olduysa istenir.
-       Böylece normal kullanıcı her girişte soru çözmez ama otomatik şifre
-       deneme aracı ikinci denemeden itibaren duvara toslar. */
-    const soruLazim = soruGerekliMi(kilitAnahtar);
+    /* Doğrulama sorusu yalnızca daha önce hatalı deneme olduysa istenir
+       (bu hesaba bu bağlantıdan, hesaba her yerden 3 ya da bu bağlantıdan 50).
+       Böylece normal kullanıcı her girişte soru çözmez. Soru basit araçları
+       eler; soruyu çözen bir betiği durduran kilitler ve sayaçlardır. */
+    const soruLazim = girisSoruLazim(ip, kilitAnahtar, hesapId);
     if (soruLazim && !botCevapDogru(body.challengeId, body.challengeAnswer)) {
       return sendJSON(res, 400, {
-        error: 'Doğrulama sorusunun cevabı yanlış.',
+        /* Soru hiç gösterilmediyse (başkalarının hatası yüzünden istendi) "yanlış" denmez. */
+        error: body.challengeId ? 'Doğrulama sorusunun cevabı yanlış.' : 'Devam etmek için doğrulama sorusunu cevapla.',
         alan: 'bot',
         soruGerekli: true
       });
@@ -575,8 +596,7 @@ async function uclar(k) {
       sifreDogru = true;
     }
     if (!u || !sifreDogru) {
-      basarisizDeneme(kilitAnahtar, 15 * 60 * 1000);
-      hataSay(ipHata, 50, 15 * 60 * 1000);
+      girisHatasi(ip, kilitAnahtar, hesapId);
       const kalan = kalanDeneme(kilitAnahtar);
       if (!u) {
         return sendJSON(res, 401, {
@@ -595,7 +615,7 @@ async function uclar(k) {
     }
     /* Yedek hesapla girildiyse asıl hesabın hatalı deneme sayacı silinmez:
        yoksa biri yedeği bilerek öteki hesabın 5 deneme kilidini sıfırlayabilirdi. */
-    if (u === bulunan.u) denemeSifirla(kilitAnahtar);
+    if (u === bulunan.u) girisBasarili(kilitAnahtar, hesapId);
     if (u.status === 'rejected') return bad(res, 'Bu hesap kapatılmış. Sistem yöneticisiyle iletişime geç.', 403);
     /* Onay bekleyen hesaba kod göndermenin anlamı yok: girse de içeri
        alınmaz. Şifre doğruysa durumu hemen söyle. */
@@ -607,6 +627,11 @@ async function uclar(k) {
         bekliyor: true
       });
     }
+    /* Doğru şifre, girilebilen hesap: bu bağlantı hesabın tanıdığı olur (hesabın
+       toplam hata kilidine takılmaz). Okulun açtığı hesapsa (öğrenci, servisçi)
+       bağlantının hata sınırı da büyür (okulun ağı); herkesin kendisi açabildiği
+       yetişkin hesabı sınırı büyütmez. */
+    girisTanidik(ip, u.id, !depo.kullanicilar.yetiskinMi(u));
 
     /* İki adımlı giriş öğrenci dışında herkese zorunludur. Öğrencide ve
        e-postası olmayan hesapta (okulun açtığı servisçi, eski hesaplar) kod

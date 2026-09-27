@@ -20,7 +20,7 @@
    Veli bağlama da burada: okul, velinin T.C. no'su ya da kullanıcı adıyla
    öğrenciye veli bağlar (veli kodu yolu ayrıca açık). */
 
-const { hataSay, hataSiniriDoldu, hizSinir, istemciIp } = require('../guvenlik');
+const { girisBasarili, hataSay, hataSiniriDoldu, hizSinir, istemciIp } = require('../guvenlik');
 const { bad, ok, okulOnbellekBosalt, sendJSON } = require('../http');
 const {
   SUBJECTS, adDuzelt, clean, dogumSorunu, epostaSorunu, kisaAdSorunu, kisiKoduSade, kullaniciAdiSorunu, metinYap, normEmail,
@@ -339,6 +339,9 @@ async function uclar(k, sub) {
       await depo.kullanicilar.guncelle(r.u.id, { pass: ozet, sifreDegismeli: degistirsin });
       await depo.oturumlar.hepsiniKapat(r.u.id);
     });
+    /* Eski şifreye yapılan hatalı denemelerin hesap kilidi kalkar (guvenlik.js
+       "giriş sınırları"): e-postası olmayan öğrencinin "Şifremi unuttum"u budur. */
+    girisBasarili('', r.u.id);
     await bildir(r.u.id, 'Şifren okul yönetimi tarafından değiştirildi.');
     await islemYaz(me, 'sifre.mudur-degistirdi', r.u.fullName, req);
     return ok(res, { message: r.u.fullName + ' için yeni şifre kaydedildi.' +

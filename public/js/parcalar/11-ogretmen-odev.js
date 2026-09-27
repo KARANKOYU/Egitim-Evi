@@ -266,8 +266,9 @@ function odevYeniModal() {
       }
       h += '</div></div>';
     }
-    /* Quiz: pencerenin içinde açılıp kapanan bölüm (14c-quiz.js). */
-    h += '</div>' + ekAlani('odev', 'odev') + quizAlani('odev', null) + '<div id="mHata" style="margin-top:9px"></div>';
+    /* Öğrencinin dosya yüklemesi varsayılan kapalı; quiz bundan bağımsız (14c-quiz.js). */
+    h += '</div>' + ekAlani('odev', 'odev') + dosyaYuklemeKutusu('mDosyaYukleme', false) + quizAlani('odev', null) +
+      '<div id="mHata" style="margin-top:9px"></div>';
 
     modalAc('Yeni ödev', h,
       '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
@@ -276,6 +277,17 @@ function odevYeniModal() {
     odevSecimBagla();
     ekAlaniKur('odev');
   });
+}
+
+/* "Öğrenciler bu ödeve dosya yükleyebilsin": yeni ödevde kapalı gelir.
+   Düzenlemede kapatılırsa önceden yüklenmiş dosyalar silinmez. Son teslim
+   değiştirilirse dosyalar en az 7 gün daha kalır (sunucu: şema 034). */
+function dosyaYuklemeKutusu(id, acik, duzenleme) {
+  return '<div class="dosya-izin"><label class="onay"><input type="checkbox" id="' + id + '"' + (acik ? ' checked' : '') + '>' +
+    '<span>Öğrenciler bu ödeve dosya yükleyebilsin</span></label>' +
+    '<div class="hint">Her öğrenci en fazla 10 dosya, toplam 50 MB yükler. Dosyalar son teslimden 7 gün sonra silinir.' +
+    (duzenleme ? ' Kapatırsan yüklenmiş dosyalar silinmez; yalnız yeni yükleme durur. Son teslimi değiştirirsen ' +
+      'yüklenmiş dosyalar en az 7 gün daha kalır.' : '') + '</div></div>';
 }
 
 /* Sınıf kutusu tüm öğrencilerini seçer; öğrenciler değişince sınıf kutusu güncellenir. */
@@ -334,7 +346,9 @@ function odevAc(id) {
       '<div class="odev-konu"><span>Konusu</span>' + (a.description ? esc(a.description) : esc(a.subject)) + '</div>' +
       '<div class="odev-meta">' + esc(a.subject) + ' · ' +
       (a.endAt ? 'son teslim ' + tarihGunSaat(a.endAt, a.endTime) : 'süresiz') + ' · ' +
-      d.students.length + ' öğrenci · ' + acan + ' kişi açtı</div>' + ekListesiGoster(d.ekler, quizOgretmenSatiri(d.quiz, a)) + '</div>';
+      d.students.length + ' öğrenci · ' + acan + ' kişi açtı · ' +
+      (a.dosyaYukleme === false ? 'dosya yükleme kapalı' : 'öğrenciler dosya yükleyebilir') + '</div>' +
+      ekListesiGoster(d.ekler, quizOgretmenSatiri(d.quiz, a)) + '</div>';
 
     /* Teslim tarihi geçmiş ya da sonuçlanmış olsa da sonuçlar değiştirilebilir;
        öğretmen bunu bilmezse ekranı salt okunur sanıyor. */
@@ -442,6 +456,7 @@ EYLEMLER['odev-duzelt'] = function () {
     tarihAlani('odBit', (a.endAt || '').slice(0, 10), { min: 'odBas' }) + '<label class="gizli-etiket" for="odSaat">Son saat</label>' +
     saatAlani('odSaat', a.endTime || '12:00') + '</div></div>' +
     ekAlani('odevDuzelt', 'odev', S._acikOdevEkleri) +
+    dosyaYuklemeKutusu('odDosyaYukleme', a.dosyaYukleme !== false, true) +
     quizAlani('duzelt', S._acikOdevQuiz) +
     '<div id="odMesaj"></div>',
     '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
@@ -456,6 +471,7 @@ EYLEMLER['odev-duzelt-kaydet'] = function (el, id) {
   formHatalariniSil(kok);
   var g = { title: $('odBaslik').value.trim(), description: $('odAciklama').value.trim(),
     startAt: $('odBas').value, startTime: $('odBasSaat').value, endAt: $('odBit').value, endTime: $('odSaat').value || '12:00',
+    dosyaYukleme: !!($('odDosyaYukleme') && $('odDosyaYukleme').checked),
     ekIdler: ekIdleri('odevDuzelt'), ekSilIdler: ekSilinecekler('odevDuzelt') };
   if (ekYukleniyor('odevDuzelt')) { mesajGoster('odMesaj', 'uyari', 'Dosyalar yükleniyor; bitince kaydet.'); return; }
   if (!g.title) alanHatasi('odBaslik', 'Ödevin adını yaz.');

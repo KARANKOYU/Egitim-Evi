@@ -280,7 +280,7 @@ async function uclar(k) {
         return bad(res, 'Alıcı kalmadı. Seçtiğin kişiler mesaj almayı kapatmış olabilir.');
       }
 
-      /* Ekler: önceden yüklenmiş taslaklar (toplam 150 MB, 7 gün saklanır). */
+      /* Ekler: önceden yüklenmiş taslaklar (toplam 50 MB, 7 gün saklanır). */
       const ek = await ekleriDogrula(me, 'mesaj', body.ekIdler);
       if (ek.hata) return bad(res, ek.hata);
 

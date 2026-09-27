@@ -275,7 +275,8 @@ const ADIM_METNI = {
   'ogretmen|Ödevler': A(`Öğretmenin verdiği ödevler: süren, sonuçlandırılmayı bekleyen ve sonuçlanmış.`, 'Ödev'),
   'ogretmen|Ödevler — süzgeç: sonuçlananlar': A(`Süzgeçle ders, durum ve tarih aralığına göre daraltılır.`),
   'ogretmen|Yeni ödev penceresi (ekler: sürükle-bırak)': A(`Yeni ödev: ders, ad, açıklama, başlangıç ve son teslim
-    (gün ve saat), kimlere gideceği (sınıflar ve öğrenciler tek tek). Dosyalar sürükleyip bırakılarak eklenir.`),
+    (gün ve saat), kimlere gideceği (sınıflar ve öğrenciler tek tek). Dosyalar sürükleyip bırakılarak eklenir.
+    <b>Öğrenciler bu ödeve dosya yükleyebilsin</b> kutusu kapalı gelir; işaretlenmezse öğrenci dosya yükleyemez.`),
   'ogretmen|Yeni ödev — son tarih takvimi (hafta numarası, Bugün · Temizle · Tamam)': A(`Tarih K12net'teki gibi
     "02.10.2026" yazar, yanındaki takvim düğmesi ayı açar: solda hafta numarası, <b>Bugün · Temizle · Tamam</b>. Günlerin
     altındaki noktalar o güne düşen tatili, okul etkinliğini ve öğretmenin öteki ödevlerini gösterir; üzerine gelinen
@@ -283,7 +284,7 @@ const ADIM_METNI = {
   'ogretmen|Yeni ödev — takvim (telefon)': A(`Telefonda takvim ekranın altından açılır; günler parmakla basılacak büyüklüktedir.`),
   'ogretmen|Yeni mesaj — ekler kutusu': A(`Mesaja da dosya eklenir: sürükle-bırak ya da tıklayıp seç, birden çok dosya.`),
   'ogretmen|Yeni mesaj — iki dosya sürükleyip bırakıldı': A(`Eklenen dosyalar boyutlarıyla listelenir. Bir mesajın ekleri
-    toplam 150 MB olabilir ve 7 gün sonra silinir.`),
+    toplam 50 MB olabilir ve 7 gün sonra silinir.`),
   'ogretmen|Yeni ödev — ek dosyayla': A(`Örnek ödev: "Oran orantı çalışma kâğıdı", ekinde PDF çalışma kâğıdı. Öğrencilere
     "Yeni ödev" bildirimi, velilerine de çocuğun adıyla aynı bildirim gider.`),
   'ogretmen|Ödev kontrolü (sonuçlanmış, 6 sonuç türü)': A(`Ödev kontrol ekranı: her öğrencinin yanında sonuç seçilir:
@@ -418,7 +419,8 @@ const ADIM_METNI = {
   'ogrenci|Sınavlarım (telefon)': A(`Sınav grafiği telefonda.`),
   'ogrenci|Etütlerim (telefon)': A(`Etütler telefonda.`),
   'ogrenci|Ödev ayrıntısı (açılınca turuncu kalkar)': A(`Ödev açılınca açılma zamanı kaydedilir, turuncu kalkar; öğretmen
-    ödevin ne zaman açıldığını görür. Süre bitmeden dosya yüklenir, süre geçince yüklenmez.`, 'Ödev ayrıntısı'),
+    ödevin ne zaman açıldığını görür. Öğretmen dosya yüklemeyi açtıysa süre bitmeden dosya yüklenir (en fazla 50 MB;
+    çubuk ne kadar yer kaldığını gösterir), süre geçince yüklenmez.`, 'Ödev ayrıntısı'),
   'ogrenci|Ödevler — açtıktan sonra': A(`Açılan ödev artık turuncu değil.`),
   'ogrenci|Ödevin ekleri (silinme günüyle)': A(`Öğretmenin eklediği dosyalar; her birinin silineceği gün yazar.`),
   'ogrenci|Quizli ödev: ekler listesinde quiz ve Quizi başlat': A(`Quiz ödevin eklerinde soru sayısı ve süresiyle görünür.

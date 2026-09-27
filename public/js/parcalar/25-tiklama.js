@@ -505,6 +505,7 @@ function islem(act, el) {
       endTime: $('mBitSaat') ? $('mBitSaat').value : '12:00',
       studentIds: idler,
       ekIdler: ekIdleri('odev'),
+      dosyaYukleme: !!($('mDosyaYukleme') && $('mDosyaYukleme').checked),
       quiz: odevQuizi.quiz || undefined
     }).then(function () {
       modalKapat(); git('ogr-odevler');

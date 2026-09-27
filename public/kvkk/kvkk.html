@@ -77,7 +77,7 @@
 
   <div class="belge-ust">
     <h1>Kişisel Verilerin Korunması Aydınlatma Metni</h1>
-    <div class="alt">Sürüm 1.12 · Yürürlük tarihi: 27.09.2026</div>
+    <div class="alt">Sürüm 1.13 · Yürürlük tarihi: 27.09.2026</div>
   </div>
 
   <p>
@@ -110,7 +110,7 @@
       <tr><td>Okul, sınıf, şube bilgisi</td><td>Öğrenci; öğretmen ve müdürün hangi okullarda rolü olduğu</td></tr>
       <tr><td>Ödev durumu ve sonuçları</td><td>Öğrenci</td></tr>
       <tr><td>Ödev yıldızları</td><td>Öğrenci; önemli bulduğu ödevi işaretler. Yalnızca öğrencinin kendisi görür.</td></tr>
-      <tr><td>Ödeve yüklenen dosyalar (belge, fotoğraf, ses, video)</td><td>Öğrenci; yalnızca öğrencinin kendisi, velisi, ödevi veren öğretmen ve müdür görür. Yüklendikten 7 gün sonra silinir.</td></tr>
+      <tr><td>Ödeve yüklenen dosyalar (belge, fotoğraf, ses, video)</td><td>Öğrenci; yalnızca öğretmen o ödevde dosya yüklemeyi açtıysa (bir ödeve en fazla 10 dosya, toplam 50 MB). Yalnızca öğrencinin kendisi, velisi, ödevi veren öğretmen ve müdür görür. Ödevin son tesliminden 7 gün sonra silinir; son teslimi olmayan ödevde ödev sonuçlandırıldıktan 7 gün sonra, hiç sonuçlandırılmazsa yüklendikten 60 gün sonra silinir. Son teslim ileri alınırsa silinme de ileri kayar; son teslim değiştirilir ya da ödev yeniden açılırsa dosyalar değişiklikten en az 7 gün sonra silinir. Öğretmen dosya yüklemeyi sonradan kapatırsa yüklenmiş dosyalar bu sürelere kadar kalır.</td></tr>
       <tr><td>Quiz cevapları, süreleri ve sekme değiştirme kaydı</td><td>Öğrenci; yalnızca öğretmen ödeve quiz eklediyse ve öğrenci quizi başlattıysa. Kaydedilenler: seçtiği şıklar ve açık uçlu sorulara yazdığı cevaplar (her cevabın kaydedildiği an), quizi başlattığı ve bitirdiği an ile bitiş nedeni, soru başına süreli quizde her sorunun açıldığı ve kapandığı an, bir soru süresi dolduğu ya da sekmeden çıkıldığı için kapandıysa bunun nedeni ve bitince doğru sayısı (puan). Quiz sürerken öğrenci başka sekmeye ya da uygulamaya geçerse kaç kez çıktığı ve dışarıda toplam kaç saniye kaldığı kaydedilir; 2 saniyeden kısa çıkışlar sayılmaz. Bunun için yalnızca quiz sayfasının ekranda olup olmadığına bakılır: hangi sekmeye ya da uygulamaya geçildiği, ekran görüntüsü, kamera ya da ses alınmaz. Hepsini ödevi veren öğretmen görür (öğretmeni okuldan ayrılmış ödevde müdür). Öğrenci kaç kez çıktığını görür; cevaplarını quiz sürerken, bitirdikten sonra ise puanı ve doğru cevaplarla birlikte sonuçlar açılınca görür. Veli ile öğrencinin ödevlerine bakabilen öğretmen ve müdür yalnızca durumu (başlamadı, devam ediyor, bitirdi) ve sonuçlar açılınca puanı görür; soruları, cevapları ve sekme kaydını görmez. Puan yalnızca öneridir; ödevin sonucunu öğretmen kendisi seçer. Ödev ya da öğrencinin hesabı silinince silinir.</td></tr>
       <tr><td>Mesaj ve ödev ekleri (belge, fotoğraf, ses, video)</td><td>Mesaj yazan ya da ödev veren kişi ekler. Mesajın ekini gönderen ve alıcılar; ödevin ekini öğretmen, ödevin öğrencileri, velileri ve müdür görür. Yüklendikten 7 gün sonra silinir.</td></tr>
       <tr><td>Öğrencinin önceki okulları</td><td>Öğrenci başka okula geçince eski okulun adı, eğitim yılları ve sınıfı öğrencinin geçmişine yazılır. Eski okulun ödev, not ve devamsızlık kayıtları o okulda kalır; yeni okul görmez. Öğrenci ve velisi eski dönemleri seçip görebilir.</td></tr>
@@ -221,8 +221,10 @@
     Sistem yöneticisi hesabı sildiğinde kişisel veriler kayıtlardan kaldırılır.
     Yetişkin hesabı sahibi <strong>Ayarlar &gt; Hesabımı sil</strong> ile hesabını kendisi silebilir;
     hesap, çocuk bağları ve öğretmenlik rolleri hemen silinir, verdiği ödev ve notlar okulda kalır.
-    Ödeve yüklenen dosyalar ile mesaj ve ödev ekleri yüklendikten 7 gün sonra, ödev ya da
-    mesaj daha önce silinirse onunla birlikte silinir. Quiz cevapları, süreleri ve sekme değiştirme
+    Ödeve yüklenen teslim dosyaları ödevin son tesliminden 7 gün sonra (son teslimi olmayan
+    ödevde ödev sonuçlandırıldıktan 7 gün sonra, hiç sonuçlandırılmazsa yüklendikten 60 gün
+    sonra), mesaj ve ödev ekleri yüklendikten 7 gün sonra silinir; ödev ya da mesaj daha önce
+    silinirse onunla birlikte silinir. Quiz cevapları, süreleri ve sekme değiştirme
     kaydı ödevle birlikte saklanır; ödev ya da öğrencinin hesabı silinince silinir.
     Açılış sayfası yorumu hesapla birlikte silinir.
     Servis seferleri (son konum dahil) 30 gün sonra silinir. Servis yoklaması (binme ve eve
@@ -295,7 +297,7 @@
   <a class="btn ghost geri" href="/login">← Giriş sayfasına dön</a>
 
   <footer>
-    Eğitim Evi · Aydınlatma Metni Sürüm 1.12 · Yürürlük tarihi: 27.09.2026<br>
+    Eğitim Evi · Aydınlatma Metni Sürüm 1.13 · Yürürlük tarihi: 27.09.2026<br>
     Bu metin genel bir şablondur. Okulunuzun adını, iletişim bilgilerini ve
     sunucusunun bulunduğu ülkeyi ekleyerek kendinize uyarlamanız,
     yayına almadan önce bir hukukçuya danışmanız önerilir.

@@ -1,8 +1,11 @@
 /* Ödev teslim dosyaları.
-   Öğrenci ödev penceresinden dosya yükler (ilerleme çubuğuyla); veli
-   çocuğunun dosyalarını, ödevi veren öğretmen bütün teslimleri görür ve
-   indirir. Sınırlar ve yetki sunucuda denetlenir; buradaki ön kontroller
-   yalnızca boşuna yükleme yapılmasın diye. */
+   Öğrenci ödev penceresinden dosya yükler (ilerleme çubuğuyla), öğretmen
+   ödevde "Öğrenciler bu ödeve dosya yükleyebilsin" dediyse; demediyse yükleme
+   alanı hiç çıkmaz, "Bu ödev için dosya yüklenmiyor." yazar. Yükleme alanının
+   üstünde doluluk çubuğu ("32 / 50 MB") durur. Veli çocuğunun dosyalarını,
+   ödevi veren öğretmen bütün teslimleri görür ve indirir; her dosyanın
+   satırında "N gün sonra silinir" yazar. Sınırlar ve yetki sunucuda
+   denetlenir; buradaki ön kontroller yalnızca boşuna yükleme yapılmasın diye. */
 
 var teslimDurum = { odevId: '', ogrenciId: '', veri: null, yukleniyor: 0, hatalar: [] };
 
@@ -26,19 +29,33 @@ function teslimCiz(odevId, ogrenciId) {
       var kap = $('teslimKap');
       if (!kap) return;
       var h = '<h4>' + ik('ek') + 'Teslim dosyaları</h4>';
-      if (!d.dosyalar.length) h += '<div class="hint">' + (d.yukleyebilir ? 'Henüz dosya yüklemedin.' : 'Yüklenmiş dosya yok.') + '</div>';
-      for (var i = 0; i < d.dosyalar.length; i++) h += teslimSatiri(d.dosyalar[i], d.yukleyebilir);
+      /* Öğretmen dosya yüklemeyi açmadıysa: öğrenciye ve veliye tek satır; önceden
+         yüklenmiş dosya varsa yine listelenir. */
+      var kapaliYukleme = d.dosyaYukleme === false;
+      if (kapaliYukleme) h += '<div class="hint teslim-kapali">' + esc(d.kapali || 'Bu ödev için dosya yüklenmiyor.') + '</div>';
+      else if (!d.dosyalar.length) h += '<div class="hint">' + (d.yukleyebilir ? 'Henüz dosya yüklemedin.' : 'Yüklenmiş dosya yok.') + '</div>';
+      var silebilir = d.silebilir === undefined ? d.yukleyebilir : d.silebilir;
+      for (var i = 0; i < d.dosyalar.length; i++) h += teslimSatiri(d.dosyalar[i], silebilir);
       /* Reddedilen ya da yarıda kalan dosyaların uyarısı liste yenilenince kaybolmasın. */
       h += '<div id="teslimYuklemeler">' + teslimDurum.hatalar.join('') + '</div>';
       teslimDurum.hatalar = [];
       if (d.yukleyebilir) {
-        /* Sürükle-bırak ya da basıp seç; birden çok dosya olur. */
-        h += '<input type="file" id="teslimDosya" multiple hidden>' +
-          '<label class="ek-birak" id="teslimBirak" for="teslimDosya">' + ik('yukle') +
-          '<span><b>Dosya yükle</b>: buraya sürükle ya da basıp seç</span>' +
-          '<small>Bu ödeve yüklediklerinin toplamı en fazla 150 MB. Dosyalar ' + (d.sinir.gun || 7) +
-          ' gün sonra silinir; teslim süresi dolana kadar silip yeniden yükleyebilirsin.</small></label>';
-      } else if (d.kapali && !ogrenciId && S.user.role === 'student') {
+        var kullanilan = d.kullanilan !== undefined ? d.kullanilan : d.dosyalar.reduce(function (t, x) { return t + x.boyut; }, 0);
+        var sayiDolu = d.dosyalar.length >= d.sinir.adet;
+        /* Doluluk çubuğu; alan ya da dosya sayısı dolunca bırakma kutusu yerine uyarı. */
+        h += dolulukCubugu(kullanilan, d.sinir.toplam, 'Bu ödev için dosya alanın doldu (50 MB). Yer açmak için bir dosyanı sil.');
+        if (sayiDolu && kullanilan < d.sinir.toplam) {
+          h += '<div class="doluluk-uyari" role="status">Bir ödeve en fazla ' + d.sinir.adet + ' dosya yükleyebilirsin. Yer açmak için bir dosyanı sil.</div>';
+        }
+        if (!sayiDolu && kullanilan < d.sinir.toplam) {
+          /* Sürükle-bırak ya da basıp seç; birden çok dosya olur. */
+          h += '<input type="file" id="teslimDosya" multiple hidden>' +
+            '<label class="ek-birak" id="teslimBirak" for="teslimDosya">' + ik('yukle') +
+            '<span><b>Dosya yükle</b>: buraya sürükle ya da basıp seç</span>' +
+            '<small>En fazla ' + d.sinir.adet + ' dosya, toplam 50 MB. ' + esc(d.saklama || '') +
+            ' Teslim süresi dolana kadar silip yeniden yükleyebilirsin.</small></label>';
+        }
+      } else if (d.kapali && !kapaliYukleme && !ogrenciId && S.user.role === 'student') {
         h += '<div class="hint">' + esc(d.kapali) + '</div>';
       }
       kap.innerHTML = h;
@@ -61,14 +78,9 @@ function teslimCiz(odevId, ogrenciId) {
 function teslimSatiri(f, silinebilir) {
   return '<div class="teslim-dosya"><div class="buyu"><div class="ad">' + esc(f.ad) + '</div>' +
     '<div class="alt">' + boyutYaz(f.boyut) + ' · ' + tarihSaat(f.yuklenme) +
-    (f.bitis ? ' · ' + teslimKalanGun(f.bitis) : '') + '</div></div>' +
+    (f.bitis ? ' · <span title="' + esc(tarihSaat(f.bitis)) + '">' + silinmeYazisi(f.bitis) + '</span>' : '') + '</div></div>' +
     '<button class="btn kucuk ghost" data-act="teslim-indir" data-id="' + esc(f.id) + '" data-ad="' + esc(f.ad) + '">İndir</button>' +
     (silinebilir ? '<button class="btn kucuk gri" data-act="teslim-sil" data-id="' + esc(f.id) + '">Sil</button>' : '') + '</div>';
-}
-
-function teslimKalanGun(bitis) {
-  var kalan = Math.ceil((new Date(bitis).getTime() - Date.now()) / 86400000);
-  return kalan <= 1 ? 'yarın silinir' : kalan + ' gün sonra silinir';
 }
 
 /* Büyük dosya ve zip tarayıcı belleğine alınmadan doğrudan diske insin diye
@@ -102,14 +114,17 @@ EYLEMLER['teslim-sil'] = function (el, id) {
 /* Seçilen dosyalar sırayla yüklenir; her biri kendi ilerleme çubuğuyla. */
 function teslimKuyruk(dosyalar) {
   var d = teslimDurum.veri, izinli = {}, kalan = d.sinir.adet - d.dosyalar.length;
+  if (!d.yukleyebilir) return;
   var toplam = d.dosyalar.reduce(function (t, x) { return t + x.boyut; }, 0);
   for (var i = 0; i < d.sinir.uzantilar.length; i++) izinli[d.sinir.uzantilar[i]] = 1;
   var kap = $('teslimYuklemeler');
   var gidecek = [];
   for (var j = 0; j < dosyalar.length; j++) {
     var f = dosyalar[j], u = (f.name.lastIndexOf('.') > 0 ? f.name.slice(f.name.lastIndexOf('.') + 1) : '').toLowerCase();
-    var sorun = !f.size ? 'boş dosya' : toplam + f.size > d.sinir.toplam ? 'toplam 150 MB\'ı geçiyor' : !izinli[u] ? 'bu tür yüklenemez' :
-      gidecek.length >= kalan ? 'dosya sayısı sınırı' : '';
+    var bos = d.sinir.toplam - toplam;
+    var sorun = !f.size ? 'boş dosya' : f.size > d.sinir.dosya ? 'bir dosya en fazla 50 MB olabilir' :
+      f.size > bos ? (bos > 0 ? 'sığmıyor: bu ödev için ' + boyutYazi(bos) + ' boş yerin kaldı' : 'bu ödev için dosya alanın doldu (50 MB)') :
+      !izinli[u] ? 'bu tür yüklenemez' : gidecek.length >= kalan ? 'en fazla ' + d.sinir.adet + ' dosya yüklenir' : '';
     if (!sorun) toplam += f.size;
     if (sorun) {
       var satir = '<div class="yukleme-satir hata"><b>' + esc(f.name) + '</b> — ' + sorun + '</div>';
@@ -220,12 +235,14 @@ function mbYaz(b) {
 function teslimOgesi(f) {
   var tur = teslimMedyaTuru(f.ad);
   var simge = tur === 'video' ? 'oynat' : tur === 'ses' ? 'muzik' : tur === 'resim' ? 'resim' : 'belge';
+  var silinme = f.bitis ? silinmeYazisi(f.bitis) : '';
   var ne = tur === 'video' ? 'Video — oynat' : tur === 'ses' ? 'Ses — dinle' : tur === 'resim' ? 'Fotoğraf — aç' : 'Dosya — indir';
   return '<div class="teslim-oge-kap"><button type="button" class="teslim-oge ' + (tur || 'dosya') + '" data-act="teslim-oge" data-id="' + esc(f.id) +
     '" data-ad="' + esc(f.ad) + '" data-tur="' + tur + '" data-boyut="' + esc(f.boyut) + '" title="' + esc(ne) + '">' +
     '<span class="teslim-oge-ikon">' + ik(simge) + '</span>' +
     '<span class="teslim-oge-ad">' + esc(f.ad) + '</span>' +
-    '<span class="teslim-oge-boyut">' + esc(mbYaz(f.boyut)) + '</span></button>' +
+    '<span class="teslim-oge-boyut">' + esc(mbYaz(f.boyut)) + '</span>' +
+    (silinme ? '<span class="teslim-oge-silinme" title="' + esc(tarihSaat(f.bitis)) + '">' + silinme + '</span>' : '') + '</button>' +
     '<button type="button" class="baglanti kucuk-baglanti" data-act="teslim-sil" data-id="' + esc(f.id) + '">Sil</button></div>';
 }
 
@@ -238,7 +255,7 @@ function teslimOgrenciAc(el, odevId, ogrenciId) {
     if (!liste.length) h += '<div class="hint">Dosya kalmadı.</div>';
     else h += '<div class="teslim-ogeler">' + liste.map(teslimOgesi).join('') + '</div>';
     h += '<div class="hint" style="margin-top:10px">Fotoğraf, video ve ses tıklayınca burada açılır; öbür dosyalar ' +
-      'sorup bilgisayarına iner. Uygunsuz bir dosyayı silebilirsin.</div></div>';
+      'sorup bilgisayarına iner. Uygunsuz bir dosyayı silebilirsin.' + (d.saklama ? ' ' + esc(d.saklama) : '') + '</div></div>';
     modalAc(((liste[0] && liste[0].ogrenci) || 'Öğrenci') + ' — ' + liste.length + ' ek', h);
   })['catch'](hataGoster);
 }

@@ -4,13 +4,25 @@
    - indirme her zaman ek (attachment, nosniff, sandbox) olarak gider;
    - başka öğrenci, başka öğretmen, bağsız veli dosyaya erişemez;
    - öğretmenin zip'i geçerli: adlar öğrenci klasörlerinde, CRC32'ler doğru;
-   - sayı sınırı, sonuçlandırılmış ve süresi geçmiş ödev, büyük dosya reddedilir. */
+   - sayı sınırı, sonuçlandırılmış ve süresi geçmiş ödev, büyük dosya reddedilir;
+   - "Öğrenciler bu ödeve dosya yükleyebilsin" varsayılan kapalı: kapalıyken 403
+     (dosyaKapali), açılınca yüklenir, kapatılınca yüklenmiş dosya silinmez;
+   - tek dosya ve öğrencinin bir ödevdeki toplamı 50 MB (gövde okunmadan
+     reddedilir), liste doluluğu (kullanilan) verir; ekler de 50 MB;
+   - silinme anı: son teslim + 7 gün (son teslim ileri alınınca değişir); son
+     teslimsiz ödevde yüklemeden 60 gün, sonuçlandırılınca + 7 gün; son teslim
+     yanlışlıkla geçmişe yazılınca en erken düzenlemeden 7 gün sonra (saatlik
+     temizliğin silme sorgusu test veritabanında doğrudan denenir);
+   - okulun dosya alanı (tumtest EE_OKUL_DOSYA_GB=0.001 verir): %80'i geçince
+     müdüre ve yöneticiye bir kez bildirim, dolunca 507 ve bir kez "doldu". */
 const http = require('http');
 const zlib = require('zlib');
 const crypto = require('crypto');
 const { iste, girisYap, hesapAc } = require('./giris');
 
 const BASE = process.env.EE_BASE || 'http://localhost:3000';
+const MB = 1024 * 1024;
+const OKUL_GB = Number(process.env.EE_OKUL_DOSYA_GB) || 0;   // sunucuya da aynısı verilmiş olmalı
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
   if (sart) { gecti++; console.log('  GECTI  ' + ad); }
@@ -33,13 +45,24 @@ async function indir(token, yol) {
   return { status: r.status, headers: r.headers, veri: Buffer.from(await r.arrayBuffer()) };
 }
 
-/* Gövdeyi göndermeden büyük boyut bildir: sunucu okumadan reddetmeli. */
-function buyukBildir(token, odevId) {
+/* Saatlik temizliğin silme sorgusu (depo eskileriSil), test veritabanında doğrudan.
+   Dönen: silinen kayıtların kimlikleri; veritabanı test veritabanı değilse null. */
+async function supurmeDene() {
+  process.env.EE_DATA = require('path').join(__dirname, 'testdata');
+  require('../sunucu/ayarlar').ayarlariYukle();
+  const baglanti = require('../sunucu/veri/baglanti');
+  if (!/_test$/.test(baglanti.veritabaniAdi() || '')) return null;
+  try { return await require('../sunucu/veri/depo/odev-dosyalari').eskileriSil(); } finally { await baglanti.kapat(); }
+}
+
+/* Gövdeyi göndermeden büyük boyut bildir: sunucu okumadan reddetmeli.
+   yol: yükleme adresi (varsayılan ödev teslimi), boyut: bildirilen bayt. */
+function buyukBildir(token, odevId, boyut, yol) {
   return new Promise(resolve => {
-    const u = new URL(BASE + '/api/odev-dosya/yukle?odev=' + encodeURIComponent(odevId));
+    const u = new URL(BASE + (yol || '/api/odev-dosya/yukle?odev=' + encodeURIComponent(odevId)));
     const req = http.request({ hostname: u.hostname, port: u.port, path: u.pathname + u.search, method: 'POST', headers: {
       Authorization: 'Bearer ' + token, 'Content-Type': 'application/octet-stream', 'X-Dosya-Adi': 'video.mp4',
-      'Content-Length': String(300 * 1024 * 1024) } }, res => {
+      'Content-Length': String(boyut || 300 * 1024 * 1024) } }, res => {
       let t = '';
       res.on('data', c => { t += c; });
       res.on('end', () => { req.destroy(); resolve({ status: res.statusCode, body: t }); });
@@ -76,8 +99,9 @@ function zipOku(buf) {
   const veli = await girisYap(vK, 'Test1234!');
   await iste('/api/parent/link', 'POST', { code: (await iste('/api/me', 'GET', null, o1.token)).body.user.code }, veli.token);
 
+  /* Testteki ödevlerde öğrenci dosya yükleyebilir (varsayılan kapalı; 5. bölüm). */
   const odevAc = async (baslik, bitis) => (await iste('/api/assignments', 'POST', { title: baslik, subject: 'Matematik',
-    studentIds: [o1.user.id, o2.user.id], startAt: gun(-1), endAt: bitis, endTime: '23:59' }, mat.token)).body.assignment.id;
+    studentIds: [o1.user.id, o2.user.id], startAt: gun(-1), endAt: bitis, endTime: '23:59', dosyaYukleme: true }, mat.token)).body.assignment.id;
   const odev = await odevAc('Proje ödevi ' + z, gun(3));
 
   console.log('=== 1) YÜKLEME ===');
@@ -95,7 +119,10 @@ function zipOku(buf) {
   const ogretmen = await yukle(mat.token, odev, 'a.pdf', Buffer.from('x'));
   kontrol('öğretmen öğrenci yerine yükleyemiyor', ogretmen.status === 403, 'status ' + ogretmen.status);
   const buyuk = await buyukBildir(o1.token, odev);
-  kontrol('200 MB üstü gövde okunmadan reddedildi', buyuk.status === 413, 'status ' + buyuk.status);
+  kontrol('300 MB gövde okunmadan reddedildi', buyuk.status === 413, 'status ' + buyuk.status);
+  const elliBir = await buyukBildir(o1.token, odev, 50 * MB + 1);
+  kontrol('tek dosya en fazla 50 MB: 50 MB + 1 bayt okunmadan reddedildi', elliBir.status === 413 && /50 MB/.test(elliBir.body),
+    elliBir.status + ' ' + elliBir.body);
   const y2 = await yukle(o2.token, odev, 'burak.docx', Buffer.from('burak'));
   kontrol('ikinci öğrenci yükledi', y2.status === 200, J(y2.body));
 
@@ -193,6 +220,147 @@ function zipOku(buf) {
   await iste('/api/assignments/' + odev + '/delete', 'POST', {}, mat.token);
   const odevSilindi = await indir(mat.token, '/api/odev-dosya/indir?id=' + y1.body.dosya.id);
   kontrol('ödev silinince dosyaları da erişilemez', odevSilindi.status === 404, 'status ' + odevSilindi.status);
+
+  console.log('=== 5) DOSYA YÜKLEME İZNİ (YENİ ÖDEVDE KAPALI) ===');
+  const izinGovde = (ek) => Object.assign({ title: 'İzin ödevi ' + z, subject: 'Matematik', startAt: gun(-1), endAt: gun(3), endTime: '23:59' }, ek);
+  const izinYeni = await iste('/api/assignments', 'POST', Object.assign(izinGovde({}), { studentIds: [o1.user.id, o2.user.id] }), mat.token);
+  const izin = izinYeni.body.assignment || {};
+  kontrol('yeni ödevde "dosya yükleyebilsin" varsayılan kapalı', izinYeni.status === 200 && izin.dosyaYukleme === false, J(izinYeni.body));
+  const kapaliYukle = await yukle(o1.token, izin.id, 'kapali.pdf', Buffer.from('x'));
+  kontrol('kapalıyken yükleme 403 ve dosyaKapali', kapaliYukle.status === 403 && kapaliYukle.body.dosyaKapali === true &&
+    kapaliYukle.body.error === 'Bu ödev için dosya yüklenmiyor.', J(kapaliYukle));
+  const kapaliListe = (await iste('/api/odev-dosya?odev=' + izin.id, 'GET', null, o1.token)).body;
+  kontrol('liste: yükleme yok, "Bu ödev için dosya yüklenmiyor."', kapaliListe.dosyaYukleme === false &&
+    kapaliListe.yukleyebilir === false && kapaliListe.kapali === 'Bu ödev için dosya yüklenmiyor.', J(kapaliListe));
+  const acildi = await iste('/api/assignments/' + izin.id + '/update', 'POST', izinGovde({ dosyaYukleme: true }), mat.token);
+  kontrol('Ödevi düzenle ile açıldı', acildi.status === 200 && acildi.body.assignment.dosyaYukleme === true, J(acildi.body));
+  const acikBildirim = (await iste('/api/notifications', 'GET', null, o1.token)).body.notifications || [];
+  kontrol('öğrenciye "artık dosya yükleyebilirsin" bildirimi gitti',
+    acikBildirim.some(n => n.text.indexOf('İzin ödevi ' + z) >= 0 && n.text.indexOf('dosya yükleyebilirsin') >= 0), J(acikBildirim.slice(0, 3)));
+  const acikYukle = await yukle(o1.token, izin.id, 'acik.pdf', Buffer.from('açıkken yüklendi'));
+  kontrol('açılınca yüklendi', acikYukle.status === 200, J(acikYukle.body));
+  const ayniKalir = await iste('/api/assignments/' + izin.id + '/update', 'POST', izinGovde({ description: 'değişti' }), mat.token);
+  kontrol('alan gönderilmezse izin değişmez', ayniKalir.body.assignment && ayniKalir.body.assignment.dosyaYukleme === true, J(ayniKalir.body));
+  const kapandi = await iste('/api/assignments/' + izin.id + '/update', 'POST', izinGovde({ dosyaYukleme: false }), mat.token);
+  const kapandiYukle = await yukle(o1.token, izin.id, 'sonra.pdf', Buffer.from('x'));
+  kontrol('kapatılınca yeni yükleme 403', kapandi.body.assignment.dosyaYukleme === false && kapandiYukle.status === 403 &&
+    kapandiYukle.body.dosyaKapali === true, J(kapandiYukle));
+  const kapandiOgretmen = (await iste('/api/odev-dosya?odev=' + izin.id, 'GET', null, mat.token)).body;
+  const kapandiOgrenci = (await iste('/api/odev-dosya?odev=' + izin.id, 'GET', null, o1.token)).body;
+  kontrol('kapatılınca yüklenmiş dosya silinmedi: öğretmen de öğrenci de görüyor', kapandiOgretmen.dosyalar.length === 1 &&
+    kapandiOgretmen.dosyaYukleme === false && kapandiOgrenci.dosyalar.length === 1 && kapandiOgrenci.yukleyebilir === false &&
+    kapandiOgrenci.silebilir === false, J(kapandiOgrenci));
+  const kapaliSil = await iste('/api/odev-dosya/sil', 'POST', { id: acikYukle.body.dosya.id }, o1.token);
+  kontrol('yükleme kapatılınca teslim donar: öğrenci yüklediği dosyayı silemez (403 dosyaKapali)', kapaliSil.status === 403 &&
+    kapaliSil.body.dosyaKapali === true, J(kapaliSil.body));
+  const dizgi = await iste('/api/assignments', 'POST', Object.assign(izinGovde({ title: 'Dizgi izin ' + z, dosyaYukleme: 'true' }),
+    { studentIds: [o1.user.id] }), mat.token);
+  kontrol('izin yalnız true ile açılır ("true" metni kapalı sayılır)', dizgi.body.assignment && dizgi.body.assignment.dosyaYukleme === false,
+    J(dizgi.body));
+
+  console.log('=== 6) 50 MB SINIRI VE DOLULUK ===');
+  const sinirOdev = await odevAc('Sınır ödevi ' + z, gun(3));
+  const s1 = await yukle(o1.token, sinirOdev, 'bir.pdf', crypto.randomBytes(20000));
+  const sListe = (await iste('/api/odev-dosya?odev=' + sinirOdev, 'GET', null, o1.token)).body;
+  kontrol('liste doluluğu veriyor: kullanılan 20000, sınır 50 MB', s1.status === 200 && sListe.kullanilan === 20000 &&
+    sListe.sinir.toplam === 50 * MB && sListe.sinir.dosya === 50 * MB && sListe.sinir.adet === 10, J(sListe.sinir) + ' ' + sListe.kullanilan);
+  const sigmaz = await buyukBildir(o1.token, sinirOdev, 50 * MB - 10000);
+  kontrol('toplamı 50 MB\'ı geçen dosya okunmadan reddedildi: "sığmıyor", kalan yer yazıyor', sigmaz.status === 413 &&
+    /sığmıyor/.test(sigmaz.body) && /boş yerin kaldı/.test(sigmaz.body) && /50 MB/.test(sigmaz.body), sigmaz.status + ' ' + sigmaz.body);
+  const ekBuyuk = await buyukBildir(mat.token, null, 50 * MB + 1, '/api/ek/yukle?tur=mesaj');
+  kontrol('mesaj eki de en fazla 50 MB', ekBuyuk.status === 413 && /50 MB/.test(ekBuyuk.body), ekBuyuk.status + ' ' + ekBuyuk.body);
+
+  console.log('=== 7) SİLİNME ZAMANI ===');
+  const an = (g, saat) => new Date(g + 'T' + saat + ':00').getTime();
+  const yakin = (iso, ms) => !!iso && Math.abs(new Date(iso).getTime() - ms) < 3 * 60 * 1000;
+  const GUN = 86400000;
+  const tOdev = await odevAc('Silinme ödevi ' + z, gun(10));
+  const tY = await yukle(o1.token, tOdev, 'silinme.pdf', Buffer.from('silinme'));
+  const tOgr = (await iste('/api/odev-dosya?odev=' + tOdev, 'GET', null, o1.token)).body;
+  const tOgrt = (await iste('/api/odev-dosya?odev=' + tOdev, 'GET', null, mat.token)).body;
+  kontrol('son teslimli ödevde silinme = son teslim + 7 gün (öğrenci ve öğretmen)', tY.status === 200 &&
+    yakin(tOgr.dosyalar[0].bitis, an(gun(10), '23:59') + 7 * GUN) && yakin(tOgrt.dosyalar[0].bitis, an(gun(10), '23:59') + 7 * GUN) &&
+    tOgr.saklama === 'Dosyalar son teslimden 7 gün sonra silinir.', J(tOgr.dosyalar[0]) + ' ' + tOgr.saklama);
+  await iste('/api/assignments/' + tOdev + '/update', 'POST', { title: 'Silinme ödevi ' + z, startAt: gun(-1), endAt: gun(20), endTime: '10:00' }, mat.token);
+  const tIleri = (await iste('/api/odev-dosya?odev=' + tOdev, 'GET', null, o1.token)).body;
+  kontrol('son teslim ileri alınınca silinme yeniden hesaplandı', yakin(tIleri.dosyalar[0].bitis, an(gun(20), '10:00') + 7 * GUN),
+    J(tIleri.dosyalar[0]));
+  const suresiz = (await iste('/api/assignments', 'POST', { title: 'Süresiz ödev ' + z, subject: 'Matematik', studentIds: [o1.user.id],
+    startAt: gun(-1), dosyaYukleme: true }, mat.token)).body.assignment;
+  const sY = await yukle(o1.token, suresiz.id, 'suresiz.pdf', Buffer.from('süresiz'));
+  const sL = (await iste('/api/odev-dosya?odev=' + suresiz.id, 'GET', null, o1.token)).body;
+  kontrol('son teslimsiz ödevde silinme = yüklemeden 60 gün sonra', sY.status === 200 && !suresiz.endAt &&
+    yakin(sL.dosyalar[0].bitis, new Date(sL.dosyalar[0].yuklenme).getTime() + 60 * GUN), J(sL.dosyalar[0]));
+  await iste('/api/assignments/' + suresiz.id + '/finish', 'POST', { results: {} }, mat.token);
+  const sBitti = (await iste('/api/odev-dosya?odev=' + suresiz.id, 'GET', null, o1.token)).body;
+  kontrol('sonuçlandırılınca silinme = sonuçlanma + 7 gün', yakin(sBitti.dosyalar[0].bitis, Date.now() + 7 * GUN), J(sBitti.dosyalar[0]));
+  await iste('/api/assignments/' + suresiz.id + '/reopen', 'POST', {}, mat.token);
+  const sAcik = (await iste('/api/odev-dosya?odev=' + suresiz.id, 'GET', null, o1.token)).body;
+  kontrol('yeniden açılınca silinme yeniden hesaplandı (yüklemeden 60 gün)',
+    yakin(sAcik.dosyalar[0].bitis, new Date(sAcik.dosyalar[0].yuklenme).getTime() + 60 * GUN), J(sAcik.dosyalar[0]));
+  /* Öğretmen son teslimi yanlışlıkla geçmişe yazarsa (yılı eksik gibi) dosyalar
+     saatlik temizlikte hemen silinmez: silinme en erken düzenlemeden 7 gün sonra (034). */
+  const gOdev = await odevAc('Geçmiş tarih ödevi ' + z, gun(5));
+  const gY = await yukle(o1.token, gOdev, 'gecmis.pdf', Buffer.from('geçmiş tarih'));
+  const gDuz = await iste('/api/assignments/' + gOdev + '/update', 'POST', { title: 'Geçmiş tarih ödevi ' + z, startAt: gun(-400),
+    endAt: gun(-365), endTime: '10:00' }, mat.token);
+  const gL = (await iste('/api/odev-dosya?odev=' + gOdev, 'GET', null, mat.token)).body;
+  kontrol('son teslim geçmişe alınınca silinme şimdi + 7 gün (hemen silinmez)', gY.status === 200 && gDuz.status === 200 &&
+    gL.dosyalar.length === 1 && yakin(gL.dosyalar[0].bitis, Date.now() + 7 * GUN), J(gL.dosyalar && gL.dosyalar[0]));
+  const supurulen = await supurmeDene();
+  if (supurulen === null) console.log('  (test veritabanı değil: temizlik sorgusu denenmedi)');
+  else {
+    const gSonra = (await iste('/api/odev-dosya?odev=' + gOdev, 'GET', null, mat.token)).body;
+    kontrol('saatlik temizliğin silme sorgusu bu dosyayı silmedi', supurulen.indexOf(gY.body.dosya.id) < 0 &&
+      gSonra.dosyalar.length === 1, J(supurulen) + ' ' + J(gSonra.dosyalar));
+  }
+  await iste('/api/assignments/' + gOdev + '/update', 'POST', { title: 'Geçmiş tarih ödevi ' + z, startAt: gun(-1),
+    endAt: gun(20), endTime: '10:00' }, mat.token);
+  const gDuzelt = (await iste('/api/odev-dosya?odev=' + gOdev, 'GET', null, o1.token)).body;
+  kontrol('tarih düzeltilince silinme yine son teslim + 7 gün', yakin(gDuzelt.dosyalar[0].bitis, an(gun(20), '10:00') + 7 * GUN),
+    J(gDuzelt.dosyalar[0]));
+
+  console.log('=== 8) OKULUN DOSYA ALANI (%80 VE DOLU) ===');
+  if (!OKUL_GB) {
+    console.log('  (EE_OKUL_DOSYA_GB verilmedi: okul alanı bölümü atlandı; tumtest.sh 0.001 verir)');
+  } else {
+    const KOTA = Math.round(OKUL_GB * 1024 * MB);
+    const M = (await girisYap('mudur@test.com', 'Test1234!')).token;
+    const A = (await girisYap('admin@egitimevi.com', 'admin123')).token;
+    const say = async (tok, parca) => ((await iste('/api/notifications', 'GET', null, tok)).body.notifications || [])
+      .filter(n => n.text.indexOf(parca) >= 0).length;
+    /* Okulda bu testin yüklediklerinden başka teslim dosyası yok: kullanım öğretmenin ödevlerinden. */
+    let kullanim = 0;
+    for (const a of (await iste('/api/assignments', 'GET', null, mat.token)).body.assignments || []) {
+      kullanim += (await iste('/api/odev-dosya?odev=' + a.id, 'GET', null, mat.token)).body.toplam || 0;
+    }
+    const kotaOdev = await odevAc('Kota ödevi ' + z, gun(3));
+    const esik = Math.ceil(0.8 * KOTA);
+    const alt = esik - kullanim - 1000;
+    const k1 = await yukle(o2.token, kotaOdev, 'kota1.pdf', crypto.randomBytes(alt));
+    kontrol('%80 altında bildirim yok', k1.status === 200 && await say(M, "dosya alanının %80'i doldu") === 0 &&
+      await say(A, "dosya alanının %80'i doldu") === 0, 'kota ' + KOTA + ' kullanım ' + kullanim + ' ' + J(k1.body));
+    const k2 = await yukle(o2.token, kotaOdev, 'kota2.pdf', crypto.randomBytes(2000));
+    kontrol("%80'i geçince müdüre ve sistem yöneticisine bildirim", k2.status === 200 &&
+      await say(M, "Okulun dosya alanının %80'i doldu") === 1 && await say(A, "dosya alanının %80'i doldu") === 1, J(k2.body));
+    const k3 = await yukle(o2.token, kotaOdev, 'kota3.pdf', crypto.randomBytes(1000));
+    kontrol('%80 bildirimi bir kez gider (sonraki yüklemede yeniden gitmez)', k3.status === 200 &&
+      await say(M, "dosya alanının %80'i doldu") === 1 && await say(A, "dosya alanının %80'i doldu") === 1, J(k3.body));
+    const kalan = KOTA - (kullanim + alt + 3000);
+    const dolu = await buyukBildir(o1.token, kotaOdev, kalan + 1000);
+    kontrol('okulun alanı dolunca yükleme açık hatayla durur (507)', dolu.status === 507 && /Okulun dosya alanı doldu/.test(dolu.body),
+      dolu.status + ' ' + dolu.body);
+    let mDolu = 0, aDolu = 0;
+    for (let i = 0; i < 20 && !(mDolu && aDolu); i++) {
+      await new Promise(r => setTimeout(r, 150));
+      mDolu = await say(M, 'Okulun dosya alanı doldu'); aDolu = await say(A, 'dosya alanı doldu (');
+    }
+    kontrol('dolunca müdüre ve sistem yöneticisine bildirim', mDolu === 1 && aDolu === 1, mDolu + ' ' + aDolu);
+    const dolu2 = await buyukBildir(o1.token, kotaOdev, kalan + 1000);
+    await new Promise(r => setTimeout(r, 400));
+    kontrol('"doldu" bildirimi de bir kez gider', dolu2.status === 507 && await say(M, 'Okulun dosya alanı doldu') === 1 &&
+      await say(A, 'dosya alanı doldu (') === 1, dolu2.status);
+  }
 
   console.log('');
   console.log('GECTI: ' + gecti + '   KALDI: ' + kaldi);

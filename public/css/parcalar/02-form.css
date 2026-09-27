@@ -157,5 +157,20 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .ek-satir.hatali .ek-ad small { color: var(--kirmizi, #d62839); }
 .ek-cubuk { display: block; height: 4px; margin-top: 5px; border-radius: 2px; background: var(--cizgi); overflow: hidden; }
 .ek-cubuk i { display: block; height: 100%; background: var(--ana); transition: width .2s ease; }
+/* Dosya alanının doluluğu (ekler ve ödev teslimi): "Dosya alanın · 32 / 50 MB".
+   Dolunca bırakma kutusu gizlenir, yerine yer açma uyarısı yazar. */
+.ek-alan.dolu .ek-birak { display: none; }
+.doluluk { margin: 8px 0; }
+.doluluk-ust { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12.5px; color: var(--soluk); }
+.doluluk-ust b { color: var(--yazi); font-weight: 600; font-variant-numeric: tabular-nums; }
+.doluluk-cubuk { height: 6px; margin-top: 4px; border-radius: 999px; background: var(--cizgi); overflow: hidden; }
+.doluluk-cubuk i { display: block; height: 100%; border-radius: 999px; background: var(--ana); transition: width .2s ease; }
+.doluluk.az-kaldi .doluluk-cubuk i { background: var(--turuncu); }
+.doluluk.dolu .doluluk-cubuk i { background: var(--kirmizi); }
+.doluluk-uyari { margin: 8px 0; padding: 9px 12px; border-radius: var(--r-kucuk); font-size: 13.5px;
+  background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
+/* Ödev penceresinde "Öğrenciler bu ödeve dosya yükleyebilsin" kutusu. */
+.dosya-izin { margin: 4px 0 12px; }
+.dosya-izin .hint { margin: 4px 0 0 25px; }
 .ekler-kutu { margin-top: 14px; }
 .ekler-kutu h4 { margin: 0 0 4px; font-size: 14px; }

@@ -34,7 +34,7 @@ function kontrol(ad, sart, detay) {
   const kulup = await iste('/api/kulupler/kaydet', 'POST', { ad: 'Yedek kulübü', danismanId: mat.user.id, kontenjan: 12 }, M0);
   await iste('/api/kulupler/katil', 'POST', { id: kulup.body.id }, o1.token);
   const odev = (await iste('/api/assignments', 'POST', { title: 'Yedek ödevi', subject: 'Matematik',
-    studentIds: [o1.user.id], endAt: yarin }, mat.token)).body.assignment.id;
+    studentIds: [o1.user.id], endAt: yarin, dosyaYukleme: true }, mat.token)).body.assignment.id;
   const yukle = await fetch((process.env.EE_BASE || 'http://localhost:3000') + '/api/odev-dosya/yukle?odev=' + odev, {
     method: 'POST', body: Buffer.from('yedek dosyası'),
     headers: { Authorization: 'Bearer ' + o1.token, 'Content-Type': 'application/octet-stream', 'X-Dosya-Adi': 'yedek.txt' } });
@@ -135,6 +135,8 @@ function kontrol(ad, sart, detay) {
     kulupGeri.danisman === 'Ayşe Kaya', JSON.stringify(kulupGeri));
   const dosyaGeri = await iste('/api/odev-dosya?odev=' + odev, 'GET', null, o1b.token);
   kontrol('teslim dosyasının kaydı geri geldi', (dosyaGeri.body.dosyalar || []).some(d => d.id === dosyaId && d.ad === 'yedek.txt'),
+    JSON.stringify(dosyaGeri.body).slice(0, 160));
+  kontrol('ödevin dosya yükleme izni geri geldi (açık)', dosyaGeri.body.dosyaYukleme === true && dosyaGeri.body.yukleyebilir === true,
     JSON.stringify(dosyaGeri.body).slice(0, 160));
   const matB = await girisYap('mat', 'Test1234!');
   const quizGeri = (await iste(quizYolu, 'GET', null, matB.token)).body.quiz || {};

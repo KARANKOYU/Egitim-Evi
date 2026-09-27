@@ -210,7 +210,9 @@ async function uclar(k) {
           startAt: basT, startTime: basSaat, endAt: sonT,
           endTime: sonSaat,
           studentIds: secilen, classIds: sinifIdler,
-          status: 'active', yilId, createdAt: now()
+          status: 'active', yilId, createdAt: now(),
+          /* "Öğrenciler bu ödeve dosya yükleyebilsin": varsayılan kapalı. */
+          dosyaYukleme: body.dosyaYukleme === true
         });
         if (qz.quiz) await depo.quiz.yaz(yeni.id, qz.quiz);
         return yeni;
@@ -286,7 +288,9 @@ async function uclar(k) {
       const title = clean(body.title, 120);
       if (!title) return bad(res, 'Ödev adı gerekli');
       const d = { title, description: clean(body.description, 1000), startAt: clean(body.startAt, 30),
-        endAt: clean(body.endAt, 30), endTime: saatDuzelt(body.endTime) || ODEV_VARSAYILAN_SAAT };
+        endAt: clean(body.endAt, 30), endTime: saatDuzelt(body.endTime) || ODEV_VARSAYILAN_SAAT,
+        /* Gönderilmezse değişmez. Kapatılınca yüklenmiş dosyalar silinmez; yalnız yeni yükleme durur. */
+        dosyaYukleme: typeof body.dosyaYukleme === 'boolean' ? body.dosyaYukleme : a.dosyaYukleme };
       d.startTime = d.startAt ? (saatDuzelt(body.startTime) || '') : '';
       if (d.startAt && d.endAt && d.startAt.slice(0, 10) > d.endAt.slice(0, 10)) {
         return bad(res, 'Son tarih başlangıçtan önce olamaz');
@@ -294,7 +298,7 @@ async function uclar(k) {
       if (d.startTime && d.startAt && d.endAt && d.startAt.slice(0, 10) === d.endAt.slice(0, 10) && d.startTime >= d.endTime) {
         return bad(res, 'Aynı gün biten ödevde son saat başlama saatinden sonra olmalı');
       }
-      /* Ekler: yenileri bağlanır, kaldırılanlar silinir (toplam 150 MB). */
+      /* Ekler: yenileri bağlanır, kaldırılanlar silinir (toplam 50 MB). */
       const mevcutEkler = await depo.ekler.hedefin('odev', a.id);
       const silinecek = new Set((Array.isArray(body.ekSilIdler) ? body.ekSilIdler : []).map(x => String(x)));
       const kalanBoyut = mevcutEkler.filter(e => !silinecek.has(e.id) && !e.silindi).reduce((t, e) => t + e.boyut, 0);
@@ -308,9 +312,12 @@ async function uclar(k) {
       for (const e of mevcutEkler.filter(x => silinecek.has(x.id))) await depo.ekler.sil(e.id);
       await ekModulu().ekleriBagla('odev', a.id, ek.idler);
       const tarihDegisti = (a.endAt || '').slice(0, 10) !== (yeni.endAt || '').slice(0, 10) || odevSaati(a) !== odevSaati(yeni);
-      if (tarihDegisti || a.title !== yeni.title) {
+      /* Dosya yükleme süren ödevde açıldıysa öğrenci de bilsin. */
+      const dosyaAcildi = !a.dosyaYukleme && yeni.dosyaYukleme && yeni.status === 'active' && !odevGecikti(yeni);
+      if (tarihDegisti || a.title !== yeni.title || dosyaAcildi) {
         await topluBildir(a.studentIds, 'Ödev güncellendi: ' + yeni.title + (tarihDegisti && yeni.endAt
-          ? ' (son gün ' + yeni.endAt.slice(8, 10) + '.' + yeni.endAt.slice(5, 7) + ' ' + odevSaati(yeni) + ')' : ''), '#/odevler');
+          ? ' (son gün ' + yeni.endAt.slice(8, 10) + '.' + yeni.endAt.slice(5, 7) + ' ' + odevSaati(yeni) + ')' : '') +
+          (dosyaAcildi ? '. Artık ödeve dosya yükleyebilirsin.' : ''), '#/odevler');
       }
       let message = 'Ödev güncellendi.';
       const qz = tarihDegisti ? await depo.quiz.bul(a.id) : null;

@@ -38,9 +38,10 @@ async function ekle(a) {
   await islem(async () => {
     await sorgu(
       'INSERT INTO odevler (id, okul_id, ogretmen_id, ders, baslik, aciklama, baslangic, baslangic_saati, bitis, bitis_saati, ' +
-      'durum, yil_id, olusturma) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+      'durum, yil_id, olusturma, dosya_yukleme) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)',
       [a.id, a.schoolId, e.yokIse(a.teacherId), a.subject, a.title, a.description || '',
-        tarihVeyaNull(a.startAt), a.startTime || null, tarihVeyaNull(a.endAt), a.endTime, a.status, e.yokIse(a.yilId), a.createdAt]);
+        tarihVeyaNull(a.startAt), a.startTime || null, tarihVeyaNull(a.endAt), a.endTime, a.status, e.yokIse(a.yilId), a.createdAt,
+        a.dosyaYukleme === true]);
     await sorgu('INSERT INTO odev_ogrencileri (odev_id, ogrenci_id) SELECT $1, unnest($2::text[])',
       [a.id, a.studentIds]);
     if (a.classIds && a.classIds.length) {
@@ -70,17 +71,28 @@ async function sonuclandir(id, sonuclar, zaman) {
   return bul(id);
 }
 
-/* Ödevin kendisini düzeltir (ad, açıklama, tarihler). Sonuçlanmış ödevde de
-   çalışır; öğrenci listesi ve sonuçlar değişmez. */
+/* Teslim dosyalarının en erken silinme anını "şimdi + 7 gün"e çeker (daha
+   geçse değişmez; 034, depo/odev-dosyalari.js SILINME). */
+const SAKLAMA_UZAT = "GREATEST(dosya_saklama, now() + interval '7 days')";
+
+/* Ödevin kendisini düzeltir (ad, açıklama, tarihler, öğrencinin dosya
+   yükleyip yükleyemeyeceği). Sonuçlanmış ödevde de çalışır; öğrenci listesi
+   ve sonuçlar değişmez. Son teslim (gün ya da saat) değişirse ya da
+   kaldırılırsa teslim dosyaları en az 7 gün daha kalır: yanlış yazılan tarih
+   dosyaları hemen sildirmez, düzeltmeye zaman kalır. */
 async function duzelt(id, d) {
   await calistir('UPDATE odevler SET baslik = $2, aciklama = $3, baslangic = $4, bitis = $5, bitis_saati = $6, ' +
-    'baslangic_saati = $7 WHERE id = $1',
-    [id, d.title, d.description || '', tarihVeyaNull(d.startAt), tarihVeyaNull(d.endAt), d.endTime, d.startTime || null]);
+    'baslangic_saati = $7, dosya_yukleme = $8, dosya_saklama = CASE WHEN bitis IS DISTINCT FROM $5::date ' +
+    'OR bitis_saati IS DISTINCT FROM $6::time THEN ' + SAKLAMA_UZAT + ' ELSE dosya_saklama END WHERE id = $1',
+    [id, d.title, d.description || '', tarihVeyaNull(d.startAt), tarihVeyaNull(d.endAt), d.endTime, d.startTime || null,
+      d.dosyaYukleme === true]);
   return bul(id);
 }
 
+/* Yeniden açılan ödevde de dosyalar en az 7 gün daha kalır (son teslimsiz
+   ödevde silinme sonuçlanmaya bağlıydı; yüklemeden 60 gün çoktan geçmiş olabilir). */
 async function yenidenAc(id) {
-  await calistir("UPDATE odevler SET durum = 'active' WHERE id = $1", [id]);
+  await calistir("UPDATE odevler SET durum = 'active', dosya_saklama = " + SAKLAMA_UZAT + ' WHERE id = $1', [id]);
   return bul(id);
 }
 

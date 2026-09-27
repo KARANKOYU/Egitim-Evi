@@ -11,7 +11,8 @@
    verilirken ya da düzeltilirken (POST /api/assignments { ekIdler },
    .../update { ekIdler, ekSilIdler }) — ekleriDogrula / ekleriBagla.
 
-   Kurallar: bir mesajın ya da ödevin ekleri toplam 150 MB; dosya 7 gün sonra
+   Kurallar: bir mesajın ya da ödevin ekleri toplam 50 MB (kaydederken);
+   kişinin gönderilmemiş taslakları toplam 150 MB (yüklerken); dosya 7 gün sonra
    diskten silinir (mesaj ve ödev kalır, "süresi doldu" yazar). Güvenlik
    ödev teslim dosyalarıyla aynı (odev-dosya.js): izinli uzantılar, rastgele
    dosya adı, akışla diske yazma, "ek" olarak indirme (tarayıcı açmaz),
@@ -30,7 +31,8 @@ const { akisiYaz, reddet, ekBasliklari, dosyaAdi, uzanti, UZANTILAR, biletVer, b
 
 const KLASOR = path.join(DATA, 'ekler');
 const MB = 1024 * 1024;
-const EK_SINIR = 150 * MB;                 // bir mesajın ya da ödevin eklerinin toplamı
+const EK_SINIR = 50 * MB;                  // bir mesajın ya da ödevin eklerinin toplamı (tek dosya da en çok bu kadar)
+const TASLAK_SINIR = 3 * EK_SINIR;         // kişinin gönderilmemiş bütün taslakları (açık kalan pencereler dahil)
 const EN_FAZLA_EK = 20;                    // bir mesaja/ödeve en fazla dosya
 const BOS_YER_PAYI = 2 * 1024 * MB;
 const AYNI_ANDA_KISI = 3, AYNI_ANDA_TOPLAM = 60;
@@ -41,6 +43,9 @@ const artir = (harita, anahtar, n) => {
   const v = (harita.get(anahtar) || 0) + n;
   if (v > 0) harita.set(anahtar, v); else harita.delete(anahtar);
 };
+
+/* "32,5 MB" (bir ondalık, Türkçe virgül). */
+const mbYaz = n => (Math.round(n / MB * 10) / 10).toLocaleString('tr-TR') + ' MB';
 
 async function bosYer() {
   try {
@@ -69,15 +74,22 @@ async function yukle(k) {
 
   const boyut = Number(req.headers['content-length']);
   if (!Number.isSafeInteger(boyut) || boyut <= 0) return reddet(req, res, 'Dosya boş ya da boyutu bildirilmedi', 411);
-  if (boyut > EK_SINIR) return reddet(req, res, 'Bir dosya en fazla 150 MB olabilir.', 413);
+  if (boyut > EK_SINIR) return reddet(req, res, 'Bir dosya en fazla ' + mbYaz(EK_SINIR) + ' olabilir.', 413);
   const ad = dosyaAdi(req.headers['x-dosya-adi']);
   if (!ad) return reddet(req, res, 'Dosya adı geçersiz');
   if (!UZANTILAR.has(uzanti(ad))) {
     return reddet(req, res, 'Bu dosya türü eklenemez. PDF, Word, Excel, sunum, resim, ses, video ya da zip ekleyebilirsin.', 415);
   }
-  /* Taslakların toplamı da 150 MB'ı geçmez: gönderilmemiş bir mesajın ekleri. */
-  if (await depo.ekler.taslakToplami(me.id) + (suren.kisiBayt.get(me.id) || 0) + boyut > EK_SINIR) {
-    return reddet(req, res, 'Eklerin toplamı en fazla 150 MB olabilir. Bir dosyayı kaldır ya da önce gönder.', 413);
+  /* Yüklenirken taslağın hangi mesaja ya da ödeve gideceği belli değil: kişinin
+     bütün gönderilmemiş taslakları (başka pencerede bırakılanlar dahil) sayılır.
+     Bu yüzden sınır burada bir mesajın 50 MB'ı değil, disk kötüye kullanılmasın
+     diye kişi başına 150 MB. Bir mesajın ya da ödevin 50 MB'ı istemcide doluluk
+     çubuğuyla (düzeltmede var olan ekler dahil) ve kaydederken ekleriDogrula ile
+     denetlenir. */
+  const taslak = await depo.ekler.taslakToplami(me.id) + (suren.kisiBayt.get(me.id) || 0);
+  if (taslak + boyut > TASLAK_SINIR) {
+    return reddet(req, res, 'Gönderilmemiş eklerin toplamı en fazla ' + mbYaz(TASLAK_SINIR) + ' olabilir. Başka bir mesajda ' +
+      'ya da ödevde bıraktığın ekleri kaldır; gönderilmeyen ekler 6 saat sonra kendiliğinden silinir.', 413);
   }
   await fs.promises.mkdir(KLASOR, { recursive: true });
   const bos = await bosYer();
@@ -102,7 +114,7 @@ async function yukle(k) {
 }
 
 /* Mesajı ya da ödevi kaydetmeden önce: ekIdler kişinin taslakları mı, toplam
-   150 MB'ı geçiyor mu? Dönen: { idler } ya da { hata }. mevcut: hedefin
+   50 MB'ı geçiyor mu? Dönen: { idler } ya da { hata }. mevcut: hedefin
    kalan eklerinin toplam boyutu (ödev düzeltilirken). */
 async function ekleriDogrula(me, tur, ham, mevcut) {
   const idler = [...new Set((Array.isArray(ham) ? ham : []).map(x => clean(x, 40)).filter(x => /^[0-9a-f]{32}$/.test(x)))];
@@ -111,7 +123,7 @@ async function ekleriDogrula(me, tur, ham, mevcut) {
   const taslaklar = await depo.ekler.taslaklari(me.id, tur, idler);
   if (taslaklar.length !== idler.length) return { hata: 'Eklerden biri bulunamadı ya da süresi doldu. Yeniden ekle.' };
   const toplam = taslaklar.reduce((t, e) => t + e.boyut, 0) + (mevcut || 0);
-  if (toplam > EK_SINIR) return { hata: 'Eklerin toplamı en fazla 150 MB olabilir.' };
+  if (toplam > EK_SINIR) return { hata: 'Eklerin toplamı en fazla ' + mbYaz(EK_SINIR) + ' olabilir. Bir dosyayı kaldır.' };
   return { idler };
 }
 

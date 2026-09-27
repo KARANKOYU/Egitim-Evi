@@ -280,6 +280,13 @@ const EN_FAZLA_OTURUM = 20000;
 
 const hizKayit = new Map();      // anahtar -> { sayac, bitis }
 const kilitKayit = new Map();    // anahtar -> { sayac, kilitBitis }
+/* Genel istek sayaçları (index.js: IP başına API ve dosya, oturum başına API)
+   ayrı tutulur ve üst sınırı vardır: uydurma oturum anahtarları ya da çok
+   sayıda adres belleği şişiremez; giriş sayaçları (hizKayit) bundan etkilenmez. */
+const genelKayit = new Map();    // anahtar -> { sayac, bitis }
+const EN_FAZLA_GENEL_SAYAC = 100000;
+const EN_FAZLA_HIZ_KAYDI = 200000;
+const sonSupurme = new Map();   // harita -> son süpürme anı
 
 /* Kabaca IP biçiminde mi? Uydurma başlıkların sayaçları kirletmesini engeller. */
 function ipGibiMi(x) {
@@ -318,13 +325,66 @@ function istemciIp(req) {
   return ip;
 }
 
-/* Pencere içinde izin verilen istek sayısını aşarsa false döner. */
+/* Süresi geçmiş sayaçları siler; yoğunlukta en çok saniyede bir (her istekte
+   bütün haritayı dolaşmasın). */
+function suresiGecenleriSil(harita, t) {
+  if (t - (sonSupurme.get(harita) || 0) < 1000) return;
+  sonSupurme.set(harita, t);
+  for (const [a, v] of harita) if (t > v.bitis) harita.delete(a);
+}
+
+/* Pencere içinde izin verilen istek sayısını aşarsa false döner. Harita
+   üst sınıra varınca süresi geçenler hemen silinir (10 dakikalık temizlik
+   beklenmez); canlı sayaçlar silinmez. */
 function hizSinir(anahtar, adet, pencereMs) {
   const t = Date.now();
   let k = hizKayit.get(anahtar);
-  if (!k || t > k.bitis) { k = { sayac: 0, bitis: t + pencereMs }; hizKayit.set(anahtar, k); }
+  if (!k || t > k.bitis) {
+    if (!k && hizKayit.size >= EN_FAZLA_HIZ_KAYDI) suresiGecenleriSil(hizKayit, t);
+    k = { sayac: 0, bitis: t + pencereMs }; hizKayit.set(anahtar, k);
+  }
   k.sayac++;
   return k.sayac <= adet;
+}
+
+/* Genel istek sınırı (index.js): hizSinir gibi, ama sayaçlar genelKayit'te.
+   Harita doluysa ve süresi geçen yoksa yeni anahtar sayılmaz (istek geçer):
+   bellek sınırsız büyümez; eşzamanlılık sınırı ve 503 koruması yine çalışır. */
+function genelSinir(anahtar, adet, pencereMs) {
+  const t = Date.now();
+  let k = genelKayit.get(anahtar);
+  if (!k || t > k.bitis) {
+    if (!k && genelKayit.size >= EN_FAZLA_GENEL_SAYAC) {
+      suresiGecenleriSil(genelKayit, t);
+      if (genelKayit.size >= EN_FAZLA_GENEL_SAYAC) return true;
+    }
+    k = { sayac: 0, bitis: t + pencereMs }; genelKayit.set(anahtar, k);
+  }
+  k.sayac++;
+  return k.sayac <= adet;
+}
+
+/* Sayılan bir isteği geri al (oturum sınırına takılan istek IP sayacında kalmasın). */
+function genelGeriAl(anahtar) {
+  const k = genelKayit.get(anahtar);
+  if (k && k.sayac > 0) k.sayac--;
+}
+
+/* Genel hız sınırı (index.js, her istekte). Dönen: '' (geçer) ya da dolan
+   sınırın adı: 'dosya', 'ip', 'oturum'. Sayılar okul ağına göre (index.js).
+   Sıra önemli: önce IP. IP sınırı dolmuşken oturum sayacı hiç açılmaz; yoksa
+   biçime uyan her uydurma Bearer değeri yeni bir sayaç açıp belleği şişirirdi.
+   Oturum sınırını aşan istek IP sayacından geri düşülür: tek oturumun seli
+   aynı ağdaki öbürlerinin IP payını yemez. */
+const GENEL_SINIR = { dosya: 15000, ip: 6000, oturum: 300, pencereMs: 60 * 1000 };
+function genelIstekSiniri(ip, dosyaMi, oturum) {
+  if (dosyaMi) return genelSinir('genelDosya:' + ip, GENEL_SINIR.dosya, GENEL_SINIR.pencereMs) ? '' : 'dosya';
+  if (!genelSinir('genelApi:' + ip, GENEL_SINIR.ip, GENEL_SINIR.pencereMs)) return 'ip';
+  if (oturum && !genelSinir('genelOturum:' + oturum.slice(0, 24), GENEL_SINIR.oturum, GENEL_SINIR.pencereMs)) {
+    genelGeriAl('genelApi:' + ip);
+    return 'oturum';
+  }
+  return '';
 }
 
 const KILIT_ESIGI = 5;   // bu kadar hatalı denemeden sonra kilit
@@ -370,6 +430,137 @@ function soruGerekliMi(anahtar) {
   return k.sayac > 0;
 }
 
+/* ============ giriş sınırları (okul ağı) ============
+   Okulda bütün öğrenciler okulun ağından, tek IP'den (NAT) aynı dakikalarda
+   girer; IP başına dar bir sınır bütün okulu durdurur. Bu yüzden asıl koruma
+   hesaptadır, IP sınırları okul ölçeğindedir (testler/test-okul-agi.js ölçer):
+     - hesap + IP: 5 hatalı denemede o hesap o bağlantıdan 15 dakika kilitli
+       (KILIT_ESIGI); ilk hatadan sonra o hesaba soru sorulur;
+     - hesap, her IP'den: 3 hatadan sonra her yerden soru; 20 hatada hesap
+       TANIDIK OLMAYAN bağlantılardan 15 dakika kilitli (birçok IP'den dağıtık
+       deneme). Hesabın son 30 günde doğru şifreyle girdiği bağlantı "tanıdık"
+       sayılır ve bu kilide takılmaz: kullanıcı adını bilen biri başka
+       bağlantılardan 20 yanlış deneyerek öğretmeni okulda ya da evinde
+       dışarıda bırakamaz. Kilidi yeni şifre kaldırır (girisBasarili('', id)):
+       "Şifremi unuttum" (kayit.js) ya da okulun verdiği yeni şifre
+       (hesaplar.js, okul.js toplu dağıtım; e-postası olmayan öğrenci);
+     - IP: 15 dakikada 50 hatadan sonra o bağlantıdan her girişte soru.
+       Bağlantının durduğu hata sayısı o bağlantıdan son 30 günde girmiş okul
+       hesabı (öğrenci, servisçi; kendi açılan yetişkin hesabı değil) sayısıyla
+       büyür: 50 + her biri için 2, en çok 300. Okulun ağı (yüzlerce öğrenci
+       giriyor) 300'e çıkar; hiç kimsenin girmediği bir bağlantı (şifre tarayan
+       biri) 50'de durur. Ayrıca 5 dakikada en çok 1200 deneme (şifre özeti
+       hesaplanır, sunucuyu korur).
+   Doğrulama sorusu (toplama) insanı yormadan basit araçları eler ama bir
+   betik onu kolayca çözer: şifre taramasını soru değil bu sayılar durdurur.
+   Hepsi 15 dakikalık pencereyle, bellekte (sunucu yeniden başlayınca sıfır). */
+const GIRIS_SINIR = {
+  pencereMs: 15 * 60 * 1000,
+  ipDeneme: 1200, ipDenemeMs: 5 * 60 * 1000,
+  ipHataSoru: 50, ipHataTaban: 50, tanidikPayi: 2, ipHata: 300,
+  hesapHataSoru: 3, hesapHata: 20
+};
+
+/* ---- tanıdık bağlantılar ----
+   IP -> (hesap -> son doğru şifre anı). Yalnızca doğru şifreyle (ya da
+   şifre sıfırlama bağlantısıyla) girilebilen (onaylı, kapatılmamış) hesapta
+   yazılır; uydurma istekler kayıt açamaz. İki harita:
+     tanidik      her hesap: hesabın toplam hata kilidine takılmayan bağlantıları;
+     ipHesaplari  yalnızca okulun açtığı hesaplar (öğrenci, servisçi): bağlantının
+                  hata sınırını büyütür. Herkesin kendisi açabildiği yetişkin
+                  hesabı sayılmaz; yoksa biri kendi açtığı hesaplarla girip
+                  bağlantısının sınırını 300'e çıkarır, şifre taramasını 6 kat
+                  hızlandırırdı. Okulun ağında öğrenciler zaten yüzlercedir.
+   Bellekte tutulur: sunucu yeniden başlayınca boşalır (sahibi yeniden girene
+   kadar hesabın toplam hata kilidi her bağlantıya uygulanır). */
+const TANIDIK_OMUR_MS = 30 * 24 * 60 * 60 * 1000;
+const EN_FAZLA_TANIDIK_IP = 20000, EN_FAZLA_IP_HESABI = 5000;
+const tanidik = new Map();
+const ipHesaplari = new Map();
+
+function tanidigaYaz(harita, ip, hesapId) {
+  let m = harita.get(ip);
+  if (m) harita.delete(ip);                      // en yeniler sonda kalsın
+  else {
+    m = new Map();
+    if (harita.size >= EN_FAZLA_TANIDIK_IP) harita.delete(harita.keys().next().value);
+  }
+  harita.set(ip, m);
+  m.delete(hesapId);
+  if (m.size >= EN_FAZLA_IP_HESABI) m.delete(m.keys().next().value);
+  m.set(hesapId, Date.now());
+}
+
+/* okulHesabi: hesabı okul açtı (kişi kendisi açamaz); yalnızca o zaman
+   bağlantının hata sınırına sayılır. */
+function girisTanidik(ip, hesapId, okulHesabi) {
+  if (!ip || !hesapId) return;
+  tanidigaYaz(tanidik, ip, hesapId);
+  if (okulHesabi) tanidigaYaz(ipHesaplari, ip, hesapId);
+}
+
+function tanidikMi(ip, hesapId) {
+  const m = tanidik.get(ip);
+  const t = m && m.get(hesapId);
+  return !!t && Date.now() - t < TANIDIK_OMUR_MS;
+}
+
+/* Bu bağlantıdan kaç hatada giriş durur: 50 + oradan girmiş okul hesabı
+   başına 2, en çok 300. */
+function ipHataSiniri(ip) {
+  const m = ipHesaplari.get(ip);
+  return Math.min(GIRIS_SINIR.ipHata, GIRIS_SINIR.ipHataTaban + GIRIS_SINIR.tanidikPayi * (m ? m.size : 0));
+}
+
+/* Anahtarın penceresindeki sayaç (süresi geçtiyse 0). */
+function sayacDegeri(anahtar) {
+  const k = hizKayit.get(anahtar);
+  return k && Date.now() <= k.bitis ? k.sayac : 0;
+}
+
+/* Her giriş denemesinde, hesaba bakmadan önce: bağlantı durmuşsa true (429).
+   Denemeyi de sayar. */
+function girisIpEngeli(ip) {
+  if (sayacDegeri('girisHataIp:' + ip) >= ipHataSiniri(ip)) return true;
+  return !hizSinir('girisIp:' + ip, GIRIS_SINIR.ipDeneme, GIRIS_SINIR.ipDenemeMs);
+}
+
+/* Hesap kilitliyse kalan saniye: bu bağlantıdan (hesap + IP) ya da hesabın
+   toplam hatasıyla (yalnızca tanıdık olmayan bağlantıdan). hesapId yoksa
+   (böyle bir hesap yok) yalnız ilki. */
+function girisKilitSn(kilitAnahtar, hesapId, ip) {
+  let sn = kilitliMi(kilitAnahtar);
+  if (hesapId && !tanidikMi(ip, hesapId)) {
+    const anahtar = 'girisHataHesap:' + hesapId;
+    if (sayacDegeri(anahtar) >= GIRIS_SINIR.hesapHata) {
+      sn = Math.max(sn, Math.ceil((hizKayit.get(anahtar).bitis - Date.now()) / 1000));
+    }
+  }
+  return sn;
+}
+
+/* Doğrulama sorusu gerekli mi: bu hesaba bu bağlantıdan hata olduysa, hesaba
+   her yerden 3 hata olduysa ya da bu bağlantıdan 50 hata olduysa. Temiz
+   kullanıcı temiz bağlantıdan soruyu hiç görmez. */
+function girisSoruLazim(ip, kilitAnahtar, hesapId) {
+  if (soruGerekliMi(kilitAnahtar)) return true;
+  if (sayacDegeri('girisHataIp:' + ip) >= GIRIS_SINIR.ipHataSoru) return true;
+  return !!hesapId && sayacDegeri('girisHataHesap:' + hesapId) >= GIRIS_SINIR.hesapHataSoru;
+}
+
+function girisHatasi(ip, kilitAnahtar, hesapId) {
+  basarisizDeneme(kilitAnahtar, GIRIS_SINIR.pencereMs);
+  hataSay('girisHataIp:' + ip, GIRIS_SINIR.ipHata, GIRIS_SINIR.pencereMs);
+  if (hesapId) hataSay('girisHataHesap:' + hesapId, GIRIS_SINIR.hesapHata, GIRIS_SINIR.pencereMs);
+}
+
+/* Doğru şifre: hesabın sayaçları silinir (bağlantınınki kalır). kilitAnahtar
+   boşsa (şifre sıfırlandı) yalnızca hesabın toplam hatası silinir. */
+function girisBasarili(kilitAnahtar, hesapId) {
+  if (kilitAnahtar) denemeSifirla(kilitAnahtar);
+  if (hesapId) hizKayit.delete('girisHataHesap:' + hesapId);
+}
+
 /* Kayit sayaci: sadece gercekten hesap acildiginda artar.
    Formu yanlis dolduran kullanici bu sinira takilmaz; asil amac ayni
    cihazdan seri sahte hesap acilmasini engellemek. */
@@ -390,6 +581,13 @@ function guvenlikTemizle() {
   for (const [k, v] of kilitKayit) if (t > v.kilitBitis) kilitKayit.delete(k);
   for (const [k, v] of botSorular) if (t > v.bitis) botSorular.delete(k);
   for (const [k, v] of girisKodlari) if (t > v.bitis) girisKodlari.delete(k);
+  for (const [k, v] of genelKayit) if (t > v.bitis) genelKayit.delete(k);
+  for (const harita of [tanidik, ipHesaplari]) {
+    for (const [ip, m] of harita) {
+      for (const [id, an] of m) if (t - an >= TANIDIK_OMUR_MS) m.delete(id);
+      if (!m.size) harita.delete(ip);
+    }
+  }
 
   /* Süresi dolan oturumlar ve beklenmedik birikmeye karşı üst sınırı aşanlar
      (en eskiler) veritabanından silinir. */
@@ -408,7 +606,13 @@ const BOT_OMRU_MS = 5 * 60 * 1000;
 const EN_FAZLA_BOT_SORU = 5000;
 
 function botSoruUret() {
-  if (botSorular.size > EN_FAZLA_BOT_SORU) botSorular.clear();
+  /* Sınıra varınca önce süresi geçenler, yetmezse en eskiler silinir (hepsi
+     birden silinseydi çok soru isteyen biri herkesin sorusunu geçersiz kılardı). */
+  if (botSorular.size >= EN_FAZLA_BOT_SORU) {
+    const t = Date.now();
+    for (const [k, v] of botSorular) if (t > v.bitis) botSorular.delete(k);
+    while (botSorular.size >= EN_FAZLA_BOT_SORU) botSorular.delete(botSorular.keys().next().value);
+  }
   const a = crypto.randomInt(3, 10);
   const b = crypto.randomInt(2, 10);
   const id = crypto.randomBytes(12).toString('hex');
@@ -475,6 +679,12 @@ module.exports = {
   EN_FAZLA_OTURUM,
   hizKayit,
   kilitKayit,
+  genelKayit,
+  EN_FAZLA_GENEL_SAYAC,
+  GENEL_SINIR,
+  genelSinir,
+  genelGeriAl,
+  genelIstekSiniri,
   ipGibiMi,
   istemciIp,
   hizSinir,
@@ -485,6 +695,15 @@ module.exports = {
   basarisizDeneme,
   denemeSifirla,
   soruGerekliMi,
+  GIRIS_SINIR,
+  girisIpEngeli,
+  girisKilitSn,
+  girisSoruLazim,
+  girisHatasi,
+  girisBasarili,
+  girisTanidik,
+  tanidikMi,
+  ipHataSiniri,
   KAYIT_PENCERE_MS,
   kayitSayaci,
   guvenlikTemizle,

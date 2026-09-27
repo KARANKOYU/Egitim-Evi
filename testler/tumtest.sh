@@ -14,11 +14,20 @@ sunucu_durdur() {
   sleep 1
 }
 
+# Paketin sunucusuna ve kendisine verilen ek ortam değişkeni (yalnız o paket için).
+paket_ortami() {
+  case "$1" in
+    # Okulun dosya alanı 1 MB: %80 uyarısı ve "doldu" küçük dosyalarla denenir.
+    test-odev-dosya) echo "EE_OKUL_DOSYA_GB=0.001" ;;
+  esac
+}
+
 # Her paket boş bir test veritabanıyla başlar (EE_DB_SIFIRLA=1). Sıfırlama
 # yalnızca adı _test ile biten veritabanında çalışır; gerçek veri korunur.
+# $1: paketin ek ortam değişkeni (boş olabilir).
 sunucu_baslat() {
   cd "$PROJE" || exit 1
-  (EE_DATA="$SP/testdata" EE_DB_SIFIRLA=1 EE_ADMIN_SIFRE=admin123 EE_PUSH_GONDERME=0 EE_DIS_ISTEK=0 PORT=$PORT node server.js > "$SP/test-sunucu.log" 2>&1 &)
+  (if [ -n "$1" ]; then export "$1"; fi; EE_DATA="$SP/testdata" EE_DB_SIFIRLA=1 EE_ADMIN_SIFRE=admin123 EE_PUSH_GONDERME=0 EE_DIS_ISTEK=0 PORT=$PORT node server.js > "$SP/test-sunucu.log" 2>&1 &)
   # Şema kurulana kadar bekle (en fazla 20 sn).
   for i in $(seq 1 40); do
     if curl -s -o /dev/null "http://localhost:$PORT/api/meta"; then return 0; fi
@@ -53,7 +62,7 @@ for paket in test-xlsx test-push test-kucult test-hatirlatici-zaman test-servis-
   TOPLAM_KALDI=$((TOPLAM_KALDI + ${k:-0}))
 done
 
-for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-aktarim test-sifre test-mesaj test-devamsizlik test-takvim test-odev-saat test-egitim-yili test-sinav test-bildirim test-giris-kayit test-veli-coklu test-giris-bilgisi test-anket test-okul-hayati test-servis-konum test-servis-yoklama test-yetiskin test-kisi-kodu test-etut test-adresler test-okul-sayfasi test-yorum-ek test-nakil test-ozellikler test-hatirlatici test-siniflarim test-aile test-odev-dosya test-quiz test-yonetici-dosyasi test-admin-gizli test-site-ayarlari test-cakisma guvenlik-test; do
+for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-aktarim test-sifre test-mesaj test-devamsizlik test-takvim test-odev-saat test-egitim-yili test-sinav test-bildirim test-giris-kayit test-veli-coklu test-giris-bilgisi test-anket test-okul-hayati test-servis-konum test-servis-yoklama test-yetiskin test-kisi-kodu test-etut test-adresler test-okul-sayfasi test-yorum-ek test-nakil test-ozellikler test-hatirlatici test-siniflarim test-aile test-odev-dosya test-quiz test-yonetici-dosyasi test-admin-gizli test-site-ayarlari test-cakisma test-okul-agi guvenlik-test; do
   sunucu_durdur
   rm -rf "$SP/testdata"
   mkdir -p "$SP/testdata"
@@ -61,7 +70,8 @@ for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-akta
   cp "$PROJE/data/okullar.json" "$SP/testdata/" 2>/dev/null
   # Veritabanı bağlantısı: gerçek ayardan, test veritabanı adıyla.
   node "$SP/test-ayarlari.js" "$SP/testdata" || exit 1
-  sunucu_baslat
+  ORTAM=$(paket_ortami "$paket")
+  sunucu_baslat "$ORTAM"
 
   EE_BASE="http://localhost:$PORT" EE_LOG="$SP/test-sunucu.log" node "$SP/seed.js" >/dev/null 2>&1
   if [ $? -ne 0 ]; then
@@ -74,7 +84,7 @@ for paket in test-yonetim test-program test-rol test-kapsam test-yedek test-akta
 
   echo ""
   echo "--- $paket ---"
-  cikti=$(EE_BASE="http://localhost:$PORT" EE_LOG="$SP/test-sunucu.log" node "$SP/$paket.js" 2>&1)
+  cikti=$(env $ORTAM EE_BASE="http://localhost:$PORT" EE_LOG="$SP/test-sunucu.log" node "$SP/$paket.js" 2>&1)
   echo "$cikti" | grep -E "KALDI|HATASI" | head -8
   ozet=$(echo "$cikti" | grep -E "GECTI: [0-9]+" | tail -1)
   if [ -z "$ozet" ]; then

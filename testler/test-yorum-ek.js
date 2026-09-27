@@ -3,7 +3,9 @@
    - ad kısaltılır ("Ayşe Kaya" -> "Ay. Ka."), yıldız 0-5, uygunsuz kelime ve internet adresi reddedilir;
    - hesap başına tek yorum; yönetici gizler, gizli yorum açılışta görünmez;
    - ek: taslak yüklenir, mesaja/ödeve bağlanır; alıcı ve ödevin öğrencisi indirir, başkası indiremez;
-   - ödeve eki yalnızca öğretmen koyar; izinsiz uzantı ve 150 MB üstü reddedilir;
+   - ödeve eki yalnızca öğretmen koyar; izinsiz uzantı ve 50 MB üstü reddedilir;
+   - başka pencerede bırakılmış taslak yeni mesajın yüklemesini engellemez; bir
+     mesaja 50 MB'tan fazlası kaydederken reddedilir;
    - başkasının taslağı mesaja bağlanamaz; indirme her zaman "ek" (attachment, nosniff). */
 const http = require('http');
 const crypto = require('crypto');
@@ -16,6 +18,7 @@ function kontrol(ad, sart, detay) {
 }
 const J = x => JSON.stringify(x).slice(0, 200);
 const gun = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+const MB = 1024 * 1024;
 
 async function ekYukle(token, tur, ad, veri) {
   const h = { 'Content-Type': 'application/octet-stream', 'X-Dosya-Adi': encodeURIComponent(ad) };
@@ -36,7 +39,7 @@ function buyukBildir(token) {
     const u = new URL(BASE + '/api/ek/yukle?tur=mesaj');
     const req = http.request({ hostname: u.hostname, port: u.port, path: u.pathname + u.search, method: 'POST', headers: {
       Authorization: 'Bearer ' + token, 'Content-Type': 'application/octet-stream', 'X-Dosya-Adi': 'video.mp4',
-      'Content-Length': String(160 * 1024 * 1024) } }, res => {
+      'Content-Length': String(60 * 1024 * 1024) } }, res => {
       let t = '';
       res.on('data', c => { t += c; });
       res.on('end', () => { req.destroy(); resolve({ status: res.statusCode, body: t }); });
@@ -113,7 +116,7 @@ function buyukBildir(token) {
   const exe = await ekYukle(mat.token, 'odev', 'virus.exe', Buffer.from('MZ'));
   kontrol('izinsiz uzantı reddedildi', exe.status === 415, J(exe.body));
   const buyuk = await buyukBildir(mat.token);
-  kontrol('150 MB üstü okunmadan reddedildi', buyuk.status === 413, 'status ' + buyuk.status);
+  kontrol('50 MB üstü (60 MB) okunmadan reddedildi', buyuk.status === 413 && /50 MB/.test(buyuk.body), 'status ' + buyuk.status + ' ' + buyuk.body);
   const taslak = await ekYukle(mat.token, 'odev', 'Çalışma kâğıdı.pdf', icerik);
   kontrol('öğretmen taslak ek yükledi', taslak.status === 200 && /^[0-9a-f]{32}$/.test(taslak.body.ek.id), J(taslak.body));
   const taslakBaskasi = await indir(o1.token, taslak.body.ek.id);
@@ -167,6 +170,20 @@ function buyukBildir(token) {
   const tekrarBagla = await iste('/api/mesajlar', 'POST', { tur: 'mesaj', konu: 'Tekrar', govde: 'Aynı ek',
     hedef: { tur: 'kisi', kisiler: [matKisi && matKisi.id] }, ekIdler: [mesajEki.body.ek.id] }, o1.token);
   kontrol('bağlanmış ek ikinci mesaja bağlanamıyor', tekrarBagla.status === 400, J(tekrarBagla.body));
+  /* Yüklerken taslağın hangi mesaja gideceği belli değil: başka pencerede
+     bırakılmış taslak yeni mesajın eklerini engellememeli (eskiden kişinin
+     bütün taslakları 50 MB'a sayılıyordu). Bir mesajın 50 MB'ı kaydederken denetlenir. */
+  const birakilan = await ekYukle(o1.token, 'mesaj', 'birakilan.mp4', Buffer.alloc(26 * MB));
+  const yeniTaslak = await ekYukle(o1.token, 'mesaj', 'yeni.mp4', Buffer.alloc(25 * MB));
+  kontrol('başka pencerede 26 MB taslak varken yeni mesaja 25 MB eklenebiliyor', birakilan.status === 200 && yeniTaslak.status === 200,
+    J(birakilan.body) + ' ' + J(yeniTaslak.body));
+  const ikisiBirden = await iste('/api/mesajlar', 'POST', { tur: 'mesaj', konu: 'Büyük', govde: 'İki büyük ek',
+    hedef: { tur: 'kisi', kisiler: [matKisi && matKisi.id] },
+    ekIdler: [birakilan.body.ek && birakilan.body.ek.id, yeniTaslak.body.ek && yeniTaslak.body.ek.id] }, o1.token);
+  kontrol('bir mesaja toplam 50 MB üstü ek bağlanamıyor (kaydederken)', ikisiBirden.status === 400 && /50 MB/.test(ikisiBirden.body.error || ''),
+    ikisiBirden.status + ' ' + J(ikisiBirden.body));
+  for (const t of [birakilan, yeniTaslak]) if (t.body.ek) await iste('/api/ek/sil', 'POST', { id: t.body.ek.id }, o1.token);
+
   const bilgesiz = await fetch(BASE + '/api/ek/indir?bilet=uydurma');
   kontrol('biletsiz indirme yok', bilgesiz.status === 410, 'status ' + bilgesiz.status);
 

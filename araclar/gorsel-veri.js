@@ -400,7 +400,7 @@ async function calistir() {
     const hedefOgrenciler = [...new Set((hedef ? hedef.students.map(s => s.id) : []).concat(zeynep ? [zeynep.id] : []))];
     const oran = await iste('/api/assignments', 'POST', { title: 'Oran orantı çalışma kâğıdı', subject: 'Matematik',
       description: 'Ekteki kâğıttaki 12 soruyu çöz, fotoğrafını yükle.', startAt: gun(0), endAt: gun(4), endTime: '17:00',
-      studentIds: hedefOgrenciler, ekIdler: [odevEki] }, MAT);
+      studentIds: hedefOgrenciler, ekIdler: [odevEki], dosyaYukleme: true }, MAT);
     /* Zeynep teslim eder: fotoğraf, video ve belge (öğretmen "3 ek" görür). */
     const oranId = oran.body.assignment && oran.body.assignment.id;
     const teslim = async (ad, veri) => {

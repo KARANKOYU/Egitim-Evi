@@ -184,6 +184,10 @@ function odev(r) {
     results: r.sonuclar || {},
     acilma: r.acilmalar || {},
     status: r.durum, yilId: bos(r.yil_id),
+    /* Öğrenci teslim dosyası yükleyebilir mi (033; eski ödevlerde açık). */
+    dosyaYukleme: r.dosya_yukleme !== false,
+    /* Teslim dosyaları bu andan önce silinmez (034; son teslim değişince + 7 gün). */
+    dosyaSaklama: r.dosya_saklama || undefined,
     createdAt: r.olusturma, finishedAt: r.sonuclanma || undefined
   };
 }

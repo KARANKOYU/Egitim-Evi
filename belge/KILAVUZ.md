@@ -52,7 +52,7 @@ doğum tarihi eşleşirse aynı hesabı kendi okuluna alır. Eski okulun kayıtl
 - **Devamsızlık ve etüt:** ders yoklaması, etüt günü ve saatinde "geldi / izinli / izinsiz".
 - **İletişim:** okul içi mesajlar, sınıfa ya da herkese duyuru, okundu bilgisi, anketler,
   telefona bildirim. Mesaja ve ödeve sürükle-bırak ile birden çok dosya eklenir
-  (toplam 150 MB, 7 gün saklanır).
+  (toplam 50 MB, 7 gün saklanır).
 - **Okul hayatı:** ders programı, takvim ve tatiller, yemek listesi, kulüpler, servis
   yoklaması (bindi, okula vardı, eve bırakıldı bildirimleri; sıra; servisçi notu ve velinin
   "binmeyecek" işareti), servis haritası ve okulun servis saatlerinde canlı servis konumu.
@@ -1237,7 +1237,11 @@ Nakil gelen öğrencide (ve velisinde) seçicinin altında **Önceki okullar** g
   **Tümünü seç** ve **Tümünü kaldır** düğmeleri var, üstte kaç kişi seçili yazar.
 - Birden fazla sınıfa aynı anda ödev verilebilir.
 - Aynı anda **birden fazla aktif ödev** olabilir.
-- Ödeve isteğe bağlı bir **quiz** eklenir (aşağıda "Quiz").
+- **Öğrenciler bu ödeve dosya yükleyebilsin** kutusu (yeni ödevde **kapalı** gelir; Ödevi
+  düzenle'de açılıp kapanır): işaretlenmezse öğrenci teslim dosyası yükleyemez (aşağıda
+  "Ödev teslim dosyaları"). Kontrol ekranında ödevin altında "öğrenciler dosya yükleyebilir"
+  ya da "dosya yükleme kapalı" yazar.
+- Ödeve isteğe bağlı bir **quiz** eklenir (aşağıda "Quiz"); quiz dosya yükleme kutusundan bağımsızdır.
 - Ödev bitince **Sonuçlandır** → ödev kontrol ekranı: üstte ödevin adı, altında konusu,
   altında ödevin verildiği öğrenciler alt alta. Her öğrencinin yanındaki kutudan sonuç
   seçilir: **Yaptı · Geç yaptı · Eksik · Yapmadı · Gelmedi (izinli) · Gelmedi (izinsiz)**.
@@ -1265,17 +1269,44 @@ son teslim sırasıyla sayılır:
 ### Ödev teslim dosyaları
 
 Öğrenci ödevin penceresinden **Dosya yükle** ile dosya teslim eder (ilerleme
-çubuğu, iptal). Öğretmenin kontrol ekranında her öğrencinin altında "2 dosya teslim
-etti" yazar; **Teslimleri indir** hepsini öğrenci klasörlerine ayrılmış tek zip
-olarak indirir. Veli, ödevler listesinde satıra tıklayınca çocuğunun dosyalarını görür.
+çubuğu, iptal) — yalnızca öğretmen o ödevde **Öğrenciler bu ödeve dosya yükleyebilsin**
+kutusunu işaretlediyse. İşaretlemediyse yükleme alanı hiç çıkmaz, ödevin penceresinde
+"Bu ödev için dosya yüklenmiyor." yazar; sunucu da yüklemeyi `403` ve `{ dosyaKapali: true }`
+ile reddeder. Öğretmen kutuyu sonradan kapatırsa önceden yüklenmiş dosyalar silinmez ve
+teslim **donar**: öğretmen görmeye devam eder, öğrenci ne yeni dosya yükleyebilir ne yüklediğini
+silebilir (`403`, `{ dosyaKapali: true }`) — öğretmen değerlendirirken dosya kaybolmasın.
+Uygunsuz dosyayı yalnızca öğretmen siler. 033 şema dosyası bu değişiklikten önce verilmiş ödevlerde
+kutuyu **açık** bıraktı (canlıdaki ödevler eskisi gibi çalışır).
+
+Yükleme alanının üstünde doluluk çubuğu durur: **Dosya alanın · 32 / 50 MB**. Alan ya da
+dosya sayısı dolunca bırakma kutusu yerine "Bu ödev için dosya alanın doldu (50 MB). Yer
+açmak için bir dosyanı sil." yazar; sığmayan dosyada kaç MB boş yer kaldığı söylenir.
+Öğretmenin kontrol ekranında her öğrencinin altında "2 ek" yazar; **Teslimleri indir**
+hepsini öğrenci klasörlerine ayrılmış tek zip olarak indirir. Veli, ödevler listesinde
+satıra tıklayınca çocuğunun dosyalarını görür.
 
 | Kural | Değer |
 |---|---|
-| Öğrenci başına, bir ödevde | en fazla 10 dosya, toplam 150 MB |
-| Saklama | yüklendikten 7 gün sonra silinir (satırda "N gün sonra silinir" yazar) |
-| Okul başına | 20 GB (`EE_OKUL_DOSYA_GB` ile değişir) |
+| Kim yükler | yalnızca ödevdeki öğrenci, öğretmen dosya yüklemeyi açtıysa (yeni ödevde varsayılan kapalı) |
+| Öğrenci başına, bir ödevde | en fazla 10 dosya, toplam 50 MB (tek dosya da en fazla 50 MB) |
+| Saklama | ödevin son tesliminden 7 gün sonra silinir; son teslimi yoksa ödev sonuçlandırıldıktan 7 gün sonra, hiç sonuçlandırılmazsa yüklendikten 60 gün sonra. Öğrenci ve öğretmen dosya satırında "N gün sonra silinir" görür |
+| Okul başına | 20 GB (`EE_OKUL_DOSYA_GB` ile değişir); %80'i geçince müdüre ve sistem yöneticisine bir kez "Okulun dosya alanının %80'i doldu" bildirimi, dolunca yükleme "Okulun dosya alanı doldu" hatasıyla (507) durur ve ikisine bir kez daha bildirim gider |
 | Türler | belge, tablo, sunum, resim, ses, video, zip, Scratch/GeoGebra, kod dosyaları (`.exe` gibi çalıştırılabilirler yok) |
 | Ne zaman | ödev başladıktan teslim saatine kadar; ödev sonuçlandırılınca kapanır |
+
+- **Silinme zamanı ödevden hesaplanır** (`sunucu/veri/depo/odev-dosyalari.js`
+  `SILINME`): son teslim ileri alınınca ya da ödev yeniden açılınca kendiliğinden yeniden
+  hesaplanır; zaten silinmiş dosya geri gelmez. Son teslim sunucunun yerel saatiyle yazılır
+  (Türkiye saati, sunucu `TZ=Europe/Istanbul` ile çalışmalı; SUNUCUYA-KURULUM), hesap da öyle yapılır.
+- **Yanlış tarihe karşı koruma** (şema 034, `odevler.dosya_saklama`): son teslim (gün ya da
+  saat) değiştirilince, kaldırılınca ya da ödev yeniden açılınca dosyalar değişiklikten en az
+  7 gün daha kalır. Öğretmen son teslimi yanlışlıkla geçmişe yazarsa (yılı 2025 gibi) saatlik
+  temizlik bütün teslimleri hemen silmez; tarihi düzeltmeye zaman kalır. Ödevi düzenle
+  penceresi de bunu yazar.
+- **Okulun dosya alanı uyarısı** `okul_dosya_uyarilari` tablosunda tutulur (hangi uyarı
+  verildi: %80 ya da dolu); kullanım %70'in altına inince saatlik temizlikte silinir, alan
+  yeniden dolarsa bildirim yeniden gider. Kota yalnızca öğrenci teslim dosyalarını sayar
+  (mesaj ve ödev ekleri 7 günde kendiliğinden silindiği için sayılmaz).
 
 - Dosyalar `data/dosyalar/` altında, `public/` dışında, 32 haneli rastgele adla durur;
   her indirmede yetki yeniden denetlenir (öğrencinin kendisi, velisi, ödevi veren
@@ -1284,11 +1315,11 @@ olarak indirir. Veli, ödevler listesinde satıra tıklayınca çocuğunun dosya
   hesaplanır. Sayı ve toplam sınırı veritabanında kilitli satırla denetlenir: aynı
   anda iki yükleme sınırı aşamaz. Diskte 2 GB'tan az yer kalacaksa yükleme reddedilir.
 - Öğretmen uygunsuz bir dosyayı silebilir; ödev silinince dosyaları da silinir.
-  Süresi dolan, yarıda kalan ve kaydı silinen dosyalar saatte bir temizlenir.
+  Silinme zamanı gelen, yarıda kalan ve kaydı silinen dosyalar saatte bir temizlenir.
 
 **Öğretmenin kontrol ekranında ekler.** Her öğrencinin altında **"3 ek"** gibi teslim
-sayısı yazar. Tıklayınca ekler simge, ad ve MB boyutuyla listelenir; hiçbiri kendiliğinden
-yüklenmez (boşuna internet harcanmaz). **Fotoğraf** (jpg, png, gif, webp), **video** (mp4,
+sayısı yazar. Tıklayınca ekler simge, ad, MB boyutu ve "N gün sonra silinir" ile listelenir;
+hiçbiri kendiliğinden yüklenmez (boşuna internet harcanmaz). **Fotoğraf** (jpg, png, gif, webp), **video** (mp4,
 webm, mov) ve **ses** (mp3, m4a, wav, ogg) tıklayınca pencerede açılır ya da oynar; video
 ileri sarılabilir. Öbür dosyalar "indirilsin mi?" diye sorup iner. Tarayıcıda açılan
 dosya da güvenlidir: tür uzantıdan belirlenir, içerik sezdirilmez (nosniff), betik
@@ -1303,12 +1334,17 @@ listesini görür; mesaj alıcısı mesajın altında görür.
 
 | Kural | Değer |
 |---|---|
-| Bir mesajda ya da ödevde | toplam en fazla 150 MB |
-| Saklama | 7 gün, sonra dosya silinir (ek satırı "süresi doldu" der) |
+| Bir mesajda ya da ödevde | toplam en fazla 50 MB (tek dosya da en fazla 50 MB), en fazla 20 dosya |
+| Doluluk | dosya eklenince kutunun altında "Dosya alanın · 32 / 50 MB" çubuğu; dolunca bırakma kutusu gizlenir, "Bu mesaj için dosya alanın doldu (50 MB). Yer açmak için bir dosyanı kaldır." yazar (ödevde "Bu ödev için") |
+| Saklama | 7 gün, sonra dosya silinir (satırda "N gün sonra silinir", sonra "süresi doldu" yazar) |
 | Kim indirir | mesajın göndereni ve alıcıları; ödevin öğretmeni, öğrencileri, velileri ve müdür |
 
 Yüklenen dosya önce "taslak"tır; mesaj gönderilince ya da ödev kaydedilince bağlanır.
-Bağlanmayan taslaklar da 7 günde silinir. Başkasının taslağı bağlanamaz.
+Bağlanmayan taslaklar 6 saat sonra silinir. Başkasının taslağı bağlanamaz. Yüklerken
+taslağın hangi mesaja gideceği belli olmadığı için bir mesajın 50 MB'ı pencerede (doluluk
+çubuğu, düzeltmede var olan ekler dahil) ve kaydederken denetlenir; yüklemede yalnızca
+kişinin gönderilmemiş bütün taslaklarının toplamı sınırlıdır (150 MB, disk dolmasın). Başka
+bir pencerede bırakılmış taslak yeni mesajın eklerini engellemez.
 
 ### Quiz
 
@@ -2014,8 +2050,9 @@ ve sunucudan dışarı çıkmaz.
 
 | Koruma | Ne yapar |
 |---|---|
-| Kaba kuvvet kilidi | 5 hatalı giriş sonrası o hesap+cihaz 15 dakika kilitlenir (e-posta ile kullanıcı adını sırayla denemek kilidi aşmaz); aynı bağlantıdan 15 dakikada en fazla 50 hatalı giriş, 25 yanlış giriş kodu |
-| Genel hız sınırı | Oturum başına dakikada 300 API isteği; aynı okul ağından (tek IP) gelen bir sınıf engellenmesin diye IP başına 1500 |
+| Kaba kuvvet kilidi | Asıl koruma hesapta: 5 hatalı giriş sonrası o hesap o bağlantıdan 15 dakika kilitlenir (e-posta ile kullanıcı adını sırayla denemek kilidi aşmaz); hesaba her yerden 15 dakikada 20 hatalı giriş gelirse hesap, sahibinin son 30 günde girmediği bağlantılardan 15 dakika kilitlenir (birçok IP'den deneme). Sahibinin girdiği bağlantı "tanıdık"tır, bu kilide takılmaz: kullanıcı adını bilen biri başka bağlantılardan 20 yanlış deneyerek öğretmeni okulda ya da evinde dışarıda bırakamaz. Tanıdık bağlantılar bellekte tutulur, sunucu yeniden başlayınca boşalır; o zaman sahibi o bağlantıdan yeniden girene kadar bu kilit her bağlantıya uygulanır (açık oturumu etkilenmez). Kilidi yeni şifre kaldırır: "Şifremi unuttum" ya da e-postası olmayan öğrencide okulun verdiği yeni şifre (tek tek ya da toplu dağıtım). Bağlantı (IP) başına hatalı giriş sınırı 15 dakikada 50, o bağlantıdan girmiş her okul hesabı (öğrenci, servisçi) için 2 fazla, en çok 300 (okulun ağı 300'e çıkar, kimsenin girmediği bağlantı 50'de durur; herkesin kendisi açabildiği yetişkin hesabıyla girmek sınırı büyütmez); 5 dakikada 1200 deneme; 5 dakikada 25 yanlış giriş kodu |
+| Genel hız sınırı | Asıl sınır oturumda: oturum başına dakikada 300 API isteği (aşan oturumun istekleri IP sayacına girmez, aynı ağdaki öbürleri etkilenmez). Okul ağından (tek IP) yüzlerce kişi gelebildiği için IP başına dakikada 6000 API ve 15000 dosya isteği (okul fotoğrafları dosya sayılır). 429 cevabındaki `sinir` hangisinin dolduğunu söyler: `oturum`, `ip`, `dosya` |
+| Okul ağı (tek IP) | Aynı anda 300 öğrenci tek IP'den girer (NAT); hiçbiri "çok fazla istek" almamalı. Öbür IP sınırları da buna göre: okul adresi sorgusu dakikada 3000, okul fotoğrafı 4000, doğrulama sorusu 10 dakikada 1500, şifremi unuttum 15 dakikada 20 (aynı adrese ayrıca saatte 3). `testler/test-okul-agi.js` ölçer (aşağıda "Yük ve saldırı koruması") |
 | Bot doğrulaması | Kayıt formunda toplama sorusu; cevap sunucuda tutulur, tarayıcıya gönderilmez; yalnızca hesap açılınca harcanır |
 | Şifre değişimi | Şifre değişince o oturum dışındaki bütün oturumlar kapanır, telefonların cihaz anahtarları silinir |
 | T.C. kimlik no | İsteğe bağlı, algoritmayla denetlenir; yalnızca kişinin kendisine gösterilir |
@@ -2031,7 +2068,7 @@ ve sunucudan dışarı çıkmaz.
 | İki adımlı giriş | E-postası olan hesapta her girişte e-posta ile 6 haneli kod — kapatılamaz |
 | Dosya yükleme | Gövde okunmadan boyut/tür/kota/boş yer denetimi; 60 sn veri gelmezse kesilir; kişi başına aynı anda 3, saatte 60 yükleme |
 | Dosya indirme | Her indirmede yetki; ek olarak (octet-stream, nosniff, sandbox); dosya adları temizlenir |
-| Akıllı doğrulama sorusu | Girişte soru **yalnızca hatalı denemeden sonra** çıkar; normal kullanıcı hiç görmez, otomatik deneme aracı ikinci denemede takılır |
+| Akıllı doğrulama sorusu | Girişte soru **yalnızca hatalı denemeden sonra** çıkar: o hesaba o bağlantıdan bir hata, hesaba her yerden 3 hata ya da o bağlantıdan 15 dakikada 50 hata (o zaman bağlantıdaki herkese). Normal kullanıcı hiç görmez; okulda birkaç kişinin yanlış yazması öbürlerini durdurmaz, en kötü soru çıkar. Soru (toplama) hazır araçları eler ama bir betik onu kolayca çözer: otomatik şifre taramasını soru değil hesap kilitleri ve bağlantının hata sınırı durdurur |
 | Kod koruması | 5 dk ömür, tek kullanım, 5 hatalı denemede iptal, yeniden gönderme 60 sn kilitli |
 
 Şifre doğrulama asenkron çalışır: çok sayıda eşzamanlı giriş denemesi sunucuyu kilitlemez.
@@ -2068,21 +2105,59 @@ başlıyorsa (ya da güvenilen vekil `x-forwarded-proto: https` diyorsa) yöneti
 
 ### Yük ve saldırı koruması
 
-Uygulamanın kendi korumaları (vekil olmasa da çalışır):
+Uygulamanın kendi korumaları (vekil olmasa da çalışır). Sayılar okul ağına göre seçildi:
+büyük bir okulda 300 öğrenci aynı dakikada, okulun tek IP'sinden (NAT) girer.
 
-- IP başına dakikada 1500 API isteği, oturum başına 300; girişte kaba kuvvet kilidi ve bot sorusu.
-- Aynı anda en fazla 400 API isteği işlenir; olay döngüsü ortalama 150 ms'den fazla
-  gecikirse (sunucu boğuluyor) yeni API istekleri `503 Retry-After` ile geri çevrilir,
-  statik dosyalar ve açık işler sürer.
-- Gövdesi 30 saniyede gelmeyen istek kesilir (yavaş gönderim saldırısı); en fazla 1024
-  bağlantı, vekil yokken IP başına 256.
+| Sınır | Değer | Neden bu kadar |
+|---|---|---|
+| Oturum başına API | dakikada 300 | Tek kişiyi durduran asıl sınır; aşan oturumun istekleri IP sayacından geri düşülür. IP önce denetlenir: IP sınırı dolunca oturum sayacı açılmaz (uydurma anahtarlarla bellek şişirilemez); sayaç haritası en çok 100.000 kayıt |
+| IP başına API | dakikada 6000 | 300 öğrencinin ilk açılışı ~3.100 API isteği (öğrenci başına ~10) |
+| IP başına dosya | dakikada 15000 | İlk açılışta öğrenci başına ~24 dosya (sayfa, betik, yazı tipi, servis çalışanı, okul fotoğrafları) |
+| Giriş, IP başına | 5 dakikada 1200 deneme; 15 dakikada 50 hata + o bağlantıdan son 30 günde girmiş okul hesabı (öğrenci, servisçi) başına 2, en çok 300; 50 hatadan sonra herkese soru | Okulun ağında yüzlerce öğrenci girer, sınır 300'e çıkar; kimsenin girmediği bağlantıdan şifre taraması 50'de durur. Kendi açılan yetişkin hesapları sayılmaz: tarayan biri hesap açıp girerek sınırını büyütemez |
+| Giriş, hesap başına | bağlantıdan 5 hatada kilit; her yerden 3 hatada soru, 20 hatada sahibinin girmediği bağlantılardan kilit (yeni şifreyle kalkar) | Kaba kuvvet hesapta durur, okulun öbür öğrencileri etkilenmez; hedefli kilit sahibini tanıdık bağlantısında dışarıda bırakmaz (tanıdıklar bellekte: sunucu yeniden başlayınca boşalır) |
+| Aynı anda süren API isteği | 1000 | 300 kişi aynı saniyede başlayınca ~500 (eskiden 400: 503 veriyordu) |
+| Bağlantı | toplam 8192, vekil yokken IP başına 2048 | Tarayıcı başına 6'ya kadar bağlantı: 300 kişi ~1800 (ölçüldü: en çok 1800). Tek IP toplamın dörtte birini tutar, sunucuyu doldurmak için en az 4 adres gerekir (eskiden 256 / 1024). Doğrudan internete açık kurulum önerilmez: Caddy arkasında bu sınır uygulanmaz |
+
+- Olay döngüsü ortalama 150 ms'den fazla gecikirse (sunucu boğuluyor) yeni API istekleri
+  `503 Retry-After` ile geri çevrilir, statik dosyalar ve açık işler sürer.
+- Gövdesi 30 saniyede gelmeyen istek kesilir (yavaş gönderim saldırısı).
 - Dosya yüklemede okul başına aynı anda 20 yükleme ve en düşük hız sınırı.
+
+**Ölçüm** (`testler/test-okul-agi.js`, 300 öğrenci tek IP'den, 30'u önce yanlış şifre; öğrenci
+başına tarayıcıda ölçülen istek dizisi: okul adresinden ilk açılış, giriş, ana sayfa, Ödevler,
+Program; toplam ~10.300 istek):
+
+| Durum | Eski sınırlar | Yeni sınırlar |
+|---|---|---|
+| Vekilsiz, 10 sn'ye yayılarak | 5692 bağlantı kesildi (IP başına 256 bağlantı), 73/300 girdi | Hata yok, 300/300 girdi |
+| Vekil arkasında, 10 sn'ye yayılarak | 3511 kez 429 (dosya 2400, API 872, okul fotoğrafı 239), 44/300 girdi | 429 yok, 300/300 girdi |
+| Vekil arkasında, herkes 1 saniyede | 3572 kez 429, 452 kez 503 (400 süren istek), 0/300 girdi | 429 ve 503 yok, 300/300 girdi (girişlerin %95'i 1,3 sn içinde) |
+
+Aynı pakette tek kötü niyetli kişi yine durur: tek oturumdan sel (dakikada 300'ü aşan
+oturum 429 alır, aynı ağdaki öbürleri almaz), tek hesaba şifre denemesi (5. yanlışta kilit;
+hesaba başka bağlantıdan da soru sorulur), bir hesaba 5 bağlantıdan 20 yanlış (hesap
+tanımadığı bağlantılardan kilitlenir, sahibi okulun ağından girer; müdürün verdiği yeni şifre
+kilidi kaldırır), çok hesaba şifre taraması (kimsenin girmediği bağlantı 50 hatada durur;
+10 öğrencinin girdiği bağlantıda 50 hatadan sonra soru, 70 hatada durur; kendi açtığı 5 yetişkin
+hesabıyla girilen bağlantı yine 50'de durur; okul ağı etkilenmez), oturumsuz sel (IP başına
+6000'de durur).
+Doğrulama sorusu betikle çözülür; taramayı soru değil bu sayılar durdurur. Tek IP'nin
+sınırları okulun bütün kullanıcılarına ortaktır: aynı ağdan biri oturumsuz sel yaparsa ya da
+300 hatalı giriş denerse o dakikalarda okulun girişleri de durur; buna karşı önlem vekil ve
+CDN'dedir (aşağıda).
 
 Bunlar tek sunucuyu korur; **gerçek DDoS'a** (binlerce makineden trafik) karşı sunucunun
 önüne **Cloudflare** (ücretsiz plan) koy: alan adının DNS'ini Cloudflare'e taşı, turuncu
-bulutu aç, SSL/TLS "Full (strict)", "Under Attack" modunu gerektiğinde aç, `/api/login`
-ve `/api/register` için hız kuralı ekle. O zaman `vekil.guven: true` ve
+bulutu aç, SSL/TLS "Full (strict)", "Under Attack" modunu gerektiğinde aç. `/api/login`
+için hız kuralı koyacaksan geniş tut: okul ağında yüzlerce öğrenci aynı IP'den aynı
+dakikada girer, "dakikada 20" gibi dar bir kural bütün okulu durdurur (hatalı denemeleri
+uygulama zaten hesap başına sayar). O zaman `vekil.guven: true` ve
 `"baslik": "cf-connecting-ip"` yap. Ayrıntı **belge/SUNUCUYA-KURULUM.md**'de.
+
+> **Vekil arkasında `vekil.guven` şart.** Kapalıysa her istek vekilin adresinden
+> (`127.0.0.1`) gelmiş görünür: bütün site tek IP sayılır ve yukarıdaki IP sınırları
+> 300 kişiye değil **bütün kullanıcılara** birden uygulanır; yoğun saatte herkes "çok fazla
+> istek" alır.
 
 ---
 
@@ -2162,7 +2237,7 @@ eğitim evi/
 │   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
 │   │   ├── sema.js            ← şema dosyalarını sırayla uygular
 │   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
-│   │   ├── sema/002...032     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   ├── sema/002...034     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
 │   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
 │   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
 │   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
@@ -2175,7 +2250,9 @@ eğitim evi/
 │   │   │                        029 ödevin quizi: sorular, şıklar, denemeler, cevaplar,
 │   │   │                        030 site ayarları ve yönetim paneli çerezleri, 031 aynı
 │   │   │                        e-posta/kullanıcı adı/T.C. kuralları ve yönetici adı tetikleyicisi,
-│   │   │                        032 kişi kodu 16 karakter, 4'erli tireli gruplar)
+│   │   │                        032 kişi kodu 16 karakter, 4'erli tireli gruplar,
+│   │   │                        033 ödevde öğrencinin dosya yükleme izni, okulun dosya alanı uyarısı,
+│   │   │                        034 teslim dosyalarının en erken silinme anı)
 │   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
 │   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
 │   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)
@@ -2446,6 +2523,32 @@ yönetici uçlarının 404'ü), `test-site-ayarlari.js` (öncelik, doğrulama, s
 adresi), `test-yonetici-dosyasi.js` (`admins.json`, canlı okuma; yalnız
 `testler/testdata/` altında) ve `test-cakisma.js` (aynı e-posta, kullanıcı adı ve T.C.;
 aynı anda gelen istekler). Hepsi `tumtest.sh` listesindedir.
+
+`test-okul-agi.js`: okul ağı yük ve saldırı paketi. Test veritabanına 300 öğrenci yazar;
+öğrenciler tek IP'den (`::1`), 5 saniyeye yayılarak tarayıcıda ölçülen istek dizisiyle
+girer (her biri kendi 6 bağlantısıyla). 429, 503 ve kesilen bağlantı olmamalı. Ardından
+tek oturumdan sel, tek hesaba şifre denemesi, bir hesaba birçok bağlantıdan deneme
+(`127.0.0.11`-`16`: hesap tanımadığı bağlantıdan kilitli, sahibi okulun ağından giriyor;
+`127.0.0.21`-`26`: müdürün verdiği yeni şifre kilidi kaldırıyor), kimsenin girmediği
+(`127.0.0.3`), 10 öğrencinin girdiği (`127.0.0.4`) ve kendi açtığı 5 yetişkin hesabıyla girilen
+(`127.0.0.5`) bağlantıdan şifre taraması ve oturumsuz sel (`127.0.0.1`) ayrı ayrı durdurulur. Başka bağlantılar `127.0.0.N`
+kaynak adresinden gelir (bütün 127/8 geri döngüdür). Giriş sınırları ve genel istek sınırı
+(uydurma oturum anahtarları sayaç açmıyor, sayaç haritası üst sınırda büyümüyor) ayrıca
+sunucusuz denenir. Ölçüm için uzun sürüm (10 sn yayılma, gerçekçi bekleme, sonuç
+tablosu ve `OLCUM` satırı):
+
+```
+EE_AG_OLCUM=1 EE_BASE=http://localhost:3200 EE_LOG=testler/test-sunucu.log node testler/test-okul-agi.js
+```
+
+`EE_AG_YAYILMA_MS=1000` ani yük (herkes bir saniyede), `EE_AG_SALDIRI=0` saldırısız,
+`EE_AG_VEKIL=1` sunucu vekil arkasındayken (test ayarlarında `vekil.guven: true`, başlık
+`x-forwarded-for`; öğrenciler vekil gibi ortak bir bağlantı havuzundan gelir).
+
+Bir paketin sunucusu ek ortam değişkeniyle açılabilir (`tumtest.sh` `paket_ortami`):
+`test-odev-dosya` okulun dosya alanını 1 MB'a indirir (`EE_OKUL_DOSYA_GB=0.001`) ki %80
+uyarısı ve "doldu" küçük dosyalarla denensin. Tek başına çalıştırırken aynı değişkeni ver
+(verilmezse o bölüm atlanır).
 
 ---
 
