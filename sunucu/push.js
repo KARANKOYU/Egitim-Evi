@@ -151,6 +151,13 @@ function isle() {
   }
 }
 
+/* Bildirime dokununca açılacak adres: alıcının okul adresi ve ?k= ile rolü.
+   Telefon uygulamasının bildirim yoklaması da aynı adresi verir (cihaz.js). */
+function bildirimAdresi(kisaAd, kime, baglanti) {
+  const b = String(baglanti || '').indexOf('#/') === 0 ? baglanti : '#/ana';
+  return (kisaAd ? '/school/' + encodeURIComponent(kisaAd) : '') + '/?k=' + encodeURIComponent(kime) + b;
+}
+
 /* Bildirim yazılınca: kişinin abonelikleri varsa telefonuna gönderilir. */
 async function bildirimGeldi(liste) {
   const kisiler = [...new Set(liste.map(b => b.kime))];
@@ -167,10 +174,8 @@ async function bildirimGeldi(liste) {
     const aboneler = kisininki.get(b.kime);
     if (!aboneler || !hizSinir('pushKisi:' + b.kime, 20, 60 * 1000)) continue;
     for (const a of aboneler) {
-      const baglanti = String(b.baglanti || '').indexOf('#/') === 0 ? b.baglanti : '#/ana';
       /* ?k=: bildirim hangi rolüne geldiyse uygulama açılınca o role geçilir. */
-      sirayaAl(a, { t: 'Eğitim Evi', b: String(b.metin || '').slice(0, 300),
-        u: (a.kisa_ad ? '/school/' + encodeURIComponent(a.kisa_ad) : '') + '/?k=' + encodeURIComponent(b.kime) + baglanti });
+      sirayaAl(a, { t: 'Eğitim Evi', b: String(b.metin || '').slice(0, 300), u: bildirimAdresi(a.kisa_ad, b.kime, b.baglanti) });
     }
   }
 }
@@ -179,4 +184,4 @@ function baslat() {
   depo.genel.olaylar.on('bildirim', liste => { bildirimGeldi(liste).catch(() => {}); });
 }
 
-module.exports = { baslat, anahtarlar, adresGecerli, anahtarGecerli, sifrele, vapidBasligi };
+module.exports = { baslat, anahtarlar, adresGecerli, anahtarGecerli, sifrele, vapidBasligi, bildirimAdresi };

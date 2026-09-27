@@ -70,6 +70,10 @@ function bekleniyor(ad, cevap, izinliMi) {
     studentIds: [o1.id, o2.id], endAt: yarin }, O);
   const odevId = odevDen.body.assignment ? odevDen.body.assignment.id : 'yok';
 
+  /* Veli birinci öğrencinin velisi; öğrenci bir serviste (binmeyecek işareti için). */
+  const denSv = await iste('/api/servis/kaydet', 'POST', { ad: 'Denetim yoklama servisi' }, M);
+  if (denSv.body.id) await iste('/api/servis/ogrenci', 'POST', { servisId: denSv.body.id, ogrenciId: o1.id }, M);
+
   /* uc: [ad, yol, method, govde, izinliRoller] */
   const UCLAR = [
     /* --- okul yonetimi: sadece mudur --- */
@@ -164,6 +168,24 @@ function bekleniyor(ad, cevap, izinliMi) {
     ['seferlerim', '/api/servis/seferim', 'GET', null, ['servisci']],
     ['sefer baslat (atanmamis)', '/api/servis/sefer-basla', 'POST', { servisId: 'yok', yon: 'gidis' }, []],
     ['konum gonder (sefersiz)', '/api/servis/konum', 'POST', { seferId: 'yok', enlem: 39.9, boylam: 32.8 }, []],
+    /* Servis yoklaması: servisçi kendi servisinin (atanmamış: boş) yoklamasını, yönetim salt okunur görür. */
+    ['servis yoklamasi', '/api/servis/yoklama', 'GET', null, ['mudur', 'servisci']],
+    ['baska servisin yoklamasi', '/api/servis/yoklama?servisId=' + (denSv.body.id || 'yok'), 'GET', null, ['mudur']],
+    ['yoklama isareti (atanmamis)', '/api/servis/yoklama', 'POST', { servisId: denSv.body.id || 'yok', ogrenciId: o1.id, durum: 'bindi' }, []],
+    ['okula vardik (atanmamis)', '/api/servis/okula-vardik', 'POST', { servisId: denSv.body.id || 'yok' }, []],
+    ['servis sirasi (atanmamis)', '/api/servis/sira', 'POST', { servisId: denSv.body.id || 'yok', donem: 'sabah', sira: [o1.id] }, []],
+    ['servis notu (atanmamis)', '/api/servis/not', 'POST', { servisId: denSv.body.id || 'yok', metin: 'Denetim' }, []],
+    ['servis notu sil', '/api/servis/not-sil', 'POST', { id: 'yok' }, []],
+    ['binmeyecek (kendi cocugu)', '/api/servis/binmeyecek', 'POST', { ogrenciId: o1.id, sabah: true, aksam: false }, ['veli']],
+    ['binmeyecek (baskasinin cocugu)', '/api/servis/binmeyecek', 'POST', { ogrenciId: o2.id, sabah: true }, []],
+    ['servis saatleri', '/api/servis/saatler', 'POST', { sabahBas: '00:00', sabahBit: '11:59', aksamBas: '12:00', aksamBit: '23:59' }, ['mudur']],
+    /* Telefon uygulaması: anahtarı oturumla herkes alır; anahtar uçları oturumla açılmaz. */
+    ['uygulama anahtari al', '/api/cihaz', 'POST', { ad: 'Denetim', platform: 'android' }, ['mudur', 'ogretmen', 'ogrenci', 'veli', 'admin', 'servisci']],
+    ['uygulama telefonlari', '/api/cihaz', 'GET', null, ['mudur', 'ogretmen', 'ogrenci', 'veli', 'admin', 'servisci']],
+    ['baskasinin telefonunu sil', '/api/cihaz/sil', 'POST', { id: 'yok' }, []],
+    ['anahtar ucu oturumla (bildirim)', '/api/cihaz/bildirimler', 'GET', null, []],
+    ['anahtar ucu oturumla (ayar)', '/api/cihaz/ayar', 'GET', null, []],
+    ['anahtar ucu oturumla (konum)', '/api/cihaz/servis-konum', 'POST', { seferId: 'yok', enlem: 39.9, boylam: 32.8 }, []],
     ['okul adresi', '/api/school/adres', 'GET', null, ['mudur']],
     ['okul konumu yaz', '/api/school/konum', 'POST', { enlem: 39.92, boylam: 32.85 }, ['mudur']],
     ['servisci listesi', '/api/school/servisciler', 'GET', null, ['mudur']],

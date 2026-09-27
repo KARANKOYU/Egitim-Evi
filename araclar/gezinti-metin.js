@@ -45,8 +45,9 @@ const ROL_METNI = {
     giris: `Bu veli iki çocuğunu aynı hesaptan izler. Her satırda ve her bildirimde hangi çocuğun olduğu yazar;
       üstteki şeritten tek çocuğa daraltılır.` },
   servisci: { baslik: 'Servisçi',
-    giris: `Servisçi hesabını okul açar. Servisçi seferi başlatır; telefonunun konumu öğrenciye ve veliye haritada
-      görünür, servis eve yaklaşınca bildirim gider.` },
+    giris: `Servisçi hesabını okul açar. Servisçinin ana sayfası <b>Yoklama</b>dır: okulun servis saatlerinde sabah
+      <b>Bindi / Binmedi</b>, akşam önce <b>Geldi / Gelmedi</b>, yola çıkınca <b>İndi</b> işaretler; her işaret veliye
+      bildirim olarak gider. Sefer sürerken telefonunun konumu veliye haritada görünür.` },
   rolsuz: { baslik: 'Yeni açılmış yetişkin hesabı',
     giris: `Kendi kaydolan yetişkinin henüz portalı yoktur. Sağ üstteki <b>+ Ekle</b> ile çocuğunu ekler (veli kodu),
       kişi kodunu müdüre verip bir okula öğretmen olarak katılır ya da kişi kodunu sistem yöneticisine verip okulunu açtırır.` },
@@ -183,7 +184,15 @@ const ADIM_METNI = {
   'mudur|Yemek listesi': A(`Haftalık yemek listesi; bugün vurgulu. Okuldaki herkes, veli de çocuğunun okulununkini görür.`,
     'Okul hayatı: yemek, servis, kulüp, anket'),
   'mudur|Yemek listesi — düzenleme': A(`<b>Bu haftayı düzenle</b>: her güne satır satır yemek ve isteğe bağlı kalori yazılır.`),
-  'mudur|Servisler': A(`Okulun servisleri: plaka, servisçi, şoför ve rehber personel, saatler ve öğrenciler.`),
+  'mudur|Servisler': A(`Okulun servisleri: en üstte okulun servis saatleri; her serviste plaka, servisçi, şoför ve
+    rehber personel, kalkış saatleri ve öğrenciler.`),
+  'mudur|Servis saatleri (veli ve servisçi bu saatlerde görür)': A(`Müdür okulun sabah ve akşam servis saatlerini seçer
+    (ör. 07:00–09:20 ve 16:30–19:00). Veli servisin yerini, sırasını ve çocuğunun bindi / indi bilgisini yalnız bu
+    saatlerde görür; servisçi yoklamayı ve seferi yalnız bu saatlerde açar. Saat bitince yoldaki sefer en çok
+    60 dakika daha sürer.`),
+  'mudur|Servisin bugünkü yoklaması (salt okunur)': A(`<b>Bugünkü yoklama</b>: servisçinin işaretleri (bindi, binmedi,
+    geldi, indi ve saatleri), velilerin "binmeyecek" işaretleri ve servisçinin notları. Okul yönetimi yalnız
+    görür; işareti servisçi koyar.`),
   'mudur|Servis düzenleme penceresi': A(`Servisin adı, plakası, servisçi hesabı, şoför ve rehber personelin adı ve telefonu,
     sabah ve akşam saati, güzergâh.`),
   'mudur|Servise öğrenci ekleme': A(`Öğrenciler durağıyla servise yazılır. Bir öğrenci tek serviste olur.`),
@@ -232,7 +241,7 @@ const ADIM_METNI = {
   'mudur-veli|Devamsızlık': A(`Çocuğun devamsızlığı: hangi gün, hangi ders, gelmedi, izinli ya da geç.`),
   'mudur-veli|İlerleyiş': A(`Çocuğun ödev ve sınav grafikleri.`),
   'mudur-veli|Etütler': A(`Çocuğun etütleri ve etüt yoklaması.`),
-  'mudur-veli|Servis': A(`Çocuğun servisi: harita, durak ve sefer sürerken servisin yeri.`),
+  'mudur-veli|Servis': A(`Çocuğun servisi: durak, servis saatinde bugünkü durum ve sıra, sefer sürerken servisin yeri.`),
   'mudur-veli|Portal menüsü: veli olarak açık (telefon)': A(`Telefonda menü: veli satırı işaretli, altında velinin menüsü.`),
   'mudur-veli|Ödevler (telefon)': A(`Çocuğun ödevleri telefonda.`),
 
@@ -370,7 +379,8 @@ const ADIM_METNI = {
   'ogrenci|Yeni hatırlatıcı — haftanın günleri ve saat': A(`Haftanın günleri seçilir (ör. Pazartesi ve Çarşamba) ve saat yazılır.`),
   'ogrenci|Yeni hatırlatıcı — ayda bir': A(`Ayda bir: ayın günü ve saat; ay kısaysa ayın son gününe kayar.`),
   'ogrenci|Yemek listesi': A(`Haftalık yemek listesi.`, 'Yemek, servis, kulüp, ayarlar'),
-  'ogrenci|Servisim (harita, durak)': A(`Öğrencinin servisi: harita, durak, sefer sürerken servisin yeri.`),
+  'ogrenci|Servisim (harita, durak)': A(`Öğrencinin servisi: durak, servisçinin notları, servis saatinde bugünkü durum
+    ve sıra, sefer sürerken servisin yeri. "Binmeyecek" işaretini velisi koyar.`),
   'ogrenci|Kulüpler (üye)': A(`Üye olduğu kulüpler; başvurusu açık kulübe kendisi katılır.`),
   'ogrenci|Ayarlar (veli kodu)': A(`Ayarlar: şifre, görünüm ve <b>veli kodu</b>. Velisi bu kodla öğrenciyi kendi hesabına ekler.`),
   'ogrenci|İlerleyişim (koyu)': A(`İlerleyiş koyu görünümde.`, 'Koyu görünüm'),
@@ -408,23 +418,42 @@ const ADIM_METNI = {
   'veli|Takvim': A(`Çocukların okul takvimi.`),
   'veli|Anketler': A(`Velilere açılan anketler.`),
   'veli|Yemek listesi': A(`Çocuğun okulunun yemek listesi.`),
-  'veli|Servis': A(`Çocuğun servisi haritada; servis eve 500 m ve 100 m kala bildirim gelir.`),
+  'veli|Servis': A(`Her çocuğun servis kartı: şoför, durak ve <b>bugün</b> bölümü. Servis saatinde bugünkü durum
+    ("Bindi 07:42", "Okula vardı 08:05", "Eve bırakıldı") ve sıra ("5. sırada, önünde 2 öğrenci kaldı") görünür;
+    saat dışında canlı bilgi yoktur ve bunun nedeni yazar. Servisçinin notları ve velinin işaretleri de buradadır.
+    Haritada servis sefer sürerken görünür; eve 500 m ve 100 m kala bildirim gelir.`),
+  'veli|Servis — Binmeyecek penceresi (gün, sabah / akşam, kısa not)': A(`<b>Binmeyecek</b>: veli bugün ya da 7 gün
+    sonrasına kadar bir gün için sabah, akşam ya da ikisini seçer, isteğe bağlı kısa not yazar. Servisçinin
+    listesinde görünür ve ona bildirim gider; o servisin yoklaması alınınca değiştirilemez.`),
   'veli|Kulüpler': A(`Çocukların kulüpleri.`),
   'veli|Ayarlar (hesap bilgisi, telefon ülke kodu)': A(`Velinin hesap bilgileri ve telefonu (ülke koduyla).`),
   'veli|İlerleyiş (koyu)': A(`İlerleyiş koyu görünümde.`),
   'veli|Portal menüsü: her çocuk ayrı satır (telefon)': A(`Telefonda menü: her çocuk ayrı satır, bulunulan işaretli.`),
   'veli|Ödevler (telefon)': A(`Ödevler telefonda.`),
   'veli|İlerleyiş (telefon)': A(`İlerleyiş telefonda.`),
+  'veli|Servis: bugünkü durum (telefon)': A(`Servis kartı ve bugünkü durum telefonda.`),
   'veli|Çocuğun kartına tıklayınca portalı (ödevleri, notları)': A(`Çocuğun kartına dokununca onun portalı açılır: ödevler,
     notlar, devamsızlık.`),
 
   /* ================= servisçi ================= */
-  'servisci|Ana sayfa': A(`Servisçinin ana sayfası: servisi ve seferleri.`),
-  'servisci|Servisim (öğrenciler, duraklar)': A(`Servisteki öğrenciler, durakları ve evlerinin haritadaki yeri. Sefer başlayınca
-    telefonun konumu gönderilir; <b>Seferi bitir</b> deyince kesilir.`),
+  'servisci|Yoklama — sabah: Bindi / Binmedi, sıra, velinin işareti': A(`Servisçinin ana sayfası <b>Yoklama</b>. Dönemi
+    sunucu okulun servis saatine göre verir. Sabah öğrenciler alma sırasıyla gelir; her birinde büyük <b>Bindi / Binmedi</b>
+    düğmeleri, evi işaretliyse <b>Yol tarifi</b>, velinin "binmeyecek" işareti (satır soluk) ve notlar. Her işaret
+    anında gider ve veliye bildirim olur ("Zeynep 07:42'de servise bindi."); gidemezse satırda <b>Yeniden dene</b>
+    çıkar. <b>Seferi başlat</b> konumu paylaşır (ilk "Bindi" de başlatır); en alttaki <b>Okula vardık</b> seferi
+    bitirir, binenlerin velilerine "okula vardı" gider.`),
+  'servisci|Yoklama — sırayı düzenle (yukarı / aşağı)': A(`<b>Sırayı düzenle</b>: sabah alma ve akşam bırakma sırası
+    ayrı ayrı; öğrenci oklarla yukarı ya da aşağı taşınır. Veli bu sırayla "5. sırada, önünde 2 öğrenci" görür.`),
+  'servisci|Yoklama — velilere not': A(`<b>Not yaz</b>: bir öğrencinin velisine ya da bütün servise, bugün ya da 7 gün
+    sonrasına kadar bir gün için en çok 200 harflik not. Velisine bildirim gider; not o günün listesinde de görünür.`),
+  'servisci|Yoklama — akşam: Geldi / Gelmedi, sonra Başlat ve İndi': A(`Akşam önce okulda her öğrenci için <b>Geldi</b> ya da
+    <b>Gelmedi</b>; sonra <b>Başlat</b> (işaretlenmeyen öğrenci varsa sorar) seferi başlatır. Ardından "Geldi" olanlar
+    bırakma sırasıyla listelenir ve her birinde <b>İndi</b> çıkar; hepsi inince sefer kendiliğinden biter. Ekranda Zeynep
+    "Geldi", Burak "Gelmedi" ve sefer başlamış: Zeynep'in satırında <b>İndi</b>, Burak "Serviste olmayanlar" kartında.`),
   'servisci|Mesajlar': A(`Servisçinin mesajları.`),
-  'servisci|Ana sayfa (telefon)': A(`Servisçi uygulamayı telefonda kullanır.`),
-  'servisci|Servisim (telefon)': A(`Servis ve öğrenciler telefonda.`),
+  'servisci|Yoklama (koyu)': A(`Yoklama koyu görünümde.`),
+  'servisci|Yoklama (telefon)': A(`Servisçi yoklamayı telefonda alır: büyük düğmeler adın altında, tek elle basılır.`),
+  'servisci|Sırayı düzenle (telefon)': A(`Sırayı düzenleme telefonda: her satırda yukarı ve aşağı düğmesi.`),
 
   /* ================= yeni yetişkin ================= */
   'rolsuz|Başlangıç: henüz portal yok': A(`Yeni hesabın henüz portalı yok: sade bir kart sağ üstteki <b>+ Ekle</b>'ye çağırır.

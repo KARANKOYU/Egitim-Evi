@@ -92,8 +92,8 @@
             <span>Geldi, gelmedi, izinli; veli aynı gün öğrenir.</span></li>
           <li><span class="v-oz-ikon" data-ikon="posta"></span><b>Mesaj ve anket</b>
             <span>Sınıfa, veliye ya da öğretmene mesaj; duyurunun kimde okunduğu belli.</span></li>
-          <li><span class="v-oz-ikon" data-ikon="servis"></span><b>Servis takibi</b>
-            <span>Servis haritada; eve yaklaşınca veliye bildirim gelir.</span></li>
+          <li><span class="v-oz-ikon" data-ikon="servis"></span><b>Servis yoklaması</b>
+            <span>Servisçi "Bindi" ya da "İndi" işaretleyince veliye bildirim gider; servis saatinde araç haritada.</span></li>
           <li><span class="v-oz-ikon" data-ikon="bildirim"></span><b>Telefon bildirimi</b>
             <span>Uygulama kapalıyken de yeni not, ödev ve mesaj haber verilir.</span></li>
           <li><span class="v-oz-ikon" data-ikon="yukle"></span><b>Toplu kayıt</b>
@@ -354,8 +354,12 @@
             <summary>Veliye hangi bildirimler gider?</summary>
             <p>Çocuğa giden ödev, sınav, mesaj ve duyuru bildirimlerinin bir kopyası, başında çocuğun adıyla veliye
               de gider; bildirime dokununca o çocuğun sayfası açılır. Çocuk bir derse gelmediğinde ya da geç
-              geldiğinde ayrıca "Çocuğunuz (adı) bugün saat ... dersine gelmedi" gibi bir bildirim gelir. Kardeşlere giden
-              aynı bildirim veliye tek bildirim olarak gelir. Telefon bildirimlerini açarsan bunlar telefonuna da düşer.</p>
+              geldiğinde ayrıca "Çocuğunuz (adı) bugün saat ... dersine gelmedi" gibi bir bildirim gelir. Çocuk servise
+              biniyorsa servisçi yoklamayı işaretledikçe yalnızca veliye "Zeynep 07:42'de servise bindi.", "Zeynep 08:05'te
+              okula vardı.", "Zeynep 17:10'da eve bırakıldı." gibi bildirimler gelir; her biri bir kez gelir. Yanlışlıkla
+              "Bindi" işaretlenip sonra "Binmedi"ye çevrilirse bir kez "Düzeltme: ..." gelir. Servis eve 500 m ve 100 m
+              kala ve servisçi not yazınca da haber gelir. Kardeşlere giden aynı bildirim veliye tek bildirim olarak
+              gelir. Telefon bildirimlerini açarsan bunlar telefonuna da düşer.</p>
           </details>
           <details>
             <summary>Kime mesaj yazabilirim?</summary>
@@ -379,9 +383,22 @@
           <details>
             <summary>Servisi nasıl takip ederim?</summary>
             <p>Öğrenci <b>Servisim</b> sayfasında kendi servisini, veli <b>Servis</b> sayfasında çocuğununkini görür
-              (şoför ve telefonu dahil).
-              Servisçi seferi başlatınca araç haritada görünür; okul ve ev de haritada işaretlidir. Servis eve 500 m ve
-              100 m kala bildirim gelir. Evin yerini öğrenci, velisi ya da okul haritaya dokunarak işaretler.</p>
+              (şoför ve telefonu, durak dahil). Okulun servis saatlerinde (okul yönetimi seçer; ör. sabah 07:00–09:20,
+              akşam 16:30–19:00) bugünkü durum da görünür: "Bindi 07:42", "Okula vardı 08:05", "Eve bırakıldı 17:10" ve
+              sıra ("5. sırada, önünde 2 öğrenci"). Sefer sürerken araç haritada görünür; okul ve ev de haritada
+              işaretlidir. Saat bitince yoldaki sefer en çok 60 dakika daha görünür; sonra aracın yeri ve bugünkü durum
+              gösterilmez. Servis eve 500 m ve 100 m kala bildirim gelir. Veli <b>Binmeyecek</b> düğmesiyle çocuğun bugün ya da önümüzdeki 7 gün içinde
+              sabah, akşam ya da iki serviste de binmeyeceğini servisçiye bildirir; servisçinin notları da bu sayfada
+              görünür. Evin yerini öğrenci, velisi ya da okul haritaya dokunarak işaretler.</p>
+          </details>
+          <details>
+            <summary>Servisçi yoklamayı nasıl alır?</summary>
+            <p>Servisçi okulunun adresinden girer; ana sayfası <b>Yoklama</b>'dır. Yoklama okulun servis
+              saatlerinde açılır. Sabah her öğrenci için <b>Bindi</b> ya da <b>Binmedi</b>'ye basar (ilk "Bindi" seferi
+              ve konum paylaşımını başlatır), okula gelince <b>Okula vardık</b>'a basar. Akşam okulda <b>Geldi</b> ya da
+              <b>Gelmedi</b> seçer, <b>Başlat</b>'a basar, her öğrenciyi evine bırakınca <b>İndi</b>'ye basar; herkes
+              inince sefer biter. Alma ve bırakma sırasını <b>Sırayı düzenle</b> ile kendisi ayarlar, velilere
+              <b>Not yaz</b> ile kısa not bırakır. Velinin "binmeyecek" dediği öğrenci listede soluk görünür.</p>
           </details>
           <details>
             <summary>Öğrenci okul değiştirirse ne olur?</summary>
@@ -436,14 +453,17 @@
           </details>
           <details>
             <summary>Servisin konumunu kim görür?</summary>
-            <p>Yalnızca o servisteki öğrenci, velisi ve okul yönetimi; yalnızca sefer sürerken. Geçmiş iz saklanmaz,
-              yalnızca son konum tutulur. Evin yerini öğrenci, velisi, o servisin servisçisi ve okul yönetimi görür.</p>
+            <p>Yalnızca o servisteki öğrenci, velisi ve okul yönetimi; yalnızca sefer sürerken. Sefer okulun servis
+              saatlerinde başlar, saat bitince en çok 60 dakika daha sürer. Geçmiş iz saklanmaz, yalnızca son konum
+              tutulur; konum 3 dakikadır gelmiyorsa gösterilmez. Evin yerini öğrenci, velisi, o servisin servisçisi ve
+              okul yönetimi görür. Servise binme ve eve bırakılma saatlerini öğrenci ve velisi, servisçi ve okul yönetimi
+              o gün görür; bu kayıtlar 30 gün sonra silinir. Ayrıntısı <a href="/kvkk/kvkk.html">aydınlatma metninde</a>.</p>
           </details>
           <details>
             <summary>Çocuğumun telefonunun konumunu ve ekran süresini görebilir miyim?</summary>
             <p>Evet, isteğe bağlı Android uygulamasıyla. Uygulama çocuğun telefonuna kurulur, çocuk kendi öğrenci
               hesabıyla ve onayıyla bağlar. Veli sitede <b>Çocuğumun telefonu</b> sayfasında son konumu ve uygulama
-              uygulama ekran süresini görür, gönderme sıklığını ve günlük sınırları seçer; sınır geçilince bildirim gelir.
+              ekran süresini görür, gönderme sıklığını ve günlük sınırları seçer; sınır geçilince bildirim gelir.
               Hiçbir uygulama kapatılmaz. Okul bu bilgileri görmez; 7 gün sonra silinir.</p>
           </details>
         </div>

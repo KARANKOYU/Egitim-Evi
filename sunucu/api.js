@@ -31,6 +31,7 @@ const yorum = require('./bolumler/yorum');
 const ozellikler = require('./bolumler/ozellikler');
 const hatirlatici = require('./bolumler/hatirlatici');
 const aile = require('./bolumler/aile');
+const cihaz = require('./bolumler/cihaz');
 const { depo } = require('./veri');
 const veli = require('./bolumler/veli');
 const yonetici = require('./bolumler/yonetici');
@@ -49,7 +50,7 @@ const SIFRE_SERBEST = KVKK_SERBEST.concat(['password']);
    kodu. Geri kalan her yol burada kapanır; bölümlerin rol denetimine
    bırakılmaz. */
 const ROLSUZ_SERBEST = KVKK_SERBEST.concat(['profile', 'password', 'notifications',
-  'parent', 'push', 'kisilikler', 'kisilik', 'hesap', 'yorumlar', 'hatirlaticilar']);
+  'parent', 'push', 'kisilikler', 'kisilik', 'hesap', 'yorumlar', 'hatirlaticilar', 'cihaz']);
 
 /* Yolun ilk parçası -> bölüm. Bir yol yalnızca bir bölüme gider. */
 const BOLUM = {
@@ -58,6 +59,7 @@ const BOLUM = {
   'anketler': anket,
   'assignments': odev,
   'challenge': kayit,
+  'cihaz': cihaz,
   'devamsizlik': devamsizlik,
   'egitim-yili': egitim_yili,
   'ek': ekler,
@@ -156,6 +158,14 @@ async function handleApi(req, res, segs, method) {
   /* Eğitim Evi Aile uygulamasının cihaz uçları: oturumla değil, yalnızca bu uçlara
      yarayan cihaz anahtarıyla (X-Aile-Cihaz). Oturum kapılarından geçmez. */
   if (p === 'aile' && segs[2] === 'cihaz' && segs[3]) return aile.cihazUclari({ req, res, body, segs, method });
+
+  /* Telefon uygulamasının anahtar uçları (X-Cihaz): bildirim yoklama, servis
+     konumu, ayar, anahtarı kaldırma. Oturum kapılarından geçmez; hesabın onayı
+     ve aydınlatma metni uçta denetlenir. /api/cihaz/sil başlıksız gelirse
+     oturumla çalışır (aşağıda, cihaz.uclar). */
+  if (p === 'cihaz' && segs[2] && (segs[2] !== 'sil' || req.headers['x-cihaz'] !== undefined)) {
+    return cihaz.anahtarUclari({ req, res, body, q, segs, method });
+  }
 
   /* Giriş ve rol şartı. Bölümler içinde `if (!need(['admin'])) return;` diye kullanılır. */
   const need = roles => {

@@ -140,6 +140,43 @@ async function fotoYukle(token, yer, veri) {
   return (await r.json()).foto;
 }
 
+/* Servis saatleri, sıra, bugünkü yoklama, servisçi notu ve velinin
+   "binmeyecek" işareti. Saatler şu anki Türkiye saatini içine alır (ekran
+   turu servisçinin Yoklama sayfasını açık, velinin servis kartını canlı
+   görsün); varsayılan aralıklar (07:00-09:20 / 16:30-19:00) şu anı içeriyorsa
+   onlar kalır. Sabahsa Zeynep bindi, akşamsa Zeynep geldi / Burak gelmedi ve
+   sefer başladı; aracın bir konumu gönderilir. */
+async function servisGunu(M, servisId, zeynep, burak, veliToken) {
+  const S = HESAPLAR.servisci;
+  const t = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const m = t.getUTCHours() * 60 + t.getUTCMinutes();
+  const yuvar = d => Math.floor(d / 10) * 10;
+  let saatler = { sabahBas: '07:00', sabahBit: '09:20', aksamBas: '16:30', aksamBit: '19:00' };
+  const varsayilanda = (m >= 420 && m <= 560) || (m >= 990 && m <= 1140);
+  if (!varsayilanda && m < 720) saatler = Object.assign(saatler, { sabahBas: saatYaz(yuvar(Math.max(0, m - 60))), sabahBit: saatYaz(yuvar(m + 90)) });
+  if (!varsayilanda && m >= 720) saatler = Object.assign(saatler, { aksamBas: saatYaz(yuvar(m - 60)), aksamBit: saatYaz(Math.min(1439, yuvar(m + 90))) });
+  beklenen(await iste('/api/servis/saatler', 'POST', saatler, M), 'servis saatleri');
+  let SV;
+  try { SV = (await girisYap(S.kullanici, S.sifre, 'test-ortaokulu')).token; } catch (e) { console.log('  servisçi girişi: ' + e.message); return; }
+  const gun = n => new Date(Date.now() + 3 * 60 * 60 * 1000 + n * 86400000).toISOString().slice(0, 10);
+  await iste('/api/servis/sira', 'POST', { servisId, donem: 'sabah', sira: [burak.id, zeynep.id] }, SV);
+  await iste('/api/servis/sira', 'POST', { servisId, donem: 'aksam', sira: [zeynep.id, burak.id] }, SV);
+  await iste('/api/servis/not', 'POST', { servisId, ogrenciId: zeynep.id, tarih: gun(1), metin: 'Yarın 07:35\'te durakta hazır ol.' }, SV);
+  await iste('/api/servis/not', 'POST', { servisId, metin: 'Bugün Bahçelievler\'de yol çalışması var; 10 dakika gecikebiliriz.' }, SV);
+  await iste('/api/servis/binmeyecek', 'POST', { ogrenciId: burak.id, tarih: gun(1), sabah: true, aksam: false, not: 'Doktor randevusu var.' },
+    veliToken);
+  const yok = (await iste('/api/servis/yoklama?servisId=' + servisId, 'GET', null, SV)).body;
+  if (yok.donem === 'sabah') {
+    await iste('/api/servis/yoklama', 'POST', { servisId, ogrenciId: burak.id, durum: 'bindi' }, SV);
+  } else if (yok.donem === 'aksam') {
+    await iste('/api/servis/yoklama', 'POST', { servisId, ogrenciId: zeynep.id, durum: 'geldi' }, SV);
+    await iste('/api/servis/yoklama', 'POST', { servisId, ogrenciId: burak.id, durum: 'gelmedi' }, SV);
+    await iste('/api/servis/sefer-basla', 'POST', { servisId }, SV);
+  }
+  const sefer = ((await iste('/api/servis/yoklama?servisId=' + servisId, 'GET', null, SV)).body || {}).sefer;
+  if (sefer) await iste('/api/servis/konum', 'POST', { seferId: sefer.id, enlem: 39.9120, boylam: 32.8350, dogruluk: 12 }, SV);
+}
+
 /* Yetişkin hesapla girip istenen okul rolüne (ya da veliliğe) geçer. */
 async function roleGir(kimlik, sifre, secici) {
   const g = await girisYap(kimlik, sifre);
@@ -249,6 +286,7 @@ async function calistir() {
       if (s) await iste('/api/servis/ogrenci', 'POST', { servisId: servis.body.id, ogrenciId: s.id, durak }, M);
     }
     if (zeynep) await iste('/api/servis/ev', 'POST', { ogrenciId: zeynep.id, enlem: 39.9061, boylam: 32.8231 }, M);
+    if (zeynep && burak) await servisGunu(M, servis.body.id, zeynep, burak, veli.token);
   }
 
   /* ---- etüt: biri bugün (şimdi sürüyor, yoklaması alınmış), biri salı ---- */

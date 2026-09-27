@@ -17,6 +17,8 @@ function oturumDurumunuSifirla() {
   S._acikMesaj = null; S._acikOdev = null;
   ETUT = { liste: [], yonetebilir: false, bugun: '', adaylar: null, secili: null };
   ROL.liste = [];
+  S.servisHaritaCocuk = ''; S.servisVeri = null; S.svBinmez = null;
+  servisYoklamaSifirla();                              // servisçinin seçili servisi, bekleyen işaretleri
   kisilikVeri = null;
   var panel = $('bildirimPanel');
   if (panel) panel.innerHTML = '';
@@ -68,7 +70,7 @@ function uygulamayiBaslat() {
      okul sayfalarına giremez; adres ne olursa olsun başlangıç. Servisçinin
      de yalnızca kendi sayfaları var. */
   if (portalDisindaMi() && ['profil', 'hatirlaticilar'].indexOf(acilis) < 0) acilis = 'ana';
-  if (S.user.role === 'servisci' && ['ana', 'mesajlar', 'takvim', 'profil'].indexOf(acilis) < 0) acilis = 'ana';
+  if (S.user.role === 'servisci' && ['ana', 'mesajlar', 'takvim', 'hatirlaticilar', 'profil'].indexOf(acilis) < 0) acilis = 'ana';
   /* Yıl bilgisi sayfa çizilmeden gelsin ki şerit ilk açılışta da görünsün. */
   yilBilgisiYukle().then(function () {
     return git(acilis && SAYFALAR[acilis] ? acilis : 'ana');

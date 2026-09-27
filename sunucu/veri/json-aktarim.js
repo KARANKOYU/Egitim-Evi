@@ -17,6 +17,7 @@
 const crypto = require('crypto');
 const { sorgu, islem, metinCalistir } = require('./baglanti');
 const { ESKI_SAATLER, KISI_KODU_DESENI, kisaAdSorunu, kisiKoduUret, kullaniciAdiSorunu, normTelefon, okulHesabiMi, tcSorunu, uid } = require('../ortak');
+const { saatlerSorunu } = require('../yardimci/servis-pencere');
 const e = require('./esleme');
 const yaz = require('./yazici');
 
@@ -33,7 +34,13 @@ const TABLOLAR = [
   'ogrenci_gecmisi', 'okul_kapali_ozellikler', 'hatirlaticilar', 'hatirlatici_gunleri',
   /* Eğitim Evi Aile: 7 günlük geçici veri; yedeğe ve dışarı aktarıma girmez, içeri
      aktarımda boşaltılır. */
-  'aile_cihazlari', 'aile_konumlari', 'aile_kullanim', 'aile_ayarlari', 'aile_sinirlari', 'aile_uyarilari'
+  'aile_cihazlari', 'aile_konumlari', 'aile_kullanim', 'aile_ayarlari', 'aile_sinirlari', 'aile_uyarilari',
+  /* Servis yoklaması, bildirim işaretleri, servisçi notları ve "binmeyecek"
+     işaretleri: 30 günlük geçici veri; yedeğe girmez, içeri aktarımda boşaltılır.
+     Servis saatleri (okullar) ve sıra (servis_ogrencileri) yedeğe girer.
+     Telefon uygulamasının cihaz anahtarları yedekte yok (push abonelikleri
+     gibi): geri yüklemede sahibi hâlâ varsa korunur. */
+  'servis_yoklamalari', 'servis_gunleri', 'servis_olaylari', 'servis_notlari', 'servis_binmeyecek', 'cihaz_anahtarlari'
 ];
 
 /* ---------- küçük doğrulayıcılar ---------- */
@@ -71,6 +78,7 @@ async function iceAktar(veri) {
        Önce okunur, geri yüklemeden sonra hâlâ var olan kişiler için geri yazılır;
        yoksa geri yüklemeden sonra bütün cihazlarda bildirimler sessizce kesilirdi. */
     const abonelikler = await sorgu('SELECT * FROM push_abonelikleri');
+    const cihazAnahtarlari = await sorgu('SELECT * FROM cihaz_anahtarlari');
     await metinCalistir('TRUNCATE ' + TABLOLAR.join(', ') + ' RESTART IDENTITY CASCADE');
 
     /* --- okullar --- */
@@ -88,11 +96,14 @@ async function iceAktar(veri) {
       const kisaYaz = kisa && !kisaAdSorunu(kisa) && !kisaAdlar.has(kisa) ? kisa : null;
       if (kisaYaz) kisaAdlar.add(kisaYaz);
       const enlem = koordinat(s.enlem, 90), boylam = koordinat(s.boylam, 180);
-      await ekle('okullar', { id: s.id, meb_kodu: meb, ad: metin(s.name, 140) || 'Adsız okul',
+      /* Servis saatleri geçerliyse korunur; yoksa (eski yedek) varsayılan. */
+      const ss = s.servisSaatleri && typeof s.servisSaatleri === 'object' && !saatlerSorunu(s.servisSaatleri) ? s.servisSaatleri : null;
+      await ekle('okullar', Object.assign({ id: s.id, meb_kodu: meb, ad: metin(s.name, 140) || 'Adsız okul',
         il: metin(s.city, 60), ilce: metin(s.district, 60), tur: metin(s.type, 60), durum,
         kisa_ad: kisaYaz, enlem: enlem !== null && boylam !== null ? enlem : null,
         boylam: enlem !== null && boylam !== null ? boylam : null,
-        olusturma: zaman(s.createdAt) });
+        olusturma: zaman(s.createdAt) }, ss ? { servis_sabah_bas: ss.sabahBas, servis_sabah_bit: ss.sabahBit,
+        servis_aksam_bas: ss.aksamBas, servis_aksam_bit: ss.aksamBit } : {}));
       okul.add(s.id);
     }
 
@@ -441,7 +452,7 @@ async function iceAktar(veri) {
     }
     for (const [ozet, o] of Object.entries(veri.oturumlar || {})) {
       if (o && kisi.has(o.userId) && /^[a-f0-9]{64}$/.test(ozet)) {
-        await ekle('oturumlar', { anahtar_ozeti: ozet, kullanici_id: o.userId, olusturma: zaman(o.createdAt) });
+        await ekle('oturumlar', { anahtar_ozeti: ozet, kullanici_id: o.userId, olusturma: zaman(o.createdAt), uygulama: o.uygulama === true });
       }
     }
 
@@ -503,10 +514,15 @@ async function iceAktar(veri) {
         sofor_id: servisciOkulu.get(s.soforId) === s.okulId ? s.soforId : null,
         sofor_tel: metin(s.soforTel, 20), rehber: metin(s.rehber, 80), rehber_tel: metin(s.rehberTel, 20),
         sabah: saat(s.sabah) || '', aksam: saat(s.aksam) || '', guzergah: metin(s.guzergah, 500), olusturma: zaman(s.olusturma) });
+      /* Sıra korunur; eski yedekte yoksa listedeki sırayla numaralanır. */
+      const sira = (v, yedek) => Number.isInteger(v) && v >= 1 && v <= 32767 ? v : yedek;
+      let no = 0;
       for (const o of dizi(s.ogrenciler)) {
         if (!o || ogrenciOkulu.get(o.id) !== s.okulId || servisteki.has(o.id)) continue;
         servisteki.add(o.id);
-        await ekle('servis_ogrencileri', { ogrenci_id: o.id, servis_id: s.id, durak: metin(o.durak, 120) });
+        no++;
+        await ekle('servis_ogrencileri', { ogrenci_id: o.id, servis_id: s.id, durak: metin(o.durak, 120),
+          sira_sabah: sira(o.siraSabah, no), sira_aksam: sira(o.siraAksam, no) });
       }
     }
 
@@ -649,6 +665,7 @@ async function iceAktar(veri) {
     }
 
     await abonelikleriGeriYaz(abonelikler);
+    await cihazAnahtarlariniGeriYaz(cihazAnahtarlari);
   });
   await require('./depo/ozellikler').yukle();   // bellekteki kopya yedekle aynı olsun
 
@@ -662,6 +679,16 @@ async function abonelikleriGeriYaz(liste) {
       'INSERT INTO push_abonelikleri (id, kullanici_id, endpoint, p256dh, auth, olusturma, son_basari) ' +
       'SELECT $1, $2, $3, $4, $5, $6, $7 WHERE EXISTS (SELECT 1 FROM kullanicilar WHERE id = $2) ON CONFLICT DO NOTHING',
       [a.id, a.kullanici_id, a.endpoint, a.p256dh, a.auth, a.olusturma, a.son_basari]);
+  }
+}
+
+/* Telefon uygulamasının cihaz anahtarları: sahibi hâlâ varsa geri yazılır. */
+async function cihazAnahtarlariniGeriYaz(liste) {
+  for (const c of liste) {
+    await sorgu(
+      'INSERT INTO cihaz_anahtarlari (id, kullanici_id, anahtar_ozeti, ad, platform, surum, olusturma, son_gorulme, son_bildirim) ' +
+      'SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9 WHERE EXISTS (SELECT 1 FROM kullanicilar WHERE id = $2) ON CONFLICT DO NOTHING',
+      [c.id, c.kullanici_id, c.anahtar_ozeti, c.ad, c.platform, c.surum, c.olusturma, c.son_gorulme, c.son_bildirim]);
   }
 }
 
@@ -741,7 +768,7 @@ async function disaAktar() {
     }))),
     takvim: takvim.map(e.takvim),
     notifications: bildirimler.map(e.bildirim),
-    oturumlar: Object.fromEntries(oturumlar.map(o => [o.anahtar_ozeti, { userId: o.kullanici_id, createdAt: o.olusturma }])),
+    oturumlar: Object.fromEntries(oturumlar.map(o => [o.anahtar_ozeti, { userId: o.kullanici_id, createdAt: o.olusturma, uygulama: !!o.uygulama }])),
     hatirlatmalar: Object.fromEntries(hatirlatmalar.map(h => [h.anahtar, Date.parse(h.gonderilme)])),
     islemKaydi: islemler.map(e.islemKaydi),
     anketler: anketSatir.map(a => ({ id: a.id, okulId: a.okul_id, olusturanId: a.olusturan_id, soru: a.soru, aciklama: a.aciklama,
@@ -755,7 +782,8 @@ async function disaAktar() {
     servisler: servisSatir.map(s => ({ id: s.id, okulId: s.okul_id, ad: s.ad, plaka: s.plaka, sofor: s.sofor, soforTel: s.sofor_tel,
       soforId: s.sofor_id,
       rehber: s.rehber, rehberTel: s.rehber_tel, sabah: s.sabah, aksam: s.aksam, guzergah: s.guzergah, olusturma: s.olusturma,
-      ogrenciler: (servisOgrH.get(s.id) || []).map(o => ({ id: o.ogrenci_id, durak: o.durak })) })),
+      ogrenciler: (servisOgrH.get(s.id) || []).sort((a, b) => (a.sira_sabah || 1e9) - (b.sira_sabah || 1e9))
+        .map(o => ({ id: o.ogrenci_id, durak: o.durak, siraSabah: o.sira_sabah, siraAksam: o.sira_aksam })) })),
     kulupler: kulupSatir.map(u => ({ id: u.id, okulId: u.okul_id, ad: u.ad, aciklama: u.aciklama, danismanId: u.danisman_id,
       kontenjan: u.kontenjan, basvuruAcik: u.basvuru_acik, gunSaat: u.gun_saat, olusturma: u.olusturma,
       uyeler: (kulupUyeH.get(u.id) || []).map(m => ({ id: m.ogrenci_id, tarih: m.tarih })) })),

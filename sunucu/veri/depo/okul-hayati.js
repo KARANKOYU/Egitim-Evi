@@ -38,16 +38,16 @@ const okulunServisleri = okulId => sorgu(
 
 const servisBul = id => tek(SERVIS_ALANLARI + 'FROM servisler s WHERE s.id = $1', [id]);
 
-/* Servislerdeki öğrenciler (yönetim ekranı): ad, sınıf, durak. */
+/* Servislerdeki öğrenciler (yönetim ekranı): ad, sınıf, durak, sıra. */
 const servisOgrencileri = okulId => sorgu(
-  'SELECT so.servis_id, so.ogrenci_id, so.durak, k.ad_soyad AS ad, c.ad AS sinif ' +
+  'SELECT so.servis_id, so.ogrenci_id, so.durak, so.sira_sabah, so.sira_aksam, k.ad_soyad AS ad, c.ad AS sinif ' +
   'FROM servis_ogrencileri so JOIN servisler s ON s.id = so.servis_id ' +
   'JOIN kullanicilar k ON k.id = so.ogrenci_id LEFT JOIN siniflar c ON c.id = k.sinif_id ' +
   'WHERE s.okul_id = $1', [okulId]);
 
 /* Öğrencilerin kendi servisleri (öğrenci ve veli ekranı). */
 const ogrencilerinServisi = ogrenciIdler => sorgu(
-  SERVIS_ALANLARI + ', so.ogrenci_id, so.durak ' +
+  SERVIS_ALANLARI + ', so.ogrenci_id, so.durak, so.sira_sabah, so.sira_aksam ' +
   'FROM servis_ogrencileri so JOIN servisler s ON s.id = so.servis_id WHERE so.ogrenci_id = ANY($1::text[])', [ogrenciIdler]);
 
 async function servisKaydet(s, yeni) {
@@ -66,13 +66,29 @@ const servisAdVarMi = async (okulId, ad, haricId) => !!(await tek(
 const servisSil = (id, okulId) => calistir('DELETE FROM servisler WHERE id = $1 AND okul_id = $2', [id, okulId]);
 
 /* Öğrenciyi servise yazar (başka servisteyse oradan taşınır). Servis ve
-   öğrenci aynı okulda değilse hiçbir şey yazılmaz. */
+   öğrenci aynı okulda değilse hiçbir şey yazılmaz. Yeni gelen öğrenci
+   sabah ve akşam sırasının sonuna eklenir; aynı serviste kalıyorsa (yalnız
+   durağı değişiyorsa) sırası korunur. */
 const servisOgrenciYaz = (servisId, ogrenciId, durak) => calistir(
-  'INSERT INTO servis_ogrencileri (ogrenci_id, servis_id, durak) ' +
-  'SELECT k.id, s.id, $3 FROM servisler s JOIN kullanicilar k ON k.okul_id = s.okul_id ' +
+  'INSERT INTO servis_ogrencileri (ogrenci_id, servis_id, durak, sira_sabah, sira_aksam) ' +
+  'SELECT k.id, s.id, $3, ' +
+  '  (SELECT coalesce(max(x.sira_sabah), 0) + 1 FROM servis_ogrencileri x WHERE x.servis_id = s.id), ' +
+  '  (SELECT coalesce(max(x.sira_aksam), 0) + 1 FROM servis_ogrencileri x WHERE x.servis_id = s.id) ' +
+  'FROM servisler s JOIN kullanicilar k ON k.okul_id = s.okul_id ' +
   "WHERE s.id = $1 AND k.id = $2 AND k.rol = 'student' " +
-  'ON CONFLICT (ogrenci_id) DO UPDATE SET servis_id = EXCLUDED.servis_id, durak = EXCLUDED.durak',
+  'ON CONFLICT (ogrenci_id) DO UPDATE SET ' +
+  '  sira_sabah = CASE WHEN servis_ogrencileri.servis_id = EXCLUDED.servis_id THEN servis_ogrencileri.sira_sabah ELSE EXCLUDED.sira_sabah END, ' +
+  '  sira_aksam = CASE WHEN servis_ogrencileri.servis_id = EXCLUDED.servis_id THEN servis_ogrencileri.sira_aksam ELSE EXCLUDED.sira_aksam END, ' +
+  '  servis_id = EXCLUDED.servis_id, durak = EXCLUDED.durak',
   [servisId, ogrenciId, durak]);
+
+/* Servisçinin düzenlediği sıra: idler baştan sona (servisin bütün öğrencileri). */
+const SIRA_SABAH_YAZ = 'UPDATE servis_ogrencileri so SET sira_sabah = v.n FROM unnest($2::text[]) WITH ORDINALITY AS v(id, n) ' +
+  'WHERE so.ogrenci_id = v.id AND so.servis_id = $1';
+const SIRA_AKSAM_YAZ = 'UPDATE servis_ogrencileri so SET sira_aksam = v.n FROM unnest($2::text[]) WITH ORDINALITY AS v(id, n) ' +
+  'WHERE so.ogrenci_id = v.id AND so.servis_id = $1';
+const siraYaz = (servisId, donem, idler) => donem === 'sabah'
+  ? calistir(SIRA_SABAH_YAZ, [servisId, idler]) : calistir(SIRA_AKSAM_YAZ, [servisId, idler]);
 
 const servisOgrenciCikar = (ogrenciId, okulId) => calistir(
   'DELETE FROM servis_ogrencileri so USING servisler s WHERE so.servis_id = s.id AND so.ogrenci_id = $1 AND s.okul_id = $2',
@@ -97,9 +113,9 @@ const servisSoforYaz = (servisId, okulId, soforId) => islem(async () => {
 /* Servisçinin servisleri. */
 const soforunServisleri = soforId => sorgu(SERVIS_ALANLARI + 'FROM servisler s WHERE s.sofor_id = $1 ORDER BY s.ad', [soforId]);
 
-/* Bir servisin öğrencileri, ev konumlarıyla (servisçi ekranı ve yaklaşma hesabı). */
+/* Bir servisin öğrencileri, ev konumları ve sıralarıyla (servisçi ekranı, yoklama ve yaklaşma hesabı). */
 const servisinOgrencileri = servisId => sorgu(
-  'SELECT so.ogrenci_id, so.durak, k.ad_soyad AS ad, c.ad AS sinif, ek.enlem, ek.boylam ' +
+  'SELECT so.ogrenci_id, so.servis_id, so.durak, so.sira_sabah, so.sira_aksam, k.ad_soyad AS ad, c.ad AS sinif, ek.enlem, ek.boylam ' +
   'FROM servis_ogrencileri so JOIN kullanicilar k ON k.id = so.ogrenci_id ' +
   'LEFT JOIN siniflar c ON c.id = k.sinif_id LEFT JOIN ogrenci_konumlari ek ON ek.ogrenci_id = so.ogrenci_id ' +
   'WHERE so.servis_id = $1', [servisId]);
@@ -118,14 +134,25 @@ const SEFER_ALANLARI = 'SELECT id, servis_id, sofor_id, yon, baslangic, bitis, s
 const acikSefer = servisId => tek(SEFER_ALANLARI + 'FROM servis_seferleri WHERE servis_id = $1 AND bitis IS NULL', [servisId]);
 const seferBul = id => tek(SEFER_ALANLARI + 'FROM servis_seferleri WHERE id = $1', [id]);
 
-/* Yeni sefer; serviste açık sefer varsa önce kapanır (tek işlem). */
-async function seferBaslat(s) {
+/* Servisin süren seferi döner ya da yenisi açılır; tek işlemde ve servis
+   satırı kilitliyken: aynı anda gelen istekler (iki ilk "Bindi", "Başlat"a
+   iki kez basmak) tek sefer açar, biri "zaten var" hatası almaz.
+   surerMi(sefer): açık sefer kullanılabilir mi (saat aralığı, yön, servisçi;
+   bölüm karar verir). Kullanılamıyorsa kapanır, yenisi açılır.
+   s: { id, servisId, soforId, yon }. Dönen: { sefer, yeni } */
+async function seferAcYaDaBul(s, surerMi) {
   return islem(async () => {
+    await tek('SELECT id FROM servisler WHERE id = $1 FOR UPDATE', [s.servisId]);
+    const acik = await tek(SEFER_ALANLARI + 'FROM servis_seferleri WHERE servis_id = $1 AND bitis IS NULL', [s.servisId]);
+    if (acik && surerMi(acik)) return { sefer: acik, yeni: false };
     await calistir('UPDATE servis_seferleri SET bitis = now() WHERE servis_id = $1 AND bitis IS NULL', [s.servisId]);
-    await calistir('INSERT INTO servis_seferleri (id, servis_id, sofor_id, yon) VALUES ($1, $2, $3, $4)',
-      [s.id, s.servisId, s.soforId, s.yon]);
+    const yeni = await tek('INSERT INTO servis_seferleri (id, servis_id, sofor_id, yon) VALUES ($1, $2, $3, $4) ' +
+      'RETURNING id, servis_id, sofor_id, yon, baslangic, bitis, son_enlem, son_boylam, son_dogruluk, son_konum',
+    [s.id, s.servisId, s.soforId, s.yon]);
+    return { sefer: yeni, yeni: true };
   });
 }
+
 const seferBitir = (id, soforId) => calistir(
   'UPDATE servis_seferleri SET bitis = now() WHERE id = $1 AND sofor_id = $2 AND bitis IS NULL', [id, soforId]);
 
@@ -139,12 +166,31 @@ const seferBildirimiIsaretle = (seferId, ogrenciId, esik) => calistir(
   'INSERT INTO sefer_bildirimleri (sefer_id, ogrenci_id, esik) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
   [seferId, ogrenciId, esik]);
 
-/* Uzun süre konum gelmeyen açık seferler kapanır, eski seferler silinir. */
+/* Uzun süre konum gelmeyen açık seferler kapanır, eski seferler silinir.
+   Saat aralığı ve 60 dakikalık uzatması biten seferleri bölüm kapatır
+   (okul-hayati.js servisTemizle: aralık hesabı Türkiye saatiyle, JS'te). */
 async function seferTemizle() {
   await calistir("UPDATE servis_seferleri SET bitis = now() WHERE bitis IS NULL AND " +
     "(sofor_id IS NULL OR coalesce(son_konum, baslangic) < now() - interval '45 minutes')");
   await calistir("DELETE FROM servis_seferleri WHERE bitis < now() - interval '30 days'");
 }
+
+/* Açık seferler, okullarının servis saatleriyle (aralık dışı kalanları bulmak için). */
+const acikSeferler = () => sorgu(
+  'SELECT f.id, f.servis_id, f.yon, f.baslangic, o.servis_sabah_bas, o.servis_sabah_bit, o.servis_aksam_bas, o.servis_aksam_bit ' +
+  'FROM servis_seferleri f JOIN servisler s ON s.id = f.servis_id JOIN okullar o ON o.id = s.okul_id WHERE f.bitis IS NULL');
+
+const seferleriKapat = idler => idler.length ? calistir(
+  'UPDATE servis_seferleri SET bitis = now() WHERE id = ANY($1::text[]) AND bitis IS NULL', [idler]) : Promise.resolve(0);
+
+/* Servisin açık seferi (varsa) kapanır: "Okula vardık", akşam son öğrenci indi. */
+const servisSeferiniBitir = servisId => calistir(
+  'UPDATE servis_seferleri SET bitis = now() WHERE servis_id = $1 AND bitis IS NULL', [servisId]);
+
+/* Bakım ve testler için: seferin başlangıcını dakika kadar geriye çeker
+   (aralığın uzatması denenir). */
+const seferiGeriTarihle = (id, dakika) => calistir(
+  'UPDATE servis_seferleri SET baslangic = baslangic - make_interval(mins => $2::int) WHERE id = $1', [id, dakika]);
 
 /* ---------------- kulüpler ---------------- */
 
@@ -209,8 +255,8 @@ const uyeCikar = (kulupId, ogrenciId, sadeceAcikken) => calistir(
 module.exports = {
   yemekler, yemekYaz,
   okulunServisleri, servisBul, servisOgrencileri, ogrencilerinServisi, servisKaydet, servisAdVarMi, servisSil,
-  servisOgrenciYaz, servisOgrenciCikar, servisSoforYaz, soforunServisleri, servisinOgrencileri,
-  evKonumu, evKonumuYaz, evKonumuSil, acikSefer, seferBul, seferBaslat, seferBitir, seferKonumYaz,
-  seferBildirimiIsaretle, seferTemizle,
+  servisOgrenciYaz, servisOgrenciCikar, servisSoforYaz, soforunServisleri, servisinOgrencileri, siraYaz,
+  evKonumu, evKonumuYaz, evKonumuSil, acikSefer, seferBul, seferAcYaDaBul, seferBitir, seferKonumYaz,
+  seferBildirimiIsaretle, seferTemizle, acikSeferler, seferleriKapat, servisSeferiniBitir, seferiGeriTarihle,
   okulunKulupleri, kulupBul, ogrencilerinKulupleri, kulupUyeleri, kulupKaydet, kulupAdVarMi, kulupSil, uyeEkle, uyeCikar
 };

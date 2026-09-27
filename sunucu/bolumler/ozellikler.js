@@ -25,12 +25,20 @@ const YOL = {
 };
 
 /* İsteğin baktığı okul: veli çocuğunun okulunun kuralına tabidir (çocuk
-   parametresi varsa), öteki herkes kendi okulunun. */
+   parametresi varsa), öteki herkes kendi okulunun. İstekteki öğrenci ancak
+   kişinin bağlı olduğu çocuksa sayılır: başka okulun (özelliği açık)
+   öğrencisinin kimliğini ekleyerek kapalı bölümün kapısı atlanamaz. */
+function istekteOgrenci(q, body) {
+  return clean((q && (q.get('studentId') || q.get('ogrenci'))) || (body && (body.studentId || body.ogrenciId)), 60);
+}
+
 async function bakilanOkul(me, q, body) {
-  const hedef = clean((q && (q.get('studentId') || q.get('ogrenci'))) || (body && (body.studentId || body.ogrenciId)), 60);
+  const hedef = istekteOgrenci(q, body);
   if (hedef && me.role !== 'student') {
     const st = await depo.kullanicilar.bul(hedef);
-    if (st && st.role === 'student') return st.schoolId || '';
+    if (st && st.role === 'student' && st.schoolId !== (me.schoolId || '') && await depo.kullanicilar.bagliMi(me.id, st.id)) {
+      return st.schoolId || '';
+    }
   }
   return me.schoolId || '';
 }
@@ -41,7 +49,15 @@ async function kapaliysaReddet(res, me, p, q, body) {
   if (!oz || !me || me.role === 'admin') return false;
   const okulId = await bakilanOkul(me, q, body);
   if (!depo.ozellikler.kapaliMi(okulId, oz)) return false;
-  const ad = (depo.ozellikler.OZELLIKLER.find(o => o.k === oz) || {}).ad || 'Bu bölüm';
+  /* Belli bir çocuk seçmeyen veli isteği (ör. bütün çocukların servis kartları):
+     bölüm çocuklarından birinin okulunda açıksa geçer (menüdeki kuralla aynı);
+     kapalı okuldaki çocuğu bölüm kendisi atlar. Yoksa ilk çocuğun okulunda
+     kapalı bölüm, öteki okuldaki çocuk için de hiç açılmazdı. */
+  if ((me.role === 'parent' || !me.role) && !istekteOgrenci(q, body)) {
+    const cocuklar = await depo.kullanicilar.cocuklari(me.id);
+    if (cocuklar.some(c => c.schoolId && !depo.ozellikler.kapaliMi(c.schoolId, oz))) return false;
+  }
+  const ad =(depo.ozellikler.OZELLIKLER.find(o => o.k === oz) || {}).ad || 'Bu bölüm';
   sendJSON(res, 403, { error: ad + ' bu okulda kapalı. Okul müdürü Özellikler sayfasından açabilir.', ozellikKapali: oz });
   return true;
 }

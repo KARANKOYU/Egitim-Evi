@@ -7,7 +7,7 @@ var SAYFA_OZELLIK = {
   'ogr-sinavlar': 'sinav', sinavlarim: 'sinav',
   yoklama: 'devamsizlik', devamsizlik: 'devamsizlik', devamsizligim: 'devamsizlik', 'veli-devamsizlik': 'devamsizlik',
   etutler: 'etut', etutlerim: 'etut', 'etut-yoklama': 'etut',
-  servis: 'servis', seferim: 'servis',
+  servis: 'servis',
   yemek: 'yemek', kulupler: 'kulup', anketler: 'anket'
 };
 function ozellikAcik(k) { return !S.kapali || S.kapali.indexOf(k) < 0; }
@@ -68,7 +68,7 @@ function navTanim() {
   if (portalDisindaMi() || !u.role) return [{ k: 'ana', g: 'ev', ad: 'Başlangıç' }, { k: 'hatirlaticilar', g: 'bildirim', ad: 'Hatırlatıcılar' }];
   if (u.role === 'servisci') {
     return [
-      { k: 'ana', g: 'servis', ad: 'Seferlerim' },
+      { k: 'ana', g: 'servis', ad: 'Yoklama' },
       { k: 'mesajlar', g: 'posta', ad: 'Mesajlar' },
       { k: 'takvim', g: 'takvim', ad: 'Takvim' },
       { k: 'hatirlaticilar', g: 'bildirim', ad: 'Hatırlatıcılar' }

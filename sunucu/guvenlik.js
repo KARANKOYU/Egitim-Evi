@@ -268,7 +268,7 @@ async function girisKoduDogrula(kimlik, kod) {
   girisKodlari.delete(String(kimlik));
   const u = await depo.kullanicilar.bul(kayit.userId);
   if (!u) return { hata: 'Hesap bulunamadı' };
-  return { kullanici: u };
+  return { kullanici: u, uygulama: !!kayit.uygulama };
 }
 
 /* ============ güvenlik: hız sınırlama ve kaba kuvvet ============

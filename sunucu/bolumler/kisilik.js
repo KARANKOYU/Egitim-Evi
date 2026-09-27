@@ -13,8 +13,9 @@
 
    Kural: bir oturum her zaman tek bir kişiliğe açılır (öğretmen@A, müdür@B ya
    da yetişkin hesabının kendisi). Portal değiştirmek yeni oturum demektir; eski
-   anahtar hemen kapanır. Kişi yalnızca kendi yetişkin hesabına bağlı rollere
-   geçebilir; her şey sunucuda denetlenir.
+   anahtar hemen kapanır, yenisi onun türünü ve açılış anını devralır (süre
+   uzamaz). Kişi yalnızca kendi yetişkin hesabına bağlı rollere geçebilir; her
+   şey sunucuda denetlenir.
 
    Kişi kodu (sütun eslesme_kodu, biçimi ortak.js): kişi onu okulunun müdürüne
    verir (öğretmen olarak eklenir) ya da sistem yöneticisine verir (okulu açılır,
@@ -33,6 +34,9 @@ const { islemYaz } = require('./islem-kaydi');
 const { cocukBagla } = require('./veli');
 
 const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/* Portal değişiminde yeni oturumun seçeneği: eski oturumun türü ve açılış anı. */
+const oturumSecenegi = eski => ({ uygulama: !!(eski && eski.uygulama), olusturma: eski ? eski.olusturma : null });
 
 /* Oturumdaki kişinin yetişkin hesabı (okul rolündeyse bağlı olduğu hesap).
    Okulun açtığı hesaplarda (öğrenci, servisçi) ve yöneticide null. */
@@ -106,10 +110,13 @@ async function uclar(k) {
     } else {
       return bad(res, 'Geçersiz seçim');
     }
-    /* Eski anahtar kapanır: bir tarayıcıda aynı anda tek kişilik. */
+    /* Eski anahtar kapanır: bir tarayıcıda aynı anda tek kişilik. Yeni oturum
+       eskisinin türünü (telefon uygulaması: 30 gün) ve açılış anını devralır:
+       portal değiştirerek oturumun süresi uzatılamaz. */
     const eski = istekAnahtari(req);
+    const eskiOturum = await depo.oturumlar.oturumBilgisi(eski);
     if (eski) await depo.oturumlar.kapat(eski);
-    return oturumCevabi(res, hedef, ek);
+    return oturumCevabi(res, hedef, ek, oturumSecenegi(eskiOturum));
   }
 
   /* ---------- kişi kodunu yenile ---------- */
@@ -146,13 +153,14 @@ async function uclar(k) {
     }
     if (body.onay !== true) return bad(res, 'Onaylaman gerekiyor.');
     const okulAdi = r._okulAdi || '';
+    const eskiOturum = me.id === r.id ? await depo.oturumlar.oturumBilgisi(istekAnahtari(req)) : null;
     await islemYaz(r, 'ogretmen.ayrildi', r.fullName, req);
     const mudur = await depo.kullanicilar.okulunMuduru(r.schoolId);
     await depo.kullanicilar.rolSatiriniSil(r.id, ana.id);
     if (mudur) await bildir(mudur.id, r.fullName + ' okulun öğretmen listesinden ayrıldı.', '#/ogretmenler');
     const mesaj = okulAdi + ' okulundan ayrıldın.';
     /* Bıraktığı roldeyse oturumu o satırla birlikte kapandı: yetişkin hesabına döner. */
-    if (me.id === r.id) return oturumCevabi(res, ana, { message: mesaj });
+    if (me.id === r.id) return oturumCevabi(res, ana, { message: mesaj }, oturumSecenegi(eskiOturum));
     return ok(res, Object.assign(await kisilikListesi(ana), { message: mesaj }));
   }
 

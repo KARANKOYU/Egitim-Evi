@@ -1,0 +1,151 @@
+/* Servis: servisçinin Yoklama sayfası (19i-servis-yoklama.js), veli ve
+   öğrencinin servis kartındaki "bugün" bölümü ve yönetimin servis saatleri
+   kartı (19c-okul-hayati.js). Renkler değişkenlerden; koyu tema kendiliğinden. */
+
+/* ================= servisçi: yoklama ================= */
+.sy-servisler { margin: -6px 0 14px; }
+.sy-ust-baslik { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 10px; }
+.sy-ust-baslik b { font-size: 17px; }
+.sy-ust .msg { margin: 0 0 10px; }
+.sy-sayilar { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13.5px; color: var(--soluk); }
+.sy-sayilar b { color: var(--yazi); font-size: 16px; font-variant-numeric: tabular-nums; }
+.sy-sefer { margin-top: 12px; }
+.sy-sefer .sefer-durum { margin-top: 0; }
+.sy-sefer .hint { margin-top: 8px; }
+
+.sy-liste-ust { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.sy-liste-ust h3 { margin: 0; }
+.sy-aciklama { font-size: 13px; color: var(--soluk); margin: 4px 0 4px; }
+
+.sy-satir {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px 12px; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--cizgi);
+}
+.sy-satir:last-child { border-bottom: 0; }
+.sy-no {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex: 0 0 auto;
+  border-radius: 50%; background: var(--gri-zemin); color: var(--yazi); font-weight: 700; font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.sy-satir > .sy-no { align-self: start; margin-top: 1px; }
+.sy-bilgi { min-width: 0; }
+.sy-bilgi > .ad { font-weight: 600; overflow-wrap: anywhere; }
+.sy-bilgi > .alt { font-size: 12.5px; color: var(--soluk); overflow-wrap: anywhere; }
+.sy-saat { margin-top: 3px; font-size: 13px; font-weight: 600; color: var(--yesil-yazi); font-variant-numeric: tabular-nums; }
+.sy-veli, .sy-not {
+  display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; padding: 6px 9px;
+  border-radius: var(--r-mini); font-size: 13px; overflow-wrap: anywhere;
+}
+.sy-veli { background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
+.sy-not { background: var(--mavi-zemin); color: var(--mavi-yazi); }
+.sy-veli .ikon, .sy-not .ikon { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 1px; }
+.sy-yol { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--ana); text-decoration: none; }
+.sy-yol .ikon { width: 15px; height: 15px; }
+.sy-yol:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; border-radius: 4px; }
+.sy-hata {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; padding: 7px 9px;
+  border-radius: var(--r-mini); background: var(--kirmizi-zemin); color: var(--kirmizi-yazi); font-size: 13px;
+}
+/* Velisi "binmeyecek" dedi, henüz işaretlenmedi: soluk (yine de işaretlenebilir). */
+.sy-satir.soluk .sy-no, .sy-satir.soluk .sy-bilgi > .ad, .sy-satir.soluk .sy-bilgi > .alt { opacity: .55; }
+.sy-satir.bitti .sy-bilgi > .ad { color: var(--soluk); }
+
+/* Büyük işaret düğmeleri: telefonda tek elle basılır. */
+.sy-islem { justify-self: end; }
+.sy-islem:empty { display: none; }
+.sy-dugmeler { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 250px; }
+.sy-dugmeler.tek { grid-template-columns: 1fr; width: 170px; }
+.sy-dugme {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 52px; padding: 6px 10px;
+  border-radius: var(--r-kucuk); border: 1.5px solid var(--cizgi-koyu); background: var(--kart); color: var(--yazi);
+  font: inherit; font-weight: 700; font-size: 15px; line-height: 1.2; cursor: pointer;
+  transition: background var(--sure-kisa) var(--egri), border-color var(--sure-kisa) var(--egri);
+}
+.sy-dugme .ikon { width: 18px; height: 18px; }
+.sy-dugme:hover { border-color: var(--ana-cizgi); }
+.sy-dugme:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; }
+.sy-dugme:disabled { cursor: progress; opacity: .7; }
+.sy-dugme.indi { border-color: var(--yesil); color: var(--yesil-yazi); }
+.sy-dugme.bindi.secili, .sy-dugme.geldi.secili, .sy-dugme.indi.secili { background: var(--yesil); border-color: var(--yesil); color: var(--ustune-yazi); }
+.sy-dugme.binmedi.secili, .sy-dugme.gelmedi.secili { background: var(--kirmizi); border-color: var(--kirmizi); color: var(--ustune-yazi); }
+
+.sy-alt { text-align: center; }
+.sy-buyuk { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 420px; min-height: 54px; font-size: 16px; }
+.sy-buyuk .ikon { width: 20px; height: 20px; }
+.sy-alt .hint { margin-top: 8px; font-size: 12.5px; }
+.sy-notlar .satir .ad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sy-not-metin { margin-top: 2px; font-size: 14px; overflow-wrap: anywhere; }
+.sy-liste-ust h3 > .ikon:first-child { width: 20px; height: 20px; margin-right: 7px; vertical-align: -4px; color: var(--ana); }
+
+/* Sırayı düzenle penceresi: yukarı / aşağı düğmeleri. */
+.sy-sira-liste { list-style: none; margin: 0; padding: 0; }
+.sy-sira-satir { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--cizgi); }
+.sy-sira-satir:last-child { border-bottom: 0; }
+.sy-sira-satir .buyu { flex: 1; min-width: 0; }
+.sy-sira-satir .ad { font-weight: 600; overflow-wrap: anywhere; }
+.sy-sira-satir .alt { font-size: 12.5px; color: var(--soluk); }
+.btn.sy-ok { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; flex: 0 0 auto; }
+.sy-ok .ikon { width: 18px; height: 18px; }
+.yon-yukari, .yon-asagi { display: inline-flex; }
+.yon-yukari { transform: rotate(90deg); }
+.yon-asagi { transform: rotate(-90deg); }
+
+/* Yönetimin salt okunur penceresi */
+.sy-yonetim .msg { margin-bottom: 10px; }
+.sy-yonetim .sy-sayilar { margin-bottom: 4px; }
+
+/* Telefon: düğmeler adın altında, tam genişlikte. */
+@media (max-width: 640px) {
+  .sy-satir { grid-template-columns: 30px minmax(0, 1fr); }
+  .sy-islem { grid-column: 2 / -1; justify-self: stretch; }
+  .sy-dugmeler, .sy-dugmeler.tek { width: 100%; }
+  .sy-islem .etiket { justify-self: start; }
+}
+
+/* Dokunmatik ve dar ekranda servis sayfalarındaki her dokunma hedefi en az
+   44 piksel (servisçi araç başındayken basar; 30-dokunmatik.css küçük
+   düğmeleri 40 pikselde bırakır). */
+@media (pointer: coarse), (max-width: 640px) {
+  .sy-yol { min-height: 44px; margin-top: 2px; padding-right: 8px; }
+  .sy-servisler .sekme, #sySiraGovde .sekme, .sy-liste-ust .btn.kucuk, .sy-notlar .btn.kucuk, .sy-hata .btn.kucuk,
+  .servis-bugun .btn.kucuk, .servis-yonetim .btn.kucuk { min-height: 44px; }
+  .sy-notlar .btn.kucuk { min-width: 44px; }
+  .secim-dugme, .secim-dugme span { min-height: 44px; }
+  /* Kart satırındaki telefon bağlantısı: satır yüksekliği değişmeden basılacak alan büyür. */
+  .servis-kart a.servis-tel { display: inline-block; padding: 13px 2px; margin: -13px 0; }
+}
+
+/* ================= veli / öğrenci: servis kartında "bugün" ================= */
+.servis-kart { scroll-margin-top: 80px; }   /* bildirimden gelince kart üst çubuğun altında kalmasın */
+.servis-bugun { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--cizgi); }
+.bilgi-satir + .servis-bugun { margin-top: 0; border-top: 0; }   /* üstteki satırın çizgisi yeter */
+.servis-bugun-ust { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.servis-bugun-baslik { font-weight: 700; font-size: 14px; }
+.servis-bugun-ust .etiket { font-size: 13px; padding: 4px 11px; white-space: normal; }
+.servis-bugun-ust .alt { font-size: 12.5px; color: var(--soluk); }
+.servis-bugun-satir, .servis-not { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; overflow-wrap: anywhere; }
+.servis-bugun-satir { font-weight: 600; }
+.servis-bugun-satir.soluk { font-weight: 400; font-size: 13.5px; color: var(--soluk); }
+.servis-bugun-satir .ikon, .servis-not .ikon { width: 17px; height: 17px; flex: 0 0 auto; margin-top: 2px; }
+.servis-bugun-satir .ikon { color: var(--ana); }
+.servis-bugun-satir.soluk .ikon { color: currentColor; }
+.servis-not { padding: 8px 10px; border-radius: var(--r-mini); background: var(--mavi-zemin); color: var(--mavi-yazi); }
+.servis-not.binmez { background: var(--turuncu-zemin); color: var(--turuncu-yazi); }
+.servis-not .alt { color: inherit; opacity: .85; font-size: 12.5px; }
+.servis-bugun .dugme-satir { margin-top: 0; }
+.servis-bugun .dugme-satir .alt { font-size: 12.5px; color: var(--soluk); }
+.harita-sira { display: block; margin-top: 2px; font-weight: 600; }
+
+/* ================= yönetim: servis saatleri ================= */
+.servis-saat-aciklama { margin-bottom: 12px; font-size: 13px; color: var(--soluk); }
+.servis-saat-izgara { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.servis-saat-grup { min-width: 0; margin: 0; padding: 8px 12px 12px; border: 1.5px solid var(--cizgi); border-radius: var(--r-kucuk); }
+.servis-saat-grup legend { padding: 0 4px; font-weight: 600; font-size: 13.5px; }
+.servis-saat-cift { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.servis-saat-alan { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--soluk); }
+.servis-saat-alan input {
+  width: 100%; min-width: 0; padding: 9px 10px; border: 1.5px solid var(--cizgi); border-radius: var(--r-kucuk);
+  background: var(--kart-ust); color: var(--yazi); font-size: 15px; font-weight: 400; font-variant-numeric: tabular-nums; outline: none;
+}
+.servis-saat-alan input:focus { border-color: var(--ana); box-shadow: 0 0 0 3px var(--odak); }
+#ssMesaj .msg { margin: 12px 0 0; }

@@ -24,10 +24,10 @@ okulunun adresinden girer; okul o sayfayı kendi fotoğrafları ve renkleriyle d
 | Kim | Ne görür, ne yapar |
 |---|---|
 | **Öğrenci** | Ödevlerini görür, dosya teslim eder, önemli ödevi yıldızlar; sınav notlarını, grafiğini, devamsızlığını, ders programını ve etütlerini takip eder |
-| **Veli** | Çocuğunun ödevlerini, notlarını, devamsızlığını ve servisinin nerede olduğunu görür; birden çok çocuğu tek hesaptan izler |
+| **Veli** | Çocuğunun ödevlerini, notlarını, devamsızlığını görür; servise bindiğini, okula vardığını, eve bırakıldığını ve servisin nerede olduğunu öğrenir; birden çok çocuğu tek hesaptan izler |
 | **Öğretmen** | Ödev verir ve sonuçlandırır, sınav açar ve not girer, yoklama alır, sınıfına ya da velilere mesaj yazar |
 | **Müdür** | Sınıfları, dersleri, ders programını, öğretmen ve öğrenci hesaplarını, rolleri ve yetkileri yönetir; okulun giriş sayfasını düzenler |
-| **Servisçi** | Seferi başlatır; öğrenci ve veli servisin yaklaştığını telefonunda görür |
+| **Servisçi** | Okulun servis saatlerinde **Yoklama** alır (sabah Bindi / Binmedi, akşam Geldi / Gelmedi ve İndi), sırayı düzenler, velilere not yazar; sefer sürerken konumu velilere görünür |
 | **Sistem yöneticisi** | Okulu açar ve müdürünü kişi koduyla atar, müdürleri yönetir, yedek alır |
 
 **Tek hesap, birden çok rol.** Bir kişi aynı hesapla bir okulda öğretmen, başka bir
@@ -51,7 +51,8 @@ doğum tarihi eşleşirse aynı hesabı kendi okuluna alır. Eski okulun kayıtl
   telefona bildirim. Mesaja ve ödeve sürükle-bırak ile birden çok dosya eklenir
   (toplam 150 MB, 7 gün saklanır).
 - **Okul hayatı:** ders programı, takvim ve tatiller, yemek listesi, kulüpler, servis
-  haritası ve canlı servis konumu.
+  yoklaması (bindi, okula vardı, eve bırakıldı bildirimleri; sıra; servisçi notu ve velinin
+  "binmeyecek" işareti), servis haritası ve okulun servis saatlerinde canlı servis konumu.
 - **Yönetim:** roller ve yetkiler (hazır şablonlar: Müdür Yardımcısı, Rehber Öğretmen,
   Etüt Sorumlusu, Kodlayıcı...), Excel ile toplu öğrenci ve ders programı aktarımı,
   eğitim yılı arşivi, işlem kaydı, günlük yedek.
@@ -774,6 +775,8 @@ dokununca velinin o çocuğa ait sayfası açılır (Ödevler, Devamsızlık, İ
 
 - Veliye zaten kendi metniyle haber veren bildirimler (devamsızlık: "Çocuğunuz ... dersine
   gelmedi", etüt yoklaması, servis yaklaşıyor, okul değiştirme) ikinci kez gitmez.
+- Servis yoklaması ("Zeynep 07:42'de servise bindi.") ve servisçinin notu yalnızca veliye
+  gider, öğrenciye gitmez (aşağıda "Servis yoklaması").
 - Aynı bildirim velinin iki çocuğuna birden gidiyorsa (ör. kardeşler aynı sınıfta) veliye tek
   bildirim gider: "Zeynep Şahin, Burak Öztürk · Yeni ödev: ..."
 - Aynı bildirimi kendisi de alan veliye (ör. öğrencilere ve velilere giden mesaj) kopya gitmez.
@@ -796,6 +799,14 @@ kullanılmadı; Node'un kendi `crypto` modülüyle yazıldı (`sunucu/push.js`):
   (404/410) silinir. Çıkışta cihazın aboneliği bırakılır; aynı cihaza başka hesap girerse
   öncekinin aboneliği düşer.
 - iPhone'da yalnızca **ana ekrana eklenmiş** uygulamada çalışır (iOS 16.4+).
+
+**Telefon uygulamasının bildirimleri** Web Push'la değil, **cihaz anahtarıyla yoklamayla** gelir
+(Firebase yok): uygulama `GET /api/cihaz/bildirimler?son=<imleç>` ile yeni bildirimleri sorar. Hesabın
+(yetişkinde bütün okul rolü satırlarının da, Web Push'taki kural) okunmamış yeni bildirimleri en çok 20'şer
+döner; metin ve bağlantı telefon bildirimindekiyle aynıdır (okul rolünde `/school/<okul>/?k=<alıcı>#/sayfa`). İlk çağrıda
+(`son` yokken) eski bildirimler dönmez, yalnızca imleç döner: telefon kurulunca geçmiş bildirimler yağmaz.
+Cevaptaki `servisSaatleri` yalnızca servisle ilgisi olan hesapta (servisçi, servisteki öğrenci ya da velisi)
+doludur; uygulama bu saatlerde daha sık yoklar. Ayrıntısı aşağıda "Eğitim Evi telefon uygulaması".
 
 ---
 
@@ -858,7 +869,7 @@ ve her öğrencinin portalını açar.
 | **Devamsızlık** | Yoklama alır · Okulun tüm devamsızlığını görür |
 | **Etüt** | Etüt açar ve düzenler · Bütün etütlerde yoklama alır |
 | **Mesajlaşma** | Sınıfa/gruba toplu mesaj ve anket · Herkese mesaj |
-| **Okul hayatı** | Yemek listesini düzenler · Servisleri düzenler · Kulüp açar ve düzenler |
+| **Okul hayatı** | Yemek listesini düzenler · Servisleri, servis öğrencilerini ve servis saatlerini düzenler (bugünkü servis yoklamasını salt okunur görür) · Kulüp açar ve düzenler |
 | **Yönetim** | Rol oluşturur · İşlem kaydını görür · Takvim · Eğitim yılı · Excel/CSV aktarım · Okul sayfası · Okulun haritadaki yerini ayarlar |
 
 ### Ders ve sınıf daraltması
@@ -956,7 +967,8 @@ Müdür menüdeki **Özellikler** sayfasından okulunda kullanmadığı bölüml
   kendisi) menüsünden ve ana sayfa kutucuklarından kalkar; adres çubuğuna
   yazılırsa "Bu bölüm okulunda kapalı" der.
 - Sunucu da reddeder: kapalı bölümün her ucu 403 döner (`ozellikKapali`). Veli,
-  çocuğunun okulunun kuralına tabidir. İlerleyiş ve takvim kapalı bölümü atlar;
+  çocuğunun okulunun kuralına tabidir; istekteki öğrenci ancak kişinin bağlı olduğu çocuksa
+  sayılır (başka okulun öğrenci kimliğini eklemek kapıyı açmaz). İlerleyiş ve takvim kapalı bölümü atlar;
   ödevler kapalıysa ödev hatırlatması da gitmez.
 - **Kayıtlar silinmez.** Yeniden açılınca ödevler, notlar, yoklamalar eskisi gibi görünür.
 - Değişiklik işlem kaydına yazılır. Tablo: `okul_kapali_ozellikler` (şema 022);
@@ -1191,11 +1203,56 @@ Kod olmadan kimse başkasının çocuğunu göremez. Veli kodu dışında okul d
 bağlayabilir: öğrencinin **Hesap** penceresinde **Veliler** bölümünden velinin T.C.
 kimlik no'su ya da kullanıcı adıyla bulup bağlar, gerekirse kaldırır.
 
-## Eğitim Evi Aile (çocuğun telefonu)
+## Eğitim Evi telefon uygulaması
 
-İsteğe bağlı Android uygulaması; ayrı depoda:
-[KARANKOYU/Egitim-Evi-App](https://github.com/KARANKOYU/Egitim-Evi-App). Çocuğun
-telefonuna kurulur, **velinin seçtiği aralıkla** telefonun konumunu ve **uygulama
+Android uygulaması ayrı depodadır:
+[KARANKOYU/Egitim-Evi-App](https://github.com/KARANKOYU/Egitim-Evi-App). İki kuşağı var:
+
+- **Bugün yayımda olan: Eğitim Evi Aile (1.0.x).** Yalnızca çocuğun telefonu içindir (aşağıda).
+  Kullandığı uçlar (`/api/aile/cihaz/*`, `X-Aile-Cihaz`) **aynen duruyor**; kurulu 1.0.x
+  uygulamalar hiçbir şey yapmadan çalışmaya devam eder.
+- **Hazırlanıyor, henüz yayımlanmadı: tek uygulama "Eğitim Evi".** Müdür, öğretmen, veli, öğrenci
+  ve servisçi aynı uygulamaya girer. Uygulama **yereldir (native)**: siteyi içinde açmaz (WebView
+  değil), ekranlarını kendisi çizer ve sunucunun JSON uçlarını kullanır (yoklama, sıra, not uçlarının
+  cevapları bu yüzden ekrandan bağımsız ve eksiksizdir). Sitede uygulamaya özel köprü yoktur; servisçi
+  tarayıcıdan girerse konum bugünkü gibi sayfa açıkken gider.
+
+Sunucu tarafı yeni uygulama için hazır:
+
+- **Uygulama oturumu 30 gün.** `POST /api/login` (ya da `/api/login/dogrula`) gövdesinde
+  `uygulama: true` gelirse açılan oturum 30 gün geçerlidir; tarayıcıdaki oturum 7 gün kalır. İkisi de
+  mutlak süredir (kullandıkça uzamaz). Bayrak kod doğrulama adımına ve "kodu yeniden gönder"e taşınır,
+  portal değiştirince (okul rolüne geçiş, okuldan ayrılma) yeni oturum da uygulama oturumu olur ve eskisinin
+  açılış anını devralır: portal değiştirerek oturumun süresi uzatılamaz.
+  Çıkışta, şifre değişince ve hesap silinince bu oturumlar da kapanır. Sütun: `oturumlar.uygulama`.
+- **Cihaz anahtarı.** Uygulama girişten sonra oturumla `POST /api/cihaz {ad, platform, surum}` çağırır;
+  64 hex'lik anahtar **bir kez** döner (`{cihazAnahtari, cihazId}`), sunucuda yalnızca SHA-256 özeti
+  tutulur. Anahtarın sahibi yetişkinin ana hesabıdır (okul rolleri onun altında) ya da öğrenci /
+  servisçi hesabıdır; hesap başına en çok 5 anahtar (fazlası en eskiyi siler), saatte en çok 20 yeni
+  anahtar. Anahtar yalnızca bildirim yoklamaya ve servisçinin sefer konumunu göndermeye yarar;
+  **hesaba giriş vermez** (Bearer yerine kullanılamaz, `/api/me` 401 döner).
+- **Anahtarla uçlar** (`X-Cihaz: <64 hex>` başlığı; oturum kapılarından önce yönlendirilir):
+  - `GET /api/cihaz/bildirimler[?son=<imleç>]` → `{bildirimler: [{id, metin, baglanti, zaman}], imlec,
+    servisSaatleri}` (yukarıda "Telefon bildirimi (Web Push)" altındaki kurallar).
+  - `GET /api/cihaz/ayar` → `{rol, servisci, acikSefer: {id, servisId, yon} | null, servisSaatleri}`.
+  - `POST /api/cihaz/servis-konum {seferId, enlem, boylam, dogruluk}` → yalnızca servisçi ve seferin
+    sahibi; `/api/servis/konum` ile aynı iş (yaklaşma bildirimleri dahil). Sefer yoksa 404, bitmiş,
+    başkasının ya da servis saati (uzatmasıyla) bitmişse 409; hesap servisçi değilse ya da servis okulda
+    kapalıysa 403 (`ozellikKapali: 'servis'`). Uygulama 409, 404, 401 ve 403'te gönderimi durdurur.
+  - `POST /api/cihaz/sil` (gövdesiz) → bu anahtar iptal.
+  - Hız: konum anahtar başına dakikada 60, öteki uçlar saatte 240. Tanınmayan anahtar 401. Hesap
+    onaylı değilse ya da aydınlatma metninin güncel sürümünü onaylamamışsa anahtar **silinir** ve 403
+    (`anahtarGecersiz: true`) döner; uygulama anahtarı unutur, onaydan sonra yenisini alır.
+- **Oturumla uçlar:** `GET /api/cihaz` (hesabın telefonları: ad, platform, sürüm, alınma ve son
+  görülme), `POST /api/cihaz/sil {id}` ya da `{cihazAnahtari}` (bulunamazsa 404). Telefonda çıkışta
+  uygulama önce anahtarını siler, sonra `/api/logout` der. Şifre değişince (kişinin kendisi, okul
+  yönetimi ya da şifre sıfırlama) hesabın bütün anahtarları da silinir.
+- Tablo `cihaz_anahtarlari` (şema 028); bölüm `sunucu/bolumler/cihaz.js`, depo `depo/cihazlar.js`.
+  Geçici veridir: yedeğe girmez; geri yüklemede sahibi hâlâ varsa korunur (push abonelikleri gibi).
+
+### Çocuğun telefonu (Eğitim Evi Aile)
+
+Çocuğun telefonuna kurulur, **velinin seçtiği aralıkla** telefonun konumunu ve **uygulama
 uygulama ekran süresini** gönderir. Veli bunları sitede **Çocuğumun telefonu** sayfasında
 görür. Uygulama hiçbir uygulamayı kapatmaz ya da kilitlemez; **sınır geçilince veliye
 bildirim** gider (günde bir kez).
@@ -1268,10 +1325,12 @@ isteğe bağlı kalori yazar; boş bırakılan günün menüsü silinir. Okuldak
 veli çocuğunun okulununkini görür.
 
 **Servis:** Müdür (ya da servis yetkisi olan) servis ekler: ad, plaka, servisçi hesabı,
-şoför ve rehber personel (adı, telefonu), sabah/akşam saati, güzergâh; öğrencileri
-durağıyla servise yazar. Bir öğrenci tek serviste olur (başkasına yazılınca taşınır).
-Öğrenci **Servisim** sayfasında kendi servisini, veli çocuğununkini görür; şoför telefonu
-yalnızca o servisteki öğrenciye, velisine ve yönetime gider.
+şoför ve rehber personel (adı, telefonu), sabah/akşam kalkış saati (yalnızca bilgi; hiçbir şeyi
+kısıtlamaz), güzergâh; öğrencileri durağıyla servise yazar. Bir öğrenci tek serviste olur
+(başkasına yazılınca taşınır). Öğrenci **Servisim** sayfasında kendi servisini, veli çocuğununkini
+görür; şoför telefonu yalnızca o servisteki öğrenciye, velisine ve yönetime gider. Servis bilgi
+kartı (ad, plaka, şoför, telefon, durak) her zaman görünür; canlı bilgiler (aracın yeri, bugünkü
+durum, sıra) yalnızca okulun **servis saatlerinde** (aşağıda "Servis yoklaması").
 
 **Servis haritası ve canlı konum:**
 
@@ -1280,24 +1339,33 @@ yalnızca o servisteki öğrenciye, velisine ve yönetime gider.
   yerini ayarlar** yetkisi verilen kişi (hazır şablon **Kodlayıcı**'da açık) **Okulun Konumu**
   sayfasından seçer; okulun giriş adresini yine yalnızca müdür değiştirir.
 
-- **Servisçi** telefonundan okulun adresine girer; **Seferlerim** sayfasında "Okula gidiş"
-  ya da "Eve dönüş" seferini başlatır. Telefonun konumu birkaç saniyede bir (araç
-  dururken 20 saniyede bir) gönderilir; ekran kararmasın diye ekran kilidi tutulur.
-  **Seferi bitir** deyince konum kesilir. Servis başka servisçiye verilirse ya da
+- **Servisçi** telefonundan okulun adresine girer; ana sayfası **Yoklama**'dır (eski
+  "Seferlerim" buna katıldı). Sefer yalnızca okulun servis saatlerinde başlar, yönünü saat
+  belirler: sabah okula gidiş, akşam eve dönüş. Sabah **Seferi başlat** ya da ilk "Bindi",
+  akşam **Başlat** seferi açar. Telefonun konumu birkaç saniyede bir (araç dururken 20 saniyede
+  bir) gönderilir; ekran kararmasın diye ekran kilidi tutulur. Sabah **Okula vardık**, akşam son
+  öğrencinin "İndi"si seferi bitirir (**Seferi bitir** düğmesi de var). Servis saati bitince yoldaki
+  sefer en çok 60 dakika daha sürer, sonra kapanır. Servis başka servisçiye verilirse ya da
   servisçi hesabı silinirse açık sefer kapanır. 45 dakika konum gelmeyen sefer kendiliğinden
   kapanır; seferler 30 gün sonra silinir.
-- **Öğrenci ve velisi** haritada okulu, evi ve (sefer sürerken) aracı görür; 5 saniyede bir
-  yenilenir, "eve yaklaşık 1,2 km" yazar. Aracın yeri yalnızca açık seferde ve son 3
-  dakikada geldiyse gösterilir. Geçmiş iz saklanmaz, yalnızca son konum.
+- **Öğrenci ve velisi** haritada okulu, evi ve (sefer sürerken) aracı görür; sefer varken 5
+  saniyede, servis saatinde 30 saniyede, saat dışında 2 dakikada bir yenilenir; "eve yaklaşık
+  1,2 km" ve "5. sırada, önünde 2 öğrenci" yazar. Aracın yeri yalnızca süren seferde ve son 3
+  dakikada geldiyse gösterilir; servis saati (ve 60 dakikalık uzatma) dışında harita ucu sefer ve konum döndürmez
+  ("Aracın yeri yalnız servis saatlerinde görünür"). Geçmiş iz saklanmaz, yalnızca son konum.
 - **Ev konumu:** öğrenci, velisi ya da okul yönetimi haritaya dokunarak (ya da "Bulunduğum
   yeri kullan") işaretler. Servisçi evin yerini görür (yol tarifi bağlantısı) ama değiştiremez.
 - **Yaklaşma bildirimi:** servis eve **500 m** ve **100 m** kala öğrenciye ve velilerine
-  birer kez bildirim gider (her sefer için). GPS doğruluğu 150 m'den kötüyse gitmez.
+  birer kez bildirim gider (her sefer için). GPS doğruluğu 150 m'den kötüyse gitmez. Sabah
+  yalnızca henüz "Bindi" / "Binmedi" işaretlenmemiş ve velisi "binmeyecek" dememiş öğrenciye,
+  akşam yalnızca okulda "Geldi" işaretlenip henüz inmemiş öğrenciye gider.
 - Harita dış kütüphane kullanmaz: OpenStreetMap döşemeleri kendi küçük bileşenimizle
   çizilir (sürükleme, iki parmakla ve tekerlekle yakınlaştırma, klavye). Her konumun
   yanında **Google Haritalar'da aç** bağlantısı vardır.
 - Konum yalnızca **HTTPS**'te (ya da localhost'ta) alınabilir ve tarayıcı arka planda
-  konum vermez: servisçi uygulamayı açık tutmalıdır.
+  konum vermez: sitede servisçi Yoklama sayfasını açık tutmalıdır (yoklama https olmadan da
+  alınır, yalnızca konum gitmez). Hazırlanan telefon uygulaması sefer sürerken konumu
+  arka planda da gönderecek (`POST /api/cihaz/servis-konum`, yukarıda "Eğitim Evi telefon uygulaması").
 
 **Kulüpler:** Müdür (ya da kulüp yetkisi olan) kulüp açar: danışman öğretmen,
 kontenjan, gün ve saat, başvurunun açık olup olmadığı. Öğrenci başvurusu açık kulübe
@@ -1305,6 +1373,137 @@ kendisi katılır ya da ayrılır; başvuru kapalıyken yalnızca danışman ve 
 ekleyip çıkarır. Kontenjan, kulüp satırı kilitlenerek denetlenir: aynı anda gelen iki
 istek son boş yeri ikisine birden vermez. Üye listesini yalnızca danışman ve yönetim
 görür; veli çocuğunun kulüplerini görür.
+
+---
+
+## Servis yoklaması
+
+Servisçinin günlük yoklaması, öğretmenin ders yoklaması gibi: veli çocuğunun servise
+bindiğini, okula vardığını ve eve bırakıldığını anında öğrenir.
+
+**Servis saatleri.** Okulun iki aralığı vardır: sabah (evden okula) ve akşam (okuldan eve).
+Müdür ya da servis yetkisi olan kişi **Servisler** sayfasındaki **Servis saatleri** kartından
+seçer; varsayılan **07:00–09:20** ve **16:30–19:00**.
+
+- Kurallar: saat `SS:DD` (`7:00` yazılırsa `07:00` olur), bitiş başlangıçtan sonra, her aralık en
+  az 30 dakika, sabah aralığı akşam aralığı başlamadan biter (ikisi de gece yarısını geçmez).
+- Her gün geçerlidir (hafta sonu ya da tatil ayrımı yok). Saatler **Türkiye saatidir**; sunucunun
+  saat dilimi ne olursa olsun doğru çalışır. Bitiş dakikası dahildir (09:20'nin sonuna kadar açık).
+- Değişiklik işlem kaydına "Servis saatleri değişti" diye yazılır.
+- Veli ve öğrenci servis bilgi kartını her zaman görür; aracın yeri, bugünkü durum ve sıra yalnızca
+  aralık içinde ya da sefer sürerken gelir. Aralık dışında kart "Servisin yeri, sırası ve bugünkü
+  durumu yalnız servis saatlerinde görünür" yazar ve sıradaki aralığı gösterir.
+- Servisçi yoklamayı ve seferi yalnızca aralıkta açar. Aralık bitince başlamış sefer **60 dakika**
+  daha sürer (trafik); bu sürede o seferin işaretleri de konur. Sonra sefer kapanır. Sefer yalnız
+  o günün kendi aralığında başladıysa sürer: saatler sonradan değişirse yeni aralığın dışında
+  başlamış sefer hemen kapanır (haritada görünmez, konum 409).
+- Saf hesap `sunucu/yardimci/servis-pencere.js` (`servisPenceresi(okul, simdi)` → dönem, aralık,
+  uzatma, sonraki aralık); sunucusuz testi `testler/test-servis-pencere.js`.
+
+**Servisçinin Yoklama sayfası.** Servisçinin menüsü: **Yoklama** (ana sayfa), Mesajlar, Takvim,
+Hatırlatıcılar. Birden çok servisi olana üstte servis seçici çıkar. Dönemi sunucu belirler
+(telefonun saatine güvenilmez). Aralık dışında "Yoklama sabah 07:00–09:20 ve akşam 16:30–19:00
+arasında açılır." yazar; altında sıradaki aralığın listesi ve velilerin işaretleri salt okunur durur.
+
+- **Sabah:** üstte **Seferi başlat** (konum paylaşımı; basılmazsa ilk "Bindi" seferi kendiliğinden
+  başlatır). Sırayla her öğrencide büyük **Bindi / Binmedi** düğmeleri, evi işaretliyse **Yol tarifi**,
+  velinin işareti ve notu. En altta **Okula vardık**: sefer biter, "Bindi" işaretli öğrencilerin
+  velilerine "okula vardı" gider. Bindi ve Binmedi okula varılana kadar değiştirilebilir.
+- **Akşam:** önce okulda her öğrenciye **Geldi / Gelmedi**, sonra **Başlat** (sefer başlar;
+  işaretlenmemiş öğrenci varsa adlarıyla sorar). Ardından "Geldi" olanlar bırakma sırasıyla
+  listelenir, her birinde **İndi**. Unutulan öğrenci "Serviste olmayanlar" kartından sonradan
+  "Geldi" yapılabilir. "Başlat"tan önce "İndi" konmaz; "İndi" konan öğrencinin işareti artık
+  değişmez. Servise binen herkes inince sefer kendiliğinden biter ("Herkes eve bırakıldı; sefer bitti.");
+  serviste kalan son öğrenci "Gelmedi"ye çevrilirse de biter ("Serviste öğrenci kalmadı; sefer bitti.").
+  "Geldi" işaretli öğrenci yokken "Başlat" sorar; o sefer kendiliğinden bitmez, **Seferi bitir** ile kapanır.
+- Her işaret **anında**, tek istekle sunucuya gider; gönderilemezse satırda **Yeniden dene** çıkar.
+  Aynı anda gelen ilk "Bindi"ler ya da iki "Başlat" tek sefer açar (servis satırı kilitlenir); veliye
+  bildirim bir kez gider, önceki deneme yarıda kaldıysa "Yeniden dene" bildirimi de gönderir.
+  Dönem değiştiyse (ör. sabah aralığı bitti) sayfa sunucudan yeniden çizilir.
+- Velisi "binmeyecek" dediği öğrencinin satırı soluktur ve "Velisi: bugün binmeyecek" yazar;
+  servisçi yine de işaretleyebilir.
+- **Sırayı düzenle:** sabah (alma) ve akşam (bırakma) sırası ayrıdır; öğrenci ok düğmeleriyle
+  yukarı ya da aşağı taşınır, **Kaydet** (dış kütüphane yok). Okul yeni öğrenci ekleyince sıranın
+  sonuna gelir; başka servise taşınan öğrenci orada sona geçer; yalnızca durağı değişirse sırası
+  korunur. 028 şema dosyası mevcut öğrencilere ad sırasıyla numara verdi.
+- **Not yaz:** öğrenciye ya da bütün servise, bugünden 7 gün sonrasına kadar bir gün için en çok
+  200 harf ("Yarın 07:35'te hazır ol"). İlgili velilere "Servisçiden not: ..." bildirimi gider
+  (kardeşlerin velisine tek bildirim). Not silinebilir.
+- Sayfadaki harita: okul, evi işaretli öğrenciler (sıra numarasıyla), sefer sürerken servisçinin
+  yeri. Sayfa açıkken dakikada bir kendiliğinden tazelenir.
+
+**Veli ve öğrenci.** Servis kartında "Bu sabah" / "Bu akşam" başlığıyla bugünkü durum ("Bindi
+07:42", "Okula vardı 08:05", "Okuldan servise bindi 16:40", "Eve bırakıldı 17:10", "Bu sabah
+binmedi"), sıra ("Zeynep 5. sırada, önünde 2 öğrenci kaldı"), servisçinin notları ve "binmeyecek"
+işaretleri. Haritanın durum satırında da sıra yazar.
+
+- **Önünde N öğrenci:** sabah, sırada önde olup henüz işaretlenmemiş ve velisi "binmeyecek"
+  dememiş öğrenciler; akşam, sırada önde olup okulda "Geldi" işaretlenmiş ve henüz inmemiş öğrenciler.
+- **Binmeyecek** (yalnızca veli): gün (bugün ile 7 gün sonrası), **Sabah / Akşam / İkisi** ve isteğe
+  bağlı kısa not; **İşareti kaldır** ile geri alınır. Çocuğun o dönemdeki yoklaması işaretlenince
+  değiştirilemez. Servisçiye bildirim gider ("Zeynep Şahin yarın sabah servise binmeyecek. Velinin
+  notu: ..."). Öğrenci notları ve işaretleri görür, işaretleyemez.
+- Bildirimden gelen velide `#/servis?c=<çocuk>` o çocuğun haritasını açar.
+
+**Veliye giden bildirimler** (yalnızca velilere, öğrenciye gitmez; saat Türkiye saatiyle; bağlantı
+`#/servis?c=<öğrenci>`):
+
+| Olay | Bildirim |
+|---|---|
+| Sabah Bindi | "Zeynep 07:42'de servise bindi." |
+| Sabah Binmedi | "Zeynep bu sabah servise binmedi." |
+| Okula vardık | "Zeynep 08:05'te okula vardı." (yalnızca "Bindi" işaretliler) |
+| Akşam Geldi | "Zeynep 16:40'ta okuldan servise bindi." |
+| Akşam Gelmedi | "Zeynep akşam servise gelmedi." |
+| İndi | "Zeynep 17:10'da eve bırakıldı." |
+| Servisçinin notu | "Servisçiden not: Yarın 07:35'te hazır ol" |
+
+- Bildirimde öğrencinin yalnızca adı yazar (soyadı yok); saatin eki okunuşuna göre çekimlenir
+  ('de, 'te, 'ta, 'da).
+- **Tekrar yok:** her olay (tarih, dönem, öğrenci, olay) için bir kez gider (`servis_olaylari`,
+  `INSERT ... ON CONFLICT DO NOTHING RETURNING`). "Bindi" bildirildikten sonra "Binmedi"ye
+  çevrilirse bir kez "Düzeltme: Zeynep bu sabah servise binmedi." gider (akşam "Geldi" → "Gelmedi"
+  de öyle). Aynı olay ikinci kez hiç gitmez.
+- Veli o dönem için "binmeyecek" dediyse "binmedi" / "gelmedi" bildirimi gitmez (önce "bindi"
+  bildirilmişse yalnızca düzeltme gider).
+- Web Push'ta ve telefon uygulamasının bildirim yoklamasında da aynı metin kullanılır.
+
+**Okul yönetimi.** Servisler sayfasında **Servis saatleri** kartı ve her serviste **Bugünkü
+yoklama** düğmesi: salt okunur pencere (sayılar, seferin başlama ve okula varış saati, öğrenci
+satırları, velilerin işaretleri, servisçinin notları). Geçmiş günler ekranda gösterilmez.
+
+**Saklama ve temizlik.** `servisTemizle` (sunucu/index.js, 10 dakikada bir; servis saatleri
+kaydedilince de) 45 dakikadır konum gelmeyen, saat aralığıyla 60 dakikalık uzatması biten ve kendi
+aralığının dışında başlamış seferleri kapatır; 30 günü geçen yoklama, sefer günleri, bildirim işaretleri, notlar ve "binmeyecek" işaretleri
+silinir. Bunlar geçici veridir, yedeğe girmez; servis saatleri ve sıra yedeğe girer.
+
+**Uçlar** (`/api/servis`, okul servisi kapattıysa 403 `ozellikKapali`):
+
+| Uç | Kim | Ne yapar |
+|---|---|---|
+| `GET /api/servis` | öğrenci, veli, okul personeli, servisçi | Servis bilgisi; öğrencide `benim.bugun`, velide `cocuklar[].bugun`, yönetimde `servisler` (sıralarıyla), `saatler`, `saatDuzenleyebilir` |
+| `GET /api/servis/harita?ogrenci=` | öğrenci, bağlı veli, servis yönetimi, o servisin servisçisi | Okul, ev, servis, süren sefer ve `bugun` (servis saati ve 60 dakikalık uzatması dışında sefer ve konum yok) |
+| `GET /api/servis/yoklama[?servisId=]` | servisçi (kendi servisleri), servis yönetimi (salt okunur) | Dönem, aralık, sonraki aralık, sıradaki öğrenciler (durum, saatler, ev, veli işareti), sayılar, sefer, notlar, "binmeyecek"ler |
+| `POST /api/servis/yoklama {servisId, ogrenciId, durum, donem?}` | servisçi | Tek işaret; 409 `aralikDisi`, `kapandi`, `donemDegisti`, `baslamadi` |
+| `POST /api/servis/okula-vardik {servisId}` | servisçi | Sabah seferi biter, "okula vardı" bildirimleri (bir kez) |
+| `POST /api/servis/sefer-basla {servisId}` | servisçi | Sefer yalnızca aralıkta; yön dönemden gelir; süren sefer varsa o döner |
+| `POST /api/servis/konum`, `/sefer-bitir` | servisçi | Tarayıcının sefer konumu (dakikada 60) ve seferi bitirme |
+| `POST /api/servis/sira {servisId, donem, sira: [ogrenciId...]}` | servisçi | Liste servisin öğrencileriyle birebir aynı olmalı |
+| `POST /api/servis/not {servisId, ogrenciId?, tarih?, metin}` | servisçi | Not (saatte 60) |
+| `POST /api/servis/not-sil {id}` | servisçi | Kendi servisinin notunu siler |
+| `POST /api/servis/binmeyecek {ogrenciId, tarih?, sabah, aksam, not?}` | bağlı veli | İşaret; ikisi de `false` ise kalkar (saatte 60) |
+| `POST /api/servis/saatler {sabahBas, sabahBit, aksamBas, aksamBit}` | müdür, servis yetkilisi | Servis saatleri |
+
+`GET /api/servis/seferim` eski servisçi ekranının ucudur; sunucuda duruyor, yalnızca süren seferi
+gösterir, site artık kullanmıyor.
+
+**Tablolar** (şema 028): `okullar.servis_sabah_bas/_bit`, `servis_aksam_bas/_bit` (`SS:DD`, CHECK);
+`servis_ogrencileri.sira_sabah`, `sira_aksam`; `servis_yoklamalari` (PK tarih, dönem, öğrenci; durum,
+binme ve inme anı, işaretleyen), `servis_gunleri` (servisin o günkü seferinin başlama ve bitiş anı),
+`servis_olaylari` (bildirim tekilliği), `servis_notlari`, `servis_binmeyecek`. Kod:
+`sunucu/bolumler/okul-hayati.js`, `sunucu/veri/depo/servis-yoklama.js`; ön yüz
+`public/js/parcalar/19i-servis-yoklama.js`. Testleri `testler/test-servis-yoklama.js`,
+`testler/test-servis-pencere.js`, `testler/test-servis-konum.js`.
 
 ---
 
@@ -1336,11 +1535,13 @@ Veriler **PostgreSQL** veritabanında tutulur. Şema okunur SQL dosyalarıyla s�
 (`sunucu/veri/sema/001-ilk.sql` ...); sunucu açılışta uygulanmamış olanları sırayla
 uygular ve hangisinin uygulandığını `sema_surumleri` tablosuna yazar.
 
-- 41 tablo: okullar, eğitim yılları, sınıflar, roller ve yetkileri, kullanıcılar,
-  okul davetleri, veli bağları, dersler, ders programı, ödevler, öğrencileri ve teslim
-  dosyaları, sınav şablonları, sınavlar, ölçümler ve değerler, devamsızlık, mesajlar,
-  alıcıları ve okunmaları, anketler (seçenek, hedef, oy), yemek listesi, servisler ve
-  öğrencileri, kulüpler ve üyeleri, takvim, bildirimler, oturumlar, işlem kaydı.
+- 68 tablo (`sema_surumleri` dahil); başlıcaları: okullar, eğitim yılları, sınıflar, roller
+  ve yetkileri, kullanıcılar, veli bağları, dersler, ders programı, ödevler, öğrencileri ve
+  teslim dosyaları, sınav şablonları, sınavlar, ölçümler ve değerler, devamsızlık, etütler,
+  mesajlar, alıcıları ve okunmaları, anketler (seçenek, hedef, oy), yemek listesi, servisler,
+  öğrencileri ve seferleri, servis yoklaması, notları ve "binmeyecek" işaretleri, kulüpler ve
+  üyeleri, takvim, hatırlatıcılar, bildirimler, oturumlar, telefon bildirimi abonelikleri ve
+  cihaz anahtarları, Eğitim Evi Aile, işlem kaydı.
 - Yabancı anahtarlar uygulamanın silme kuralını taşır: sınıf silinince dersleri ve
   programı gider (CASCADE), öğrenciler sınıfsız kalır (SET NULL).
 - CHECK kısıtları geçersiz veriyi veritabanı katında da durdurur (telefon biçimi, puan
@@ -1350,7 +1551,7 @@ uygular ve hangisinin uygulandığını `sema_surumleri` tablosuna yazar.
 - Toplu işler (Excel ile 300 hesap açma, yoklama, mesaj alıcıları) tek işlemde
   (transaction): yarıda hata olursa hiçbiri yazılmaz.
 - Oturum anahtarının kendisi değil SHA-256 özeti saklanır: veritabanı sızsa bile
-  açık oturumlar kullanılamaz.
+  açık oturumlar kullanılamaz. Telefon uygulamasının cihaz anahtarı da öyle.
 - Uygulama `postgres` süper kullanıcısıyla değil, yalnızca kendi veritabanına yetkili
   `egitimevi` kullanıcısıyla bağlanır.
 - **Eski `data/db.json`** varsa ilk açılışta tek işlemde veritabanına aktarılır ve
@@ -1373,11 +1574,11 @@ ve sunucudan dışarı çıkmaz.
 | Kaba kuvvet kilidi | 5 hatalı giriş sonrası o hesap+cihaz 15 dakika kilitlenir (e-posta ile kullanıcı adını sırayla denemek kilidi aşmaz); aynı bağlantıdan 15 dakikada en fazla 50 hatalı giriş, 25 yanlış giriş kodu |
 | Genel hız sınırı | Oturum başına dakikada 300 API isteği; aynı okul ağından (tek IP) gelen bir sınıf engellenmesin diye IP başına 1500 |
 | Bot doğrulaması | Kayıt formunda toplama sorusu; cevap sunucuda tutulur, tarayıcıya gönderilmez; yalnızca hesap açılınca harcanır |
-| Şifre değişimi | Şifre değişince o oturum dışındaki bütün oturumlar kapanır |
+| Şifre değişimi | Şifre değişince o oturum dışındaki bütün oturumlar kapanır, telefonların cihaz anahtarları silinir |
 | T.C. kimlik no | İsteğe bağlı, algoritmayla denetlenir; yalnızca kişinin kendisine gösterilir |
 | Veli kodu sınırı | Hesap başına dakikada 5, bağlantı başına saatte 30 yanlış kod — çok hesap açıp denemek de sayılır |
 | Kişi kodu sınırı | Müdürün **Kodla ekle**'si kullanıcı başına dakikada 30, yöneticinin **Bul**'u dakikada 30; ikisinde de bağlantı başına saatte 30 yanlış kod. Kod yenileme hesap başına saatte 10. Kod POST gövdesinde gider, adrese ve günlüğe düşmez |
-| Oturum ömrü | Oturumlar 7 gün sonra kendiliğinden düşer, eskiler temizlenir |
+| Oturum ömrü | Tarayıcıdaki oturum 7 gün, telefon uygulamasından açılan (girişte `uygulama: true`) 30 gün sonra kendiliğinden düşer (mutlak süre, kullandıkça uzamaz); eskiler temizlenir |
 | Güvenlik başlıkları | CSP, X-Frame-Options, nosniff, Referrer-Policy — XSS ve çerçeveleme engeli |
 | Girdi temizliği | Gelen JSON'daki `__proto__` gibi tehlikeli anahtarlar ve NUL karakteri ayıklanır |
 | Hata gizliliği | Veritabanı hatasında tablo/kısıt adı istemciye gitmez; ayrıntı yalnızca günlükte |
@@ -1513,7 +1714,7 @@ eğitim evi/
 │   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
 │   │   ├── sema.js            ← şema dosyalarını sırayla uygular
 │   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
-│   │   ├── sema/002...027     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   ├── sema/002...028     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
 │   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
 │   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
 │   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
@@ -1521,7 +1722,8 @@ eğitim evi/
 │   │   │                        018 okul sayfası, 019 yorumlar, 020 ekler, 021 öğrenci
 │   │   │                        geçmişi, 022 okul özellikleri, 023 öğretmen yetkileri,
 │   │   │                        024 hatırlatıcılar, 025 ödev başlama saati, 026 Eğitim Evi
-│   │   │                        Aile, 027 kişi kodu ve müdür başvurusunun kalkması)
+│   │   │                        Aile, 027 kişi kodu ve müdür başvurusunun kalkması, 028 servis
+│   │   │                        yoklaması, servis saatleri, cihaz anahtarı, uygulama oturumu)
 │   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
 │   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
 │   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)
@@ -1545,7 +1747,8 @@ eğitim evi/
 │   │   ├── okul.js            ← /api/school: sınıf, ders, program, roller, ders programı Excel'i
 │   │   ├── hesaplar.js        ← /api/school: öğrenci/servisçi hesabı, öğretmeni kişi koduyla ekleme, veli bağlama, okul adresi
 │   │   ├── kisi-aktarim.js    ← /api/school: kişi listesi şablonu, içeri/dışarı aktarım, metinden Excel
-│   │   ├── okul-hayati.js     ← /api/yemek, /api/servis (harita, sefer, konum), /api/kulupler
+│   │   ├── okul-hayati.js     ← /api/yemek, /api/servis (harita, sefer, konum, yoklama, sıra, not, saatler), /api/kulupler
+│   │   ├── cihaz.js           ← /api/cihaz: telefon uygulamasının cihaz anahtarı, bildirim yoklama, servis konumu
 │   │   ├── anket.js           ← /api/anketler
 │   │   ├── odev-dosya.js      ← /api/odev-dosya: teslim dosyası yükleme ve indirme
 │   │   ├── push.js            ← /api/push: bildirim aboneliği
@@ -1568,6 +1771,8 @@ eğitim evi/
 │       ├── kucult.js          ← tarayıcıya giden JS/CSS'ten yorumları atar
 │       ├── css-temizle.js     ← okul sayfasının kısıtlı CSS'i: izinli seçici/özellik/değer
 │       ├── resim.js           ← fotoğraf türü (ilk baytlar) ve konum bilgisini silme
+│       ├── hatirlatici-zaman.js ← Türkiye saatiyle gün ve an hesabı (hatırlatıcılar, servis saatleri)
+│       ├── servis-pencere.js  ← okulun servis saat aralıkları: şu an hangi dönem, uzatma, sonraki aralık
 │       └── eposta.js          ← SMTP istemcisi
 │
 ├── public/                    ← ÖN YÜZ (tarayıcıya giden her şey)
@@ -1578,8 +1783,8 @@ eğitim evi/
 │   ├── 404.html, okul-bulunamadi.html ← "Sayfa bulunamadı" ve "Okul bulunamadı"
 │   ├── manifest.json, sw.js   ← telefona kurulabilir uygulama (PWA)
 │   ├── js/tema.js             ← açık/koyu tema; sayfa çizilmeden önce çalışır
-│   ├── js/parcalar/           ← arayüz mantığı, 48 parça (00-durum ... 28-grafik; 04c-telefon, 19g-okul-sayfasi)
-│   ├── css/parcalar/          ← stiller, 33 parça (00-temel: renk/tema değişkenleri)
+│   ├── js/parcalar/           ← arayüz mantığı, 55 parça (00-durum ... 28-grafik; 19i-servis-yoklama)
+│   ├── css/parcalar/          ← stiller, 36 parça (00-temel: renk/tema değişkenleri)
 │   └── yazitipi/              ← IBM Plex Sans ve Newsreader (woff2, kendi sunucumuzdan)
 │
 ├── data/                      ← VERİ (depoya girmez)
@@ -1739,6 +1944,9 @@ telefon bildirimi anahtarı sunucuda kalır. Commit atmadan önce `git status` �
 
 ## Henüz eklenmeyenler
 
-- Eğitim Evi Aile için iPhone sürümü (Apple'ın Screen Time izni gerekir) ve Google Play'de yayın.
+- Tek Android uygulaması "Eğitim Evi" (yerel, WebView değil) hazırlanıyor; sunucu tarafı hazır
+  (cihaz anahtarı, bildirim yoklama, servisçinin arka plan konumu, 30 günlük uygulama oturumu).
+  Google Play'de yayın da henüz yok.
+- Eğitim Evi Aile için iPhone sürümü (Apple'ın Screen Time izni gerekir).
 - Tanıtım sayfası, arama motoru ve bağlantı önizlemesi (internete çıkınca)
 - Canlı ders, kitap kurdu, yılın öğrencisi (sonra ele alınacak)

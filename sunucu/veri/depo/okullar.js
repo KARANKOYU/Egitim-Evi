@@ -65,6 +65,11 @@ const adresliOkullar = () => sorgu(
 const konumYaz = (id, enlem, boylam) =>
   calistir('UPDATE okullar SET enlem = $2, boylam = $3 WHERE id = $1', [id, enlem, boylam]);
 
+/* Servis saat aralıkları ('SS:DD'; biçim ve sıra şemada da denetlenir). */
+const servisSaatleriYaz = (id, s) => calistir(
+  'UPDATE okullar SET servis_sabah_bas = $2, servis_sabah_bit = $3, servis_aksam_bas = $4, servis_aksam_bit = $5 WHERE id = $1',
+  [id, s.sabahBas, s.sabahBit, s.aksamBas, s.aksamBit]);
+
 /* Yönetici paneli: her okulun müdürü ve sayıları, tek sorguda. */
 async function genelBakis() {
   const satirlar = await sorgu(
@@ -106,6 +111,6 @@ async function yilAktifYap(okulId, id) {
 
 module.exports = {
   bul, ekle, durumYaz, cakisan, kayitIcin, genelBakis,
-  kisaAdla, kisaAdVarMi, kisaAdYaz, kisaAdsizlar, adresliOkullar, konumYaz,
+  kisaAdla, kisaAdVarMi, kisaAdYaz, kisaAdsizlar, adresliOkullar, konumYaz, servisSaatleriYaz,
   yillari, yilBul, yilEkle, yilAktifYap
 };

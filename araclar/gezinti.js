@@ -315,7 +315,8 @@ async function fotografCek(t, dosya, boyut, tam) {
    olan hesapta hangi portala geçileceği (kisilikler listesinden seçer),
    portalDisi: birden çok portalı olan hesap girişteki gibi yetişkin hesabının
    ana sayfasında ("Portalların") açılır,
-   pencereli: giriş sonrası uygulama açılmıyor, bir pencere bekliyor. */
+   pencereli: giriş sonrası uygulama açılmıyor, bir pencere bekliyor.
+   Adımda hazirla: adımdan önce sunucuda çalışan iş (ör. servis saatlerini kurmak). */
 const bekleJs = ms => `await new Promise(r => setTimeout(r, ${ms}));`;
 /* Ayarlar'daki "Portallarım" kartına kaydırır (tam: false ile). */
 const PORTAL_KARTI = `var k = document.getElementById('portalKart'); if (!k) throw new Error('Portallarım kartı yok'); ` +
@@ -330,6 +331,51 @@ const EKLE_AC = tur => `__tikla('#btnEkle'); ${bekleJs(500)}` +
 let HULYA_KODU = '';
 const okulRolu = (rol, kisa) => k => { const r = k.roller.find(x => x.rol === rol && x.okulKisaAd === kisa); return r && { tur: 'rol', id: r.id }; };
 const veliRolu = ad => k => { const c = k.cocuklar.find(x => x.ad.indexOf(ad) === 0); return c && { tur: 'veli', id: c.id }; };
+
+/* Servisçinin Yoklama sayfası dönemi sunucunun saatinden alır (Türkiye saati).
+   Tur günün her saatinde iki dönemi de gösterebilsin diye müdür olarak servis
+   saatleri adımdan önce şu anı sabaha ya da akşama alacak biçimde kurulur;
+   rol bitince eski saatlere dönülür. Kural: her aralık en az 30 dakika, sabah
+   akşamdan önce, ikisi de aynı gün. Bu yüzden 23:30'dan sonra sabah, 00:30'dan
+   önce akşam şu ana alınamaz; o adımda sayfa aralık dışı görünür. */
+let SERVIS_SAATLERI_ONCE = null;
+const saatMetni = dk => String(Math.floor(dk / 60)).padStart(2, '0') + ':' + String(dk % 60).padStart(2, '0');
+const mudurOturumu = () => oturumAc({ eposta: 'mudur@test.com', sifre: 'Test1234!', gec: okulRolu('principal', 'test-ortaokulu') });
+async function servisSaatiKur(donem) {
+  const t = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const m = t.getUTCHours() * 60 + t.getUTCMinutes();
+  let s;
+  if (donem === 'sabah') {
+    const bit = Math.min(1409, Math.max(m + 45, 30));
+    const bas = Math.max(0, Math.min(m - 30, bit - 30));
+    s = { sabahBas: saatMetni(bas), sabahBit: saatMetni(bit), aksamBas: saatMetni(bit), aksamBit: '23:59' };
+  } else {
+    const bas = Math.max(30, Math.min(m - 30, 1409));
+    const bit = Math.min(1439, Math.max(bas + 30, m + 45));
+    s = { sabahBas: '00:00', sabahBit: saatMetni(bas), aksamBas: saatMetni(bas), aksamBit: saatMetni(bit) };
+  }
+  const r = await iste('/api/servis/saatler', 'POST', s, await mudurOturumu());
+  if (r.status !== 200) throw new Error('servis saatleri: ' + (r.body.error || r.status));
+  await servisDonemiHazirla(donem);
+}
+
+/* Adımın ekranı turun saatinden bağımsız aynı olsun: o dönemin işaretleri
+   yoksa servisçi olarak konur ve sefer başlatılır (gorsel-veri.js servisGunu
+   yalnız verinin hazırlandığı dönemi kurar). Sabah: Burak "Bindi". Akşam:
+   Zeynep "Geldi", Burak "Gelmedi", sonra "Başlat" (ekranda Zeynep'in "İndi"
+   düğmesi). Sefer sürerken aracın bir konumu gönderilir. */
+async function servisDonemiHazirla(donem) {
+  const S = HESAPLAR.servisci;
+  const SV = (await girisYap(S.kullanici, S.sifre, 'test-ortaokulu')).token;
+  const y = (await iste('/api/servis/yoklama', 'GET', null, SV)).body || {};
+  if (y.donem !== donem || !y.servis || !y.acik) return;
+  const ogrenci = ad => (y.ogrenciler || []).find(o => o.ad.indexOf(ad) === 0);
+  const isaretle = async (o, durum) => { if (o && !o.durum) await iste('/api/servis/yoklama', 'POST', { servisId: y.servis.id, ogrenciId: o.id, durum }, SV); };
+  if (donem === 'sabah') await isaretle(ogrenci('Burak'), 'bindi');
+  else { await isaretle(ogrenci('Zeynep'), 'geldi'); await isaretle(ogrenci('Burak'), 'gelmedi'); }
+  const b = await iste('/api/servis/sefer-basla', 'POST', { servisId: y.servis.id }, SV);
+  if (b.status === 200) await iste('/api/servis/konum', 'POST', { seferId: b.body.sefer.id, enlem: 39.9120, boylam: 32.8350, dogruluk: 12 }, SV);
+}
 
 const ROLLER = [
   {
@@ -394,6 +440,9 @@ const ROLLER = [
       { ad: 'Yemek listesi', git: 'yemek' },
       { ad: 'Yemek listesi — düzenleme', git: 'yemek', tam: false, eylem: `__tikla('[data-act="yemek-duzenle"]')` },
       { ad: 'Servisler', git: 'servis' },
+      { ad: 'Servis saatleri (veli ve servisçi bu saatlerde görür)', git: 'servis', tam: false,
+        eylem: `var k = document.getElementById('servisSaatleriKart'); if (!k) throw new Error('servis saatleri kartı yok'); k.scrollIntoView({ block: 'start' }); ${bekleJs(300)}` },
+      { ad: 'Servisin bugünkü yoklaması (salt okunur)', git: 'servis', tam: false, eylem: `__tikla('[data-act="servis-yoklama-bak"]'); ${bekleJs(900)}` },
       { ad: 'Servis düzenleme penceresi', git: 'servis', tam: false, eylem: `__tikla('[data-act="servis-duzenle"]')` },
       { ad: 'Servise öğrenci ekleme', git: 'servis', tam: false, eylem: `__tikla('[data-act="servis-ogrenci-ac"]')` },
       { ad: 'Kulüpler', git: 'kulupler' },
@@ -633,22 +682,31 @@ const ROLLER = [
       { ad: 'Anketler', git: 'anketler' },
       { ad: 'Yemek listesi', git: 'yemek' },
       { ad: 'Servis', git: 'servis' },
+      { ad: 'Servis — Binmeyecek penceresi (gün, sabah / akşam, kısa not)', git: 'servis', tam: false,
+        eylem: `__tikla('[data-act="servis-binmeyecek"]'); ${bekleJs(500)}` },
       { ad: 'Kulüpler', git: 'kulupler' },
       { ad: 'Ayarlar (hesap bilgisi, telefon ülke kodu)', git: 'profil' }
     ],
     son: [{ ad: 'Çocuğun kartına tıklayınca portalı (ödevleri, notları)', git: 'cocuklarim', eylem: `__tikla('[data-act="cocuk-ac"]'); ${bekleJs(1500)}` }],
     koyu: ['veli-ilerleyis|İlerleyiş (koyu)|'],
     telefon: [{ ad: 'Portal menüsü: her çocuk ayrı satır (telefon)', git: 'ana', tam: false, eylem: MENU_AC },
-      'veli-odevler|Ödevler (telefon)|', 'veli-ilerleyis|İlerleyiş (telefon)|']
+      'veli-odevler|Ödevler (telefon)|', 'veli-ilerleyis|İlerleyiş (telefon)|', 'servis|Servis: bugünkü durum (telefon)|']
   },
   {
     ad: 'servisci', baslik: 'Servisçi', eposta: HESAPLAR.servisci.kullanici, sifre: HESAPLAR.servisci.sifre, okul: 'test-ortaokulu',
+    /* Servis saatleri adım adım değişir (servisSaatiKur); sonunda eski hâline döner. */
+    once: async () => { SERVIS_SAATLERI_ONCE = (await iste('/api/servis', 'GET', null, await mudurOturumu())).body.saatler || null; },
+    sonra: async () => { if (SERVIS_SAATLERI_ONCE) await iste('/api/servis/saatler', 'POST', SERVIS_SAATLERI_ONCE, await mudurOturumu()); },
     adimlar: [
-      { ad: 'Ana sayfa', git: 'ana' },
-      { ad: 'Servisim (öğrenciler, duraklar)', git: 'servis' },
+      { ad: 'Yoklama — sabah: Bindi / Binmedi, sıra, velinin işareti', git: 'ana', hazirla: () => servisSaatiKur('sabah') },
+      { ad: 'Yoklama — sırayı düzenle (yukarı / aşağı)', git: 'ana', tam: false, eylem: `__tikla('[data-act="sy-sira"]'); ${bekleJs(400)}` },
+      { ad: 'Yoklama — velilere not', git: 'ana', tam: false,
+        eylem: `__tikla('[data-act="sy-not-yaz"]'); ${bekleJs(400)} __yaz('#snMetin', 'Yarın sabah durakta beş dakika erken hazır olun.')` },
+      { ad: 'Yoklama — akşam: Geldi / Gelmedi, sonra Başlat ve İndi', git: 'ana', hazirla: () => servisSaatiKur('aksam') },
       { ad: 'Mesajlar', git: 'mesajlar' }
     ],
-    telefon: ['ana|Ana sayfa (telefon)|', 'servis|Servisim (telefon)|']
+    koyu: ['ana|Yoklama (koyu)|'],
+    telefon: ['ana|Yoklama (telefon)|', { ad: 'Sırayı düzenle (telefon)', git: 'ana', tam: false, eylem: `__tikla('[data-act="sy-sira"]'); ${bekleJs(400)}` }]
   },
   {
     /* Kaydolmuş, henüz hiçbir portalı olmayan yetişkin (zengin-veri.js: Kemal Arslan). */
@@ -831,6 +889,7 @@ async function calistir() {
     }
 
     async function adimIci() {
+      if (adim.hazirla) await adim.hazirla();
       if (adim.tema !== 'serbest') await degerlendir(t, 'window.temaAyarla && window.temaAyarla("sistem"); 1');
       await degerlendir(t, 'window.__kayma = 0; document.activeElement && document.activeElement.blur && document.activeElement.blur(); ' +
         (adim.pencereKalsin ? '' : '(document.getElementById("modalKok") || {}).innerHTML = ""; ') + '1');

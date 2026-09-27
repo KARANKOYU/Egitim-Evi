@@ -181,7 +181,7 @@ const sifreDegisti = id => calistir('UPDATE kullanicilar SET sifre_degismeli = f
 const girisYazildi = id => calistir('UPDATE kullanicilar SET son_giris = now() WHERE id = $1', [id]);
 
 /* Toplu şifre yenileme: [{ id, ozet }] tek sorguda yazılır, bu kişilerin
-   bütün oturumları kapanır. Yalnızca verilen okulun öğrencilerine yazar.
+   bütün oturumları ve telefon anahtarları kapanır. Yalnızca verilen okulun öğrencilerine yazar.
    Son giriş silinir: yeni şifreyle girene kadar "henüz girmemiş" sayılır
    (kâğıdı kaybolan öğrenciye yeniden dağıtılabilsin). */
 async function topluSifreYaz(okulId, liste) {
@@ -192,6 +192,7 @@ async function topluSifreYaz(okulId, liste) {
     'FROM unnest($2::text[], $3::text[]) AS v(id, ozet) ' +
     "WHERE k.id = v.id AND k.okul_id = $1 AND k.rol = 'student'", [okulId, idler, ozetler]);
   await calistir('DELETE FROM oturumlar WHERE kullanici_id = ANY($1::text[])', [idler]);
+  await calistir('DELETE FROM cihaz_anahtarlari WHERE kullanici_id = ANY($1::text[])', [idler]);
   return n;
 }
 

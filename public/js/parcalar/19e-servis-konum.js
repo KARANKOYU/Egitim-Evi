@@ -1,10 +1,11 @@
-/* Servis haritası ve servisçinin seferleri.
+/* Servis haritası ve servisçinin konum gönderimi.
    - Öğrenci ve velisi: okul, ev ve (sefer sürerken) servis aracı haritada;
-     5 saniyede bir yenilenir. Evini işaretleyen öğrencinin kendisine ve
-     velisine servis 500 m ve 100 m kala bildirim gider (sunucu hesaplar).
-   - Servisçi: seferi başlatır; telefonun konumu sefer boyunca birkaç
-     saniyede bir gönderilir, seferi bitirince kesilir. Konum yalnızca bu
-     sayfa açıkken gider (tarayıcı arka planda konum vermez).
+     5 saniyede bir yenilenir. Canlı bilgi (aracın yeri, sıra, bugünkü durum)
+     yalnız okulun servis saatlerinde gelir; sunucu belirler. Evini
+     işaretleyen öğrencinin velisine servis 500 m ve 100 m kala bildirim gider.
+   - Servisçi: sefer sürerken telefonun konumu birkaç saniyede bir gönderilir
+     (Yoklama sayfası, 19i-servis-yoklama.js). Konum yalnızca sayfa açıkken
+     gider (tarayıcı arka planda konum vermez).
    Kimin neyi göreceği sunucuda belirlenir; burası yalnızca çizer. */
 
 /* ================= öğrenci / veli / yönetim: harita ================= */
@@ -56,10 +57,13 @@ function servisHaritasiAc(kapId, ogrenciId) {
 function servisHaritasiYenile(ilk) {
   var kapId = servisHarita.kap;
   var adres = '/servis/harita' + (servisHarita.ogrenciId ? '?ogrenci=' + encodeURIComponent(servisHarita.ogrenciId) : '');
+  var ogrenciId = servisHarita.ogrenciId;
   return api(adres).then(function (d) {
     if (!servisHarita.h || servisHarita.kap !== kapId) return;
     servisHarita.veri = d;
     servisHaritasiCiz(ilk);
+    /* Servis kartındaki "bugün" bölümü de haritayla birlikte tazelenir. */
+    if (d.bugun) servisBugunGuncelle(ogrenciId, d.bugun);
     servisHaritasiZamanla();
   })['catch'](function (e) {
     if (!$(kapId + 'Bilgi')) return;
@@ -68,18 +72,19 @@ function servisHaritasiYenile(ilk) {
   });
 }
 
-/* Sefer varken 5 sn, yokken 30 sn'de bir bakılır; sayfa değişince ya da
-   sekme arka plandayken durur. */
+/* Sefer varken 5 sn, servis saatinde 30 sn, saat dışında 2 dk'da bir
+   bakılır; sayfa değişince ya da sekme arka plandayken durur. */
 function servisHaritasiZamanla() {
   if (servisHarita.sayac) clearTimeout(servisHarita.sayac);
   var kapId = servisHarita.kap;
-  var sefer = servisHarita.veri && servisHarita.veri.sefer;
+  var d = servisHarita.veri;
+  var sure = d && d.sefer ? SERVIS_YENILE_MS : (d && d.bugun && !d.bugun.canli ? 120000 : 30000);
   servisHarita.sayac = setTimeout(function () {
     servisHarita.sayac = null;
     if (!$(kapId) || servisHarita.kap !== kapId) { servisHaritasiDurdur(); return; }
     if (document.hidden || servisHarita.secimAcik) { servisHaritasiZamanla(); return; }
     servisHaritasiYenile(false);
-  }, sefer ? SERVIS_YENILE_MS : 30000);
+  }, sure);
 }
 
 function servisHaritasiCiz(sigdir) {
@@ -122,16 +127,23 @@ function servisHaritasiCiz(sigdir) {
   }
   if (git) h += '<div class="dugme-satir harita-git">' + git + '</div>';
 
+  /* Sıra ("5. sırada, önünde 2 öğrenci") yalnız servis saatinde gelir. */
+  var b = d.bugun;
+  var sira = servisSiraYazisi(b, '', false);
+  var siraSatiri = sira ? '<span class="harita-sira">' + esc(sira) + '</span>' : '';
   if (!d.servis) {
     h += '<div class="hint">' + esc(d.ogrenci) + ' bir servise kayıtlı değil.</div>';
   } else if (d.sefer && arac) {
     var uzak = d.ev ? ' · eve yaklaşık ' + mesafeYaz(mesafeMetre(arac, d.ev)) : '';
     h += '<div class="harita-durum canli"><span class="canli-nokta"></span><span><b>Servis yolda</b> (' +
-      (d.sefer.yon === 'donus' ? 'eve dönüş' : 'okula gidiş') + ') · konum ' + esc(kacSaniyeOnce(d.sefer.sonKonum)) + esc(uzak) + '</span></div>';
+      (d.sefer.yon === 'donus' ? 'eve dönüş' : 'okula gidiş') + ') · konum ' + esc(kacSaniyeOnce(d.sefer.sonKonum)) + esc(uzak) +
+      siraSatiri + '</span></div>';
   } else if (d.sefer) {
-    h += '<div class="harita-durum"><span>Sefer başladı; aracın konumu birkaç dakikadır gelmiyor.</span></div>';
+    h += '<div class="harita-durum"><span>Sefer başladı; aracın konumu birkaç dakikadır gelmiyor.' + siraSatiri + '</span></div>';
+  } else if (b && !b.canli) {
+    h += '<div class="harita-durum"><span>Aracın yeri yalnız servis saatlerinde görünür: ' + esc(servisAralikMetni(b.saatler)) + '.</span></div>';
   } else {
-    h += '<div class="harita-durum"><span>Şu an sefer yok. Servis yola çıkınca aracın yeri burada görünür.</span></div>';
+    h += '<div class="harita-durum"><span>Şu an sefer yok. Servis yola çıkınca aracın yeri burada görünür.' + siraSatiri + '</span></div>';
   }
 
   h += '<div class="dugme-satir">';
@@ -203,6 +215,7 @@ EYLEMLER['ev-sil'] = function (el) {
 EYLEMLER['servis-harita-cocuk'] = function (el, id) {
   var dugmeler = document.querySelectorAll('[data-act="servis-harita-cocuk"]');
   for (var i = 0; i < dugmeler.length; i++) dugmeler[i].classList.toggle('gri', dugmeler[i] !== el);
+  S.servisHaritaCocuk = id;   // sayfa yenilenince (ör. "binmeyecek" kaydı) aynı çocuk kalsın
   return servisHaritasiAc('servisHaritaKart', id);
 };
 
@@ -224,7 +237,10 @@ function servisBildirimOnerisi() {
   });
 }
 
-/* ================= servisçi: seferler ================= */
+/* ================= servisçi: konum gönderimi =================
+   Sefer Yoklama sayfasından başlar (19i-servis-yoklama.js): sabah "Seferi
+   başlat" ya da ilk "Bindi", akşam "Başlat". Sefer sürerken telefonun konumu
+   birkaç saniyede bir gider; sunucu seferi kapatınca (409) gönderim durur. */
 var SEFER_GONDER_MS = 5000;        // en sık bu aralıkla gönderilir
 var SEFER_NABIZ_MS = 20000;        // araç dursa da bu aralıkla son konum yeniden gider
 
@@ -264,7 +280,7 @@ function seferKonumGonder(zorla) {
       if (e.durum === 409) {
         /* Sefer sunucuda kapanmış (bitirildi, servis başkasına verildi). */
         seferiDurdur();
-        if (S.page === 'ana' || S.page === 'seferim') git(S.page).then(function () { sayfaMesaji('bilgi', e.message); });
+        if (S.page === 'ana' && S.user && S.user.role === 'servisci') git('ana').then(function () { sayfaMesaji('bilgi', e.message); });
         return;
       }
       sf.hata = e.durum === 429 ? '' : (e.message || 'Konum gönderilemedi');
@@ -300,80 +316,6 @@ function seferIzlemeyiBaslat(sefer) {
   seferKilitAl();
 }
 
-var seferHarita = { h: null, veri: null };
-
-SAYFALAR.seferim = function () {
-  if (seferHarita.h) { seferHarita.h.yokEt(); seferHarita.h = null; }
-  return api('/servis/seferim').then(function (d) {
-    seferHarita.veri = d;
-    var h = hero('SEFERLERİM', d.okul ? d.okul.ad : '');
-    if (!window.isSecureContext) {
-      h += '<div class="msg hata">Konum yalnızca güvenli (https) bağlantıda gönderilebilir. Okulun sitesine https ile gir.</div>';
-    }
-    if (!d.servisler.length) {
-      yaz(h + bosKutu('servis', 'Sana atanmış bir servis yok. Okul yönetimi seni bir servise atayınca burada görünür.'));
-      return;
-    }
-    h += '<div class="msg bilgi">Sefere başlayınca konumun servisteki öğrencilere ve velilerine görünür; seferi bitirince kesilir. ' +
-      'Konum yalnızca bu uygulama açıkken gider: telefonu kilitleme, şarja takılı tut.</div>';
-    var acikSefer = null;
-    for (var i = 0; i < d.servisler.length; i++) {
-      var s = d.servisler[i];
-      if (s.sefer) acikSefer = { id: s.sefer.id, servisId: s.id, yon: s.sefer.yon };
-      var buSefer = S._sefer && S._sefer.servisId === s.id;
-      h += '<div class="kart sefer-kart"><div class="satir" style="border:0;padding:0"><div class="buyu">' +
-        '<div class="ad">' + ik('servis') + esc(s.ad) + (s.plaka ? ' <span class="etiket gri">' + esc(s.plaka) + '</span>' : '') + '</div>' +
-        '<div class="alt">' + [s.sabah ? 'sabah ' + esc(s.sabah) : '', s.aksam ? 'akşam ' + esc(s.aksam) : '',
-          s.ogrenciler.length + ' öğrenci'].filter(Boolean).join(' · ') + '</div></div></div>';
-      if (s.sefer) {
-        h += '<div class="sefer-durum" id="seferDurum_' + esc(s.id) + '"></div><div class="dugme-satir">' +
-          (buSefer ? '' : '<button class="btn" data-act="sefer-surdur" data-id="' + esc(s.sefer.id) + '" data-servis="' + esc(s.id) +
-            '" data-yon="' + esc(s.sefer.yon) + '">Konum göndermeyi sürdür</button>') +
-          '<button class="btn tehlike" data-act="sefer-bitir" data-id="' + esc(s.sefer.id) + '">Seferi bitir</button></div>';
-      } else {
-        h += '<div class="dugme-satir">' +
-          '<button class="btn" data-act="sefer-basla" data-id="' + esc(s.id) + '" data-yon="gidis">Okula gidiş seferini başlat</button>' +
-          '<button class="btn ghost" data-act="sefer-basla" data-id="' + esc(s.id) + '" data-yon="donus">Eve dönüş seferini başlat</button></div>';
-      }
-      h += '<details class="sefer-ogrenciler"><summary>Öğrenciler (' + s.ogrenciler.length + ')</summary>';
-      for (var j = 0; j < s.ogrenciler.length; j++) {
-        var o = s.ogrenciler[j];
-        h += '<div class="satir"><div class="buyu"><div class="ad">' + esc(o.ad) + '</div>' +
-          '<div class="alt">' + [esc(o.sinif), o.durak ? esc(o.durak) : '', o.ev ? '' : 'ev işaretli değil'].filter(Boolean).join(' · ') + '</div></div>' +
-          (o.ev ? '<a class="btn kucuk ghost" href="https://www.google.com/maps/dir/?api=1&destination=' +
-            Number(o.ev.enlem).toFixed(6) + ',' + Number(o.ev.boylam).toFixed(6) + '" target="_blank" rel="noopener noreferrer">Yol tarifi</a>' : '') +
-          '</div>';
-      }
-      h += '</details></div>';
-    }
-    h += '<div class="kart"><h3>' + ik('harita') + 'Harita</h3><div class="harita-kap" id="seferHaritaAlan"></div></div>';
-    yaz(h);
-
-    /* Sayfa yenilenmiş ama sefer sunucuda açık: kişi "sürdür" der (konum izni ister). */
-    if (S._sefer && (!acikSefer || acikSefer.id !== S._sefer.id)) seferiDurdur();
-
-    seferHarita.h = haritaKur($('seferHaritaAlan'), { etiket: 'Sefer haritası' });
-    seferBenCiz(true);
-    seferDurumCiz();
-  });
-};
-
-function seferBenCiz(sigdir) {
-  var d = seferHarita.veri;
-  if (!d || !seferHarita.h || !$('seferHaritaAlan')) return;
-  var l = [];
-  if (d.okul && d.okul.enlem !== null && d.okul.enlem !== undefined) l.push({ tur: 'okul', enlem: d.okul.enlem, boylam: d.okul.boylam, etiket: 'Okul' });
-  for (var i = 0; i < d.servisler.length; i++) {
-    for (var j = 0; j < d.servisler[i].ogrenciler.length; j++) {
-      var o = d.servisler[i].ogrenciler[j];
-      if (o.ev) l.push({ tur: 'ev', enlem: o.ev.enlem, boylam: o.ev.boylam, etiket: o.ad.split(' ')[0] });
-    }
-  }
-  if (S._sefer && S._sefer.son) l.push({ tur: 'ben', enlem: S._sefer.son.enlem, boylam: S._sefer.son.boylam, etiket: 'Sen' });
-  seferHarita.h.isaretler(l);
-  if (sigdir) seferHarita.h.sigdir();
-}
-
 function seferDurumCiz() {
   var sf = S._sefer;
   var kutular = document.querySelectorAll('.sefer-durum');
@@ -392,19 +334,6 @@ function seferDurumCiz() {
     kutular[i].classList.toggle('canli', !!(kendi && sf.son && !sf.hata));
   }
 }
-
-EYLEMLER['sefer-basla'] = function (el, servisId) {
-  if (!window.isSecureContext || !navigator.geolocation) {
-    hataGoster(new Error('Bu bağlantıda konum alınamıyor. Okulun sitesine https ile gir.'));
-    return;
-  }
-  dugmeBekle(el, 'Başlatılıyor...');
-  var yon = el.getAttribute('data-yon');
-  return api('/servis/sefer-basla', 'POST', { servisId: servisId, yon: yon }).then(function (d) {
-    seferIzlemeyiBaslat({ id: d.sefer.id, servisId: servisId, yon: d.sefer.yon });
-    return git(S.page).then(function () { sayfaMesaji('iyi', d.message); });
-  })['catch'](function (e) { dugmeBitir(el); hataGoster(e); });
-};
 
 EYLEMLER['sefer-surdur'] = function (el, seferId) {
   try {

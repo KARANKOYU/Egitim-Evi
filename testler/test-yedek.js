@@ -1,4 +1,4 @@
-const { iste, girisYap } = require('./giris');
+const { iste, girisYap, okulHesabi } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -22,6 +22,15 @@ function kontrol(ad, sart, detay) {
   await iste('/api/yemek', 'POST', { gunler: [{ tarih: yarin, menu: 'Yedek çorbası\nPilav', kalori: 700 }] }, M0);
   const servis = await iste('/api/servis/kaydet', 'POST', { ad: 'Yedek servisi', soforTel: '0532 000 11 22', sabah: '07:15' }, M0);
   await iste('/api/servis/ogrenci', 'POST', { servisId: servis.body.id, ogrenciId: o1.user.id, durak: 'Köşe' }, M0);
+  /* Servis saatleri ve servisçinin düzenlediği sıra da yedeğe girer. */
+  const o2 = await girisYap('ogrenci2', 'Test1234!');
+  await iste('/api/servis/ogrenci', 'POST', { servisId: servis.body.id, ogrenciId: o2.user.id, durak: 'Park' }, M0);
+  const sK = 'yedeksrv' + (Date.now() % 100000);
+  await okulHesabi(M0, 'servisci', { fullName: 'Yedek Sürücü', username: sK, password: 'Test1234!' });
+  const srv = await girisYap(sK, 'Test1234!');
+  await iste('/api/servis/kaydet', 'POST', { id: servis.body.id, ad: 'Yedek servisi', soforTel: '0532 000 11 22', sabah: '07:15', soforId: srv.user.id }, M0);
+  await iste('/api/servis/sira', 'POST', { servisId: servis.body.id, donem: 'sabah', sira: [o2.user.id, o1.user.id] }, srv.token);
+  await iste('/api/servis/saatler', 'POST', { sabahBas: '00:00', sabahBit: '11:30', aksamBas: '12:00', aksamBit: '23:59' }, M0);
   const kulup = await iste('/api/kulupler/kaydet', 'POST', { ad: 'Yedek kulübü', danismanId: mat.user.id, kontenjan: 12 }, M0);
   await iste('/api/kulupler/katil', 'POST', { id: kulup.body.id }, o1.token);
   const odev = (await iste('/api/assignments', 'POST', { title: 'Yedek ödevi', subject: 'Matematik',
@@ -104,6 +113,17 @@ function kontrol(ad, sart, detay) {
   const dosyaGeri = await iste('/api/odev-dosya?odev=' + odev, 'GET', null, o1b.token);
   kontrol('teslim dosyasının kaydı geri geldi', (dosyaGeri.body.dosyalar || []).some(d => d.id === dosyaId && d.ad === 'yedek.txt'),
     JSON.stringify(dosyaGeri.body).slice(0, 160));
+
+  const yon = (await iste('/api/servis', 'GET', null, M3)).body;
+  const ys = (yon.servisler || []).find(x => x.id === servis.body.id);
+  const sira = ys ? Object.fromEntries(ys.ogrenciler.map(o => [o.id, o.siraSabah])) : {};
+  kontrol('servis saatleri ve sabah sırası geri geldi', yon.saatler && yon.saatler.sabahBit === '11:30' && sira[o2.user.id] === 1 &&
+    sira[o1.user.id] === 2, JSON.stringify(yon.saatler) + JSON.stringify(sira));
+  const srv2 = await girisYap(sK, 'Test1234!');
+  const anahtar = (await iste('/api/cihaz', 'POST', { ad: 'Geri yükleme telefonu' }, srv2.token)).body.cihazAnahtari;
+  const geri2 = await iste('/api/admin/backup-restore', 'POST', { ad: yedekAd }, T);
+  const ayar = await fetch((process.env.EE_BASE || 'http://localhost:3000') + '/api/cihaz/ayar', { headers: { 'X-Cihaz': anahtar } });
+  kontrol('geri yüklemeden sonra telefonun uygulama anahtarı çalışıyor', geri2.status === 200 && ayar.status === 200, geri2.status + ' ' + ayar.status);
 
   console.log('=== 6) BOZUK YEDEK ===');
   const sahte = await iste('/api/admin/backup-restore', 'POST', { ad: 'yedek-yok-boyle.json' }, T);

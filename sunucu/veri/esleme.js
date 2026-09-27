@@ -20,6 +20,11 @@ function okul(r) {
     type: r.tur, status: r.durum, kisaAd: bos(r.kisa_ad),
     enlem: r.enlem === undefined || r.enlem === null ? null : Number(r.enlem),
     boylam: r.boylam === undefined || r.boylam === null ? null : Number(r.boylam),
+    /* Servis saat aralıkları (Türkiye saati, 'SS:DD'; şema 028). */
+    servisSaatleri: {
+      sabahBas: r.servis_sabah_bas || '07:00', sabahBit: r.servis_sabah_bit || '09:20',
+      aksamBas: r.servis_aksam_bas || '16:30', aksamBit: r.servis_aksam_bit || '19:00'
+    },
     createdAt: r.olusturma
   };
 }

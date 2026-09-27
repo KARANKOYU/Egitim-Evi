@@ -27,7 +27,7 @@ const { AramaDizini, sade: sadeArama } = require('../yardimci/bulanik-arama');
 
 /* Aydınlatma metninin sürümü. Metin değişirse burayı da artır:
    kullanıcıların onayı yeniden istenmelidir. */
-const KVKK_SURUM = '1.10';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
+const KVKK_SURUM = '1.11';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
                             // 1.4: ödev dosyaları, anket, servis, kulüp, son giriş;
                             // 1.5: okulun açtığı hesapta T.C., ev ve servis konumu, telefon bildirimi;
                             // 1.6: e-posta onayı, müdür başvurusunda yaş, okul sayfası, ödev yıldızı;
@@ -36,6 +36,9 @@ const KVKK_SURUM = '1.10';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C.
                             // 1.9: Eğitim Evi Aile (çocuğun telefonu: konum ve uygulama süreleri, 7 gün)
                             // 1.10: kişi kodu (15 karakter; öğrencide veli kodu), yöneticinin kodla müdür
                             //       atadığında gördükleri; müdür başvurusu ve yetişkinden doğum tarihi kalktı
+                            // 1.11: servis yoklaması (bindi/indi saatleri, sıra, servisçinin notu, velinin
+                            //       "binmeyecek" işareti; kim görür, 30 gün), servis saatleri, telefon
+                            //       uygulamasında servisçinin arka plan konumu, cihaz anahtarı, 30 günlük uygulama oturumu
 
 /* ============ kayıt ============ */
 /* Kendisi kaydolan tek tür hesap yetişkin hesabıdır: veli, öğretmen ve müdür
@@ -111,10 +114,13 @@ async function portalBilgisi(u, cocuk) {
   return { portallar, hesapAktif };
 }
 
-/* Oturum açar ve giriş cevabını yazar (giriş, kod doğrulama, portal değiştirme). */
-async function oturumCevabi(res, u, ek) {
+/* Oturum açar ve giriş cevabını yazar (giriş, kod doğrulama, portal değiştirme).
+   secenek.uygulama: oturum telefon uygulamasından açılıyor (30 gün geçerli;
+   tarayıcıda 7 gün). secenek.olusturma: portal değişiminde eski oturumun
+   açılış anı; yeni oturumun süresi ondan sayılır (süre uzamaz). */
+async function oturumCevabi(res, u, ek, secenek) {
   const token = crypto.randomBytes(24).toString('hex');
-  await depo.oturumlar.ac(token, u.id);
+  await depo.oturumlar.ac(token, u.id, !!(secenek && secenek.uygulama), secenek && secenek.olusturma);
   await depo.kullanicilar.girisYazildi(u.id);
   const cocuklar = await childrenOf(u);
   const portal = await portalBilgisi(u, ek && ek.cocuk);
@@ -127,23 +133,23 @@ async function oturumCevabi(res, u, ek) {
    okul rolü ya da tek çocuk). Birden çok portalı olan yetişkin hesabının ana
    sayfasını görür (kisilikSec: soldaki menüden portal seçer). Öteki hesaplar
    (öğrenci, servisçi, yönetici) kendileridir. */
-async function girisOturumu(res, u) {
-  if (!depo.kullanicilar.yetiskinMi(u)) return oturumCevabi(res, u);
+async function girisOturumu(res, u, secenek) {
+  if (!depo.kullanicilar.yetiskinMi(u)) return oturumCevabi(res, u, undefined, secenek);
   const k = await kisilikListesi(u);
   const girilebilir = k.roller.filter(r => r.girilebilir);
   /* Şifresini başkası vermişse (eski düzende yöneticinin açtığı müdür hesabı)
      oturum yetişkin hesabında açılır: kendi şifresini koymadan hiçbir portala
      geçemez. Şifreden sonra yetişkin hesabının ana sayfası açılır. */
-  if (u.sifreDegismeli) return oturumCevabi(res, u, { kisilikSec: girilebilir.length + k.cocuklar.length > 0 });
+  if (u.sifreDegismeli) return oturumCevabi(res, u, { kisilikSec: girilebilir.length + k.cocuklar.length > 0 }, secenek);
   if (girilebilir.length === 1 && !k.cocuklar.length) {
     const hedef = await depo.kullanicilar.bul(girilebilir[0].id);
     if (hedef) {
       await depo.kullanicilar.girisYazildi(u.id);
-      return oturumCevabi(res, hedef);
+      return oturumCevabi(res, hedef, undefined, secenek);
     }
   }
-  if (!girilebilir.length && k.cocuklar.length === 1) return oturumCevabi(res, u, { cocuk: k.cocuklar[0].id });
-  return oturumCevabi(res, u, { kisilikSec: girilebilir.length + k.cocuklar.length > 1 });
+  if (!girilebilir.length && k.cocuklar.length === 1) return oturumCevabi(res, u, { cocuk: k.cocuklar[0].id }, secenek);
+  return oturumCevabi(res, u, { kisilikSec: girilebilir.length + k.cocuklar.length > 1 }, secenek);
 }
 
 async function register(res, body, req) {
@@ -566,9 +572,13 @@ async function uclar(k) {
     /* İki adımlı giriş öğrenci dışında herkese zorunludur. Öğrencide ve
        e-postası olmayan hesapta (okulun açtığı servisçi, eski hesaplar) kod
        gönderilmez: şifre doğruysa oturum doğrudan açılır. */
-    if (!u.email || u.role === 'student') return girisOturumu(res, u);
+    /* Telefon uygulaması gövdede uygulama: true gönderir: oturumu 30 gün geçerli. */
+    const uygulama = body.uygulama === true;
+    if (!u.email || u.role === 'student') return girisOturumu(res, u, { uygulama });
 
     const gonderim = await girisKoduGonder(u);
+    const bekleyen = girisKodlari.get(gonderim.kimlik);
+    if (bekleyen) bekleyen.uygulama = uygulama;
     return ok(res, {
       twoFactor: true,
       challengeId: gonderim.kimlik,
@@ -596,8 +606,9 @@ async function uclar(k) {
       return bad(res, sonuc.hata, 401);
     }
 
-    /* Anahtarın kendisi tarayıcıya, SHA-256 özeti veritabanına. */
-    return girisOturumu(res, sonuc.kullanici);
+    /* Anahtarın kendisi tarayıcıya, SHA-256 özeti veritabanına. Uygulama
+       bayrağı giriş ya da doğrulama adımında gelmiş olabilir. */
+    return girisOturumu(res, sonuc.kullanici, { uygulama: body.uygulama === true || !!sonuc.uygulama });
   }
 
   /* Kodu yeniden gönder (art arda istenmesin diye 60 sn bekleme). */
@@ -613,6 +624,8 @@ async function uclar(k) {
     if (!u) return bad(res, 'Hesap bulunamadı', 400);
     girisKodlari.delete(kimlik);
     const gonderim = await girisKoduGonder(u);
+    const yeni = girisKodlari.get(gonderim.kimlik);
+    if (yeni) yeni.uygulama = !!kayit.uygulama;
     return ok(res, {
       challengeId: gonderim.kimlik,
       yontem: gonderim.yontem,

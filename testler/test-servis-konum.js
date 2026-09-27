@@ -131,7 +131,13 @@ async function bildirimler(token) {
   kontrol('başkasının servisinde sefer başlatılamıyor', bas2.status === 403 && basO.status === 403, bas2.status + ' ' + basO.status);
   const bas = await iste('/api/servis/sefer-basla', 'POST', { servisId, yon: 'donus' }, s1.token);
   const seferId = bas.body.sefer && bas.body.sefer.id;
-  kontrol('servisçi seferi başlattı', bas.status === 200 && !!seferId, J(bas.body));
+  kontrol('servisçi seferi başlattı; yönü dönemden (sabah gidiş, akşam dönüş)', bas.status === 200 && !!seferId &&
+    bas.body.sefer.yon === (bas.body.donem === 'sabah' ? 'gidis' : 'donus'), J(bas.body));
+  /* Akşam seferinde yaklaşma bildirimi yalnız okulda "Geldi" işaretlenen öğrenciye gider
+     (sabah seferinde henüz işaretlenmemişlere). */
+  if (bas.body.donem === 'aksam') {
+    for (const o of [o1, o2]) await iste('/api/servis/yoklama', 'POST', { servisId, ogrenciId: o.user.id, durum: 'geldi' }, s1.token);
+  }
   const kS2 = await iste('/api/servis/konum', 'POST', Object.assign({ seferId, dogruluk: 10 }, kuzey(5000)), s2.token);
   kontrol('başka servisçi bu sefere konum yazamıyor', kS2.status === 409, String(kS2.status));
   const once = (await bildirimler(o1.token)).length;

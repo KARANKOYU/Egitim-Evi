@@ -34,6 +34,12 @@ function gun(n) {
   const okul = okullar.schools.find(s => s.name === 'Test Ortaokulu');
   console.log('okul id:', okul.id);
 
+  /* Servis saatleri: testler günün her saatinde çalışsın diye her an bir
+     dönem açık (sabah 00:00-11:59, akşam 12:00-23:59). Aralık dışını deneyen
+     paket aralığı daraltıp sonra geri açar. */
+  await api('/servis/saatler', 'POST', { sabahBas: '00:00', sabahBit: '11:59', aksamBas: '12:00', aksamBit: '23:59' }, mudur.token);
+  console.log('servis saatleri: 00:00-11:59 / 12:00-23:59');
+
   // 3) ogretmenler
   const ogretmenler = [
     { ad: 'Ayşe Kaya', email: 'mat@test.com', brans: 'Matematik' },

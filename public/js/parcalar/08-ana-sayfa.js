@@ -11,8 +11,8 @@ SAYFALAR.ana = function () {
   /* Yetişkin hesabının kendisi, portal dışında: portalı yoksa "+ Ekle"ye
      çağıran kart, varsa portal kartları (08c-kisilikler.js). */
   if (portalDisindaMi() || !u.role) return portalAnaSayfasi();
-  /* Servisçinin ana sayfası seferleridir (19e-servis-konum.js). */
-  if (u.role === 'servisci') return SAYFALAR.seferim();
+  /* Servisçinin ana sayfası servis yoklamasıdır (19i-servis-yoklama.js). */
+  if (u.role === 'servisci') return servisYoklamaSayfasi();
 
   if (u.role === 'admin') {
     return api('/admin/overview').then(function (d) {

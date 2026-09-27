@@ -84,20 +84,142 @@ EYLEMLER['yemek-kaydet'] = function (el) {
 };
 
 /* ================= servis ================= */
-function telBaglanti(tel) {
-  return tel ? '<a href="tel:' + esc(telefonNorm(tel)) + '">' + esc(telefonGoster(tel)) + '</a>' : '';
+/* Canlı bilgi (aracın yeri, sıra, bugünkü bindi / indi) yalnız okulun servis
+   saatlerinde gelir; açık mı kapalı mı kararını sunucu verir (Türkiye saati).
+   Buradaki tarih hesabı yalnız "bugün / yarın" yazısı içindir. */
+var SV_GUN_ADI = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+function svTrGun(n) { return new Date(Date.now() + 3 * 3600000 + (n || 0) * 86400000).toISOString().slice(0, 10); }
+function svGunAdi(t) {
+  var d = new Date(t + 'T12:00:00Z');
+  return d.getUTCDate() + ' ' + AY_ADI[d.getUTCMonth()] + ' ' + SV_GUN_ADI[d.getUTCDay()];
+}
+/* "bugün", "yarın" ya da "29 Eylül Salı" */
+function svGunEtiketi(t, bugun) {
+  var b = bugun || svTrGun(0);
+  if (t === b) return 'bugün';
+  if (t === gunEkleYerel(b, 1)) return 'yarın';
+  return svGunAdi(t);
+}
+function svBuyukBas(s) { s = String(s || ''); return s.charAt(0).toLocaleUpperCase('tr') + s.slice(1); }
+/* Soyadı atılır: "Zeynep Şahin" -> "Zeynep" (bildirimlerdeki gibi). */
+function svIlkAd(ad) {
+  var p = String(ad || '').trim().split(/\s+/);
+  return p.length > 1 ? p.slice(0, -1).join(' ') : p[0] || '';
+}
+/* "sabah 07:00–09:20, akşam 16:30–19:00" */
+function servisAralikMetni(s) {
+  return s ? 'sabah ' + s.sabahBas + '–' + s.sabahBit + ', akşam ' + s.aksamBas + '–' + s.aksamBit : '';
+}
+/* Bir sonraki aralık: "yarın sabah 07:00–09:20" */
+function servisSonrakiMetni(s) {
+  return s ? svGunEtiketi(s.tarih) + ' ' + (s.donem === 'aksam' ? 'akşam' : 'sabah') + ' ' + s.bas + '–' + s.bit : '';
+}
+function svIsaretDonemi(x) { return x.sabah && x.aksam ? 'sabah ve akşam' : x.sabah ? 'sabah' : 'akşam'; }
+
+/* "Zeynep 5. sırada, önünde 2 öğrenci kaldı": servis saatinde ve sırası
+   henüz gelmemişse (sabah binmemiş, akşam serviste ve inmemiş). */
+function servisSiraYazisi(b, ad, kaldi) {
+  if (!b || !b.canli || !b.sira || b.onunde === null || b.onunde === undefined) return '';
+  return (ad ? ad + ' ' : '') + b.sira + '. sırada, ' +
+    (b.onunde ? 'önünde ' + b.onunde + ' öğrenci' + (kaldi ? ' kaldı' : '') : 'önünde öğrenci kalmadı');
 }
 
-function servisBilgiKarti(s, baslik) {
+/* Bugünkü durum: "Bindi 07:42", "Okula vardı 08:05", "Eve bırakıldı 17:10". */
+function servisDurumu(b) {
+  if (b.donem === 'sabah') {
+    if (b.durum === 'bindi') {
+      return b.vardiSaat ? { renk: 'yesil', metin: 'Okula vardı ' + b.vardiSaat, ek: b.bindiSaat ? 'Bindi ' + b.bindiSaat : '' }
+        : { renk: 'yesil', metin: 'Bindi ' + (b.bindiSaat || '') };
+    }
+    if (b.durum === 'binmedi') return { renk: 'kirmizi', metin: 'Bu sabah binmedi' };
+    if (b.binmeyecekBugun) return { renk: 'gri', metin: 'Bu sabah binmeyecek' };
+    return { renk: 'gri', metin: b.seferBitti ? 'Servis okula vardı' : 'Henüz binmedi' };
+  }
+  if (b.durum === 'indi') return { renk: 'yesil', metin: 'Eve bırakıldı ' + (b.indiSaat || '') };
+  if (b.durum === 'geldi') {
+    return { renk: 'mavi', metin: 'Okuldan servise bindi ' + (b.bindiSaat || ''), ek: b.seferBasladi ? 'Servis yolda' : 'Servis henüz yola çıkmadı' };
+  }
+  if (b.durum === 'gelmedi') return { renk: 'kirmizi', metin: 'Akşam servise gelmedi' };
+  if (b.binmeyecekBugun) return { renk: 'gri', metin: 'Bu akşam binmeyecek' };
+  return { renk: 'gri', metin: b.seferBitti ? 'Akşam seferi bitti' : 'Henüz servise binmedi' };
+}
+
+/* Servis kartının "bugün" bölümü: durum, sıra, servisçinin notları ve
+   velinin "binmeyecek" işaretleri; velide Binmeyecek düğmesi. */
+function servisBugunIc(b, ogrenciId, ad, veli) {
+  var h = '';
+  if (b.canli) {
+    var du = servisDurumu(b);
+    h += '<div class="servis-bugun-ust"><span class="servis-bugun-baslik">' + (b.donem === 'aksam' ? 'Bu akşam' : 'Bu sabah') + '</span>' +
+      '<span class="etiket ' + du.renk + '">' + esc(du.metin) + '</span>' + (du.ek ? '<span class="alt">' + esc(du.ek) + '</span>' : '') + '</div>';
+    var sira = servisSiraYazisi(b, ad, true);
+    if (sira) h += '<div class="servis-bugun-satir">' + ik('servis') + '<span>' + esc(sira) + '</span></div>';
+  } else {
+    h += '<div class="servis-bugun-satir soluk">' + ik('saat') + '<span>Servisin yeri, sırası ve bugünkü durumu yalnız servis saatlerinde görünür (' +
+      esc(servisAralikMetni(b.saatler)) + ').' + (b.sonraki ? ' Sıradaki: ' + esc(servisSonrakiMetni(b.sonraki)) + '.' : '') + '</span></div>';
+  }
+  var notlar = b.notlar || [];
+  for (var i = 0; i < notlar.length; i++) {
+    var n = notlar[i];
+    h += '<div class="servis-not">' + ik('posta') + '<span><b>Servisçinin notu · ' + esc(svGunEtiketi(n.tarih)) + '</b>' +
+      (n.genel ? ' <span class="alt">(bütün servise)</span>' : '') + '<br>' + esc(n.metin) + '</span></div>';
+  }
+  var isaretler = b.binmeyecek || [];
+  for (var j = 0; j < isaretler.length; j++) {
+    var x = isaretler[j];
+    h += '<div class="servis-not binmez">' + ik('takvim') + '<span><b>' + esc(svBuyukBas(svGunEtiketi(x.tarih))) + ' ' + svIsaretDonemi(x) +
+      ' binmeyecek</b>' + (x.not ? '<br>' + esc(x.not) : '') + '</span></div>';
+  }
+  if (veli) {
+    h += '<div class="dugme-satir"><button class="btn kucuk ghost" data-act="servis-binmeyecek" data-id="' + esc(ogrenciId) + '">' +
+      ik('takvim') + 'Binmeyecek</button>' +
+      '<span class="alt">Servise binmeyeceği günü servisçiye bildir.</span></div>';
+  }
+  return h;
+}
+
+function telBaglanti(tel) {
+  return tel ? '<a class="servis-tel" href="tel:' + esc(telefonNorm(tel)) + '">' + esc(telefonGoster(tel)) + '</a>' : '';
+}
+
+/* s: servis; bugun: sunucunun "bugün" nesnesi (öğrenci ve veli için). */
+function servisBilgiKarti(s, baslik, bugun, ogrenciId, veli) {
   var satir = function (ad, deger) { return deger ? '<div class="bilgi-satir"><span>' + ad + '</span><div>' + deger + '</div></div>' : ''; };
-  return '<div class="kart servis-kart"><h3>' + ik('servis') + esc(baslik || s.ad) + '</h3>' +
+  return '<div class="kart servis-kart" id="servisKart_' + esc(ogrenciId || 'ben') + '"><h3>' + ik('servis') + esc(baslik || s.ad) + '</h3>' +
     satir('Servis', baslik ? esc(s.ad) : '') +
     satir('Plaka', esc(s.plaka)) +
     satir('Şoför', esc(s.sofor) + (s.soforTel ? ' · ' + telBaglanti(s.soforTel) : '')) +
     satir('Rehber', esc(s.rehber) + (s.rehberTel ? ' · ' + telBaglanti(s.rehberTel) : '')) +
-    satir('Sabah', esc(s.sabah)) + satir('Akşam', esc(s.aksam)) +
+    satir('Sabah kalkış', esc(s.sabah)) + satir('Akşam kalkış', esc(s.aksam)) +
     satir('Durak', esc(s.durak)) +
-    satir('Güzergâh', esc(s.guzergah).replace(/\n/g, '<br>')) + '</div>';
+    satir('Güzergâh', esc(s.guzergah).replace(/\n/g, '<br>')) +
+    (bugun ? '<div class="servis-bugun" id="servisBugun_' + esc(ogrenciId || 'ben') + '">' +
+      servisBugunIc(bugun, ogrenciId, baslik ? svIlkAd(baslik) : '', veli) + '</div>' : '') + '</div>';
+}
+
+/* Harita yenilenince (30 sn / 5 sn) kartın "bugün" bölümü de tazelenir. */
+function servisBugunGuncelle(ogrenciId, bugun) {
+  var d = S.servisVeri;
+  var kutu = $('servisBugun_' + (ogrenciId || 'ben'));
+  if (!d || !kutu) return;
+  if (!ogrenciId) {
+    if (!d.benim) return;
+    d.benim.bugun = bugun;
+    kutu.innerHTML = servisBugunIc(bugun, '', '', false);
+    return;
+  }
+  var c = svCocukBul(ogrenciId);
+  if (!c || !c.bugun) return;
+  bugun.binmeyecekDuzenleyebilir = c.bugun.binmeyecekDuzenleyebilir;
+  c.bugun = bugun;
+  kutu.innerHTML = servisBugunIc(bugun, c.id, svIlkAd(c.ad), !!bugun.binmeyecekDuzenleyebilir);
+}
+
+function svCocukBul(id) {
+  var l = (S.servisVeri && S.servisVeri.cocuklar) || [];
+  for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+  return null;
 }
 
 SAYFALAR.servis = function () {
@@ -111,15 +233,36 @@ SAYFALAR.servis = function () {
   });
 };
 
+/* Okulun servis saatleri (yönetim): veli canlı bilgiyi, servisçi yoklamayı
+   yalnız bu aralıklarda görür. */
+function servisSaatKarti(s) {
+  var alan = function (id, etiket, deger) {
+    return '<label class="servis-saat-alan" for="' + id + '"><span>' + etiket + '</span>' +
+      '<input type="time" id="' + id + '" value="' + esc(deger) + '" required></label>';
+  };
+  return '<div class="kart" id="servisSaatleriKart"><h3>' + ik('saat') + 'Servis saatleri</h3>' +
+    '<div class="alt servis-saat-aciklama">Veli ve öğrenci servisin yerini, sırasını ve bugünkü durumunu yalnız bu saatlerde görür; ' +
+    'servisçi yoklamayı ve seferi yalnız bu saatlerde açar. Saat bitince yoldaki sefer en çok 60 dakika daha sürer. Her gün geçerlidir.</div>' +
+    '<div class="servis-saat-izgara">' +
+    '<fieldset class="servis-saat-grup"><legend>Sabah (evden okula)</legend><div class="servis-saat-cift">' +
+    alan('ssSabahBas', 'Başlangıç', s.sabahBas) + alan('ssSabahBit', 'Bitiş', s.sabahBit) + '</div></fieldset>' +
+    '<fieldset class="servis-saat-grup"><legend>Akşam (okuldan eve)</legend><div class="servis-saat-cift">' +
+    alan('ssAksamBas', 'Başlangıç', s.aksamBas) + alan('ssAksamBit', 'Bitiş', s.aksamBit) + '</div></fieldset>' +
+    '</div><div id="ssMesaj"></div>' +
+    '<div class="dugme-satir"><button class="btn" data-act="servis-saat-kaydet">Saatleri kaydet</button></div></div>';
+}
+
 function servisSayfasi(d, servisciler, bildirimOneri) {
   S.servisVeri = d;
   S.servisciListe = servisciler;
-  var h = hero('SERVİS', d.yonetir ? 'Okulun servisleri, servisçileri ve servisteki öğrenciler.' : 'Servis ve şoför bilgileri, servisin haritası.');
-  var haritaIlk = null;   // haritası açılacak öğrenci (veli için ilk çocuk)
+  var h = hero('SERVİS', d.yonetir ? 'Okulun servisleri, servis saatleri, servisçiler ve servisteki öğrenciler.'
+    : 'Servis ve şoför bilgileri, bugünkü durum ve servisin haritası.');
+  var haritaIlk = null;   // haritası açılacak öğrenci (veli için seçili ya da ilk çocuk)
+  var kaydir = '';        // bildirimden gelindiyse o çocuğun kartı
 
   if (S.user.role === 'student') {
     if (d.benim) {
-      h += servisBilgiKarti(d.benim) + bildirimOneri +
+      h += servisBilgiKarti(d.benim, '', d.benim.bugun, '', false) + bildirimOneri +
         '<div class="kart"><h3>' + ik('harita') + 'Servisin nerede?</h3><div id="servisHaritaKart"></div></div>';
       haritaIlk = { id: '' };
     } else {
@@ -129,25 +272,33 @@ function servisSayfasi(d, servisciler, bildirimOneri) {
   var servisliCocuk = [];
   for (var c = 0; c < d.cocuklar.length; c++) {
     var cc = d.cocuklar[c];
-    h += cc.servis ? servisBilgiKarti(cc.servis, cc.ad)
+    h += cc.servis ? servisBilgiKarti(cc.servis, cc.ad, cc.bugun, cc.id, !!(cc.bugun && cc.bugun.binmeyecekDuzenleyebilir))
       : '<div class="kart"><h3>' + esc(cc.ad) + '</h3><div class="hint">Servis kaydı yok.</div></div>';
     if (cc.servis) servisliCocuk.push(cc);
   }
   if (servisliCocuk.length) {
+    /* Bildirimden (#/servis?c=<çocuk>) gelindiyse o çocuk, yoksa son bakılan ya da ilk çocuk. */
+    var adrestenGeldi = !!S.adresCocuk;
+    var secili = S.user.role !== 'student' ? veliSeciliCocuk() : null;
+    var hedefId = (secili && secili.id) || S.servisHaritaCocuk || '';
+    var ilk = servisliCocuk[0];
+    for (var s0 = 0; s0 < servisliCocuk.length; s0++) if (servisliCocuk[s0].id === hedefId) ilk = servisliCocuk[s0];
+    if (adrestenGeldi && secili && ilk.id === secili.id && d.cocuklar.length > 1) kaydir = ilk.id;
     h += bildirimOneri + '<div class="kart"><h3>' + ik('harita') + 'Servis haritası</h3>';
     if (servisliCocuk.length > 1) {
       h += '<div class="dugme-satir">';
       for (var k = 0; k < servisliCocuk.length; k++) {
-        h += '<button class="btn kucuk' + (k ? ' gri' : '') + '" data-act="servis-harita-cocuk" data-id="' + esc(servisliCocuk[k].id) + '">' +
-          esc(servisliCocuk[k].ad.split(' ')[0]) + '</button>';
+        h += '<button class="btn kucuk' + (servisliCocuk[k] === ilk ? '' : ' gri') + '" data-act="servis-harita-cocuk" data-id="' +
+          esc(servisliCocuk[k].id) + '">' + esc(svIlkAd(servisliCocuk[k].ad)) + '</button>';
       }
       h += '</div>';
     }
     h += '<div id="servisHaritaKart"></div></div>';
-    haritaIlk = { id: servisliCocuk[0].id };
+    haritaIlk = { id: ilk.id };
   }
 
   if (d.yonetir) {
+    if (d.saatDuzenleyebilir && d.saatler) h += servisSaatKarti(d.saatler);
     h += '<div class="kart"><div class="satir" style="border:0;padding:0"><div class="buyu"><div class="ad">' +
       (d.servisler.length ? d.servisler.length + ' servis' : 'Henüz servis eklenmedi') + '</div>' +
       '<div class="alt">Şoför ve rehber telefonu yalnızca o servisteki öğrenciye ve velisine görünür.</div></div>' +
@@ -157,8 +308,9 @@ function servisSayfasi(d, servisciler, bildirimOneri) {
       h += '<div class="kart servis-yonetim"><div class="satir"><div class="buyu"><div class="ad">' + ik('servis') + esc(s.ad) +
         (s.plaka ? ' <span class="etiket gri">' + esc(s.plaka) + '</span>' : '') + '</div>' +
         '<div class="alt">' + [s.soforAdi ? 'Servisçi ' + esc(s.soforAdi) : (s.sofor ? 'Şoför ' + esc(s.sofor) : 'Servisçi atanmadı'),
-          s.sabah ? 'sabah ' + esc(s.sabah) : '', s.aksam ? 'akşam ' + esc(s.aksam) : '',
+          s.sabah ? 'sabah kalkış ' + esc(s.sabah) : '', s.aksam ? 'akşam kalkış ' + esc(s.aksam) : '',
           s.ogrenciSayisi + ' öğrenci'].filter(Boolean).join(' · ') + '</div></div>' +
+        '<button class="btn kucuk ghost" data-act="servis-yoklama-bak" data-id="' + esc(s.id) + '">Bugünkü yoklama</button>' +
         '<button class="btn kucuk ghost" data-act="servis-ogrenci-ac" data-id="' + esc(s.id) + '">Öğrenci ekle</button>' +
         '<button class="btn kucuk gri" data-act="servis-duzenle" data-id="' + esc(s.id) + '">Düzenle</button></div>';
       for (var j = 0; j < s.ogrenciler.length; j++) {
@@ -173,8 +325,8 @@ function servisSayfasi(d, servisciler, bildirimOneri) {
 
     h += '<h3 class="sb">Servisçiler (' + servisciler.length + ')</h3>' +
       '<div class="kart"><div class="satir" style="border:0;padding:0"><div class="buyu">' +
-      '<div class="alt">Servisçi hesabını okul açar; servisçi telefonundan girip seferi başlatınca aracın yeri ' +
-      'o servisteki öğrencilere ve velilerine görünür.</div></div>' +
+      '<div class="alt">Servisçi hesabını okul açar. Servisçi telefonundan girip Yoklama sayfasında öğrencileri işaretler; ' +
+      'sefer sürerken aracın yeri o servisteki öğrencilere ve velilerine görünür.</div></div>' +
       '<button class="btn" data-act="hesap-yeni" data-rol="servisci">Servisçi ekle</button></div>';
     for (var v = 0; v < servisciler.length; v++) {
       var sv = servisciler[v];
@@ -189,8 +341,94 @@ function servisSayfasi(d, servisciler, bildirimOneri) {
     h += bosKutu('servis', 'Servis bilgileri okul yönetimindedir.');
   }
   yaz(h);
+  if (kaydir && $('servisKart_' + kaydir)) $('servisKart_' + kaydir).scrollIntoView({ block: 'start' });
   if (haritaIlk) servisHaritasiAc('servisHaritaKart', haritaIlk.id);
 }
+
+EYLEMLER['servis-saat-kaydet'] = function (el) {
+  var v = function (id) { return $(id) ? $(id).value : ''; };
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/servis/saatler', 'POST', { sabahBas: v('ssSabahBas'), sabahBit: v('ssSabahBit'), aksamBas: v('ssAksamBas'), aksamBit: v('ssAksamBit') })
+    .then(function (r) {
+      dugmeBitir(el);
+      if (S.servisVeri) S.servisVeri.saatler = r.saatler;
+      mesajGoster('ssMesaj', 'iyi', r.message + ' Yeni aralıklar: ' + servisAralikMetni(r.saatler) + '.');
+    })['catch'](function (e) { dugmeBitir(el); mesajGoster('ssMesaj', 'hata', e.message); });
+};
+
+/* Yönetim: servisin bugünkü yoklaması, salt okunur (19i-servis-yoklama.js çizer). */
+EYLEMLER['servis-yoklama-bak'] = function (el, id) {
+  var s = null, l = (S.servisVeri && S.servisVeri.servisler) || [];
+  for (var i = 0; i < l.length; i++) if (l[i].id === id) s = l[i];
+  modalAc((s ? s.ad : 'Servis') + ' — bugünkü yoklama', '<div class="yukleniyor">Yükleniyor...</div>');
+  return api('/servis/yoklama?servisId=' + encodeURIComponent(id)).then(function (d) {
+    if ($('modalGovde')) $('modalGovde').innerHTML = syYonetimGorunumu(d);
+  })['catch'](function (e) {
+    if ($('modalGovde')) $('modalGovde').innerHTML = '<div class="msg hata">' + esc(e.message) + '</div>';
+  });
+};
+
+/* Veli: "binmeyecek" (bugün ve 7 gün sonrasına kadar; sabah, akşam ya da
+   ikisi). O dönemin yoklaması alınınca değiştirilemez; servisçiye haber gider. */
+EYLEMLER['servis-binmeyecek'] = function (el, id) {
+  var c = svCocukBul(id);
+  if (!c || !c.bugun) return;
+  var b = c.bugun, bugun = b.tarih || svTrGun(0), isaretler = {};
+  for (var i = 0; i < (b.binmeyecek || []).length; i++) isaretler[b.binmeyecek[i].tarih] = b.binmeyecek[i];
+  S.svBinmez = { id: id, isaretler: isaretler };
+  /* Bugün için servis saati kaldıysa bugün, yoksa yarın seçili gelir. */
+  var secili = (b.canli || (b.sonraki && b.sonraki.tarih === bugun)) ? bugun : gunEkleYerel(bugun, 1);
+  var sec = '';
+  for (var g = 0; g <= 7; g++) {
+    var t = gunEkleYerel(bugun, g), x = isaretler[t];
+    sec += '<option value="' + t + '"' + (t === secili ? ' selected' : '') + '>' +
+      esc((g === 0 ? 'Bugün · ' : g === 1 ? 'Yarın · ' : '') + svGunAdi(t) + (x ? ' (işaretli: ' + svIsaretDonemi(x) + ')' : '')) + '</option>';
+  }
+  var secim = function (deger, ad) {
+    return '<label class="secim-dugme"><input type="radio" name="bmDonem" value="' + deger + '"><span>' + ad + '</span></label>';
+  };
+  var h = '<div class="hint" style="margin:0 0 12px">Servisçinin listesinde görünür ve ona bildirim gider. ' +
+    'O servisin yoklaması alınınca işaret değiştirilemez.</div>' +
+    '<div class="field"><label for="bmTarih">Hangi gün?</label><select id="bmTarih">' + sec + '</select></div>' +
+    '<div class="field"><span class="etiket-baslik">Hangi servise binmeyecek?</span><div class="secim-dugmeler">' +
+    secim('sabah', 'Sabah') + secim('aksam', 'Akşam') + secim('ikisi', 'İkisi') + '</div></div>' +
+    '<div class="field"><label for="bmNot">Kısa not (isteğe bağlı)</label>' +
+    '<input type="text" id="bmNot" maxlength="200" placeholder="ör. Doktor randevusu var." autocomplete="off"></div>' +
+    '<div id="bmMesaj"></div>';
+  modalAc(svIlkAd(c.ad) + ' servise binmeyecek', h,
+    '<button class="btn gri" data-act="servis-binmeyecek-kaldir" id="bmKaldir" hidden>İşareti kaldır</button>' +
+    '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
+    '<button class="btn" data-act="servis-binmeyecek-kaydet">Kaydet</button>');
+  $('bmTarih').onchange = svBinmezDoldur;
+  svBinmezDoldur();
+};
+
+/* Seçilen günün işareti varsa pencereye gelir. */
+function svBinmezDoldur() {
+  var x = S.svBinmez && S.svBinmez.isaretler[$('bmTarih').value];
+  var deger = x ? (x.sabah && x.aksam ? 'ikisi' : x.sabah ? 'sabah' : 'aksam') : 'ikisi';
+  var r = document.querySelectorAll('input[name="bmDonem"]');
+  for (var i = 0; i < r.length; i++) r[i].checked = r[i].value === deger;
+  $('bmNot').value = x ? x.not || '' : '';
+  $('bmKaldir').hidden = !x;
+}
+
+function svBinmezGonder(el, sabah, aksam) {
+  var id = S.svBinmez.id;
+  dugmeBekle(el, 'Kaydediliyor...');
+  return api('/servis/binmeyecek', 'POST', { ogrenciId: id, tarih: $('bmTarih').value, sabah: sabah, aksam: aksam, not: $('bmNot').value })
+    .then(function (r) {
+      modalKapat();
+      S.servisHaritaCocuk = id;
+      return SAYFALAR.servis().then(function () { sayfaMesaji('iyi', r.message); });
+    })['catch'](function (e) { dugmeBitir(el); mesajGoster('bmMesaj', 'hata', e.message); });
+}
+EYLEMLER['servis-binmeyecek-kaydet'] = function (el) {
+  var r = document.querySelector('input[name="bmDonem"]:checked');
+  var d = r ? r.value : 'ikisi';
+  return svBinmezGonder(el, d !== 'aksam', d !== 'sabah');
+};
+EYLEMLER['servis-binmeyecek-kaldir'] = function (el) { return svBinmezGonder(el, false, false); };
 
 EYLEMLER['servis-duzenle'] = function (el, id) {
   var s = null;

@@ -2,9 +2,10 @@
    - yalnızca müdür görür ve değiştirir; bilinmeyen özellik reddedilir;
    - kapalı bölümün bütün uçları o okulun herkesine 403 (ozellikKapali) döner;
    - ilerleyiş ve takvim kapalı bölümü atlar; /api/me kapalı listeyi söyler;
-   - veli çocuğunun okulunun kuralına tabidir;
+   - veli çocuğunun okulunun kuralına tabidir; başka okulun öğrencisinin
+     kimliğini isteğe eklemek kapıyı açmaz (yalnız bağlı olduğu çocuk sayılır);
    - yeniden açınca kayıtlar yerinde (silinmemiş). */
-const { BASE, iste, girisYap, hesapAc } = require('./giris');
+const { BASE, iste, girisYap, hesapAc, okulHesabi, mudurYap } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -86,6 +87,63 @@ const gun = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
     (matOdev2.body.assignments || []).some(a => a.title === 'Özellik denemesi ' + z), 'status ' + matOdev2.status);
   const kayit = await iste('/api/islem-kaydi', 'GET', null, M);
   kontrol('işlem kaydında görünüyor', J(kayit.body).indexOf('okul.ozellik') >= 0, J((kayit.body.kayitlar || []).slice(0, 2)));
+
+  console.log('=== 5) SERVİS KAPALI: YOKLAMA, SIRA, NOT, BİNMEYECEK, SAATLER, TELEFON ===');
+  const sK = 'ozsrv' + (Date.now() % 100000);
+  await okulHesabi(M, 'servisci', { fullName: 'Özellik Sürücü', username: sK, password: 'Test1234!' });
+  const S = await girisYap(sK, 'Test1234!');
+  const sv = (await iste('/api/servis/kaydet', 'POST', { ad: 'Özellik servisi ' + z, soforId: S.user.id }, M)).body.id;
+  await iste('/api/servis/ogrenci', 'POST', { servisId: sv, ogrenciId: o1.user.id }, M);
+  const basla = await iste('/api/servis/sefer-basla', 'POST', { servisId: sv }, S.token);
+  const anahtar = (await iste('/api/cihaz', 'POST', { ad: 'Servis telefonu' }, S.token)).body.cihazAnahtari;
+  const konum = () => fetch(BASE + '/api/cihaz/servis-konum', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Cihaz': anahtar },
+    body: JSON.stringify({ seferId: basla.body.sefer && basla.body.sefer.id, enlem: 39.9, boylam: 32.8, dogruluk: 10 }) });
+  kontrol('servis açıkken telefon konumu alınıyor', (await konum()).status === 200);
+  /* Servisi açık ikinci okul ve onun öğrencisi (kimliği kapıyı atlatmaya denenecek). */
+  const A = (await girisYap('admin@egitimevi.com', 'admin123')).token;
+  await hesapAc({ fullName: 'Özellik Müdür', username: 'ozmudur' + z, email: 'ozmudur' + z + '@test.com' });
+  const M2 = (await mudurYap('ozmudur' + z, 'Test1234!', { schoolName: 'Özellik Okulu ' + z, city: 'Ankara', district: 'Mamak' }, A)).token;
+  const yabanci = await okulHesabi(M2, 'student', { fullName: 'Yabancı Öğrenci', username: 'ozogr' + z, password: 'Test1234!' });
+  await iste('/api/ozellikler', 'POST', { kapali: ['servis'] }, M);
+  const kapali = await Promise.all([
+    iste('/api/servis/yoklama', 'GET', null, S.token),
+    iste('/api/servis/yoklama', 'POST', { servisId: sv, ogrenciId: o1.user.id, durum: 'bindi' }, S.token),
+    iste('/api/servis/sira', 'POST', { servisId: sv, donem: 'sabah', sira: [o1.user.id] }, S.token),
+    iste('/api/servis/not', 'POST', { servisId: sv, metin: 'Kapalıyken' }, S.token),
+    iste('/api/servis/binmeyecek', 'POST', { ogrenciId: o1.user.id, sabah: true }, V),
+    iste('/api/servis/saatler', 'POST', { sabahBas: '07:00', sabahBit: '09:20', aksamBas: '16:30', aksamBit: '19:00' }, M),
+    iste('/api/servis/okula-vardik', 'POST', { servisId: sv }, S.token)]);
+  kontrol('servis kapalıyken yeni servis uçları 403 (ozellikKapali)', kapali.every(r => r.status === 403 && r.body.ozellikKapali === 'servis'),
+    kapali.map(r => r.status).join(' '));
+  const atlatma = await Promise.all([
+    iste('/api/servis/yoklama?ogrenci=' + yabanci.id, 'GET', null, S.token),
+    iste('/api/servis/sira', 'POST', { servisId: sv, donem: 'sabah', sira: [o1.user.id], ogrenciId: yabanci.id }, S.token),
+    iste('/api/servis/sefer-basla', 'POST', { servisId: sv, ogrenciId: yabanci.id }, S.token),
+    iste('/api/servis/okula-vardik', 'POST', { servisId: sv, ogrenciId: yabanci.id }, S.token),
+    iste('/api/servis/saatler', 'POST', { sabahBas: '07:00', sabahBit: '09:20', aksamBas: '16:30', aksamBit: '19:00', ogrenciId: yabanci.id }, M),
+    iste('/api/servis/harita?ogrenci=' + yabanci.id, 'GET', null, S.token)]);
+  kontrol('başka okulun (servisi açık) öğrenci kimliğini eklemek kapalı servisin kapısını açmıyor (403)',
+    atlatma.every(r => r.status === 403 && r.body.ozellikKapali === 'servis'), atlatma.map(r => r.status + ':' + (r.body.ozellikKapali || '')).join(' '));
+  /* İki okulda çocuğu olan veli: ilk çocuğun okulunda servis kapalı, öteki okulda açık.
+     Servis sayfası açılır (menüdeki kural), kapalı okuldaki çocuğun servisi gelmez. */
+  await iste('/api/parent/link', 'POST', { code: yabanci.code }, V);
+  const vServis = await iste('/api/servis', 'GET', null, V);
+  const vO1 = (vServis.body.cocuklar || []).find(c => c.id === o1.user.id);
+  const vYab = (vServis.body.cocuklar || []).find(c => c.id === yabanci.id);
+  kontrol('iki okullu veli: bir okulda servis kapalıyken sayfa açılıyor, o okuldaki çocuğun servisi gelmiyor',
+    vServis.status === 200 && vO1 && vO1.servis === null && vO1.bugun === null && !!vYab,
+    vServis.status + ' ' + J(vServis.body.cocuklar || vServis.body));
+  const vHarita = await iste('/api/servis/harita?ogrenci=' + o1.user.id, 'GET', null, V);
+  kontrol('kapalı okuldaki çocuğun haritası yine 403', vHarita.status === 403 && vHarita.body.ozellikKapali === 'servis',
+    vHarita.status + ' ' + J(vHarita.body));
+  const kk = await konum();
+  const kkBody = await kk.json().catch(() => ({}));
+  kontrol('servis kapalıyken telefonun sefer konumu 403 (ozellikKapali)', kk.status === 403 && kkBody.ozellikKapali === 'servis', kk.status + ' ' + J(kkBody));
+  const bil = await fetch(BASE + '/api/cihaz/bildirimler', { headers: { 'X-Cihaz': anahtar } });
+  const bilBody = await bil.json().catch(() => ({}));
+  kontrol('telefonun bildirim yoklaması sürüyor; servis saatleri gelmiyor', bil.status === 200 && bilBody.servisSaatleri === null, J(bilBody));
+  await iste('/api/ozellikler', 'POST', { kapali: [] }, M);
+  kontrol('servis yeniden açılınca yoklama açılıyor', (await iste('/api/servis/yoklama', 'GET', null, S.token)).status === 200);
 
   console.log();
   console.log('  GECTI: ' + gecti + '   KALDI: ' + kaldi);

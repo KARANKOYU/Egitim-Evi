@@ -50,6 +50,8 @@ async function cihaz(yol, yontem, govde, anahtar) {
   kontrol('veliye "telefonunu bağladı" bildirimi', /telefonunu \(Samsung A51\) Eğitim Evi Aile/.test(vb), vb.slice(0, 200));
   const hesapla = await iste('/api/me', 'GET', null, anahtar);
   kontrol('cihaz anahtarı oturum yerine geçmez (hesaba giriş vermez)', hesapla.status === 401 || !hesapla.body.user, 'status ' + hesapla.status);
+  const uygulamaUcu = await fetch(BASE + '/api/cihaz/bildirimler', { headers: { 'X-Cihaz': anahtar } });
+  kontrol('Aile anahtarı telefon uygulamasının uçlarında geçmez', uygulamaUcu.status === 401, 'status ' + uygulamaUcu.status);
 
   console.log('=== 2) CİHAZ UÇLARI ===');
   kontrol('anahtarsız 401', (await cihaz('ayar', 'GET')).status === 401);

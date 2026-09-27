@@ -35,6 +35,8 @@ const depo = {
   mesajlar: require('./depo/mesajlar'),
   anketler: require('./depo/anketler'),
   okulHayati: require('./depo/okul-hayati'),
+  servisYoklama: require('./depo/servis-yoklama'),
+  cihazlar: require('./depo/cihazlar'),
   odevDosyalari: require('./depo/odev-dosyalari'),
   etutler: require('./depo/etutler'),
   onaylar: require('./depo/onaylar'),

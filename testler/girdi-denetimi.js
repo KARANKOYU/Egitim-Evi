@@ -1,6 +1,6 @@
 /* Girdi denetimi: bozuk, asiri ve kotu niyetli veriyle sunucu cokuyor mu,
    sizdiriyor mu, 500 doneriyor mu. */
-const { iste, girisYap, hesapAc, mudurYap } = require('./giris');
+const { BASE, iste, girisYap, hesapAc, mudurYap, okulHesabi } = require('./giris');
 
 let gecti = 0, kaldi = 0;
 function kontrol(ad, sart, detay) {
@@ -47,6 +47,20 @@ const KOTU = [
   sunucuHatasiYok('constructor govdesi', proto2);
   kontrol('constructor ile kirlenmedi', ({}).hack === undefined);
 
+  /* Servis yoklaması için servisçi, servis ve veli. */
+  const ogrListe = (await iste('/api/school/students', 'GET', null, M)).body.students || [];
+  const sK = 'girdisrv' + (Date.now() % 100000);
+  await okulHesabi(M, 'servisci', { fullName: 'Girdi Sürücü', username: sK, password: 'Test1234!' });
+  const SV = await girisYap(sK, 'Test1234!');
+  const svId = (await iste('/api/servis/kaydet', 'POST', { ad: 'Girdi servisi', soforId: SV.user.id }, M)).body.id;
+  if (ogrListe[0]) await iste('/api/servis/ogrenci', 'POST', { servisId: svId, ogrenciId: ogrListe[0].id }, M);
+  const vK = 'girdiveli' + Date.now().toString(36);
+  await hesapAc({ fullName: 'Girdi Veli', username: vK, email: vK + '@test.com' });
+  let V = (await girisYap(vK, 'Test1234!')).token;
+  if (ogrListe[0]) await iste('/api/parent/link', 'POST', { code: ogrListe[0].code }, V);
+  V = (await girisYap(vK, 'Test1234!')).token;
+  const o1Id = ogrListe[0] ? ogrListe[0].id : 'yok';
+
   console.log('=== 2) BOZUK ALANLAR ===');
   const alanlar = [
     ['sinif adi', '/api/school/class', 'POST', v => ({ name: v }), M],
@@ -57,7 +71,16 @@ const KOTU = [
       v => ({ tur: 'mesaj', konu: v, govde: 'x', hedef: { tur: 'kisi', kisiler: [] } }), O],
     ['takvim basligi', '/api/takvim/etkinlik', 'POST',
       v => ({ baslik: v, tur: 'etkinlik', tarih: '2026-09-15' }), M],
-    ['yil adi', '/api/egitim-yili/ekle', 'POST', v => ({ ad: v }), M]
+    ['yil adi', '/api/egitim-yili/ekle', 'POST', v => ({ ad: v }), M],
+    ['servis saatleri', '/api/servis/saatler', 'POST', v => ({ sabahBas: v, sabahBit: v, aksamBas: v, aksamBit: v }), M],
+    ['servis yoklama isareti', '/api/servis/yoklama', 'POST', v => ({ servisId: svId, ogrenciId: v, durum: v, donem: v }), SV.token],
+    ['servis yoklama durumu', '/api/servis/yoklama', 'POST', v => ({ servisId: svId, ogrenciId: o1Id, durum: v, donem: v }), SV.token],
+    ['servis sirasi', '/api/servis/sira', 'POST', v => ({ servisId: svId, donem: v, sira: v }), SV.token],
+    ['servis notu', '/api/servis/not', 'POST', v => ({ servisId: svId, ogrenciId: v, tarih: v, metin: v }), SV.token],
+    ['servis notu sil', '/api/servis/not-sil', 'POST', v => ({ id: v }), SV.token],
+    ['binmeyecek', '/api/servis/binmeyecek', 'POST', v => ({ ogrenciId: o1Id, tarih: v, sabah: v, aksam: v, not: v }), V],
+    ['uygulama anahtari', '/api/cihaz', 'POST', v => ({ ad: v, platform: v, surum: v }), V],
+    ['uygulama anahtari sil', '/api/cihaz/sil', 'POST', v => ({ id: v, cihazAnahtari: v }), V]
   ];
 
   for (const [ad, yol, method, kur, tok] of alanlar) {
@@ -117,6 +140,25 @@ const KOTU = [
     if (c.status === 200) { oturumTemiz = false; oturumOrnek = t.slice(0, 20); break; }
   }
   kontrol('sahte oturum anahtari calismiyor', oturumTemiz, oturumOrnek);
+  /* Telefon uygulamasının anahtar uçları: sahte ya da bozuk X-Cihaz başlığı ve bozuk imleç. */
+  let cihazTemiz = true, cihazOrnek = '';
+  for (const t of sahteler.concat(['a'.repeat(64), "' OR 1=1 --"])) {
+    for (const yol of ['/api/cihaz/bildirimler?son=' + encodeURIComponent(t), '/api/cihaz/ayar']) {
+      const c = await fetch(BASE + yol, { headers: { 'X-Cihaz': t } });
+      if (c.status === 200 || c.status === 500) { cihazTemiz = false; cihazOrnek = yol + ' ' + c.status; break; }
+    }
+  }
+  kontrol('sahte uygulama anahtari calismiyor, 500 yok', cihazTemiz, cihazOrnek);
+  const gercek = (await iste('/api/cihaz', 'POST', { ad: 'Girdi' }, S)).body.cihazAnahtari;
+  let imlecTemiz = true, imlecOrnek = '';
+  const kotuImlecler = KOTU.filter(x => typeof x === 'string').concat(['2026-01-01T00:00:00.000000Z|' + 'x'.repeat(200),
+    '9999-99-99T99:99:99.999999Z|a', '2026-02-30T25:61:00.000000Z|n_1', '2026-02-30T10:00:00.000000Z|n_1', '2026-01-01T24:00:00.000000Z|']);
+  for (const kotu of kotuImlecler) {
+    const c = await fetch(BASE + '/api/cihaz/bildirimler?son=' + encodeURIComponent(kotu), { headers: { 'X-Cihaz': gercek } });
+    /* Çok uzun adresi HTTP sunucusu baştan reddeder (431); yeter ki 500 olmasın. */
+    if (c.status >= 500 || (kotu.length < 1000 && c.status !== 200)) { imlecTemiz = false; imlecOrnek = JSON.stringify(kotu).slice(0, 30) + ' -> ' + c.status; break; }
+  }
+  kontrol('bozuk imlec 500 vermiyor (ilk yoklama gibi)', imlecTemiz, imlecOrnek);
 
   console.log('=== 6) BASKA OKULUN VERISI ===');
   /* Ikinci bir okul ve muduru olustur, birinin digerine erisemedigini dogrula */

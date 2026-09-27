@@ -58,7 +58,8 @@ const ISLEM_AD = {
   'hesap.eposta': 'Hesabın e-postası değişti',
   'hesap.bilgi': 'Hesap bilgileri değişti',
   'ogrenci.nakil': 'Öğrenci başka okuldan nakil geldi',
-  'okul.ozellik': 'Okulun özellikleri değişti (bölüm açıldı ya da kapandı)'
+  'okul.ozellik': 'Okulun özellikleri değişti (bölüm açıldı ya da kapandı)',
+  'servis.saatler': 'Servis saatleri değişti'
 };
 
 /* Kayıt yazılamazsa asıl işlem bozulmasın: hata yalnızca günlüğe düşer. */

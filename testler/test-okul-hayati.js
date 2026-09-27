@@ -93,6 +93,9 @@ function pazartesi(n) {
   const benim = (await iste('/api/servis', 'GET', null, o1.token)).body.benim;
   kontrol('öğrenci servisini, şoför telefonunu ve durağını görüyor', !!benim && benim.soforTel === '+905321112233' &&
     benim.plaka === '07 ABC 123' && benim.sabah === '07:30' && benim.durak === 'Market önü', J(benim));
+  const bugun = (await iste('/api/servis', 'GET', null, o1.token)).body.benim.bugun;
+  kontrol('öğrenci bugünkü servis durumunu görüyor (test saatleriyle her an canlı, 1. sırada)', !!bugun && bugun.canli === true &&
+    bugun.sira === 1 && bugun.onunde === (bugun.donem === 'sabah' ? 0 : null) && !!bugun.saatler && Array.isArray(bugun.notlar) && Array.isArray(bugun.binmeyecek), J(bugun));
   const veliServis = await iste('/api/servis', 'GET', null, veli.token);
   kontrol('veli çocuğunun servisini görüyor', veliServis.body.cocuklar.length === 1 &&
     veliServis.body.cocuklar[0].servis && veliServis.body.cocuklar[0].servis.soforTel === '+905321112233', J(veliServis.body));
@@ -111,7 +114,8 @@ function pazartesi(n) {
 
   const yonetim = await iste('/api/servis', 'GET', null, M);
   const bir = yonetim.body.servisler.find(s => s.id === s1.body.id);
-  kontrol('müdür servisleri öğrencileriyle görüyor', !!bir && bir.ogrenciler.length === 1 && bir.ogrenciler[0].sinif === '6-A' &&
+  kontrol('müdür servisleri öğrencileriyle ve sıralarıyla görüyor', !!bir && bir.ogrenciler.length === 1 && bir.ogrenciler[0].sinif === '6-A' &&
+    bir.ogrenciler[0].siraSabah === 1 && bir.ogrenciler[0].siraAksam === 1 &&
     yonetim.body.okulOgrencileri.some(o => o.id === o2.user.id), J(bir));
   await iste('/api/servis/ogrenci', 'POST', { servisId: s2.body.id, ogrenciId: o1.user.id }, M);
   const tasindi = (await iste('/api/servis', 'GET', null, M)).body.servisler;

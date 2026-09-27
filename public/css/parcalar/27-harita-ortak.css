@@ -122,19 +122,15 @@
 .harita-secim-bilgi .ikon { width: 18px; height: 18px; flex: 0 0 auto; }
 @media (max-width: 600px) { .harita-kap { height: 280px; } }
 
-/* ================= servisçi: seferler ================= */
-.sefer-kart .dugme-satir { margin-top: 12px; }
+/* ================= servisçi: sefer durumu (Yoklama sayfası) ================= */
 .sefer-durum {
   display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 10px 12px;
   border-radius: var(--r-kucuk); background: var(--turuncu-zemin); color: var(--turuncu-yazi); font-size: 14px;
 }
 .sefer-durum.canli { background: var(--yesil-zemin); color: var(--yesil-yazi); }
 .sefer-durum:empty { display: none; }
-.sefer-ogrenciler { margin-top: 12px; }
-.sefer-ogrenciler summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .bildirim-oneri .ad .ikon { width: 18px; height: 18px; color: var(--ana); margin-right: 6px; vertical-align: -3px; }
 
 /* Başlığın başındaki ikon yazıya yapışmasın. */
 .kart > h3 > .ikon:first-child { width: 20px; height: 20px; margin-right: 7px; vertical-align: -4px; color: var(--ana); }
-.sefer-kart .ad > .ikon:first-child { width: 18px; height: 18px; margin-right: 6px; vertical-align: -3px; color: var(--ana); }
 
