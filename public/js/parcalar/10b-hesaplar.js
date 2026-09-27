@@ -334,7 +334,7 @@ EYLEMLER['bagli-brans-kaydet'] = function (el, id) {
 
 /* ---------------- öğretmeni kişi koduyla ekle ----------------
    Kod POST gövdesinde gider: adres satırına ve sunucu günlüklerine düşmesin,
-   içindeki # + ? bozulmasın. Girişte yalnız boşluklar silinir. */
+   içindeki # + ? = bozulmasın. Girişte boşluklar ve tireler silinir. */
 EYLEMLER['ogretmen-kodla'] = function () {
   modalAc('Öğretmen ekle',
     '<div class="ekle-panel">' + cizim('kisi-kodu', 'ekle-panel-cizim') +
@@ -343,7 +343,7 @@ EYLEMLER['ogretmen-kodla'] = function () {
     '<div class="field"><label for="okKod">Öğretmenin kişi kodu</label>' +
     '<div class="rolsuz-satir">' + kisiKoduGirdisi('okKod') +
     '<button class="btn" data-act="ogretmen-kod-bul">Bul</button></div>' +
-    '<div class="hint">Büyük/küçük harfe dikkat et; boşluklar önemli değil.</div></div>' +
+    '<div class="hint">Büyük/küçük harfe dikkat et; tireler kendiliğinden gelir.</div></div>' +
     '<div id="okSonuc"></div></div>',
     '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>');
   $('okKod').addEventListener('keydown', function (e) {

@@ -539,17 +539,23 @@ portalına geçince yalnızca seçili çocuk değişir. Her şeyi sunucu denetle
   kodu, **Kopyala** ve sitenin iletişim bilgilerindeki yönetici e-postası ile telefonu; yukarıda
   "Site ayarları").
 
-**Kişi kodu.** Her yetişkin hesabının 15 karakterlik kişi kodu vardır (hesap açılınca
+**Kişi kodu.** Her yetişkin hesabının 16 karakterlik kişi kodu vardır (hesap açılınca
 üretilir); öğrencinin kodu **veli kodu**dur. Servisçide ve yöneticide kod yoktur.
 
-- Biçim: yalnızca İngilizce harf, rakam ve `! ? # * + -`. Karışan karakterler yoktur:
+- Biçim: yalnızca İngilizce harf, rakam ve `! ? # * + =`. Karışan karakterler yoktur:
   büyük harfte I, L, O; küçük harfte l, o; rakamda 0, 1. Her kodda en az bir büyük harf,
   bir küçük harf, bir rakam ve bir özel karakter bulunur; ilk karakter harftir (Excel'de
-  `+`, `-`, `=` ile başlayan hücre formül sanılmasın). Örnek: `Ab3#k Qx9+m Pt7?z`.
-- **Büyük/küçük harf fark eder.** Ekranda, kâğıtta ve Excel'de 5'erli gruplar hâlinde,
-  aralarında boşlukla gösterilir; girişte yalnızca boşluklar silinir, gösterilen biçim
-  yapıştırılsa da çalışır. **Kopyala** kodu boşluksuz kopyalar. Eski 10 haneli kodlar
-  geçmez: 027 şema dosyası onları siler, sunucu açılışta yenilerini üretir.
+  `+`, `-`, `=` ile başlayan hücre formül sanılmasın). Tire kodun karakteri değildir,
+  grupları ayırır. Örnek: `Ab3#-kQx9-+mPt-7?zR`.
+- **Büyük/küçük harf fark eder.** Ekranda, kâğıtta ve Excel'de 4'erli dört grup hâlinde,
+  aralarında tireyle gösterilir; **Kopyala** da kodu tireli kopyalar. Kod yazılan kutuda
+  tire her 4 karakterde kendiliğinden eklenir (silerken tire de gider). Girişte boşluklar
+  ve tireler silinir: tireli, tiresiz ya da boşluklu yapıştırılan kod da çalışır.
+  Yapıştırılan metinde başka yazı da varsa ("Veli kodu: Ab3#-kQx9-+mPt-7?zR") kutuya
+  yalnız kod alınır; araya karışmış görünmez karakterler de atılır. Telefon klavyesi
+  harfleri birleştirerek yazıyorsa (sözcüğün altı çizili) tireler sözcük bitince gelir. Eski 10
+  ve 15 haneli kodlar geçmez: 027 ve 032 şema dosyaları onları siler, sunucu açılışta
+  yenilerini üretir (veli bağları ve okul rolleri etkilenmez).
 - Yetişkinin kodu **tek kullanımlıktır**: müdür onunla öğretmen eklediğinde ya da yönetici
   onunla müdür yaptığında aynı işlemde yenilenir; başkası görse de ikinci kez kullanamaz.
   Kişi **Yeni kod üret** ile eskisini geçersiz kılabilir (saatte 10).
@@ -821,7 +827,7 @@ Bir öğretmen aynı gün ve saatte iki farklı sınıfa düşerse sistem uyarı
 İki rol de aynı pencereyi kullanır: ad, soyad, T.C. no (zorunlu); kullanıcı adı, şifre,
 e-posta, doğum tarihi, adres (isteğe bağlı); öğrencide sınıf ve okul no, servisçide
 telefon. Kaydedince kullanıcı adı, şifre (ya da "T.C.
-kimlik numarası"), okulun giriş adresi ve öğrencinin veli kodu (5'erli gruplar ve **Kopyala**)
+kimlik numarası"), okulun giriş adresi ve öğrencinin veli kodu (4'erli tireli gruplar ve **Kopyala**)
 gösterilir; şifre bir daha gösterilmez. Öğrencinin veli kodu hesap açılınca üretilir, servisçide
 kod yoktur.
 
@@ -933,8 +939,9 @@ koduyla** atanır.
 2. Pencerede okul MEB listesinden aranır (listede yoksa adı, ili ve ilçesi yazılır) ve
    okulun adresi yazılır (`egitimevi.org/school/<uzantı>`; kutuya gelince okulun adından
    önerilir).
-3. **Müdürün kişi kodu** kutusuna kod yazılır (boşluklu ya da boşluksuz) ve **Bul**'a
-   basılır: kodun sahibinin tam adı, kullanıcı adı, e-postasının kısaltılmış hâli
+3. **Müdürün kişi kodu** kutusuna kod yazılır (tire kendiliğinden gelir; tireli ya da tiresiz
+   yapıştırılabilir) ve **Bul**'a basılır: kodun sahibinin tam adı, kullanıcı adı,
+   e-postasının kısaltılmış hâli
    (`fa****@gmail.com`) ve kaç okulda rolü olduğu görünür. Kod değişirse yeniden **Bul**
    gerekir; **Okulu aç** yalnızca bulunan kodla gider.
 4. **Okulu aç**: okul ve müdürlük onaylı açılır, kişinin kodu aynı işlemde yenilenir (tek
@@ -1619,13 +1626,14 @@ Başarı oranında yaptı tam, geç ve eksik yarım sayılır; izinli gelmemek o
 
 ## Veli tarafı
 
-1. Öğrenci **Ayarlar** sayfasında **veli kodunu** görür (örn. `Ab3#k Qx9+m Pt7?z`):
-   15 karakter, 5'erli gruplar hâlinde (biçimi yukarıda, "Kişi kodu"). Okul da kodu giriş
-   kâğıdına yazdırır. Yanındaki **Kopyala** kodu boşluksuz panoya alır.
+1. Öğrenci **Ayarlar** sayfasında **veli kodunu** görür (örn. `Ab3#-kQx9-+mPt-7?zR`):
+   16 karakter, 4'erli gruplar hâlinde, tireli (biçimi yukarıda, "Kişi kodu"). Okul da kodu
+   giriş kâğıdına yazdırır. Yanındaki **Kopyala** kodu tireli panoya alır.
 2. Veli kendi hesabını açar ve kodu sağ üstteki **+ Ekle → Veli**'ye (veli olduktan sonra
-   **Çocuklarım → Çocuk ekle**'ye de) yazar. **Büyük/küçük harf fark eder**; boşluklar önemli
-   değildir. Onay beklenmez: çocuk hemen bağlanır, öğrenciye bildirim gider. Kod kullanılınca
-   değişmez: anne ve baba aynı kodla ayrı ayrı ekleyebilir.
+   **Çocuklarım → Çocuk ekle**'ye de) yazar. **Büyük/küçük harf fark eder**; tireler kutuda
+   kendiliğinden gelir, tireli ya da boşluklu yapıştırılsa da olur. Onay beklenmez: çocuk
+   hemen bağlanır, öğrenciye bildirim gider. Kod kullanılınca değişmez: anne ve baba aynı
+   kodla ayrı ayrı ekleyebilir.
 3. Çocuk menüde *Veli · çocuğun adı* portalı olur; yetişkin hesabındayken yeni çocuğun portalı
    hemen açılır. **Çocuklarım**'da çocuğun kartına tıklayınca doğrudan onun portalı açılır:
    ilerleyiş, ödevler, sınavlar, başarılar.
@@ -2154,7 +2162,7 @@ eğitim evi/
 │   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
 │   │   ├── sema.js            ← şema dosyalarını sırayla uygular
 │   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
-│   │   ├── sema/002...031     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   ├── sema/002...032     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
 │   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
 │   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
 │   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
@@ -2166,7 +2174,8 @@ eğitim evi/
 │   │   │                        yoklaması, servis saatleri, cihaz anahtarı, uygulama oturumu,
 │   │   │                        029 ödevin quizi: sorular, şıklar, denemeler, cevaplar,
 │   │   │                        030 site ayarları ve yönetim paneli çerezleri, 031 aynı
-│   │   │                        e-posta/kullanıcı adı/T.C. kuralları ve yönetici adı tetikleyicisi)
+│   │   │                        e-posta/kullanıcı adı/T.C. kuralları ve yönetici adı tetikleyicisi,
+│   │   │                        032 kişi kodu 16 karakter, 4'erli tireli gruplar)
 │   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
 │   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
 │   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)

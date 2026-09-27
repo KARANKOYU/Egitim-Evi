@@ -25,6 +25,7 @@
 
 const zlib = require('zlib');
 const { BASE, iste, girisYap, hesapAc, kisiKodu, kisilikGec, tcUret } = require('./giris');
+const { kisiKoduBicim } = require('../sunucu/ortak');
 
 /* gezinti.js de bu hesaplarla girer (şifreler test değerleridir). */
 const HESAPLAR = {
@@ -218,10 +219,11 @@ async function calistir() {
     await hesapAc({ fullName: V.ad, username: V.kullanici, email: V.eposta, password: V.sifre, phone: '+905321234567' });
   } catch (e) { if (!/kayıtlı|alınmış/i.test(e.message)) throw e; }
   const veli = await girisYap(V.eposta, V.sifre);
-  for (const s of [zeynep, burak]) if (s) await iste('/api/kisilik/cocuk', 'POST', { code: s.code }, veli.token);
+  /* Veli kodu ekranda ve kâğıtta 4'erli tireli; veli onu öyle yazar (sunucu tireleri atar). */
+  for (const s of [zeynep, burak]) if (s) await iste('/api/kisilik/cocuk', 'POST', { code: kisiKoduBicim(s.code) }, veli.token);
 
   /* ---- müdür aynı zamanda Burak'ın velisi ---- */
-  if (burak) await iste('/api/kisilik/cocuk', 'POST', { code: burak.code }, M);
+  if (burak) await iste('/api/kisilik/cocuk', 'POST', { code: kisiKoduBicim(burak.code) }, M);
 
   /* ---- ikinci okul: Canan Er hesabını açar, kişi kodunu yöneticiye verir;
      yönetici okulu açıp onu müdür yapar. Ayşe Kaya orada da öğretmen. ---- */

@@ -794,7 +794,7 @@ const ROLLER = [
           return `__tikla('[data-act="admin-okul-ac"]'); ${bekleJs(700)} __yaz('#bIl', 'Ankara'); ${bekleJs(700)} ` +
             `__yaz('#bOkulAra', 'cumhuriyet ortaoklu'); ${bekleJs(1500)} __tikla('#bOkulSonuc [data-okul-id]'); ${bekleJs(300)} ` +
             `document.getElementById('aoKisa').dispatchEvent(new Event('focus')); ` +
-            `__yaz('#aoKod', ${JSON.stringify(HULYA_KODU.replace(/(.{5})(?=.)/g, '$1 '))}); ` +
+            `__yaz('#aoKod', ${JSON.stringify(HULYA_KODU.replace(/(.{4})(?=.)/g, '$1-'))}); ` +
             `__tikla('[data-act="admin-kisi-bul"]'); ${bekleJs(1200)} ` +
             `var b = document.getElementById('aoKisi'); if (!b || !b.textContent) throw new Error('kişi bulunamadı'); ` +
             `b.scrollIntoView({ block: 'center' }); ${bekleJs(300)}`;

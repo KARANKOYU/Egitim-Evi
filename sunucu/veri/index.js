@@ -104,7 +104,7 @@ async function baslat() {
       (atlanan ? '; kopuk kayıt atlandı — ' + atlanan : '') + '). Eski dosya: db.json.tasindi');
   }
 
-  /* Kişi kodu olmayanlara (027'de boşaltılan eski kodlar, eski kayıtlar) kod
+  /* Kişi kodu olmayanlara (027 ve 032'de boşaltılan eski kodlar, eski kayıtlar) kod
      üretilir: her öğrenciye veli kodu, her yetişkin hesabına kişi kodu. */
   const kodlanan = await depo.kullanicilar.eksikKodlariDoldur();
   if (kodlanan) console.log('  Kişi kodu üretildi: ' + kodlanan + ' hesap');

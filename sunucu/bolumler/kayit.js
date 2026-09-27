@@ -36,7 +36,7 @@ const KVKK_SURUM = '1.12';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C.
                             // 1.7: mesaj/ödev ekleri (7 gün), açılış yorumları, öğrenci nakli, kişisel hatırlatıcılar
                             // 1.8: kullanım sırasında yaşanan sorunlar (sorumluluk), kullanım koşulları, Sınıflarım
                             // 1.9: Eğitim Evi Aile (çocuğun telefonu: konum ve uygulama süreleri, 7 gün)
-                            // 1.10: kişi kodu (15 karakter; öğrencide veli kodu), yöneticinin kodla müdür
+                            // 1.10: kişi kodu (öğrencide veli kodu), yöneticinin kodla müdür
                             //       atadığında gördükleri; müdür başvurusu ve yetişkinden doğum tarihi kalktı
                             // 1.11: servis yoklaması (bindi/indi saatleri, sıra, servisçinin notu, velinin
                             //       "binmeyecek" işareti; kim görür, 30 gün), servis saatleri, telefon

@@ -574,7 +574,7 @@ async function uclar(k) {
       await islemYaz(me, 'sifre.toplu-dagitildi', sinifAdi + ': ' + satirlar.length + ' öğrenci', req);
 
       satirlar.sort((a, b) => a.sinif.localeCompare(b.sinif, 'tr') || a.ad.localeCompare(b.ad, 'tr'));
-      /* Veli kodu kâğıtta ve Excel'de 5'erli gruplar hâlinde ("Ab3#k Qx9+m Pt7?z"). */
+      /* Veli kodu kâğıtta ve Excel'de 4'erli gruplar hâlinde, tireli ("Ab3#-kQx9-+mPt-7?zR"). */
       const kod = k => kisiKoduBicim(k || '');
       const xlsxVeri = aktarim.disa('Giriş bilgileri',
         ['Ad Soyad', 'Sınıf', 'Kullanıcı adı', 'Şifre'].concat(kodGorur ? ['Veli kodu'] : []),

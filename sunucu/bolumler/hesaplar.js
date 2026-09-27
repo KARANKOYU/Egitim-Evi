@@ -367,7 +367,7 @@ async function uclar(k, sub) {
      kullanımlıktır: eşleşince aynı işlemde yenilenir. Müdür eklemeden önce
      yalnızca adın maskeli hâlini görür (kodla ad öğrenme aracına dönmesin).
      Kod gövdede gelir (POST): adrese ve erişim günlüklerine düşmesin, içindeki
-     # + ? bozulmasın. Büyük/küçük harf duyarlı; yalnız boşluklar silinir. */
+     # + ? = bozulmasın. Büyük/küçük harf duyarlı; boşluklar ve tireler silinir. */
   if ((sub === 'ogretmen-bul' || sub === 'ogretmen-ekle') && method === 'POST') {
     if (!yetkiVarMi(me, 'ogretmen.onayla')) return bad(res, 'Bu işlem için yetkin yok', 403);
     if (!hizSinir('ogretmenKod:' + me.id, 30, 60 * 1000)) return bad(res, 'Çok fazla deneme. Biraz bekle.', 429);

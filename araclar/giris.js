@@ -157,7 +157,8 @@ async function kisilikGec(token, tur, id) {
   return r.body;
 }
 
-/* Kişinin kendi kişi kodu (+ Ekle > Öğretmen / Müdür'de görünen, ham hâli). */
+/* Kişinin kendi kişi kodu (+ Ekle > Öğretmen / Müdür'de 4'erli tireli görünen kodun
+   ham hâli; sunucu tireli ya da tiresiz ikisini de kabul eder). */
 async function kisiKodu(token) {
   const k = await iste('/api/kisilikler', 'GET', null, token);
   if (k.status !== 200 || !k.body.kisiKodu) throw new Error('kişi kodu: ' + (k.body.error || k.status));

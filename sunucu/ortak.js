@@ -57,26 +57,28 @@ function govdeTemizle(v, derinlik) {
    çocuğunu onunla ekler), yetişkinde müdüre ya da yöneticiye verilir (okula
    öğretmen olarak eklenmek, okulunu açtırmak). Servisçi ve sistem
    yöneticisinde kod yoktur.
-     - 15 karakter, yalnız ASCII: büyük harf, küçük harf, rakam ve ! ? # * + -
+     - 16 karakter, yalnız ASCII: büyük harf, küçük harf, rakam ve ! ? # * + =
        (her birinden en az bir tane). Karışabilen karakterler yok: I, L, O,
-       l, o, 0, 1. Türkçe harf yok.
+       l, o, 0, 1. Türkçe harf yok. Tire kodda yoktur: ayırıcıdır.
      - İlk karakter harftir: Excel'e yapıştırılınca + - = ile başlayan hücre
        formül sanılmasın.
-     - Büyük/küçük harf duyarlıdır. Girişte yalnız boşluklar silinir; ekranda
-       5'erli gruplar boşlukla ayrılır ("Ab3#k Qx9+m Pt7?z"), bu biçim
-       yapıştırılınca da çalışır. Ayırıcı tire olamaz: tire alfabede var.
-     - 67 simgelik alfabeyle ~10^27 olasılık; hız sınırlarıyla tahmin edilemez. */
-const KISI_KODU_UZUNLUK = 15;
+     - Büyük/küçük harf duyarlıdır. Ekranda, kâğıtta ve Excel'de 4'erli dört
+       grup tireyle ayrılır ("Ab3#-kQx9-+mPt-7?zR"); Kopyala da bu biçimi
+       verir. Girişte boşluklar ve tireler silinir: tireli, tiresiz ya da
+       boşluklu yapıştırılan kod da çalışır.
+     - 61 simgelik alfabe (ilk karakter 47 harften biri) ile ~10^28 olasılık;
+       hız sınırlarıyla tahmin edilemez. */
+const KISI_KODU_UZUNLUK = 16;
 const KOD_BUYUK = 'ABCDEFGHJKMNPQRSTUVWXYZ';
 const KOD_KUCUK = 'abcdefghijkmnpqrstuvwxyz';
 const KOD_RAKAM = '23456789';
-const KOD_OZEL = '!?#*+-';
+const KOD_OZEL = '!?#*+=';
 const KOD_HARF = KOD_BUYUK + KOD_KUCUK;
 const KOD_ALFABESI = KOD_HARF + KOD_RAKAM + KOD_OZEL;
 
 /* Geçerli kişi kodu: uzunluk, alfabe, ilk harf ve dört sınıfın her birinden
    en az bir karakter. (Şemadaki CHECK daha gevşektir: sınıf koşulu burada.) */
-const KISI_KODU_DESENI = /^(?=.*[A-HJKMNP-Z])(?=.*[a-km-np-z])(?=.*[2-9])(?=.*[!?#*+-])[A-HJKMNP-Za-km-np-z][A-HJKMNP-Za-km-np-z2-9!?#*+-]{14}$/;
+const KISI_KODU_DESENI = /^(?=.*[A-HJKMNP-Z])(?=.*[a-km-np-z])(?=.*[2-9])(?=.*[!?#*+=])[A-HJKMNP-Za-km-np-z][A-HJKMNP-Za-km-np-z2-9!?#*+=]{15}$/;
 
 function kisiKoduUret() {
   for (;;) {
@@ -86,20 +88,28 @@ function kisiKoduUret() {
   }
 }
 
+/* Ayırıcılar (ön yüzdeki 05-giris.js ve Android'deki KisiKodu.java ile aynı
+   küme): boşluklar (bölünmez ve dar boşluk da); tire ve başka yerden
+   kopyalanınca tire kılığına giren benzerleri (U+2010..U+2015 kısa/uzun
+   çizgiler, U+2212 eksi, U+FE63 küçük tire, U+FF0D tam genişlikli tire);
+   görünmez karakterler (U+00AD yumuşak tire, U+200B..U+200D sıfır genişlikli
+   karakterler, U+2060, U+FEFF). */
+const KISI_KODU_AYIRICI = /[\s\-\u2010-\u2015\u2212\uFE63\uFF0D\u00AD\u200B-\u200D\u2060\uFEFF]+/g;
+
 /* Kullanıcının yazdığı (ya da yapıştırdığı) kodu karşılaştırılacak hâle
-   getirir: yalnız boşluklar silinir, harf durumu korunur. Geçerli bir kod
-   değilse (eski 10 haneli biçim dahil) '' döner. */
+   getirir: boşluklar ve tireler silinir, harf durumu korunur. Geçerli bir kod
+   değilse (eski 10 ve 15 haneli biçimler dahil) '' döner. */
 function kisiKoduSade(girdi) {
   if (girdi == null || typeof girdi === 'object') return '';
-  const s = String(girdi).replace(/\s+/g, '');
+  const s = String(girdi).replace(KISI_KODU_AYIRICI, '');
   return KISI_KODU_DESENI.test(s) ? s : '';
 }
 
-/* Ekranda, kâğıtta ve Excel'de: 5'erli gruplar, arada boşluk. */
+/* Ekranda, kâğıtta ve Excel'de: 4'erli dört grup, arada tire. */
 function kisiKoduBicim(kod) {
   const s = kod == null ? '' : String(kod);
   if (s.length !== KISI_KODU_UZUNLUK) return s;
-  return s.slice(0, 5) + ' ' + s.slice(5, 10) + ' ' + s.slice(10);
+  return s.slice(0, 4) + '-' + s.slice(4, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12);
 }
 
 /* ============ kullanıcı adı, T.C. kimlik no, ad soyad ============ */

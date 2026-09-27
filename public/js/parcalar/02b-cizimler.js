@@ -50,19 +50,22 @@ var CIZIMLER = {
     '<circle class="c-dolgu" cx="46" cy="20" r="10"/>' +
     '<circle class="c-cizgi" cx="46" cy="20" r="10"/>' +
     '<path class="c-vurgu" d="M46 15v10M41 20h10"/>',
-  /* Kişi kodu: kart üstünde üç grup (5'erli gösterim). */
+  /* Kişi kodu: kart üstünde tireyle ayrılmış dört grup (4'erli gösterim). */
   'kisi-kodu':
-    '<rect class="c-dolgu" x="7" y="15" width="50" height="34" rx="5"/>' +
-    '<rect class="c-cizgi" x="7" y="15" width="50" height="34" rx="5"/>' +
-    '<rect class="c-vurgu" x="11" y="24" width="3.2" height="8" rx="1"/>' +
-    '<rect class="c-vurgu" x="15.5" y="24" width="3.2" height="8" rx="1"/>' +
-    '<rect class="c-vurgu" x="20" y="24" width="3.2" height="8" rx="1"/>' +
-    '<rect class="c-vurgu" x="27.4" y="24" width="3.2" height="8" rx="1"/>' +
-    '<rect class="c-vurgu" x="31.9" y="24" width="3.2" height="8" rx="1"/>' +
-    '<rect class="c-vurgu" x="36.4" y="24" width="3.2" height="8" rx="1"/>' +
-    '<rect class="c-vurgu" x="43.8" y="24" width="3.2" height="8" rx="1"/>' +
-    '<rect class="c-vurgu" x="48.3" y="24" width="3.2" height="8" rx="1"/>' +
-    '<path class="c-cizgi" d="M13 40h18"/>',
+    '<rect class="c-dolgu" x="5" y="15" width="54" height="34" rx="5"/>' +
+    '<rect class="c-cizgi" x="5" y="15" width="54" height="34" rx="5"/>' +
+    '<rect class="c-vurgu" x="10.4" y="24" width="2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="13.8" y="24" width="2" height="8" rx="1"/>' +
+    '<path class="c-cizgi" d="M18.9 28h1"/>' +
+    '<rect class="c-vurgu" x="23" y="24" width="2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="26.4" y="24" width="2" height="8" rx="1"/>' +
+    '<path class="c-cizgi" d="M31.5 28h1"/>' +
+    '<rect class="c-vurgu" x="35.6" y="24" width="2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="39" y="24" width="2" height="8" rx="1"/>' +
+    '<path class="c-cizgi" d="M44.1 28h1"/>' +
+    '<rect class="c-vurgu" x="48.2" y="24" width="2" height="8" rx="1"/>' +
+    '<rect class="c-vurgu" x="51.6" y="24" width="2" height="8" rx="1"/>' +
+    '<path class="c-cizgi" d="M10 40h18"/>',
   /* Okul ve artı: okulunu açtır (Müdür). */
   'okul-ac':
     '<path class="c-dolgu" d="M8 32 26 20l18 12v22H8z"/>' +

@@ -144,9 +144,9 @@ async function kayit(govde, bot) {
   const serbest = await iste('/api/notifications', 'GET', null, R);
   kontrol('rolsüz bildirimlerine bakabiliyor', serbest.status === 200);
 
-  console.log('=== 7) VELİ KODU: BÜYÜK/KÜÇÜK HARF DUYARLI, BOŞLUK FARK ETMEZ ===');
+  console.log('=== 7) VELİ KODU: BÜYÜK/KÜÇÜK HARF DUYARLI, BOŞLUK VE TİRE FARK ETMEZ ===');
   const ogr = ((await iste('/api/school/students', 'GET', null, M)).body.students || [])[0];
-  kontrol('veli kodu yeni biçimde (15 karakter)', /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(ogr.code || ''), ogr.code);
+  kontrol('veli kodu yeni biçimde (16 karakter)', /^[A-Za-z][A-Za-z0-9!?#*+=]{15}$/.test(ogr.code || ''), ogr.code);
   const veliK = 'veli' + z;
   await hesapAc({ fullName: 'Veli Deneme', username: veliK, email: veliK + '@test.com' });
   const V = (await girisYap(veliK, 'Test1234!')).token;
@@ -156,9 +156,9 @@ async function kayit(govde, bot) {
   const ters = ogr.code.replace(/[A-Za-z]/g, c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase());
   const tersBag = await iste('/api/parent/link', 'POST', { code: ters }, V);
   kontrol('harf durumu değiştirilmiş kod kabul edilmiyor', tersBag.status === 400, J(tersBag.body));
-  const yazim = ' ' + ogr.code.slice(0, 5) + ' ' + ogr.code.slice(5, 10) + '  ' + ogr.code.slice(10) + ' ';
+  const yazim = ' ' + ogr.code.slice(0, 4) + ' - ' + ogr.code.slice(4, 8) + '-' + ogr.code.slice(8, 12) + '  ' + ogr.code.slice(12) + ' ';
   const bagla = await iste('/api/parent/link', 'POST', { code: yazim }, V);
-  kontrol('boşluklu (5\'erli) yazılan kod kabul edildi', bagla.status === 200 && (bagla.body.children || []).length === 1,
+  kontrol('boşluklu ve tireli (4\'erli) yazılan kod kabul edildi', bagla.status === 200 && (bagla.body.children || []).length === 1,
     J(bagla.body));
   const veliMe = await iste('/api/me', 'GET', null, V);
   kontrol('kod girince rolsüz hesap veli oldu', veliMe.body.user.role === 'parent', veliMe.body.user.role);
@@ -195,7 +195,7 @@ async function kayit(govde, bot) {
     eskiUclar.map(r => r.status).join(','));
   const adayKis = await iste('/api/kisilikler', 'GET', null, aday.token);
   kontrol('kişinin portalı yok, kişi kodu hazır', adayKis.status === 200 && !adayKis.body.roller.length &&
-    /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(adayKis.body.kisiKodu || ''), J(adayKis.body));
+    /^[A-Za-z][A-Za-z0-9!?#*+=]{15}$/.test(adayKis.body.kisiKodu || ''), J(adayKis.body));
 
   console.log('=== 10) T.C. NO: KİŞİNİN KENDİSİ VE OKUL YÖNETİMİ ===');
   /* Okulun açtığı hesap (servisçi) T.C. ile açılır. */

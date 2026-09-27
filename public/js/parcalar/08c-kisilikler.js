@@ -264,7 +264,7 @@ var ekleIcerik = {
       '<div class="field"><label for="ekVeliKod">Veli kodu</label>' +
       '<div class="rolsuz-satir">' + kisiKoduGirdisi('ekVeliKod') +
       '<button class="btn" data-act="ekle-cocuk-kaydet">Ekle</button></div>' +
-      '<div class="hint">Kodu okulundan alırsın. Büyük/küçük harfe dikkat et; boşluklar önemli değil.</div></div></div>';
+      '<div class="hint">Kodu okulundan alırsın. Büyük/küçük harfe dikkat et; tireler kendiliğinden gelir.</div></div></div>';
   },
   ogretmen: function (d) {
     return '<div class="ekle-panel">' + cizim('kisi-kodu', 'ekle-panel-cizim') +

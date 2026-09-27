@@ -144,7 +144,7 @@
 .ekle-iletisim-bag .site-iletisim-bag { font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
 
 /* ================= kişi kodu =================
-   15 karakter, 5'erli gruplar, arada boşluk (05-giris.js kisiKoduKutusu).
+   16 karakter, 4'erli dört grup, arada tire (05-giris.js kisiKoduKutusu).
    Harf duyarlı olduğu için eş aralıklı yazı: l/1, O/0 zaten alfabede yok. */
 .kisi-kodu {
   font-family: var(--f-kod); font-size: 17px; font-weight: 600; letter-spacing: .06em;
@@ -175,6 +175,10 @@
 @media (max-width: 480px) {
   .kisi-kodu-satir.buyuk .kisi-kodu { font-size: 20px; letter-spacing: .06em; padding: 10px 8px; }
   .portal-bos-cizim .cizim { width: 44px; height: 44px; }
+}
+/* Çok dar telefonda (320-360 px) 19 karakterlik kod tek satıra sığsın. */
+@media (max-width: 360px) {
+  .kisi-kodu-satir.buyuk .kisi-kodu { font-size: 17px; letter-spacing: .03em; padding: 10px 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .kayan-isaret, .ekle-kutu, .portal-kart { transition: none; }

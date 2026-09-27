@@ -21,8 +21,8 @@ async function cocukBagla(hesap, kodHam, req) {
   if (hataSiniriDoldu(ipAnahtar, 30)) {
     return { hata: 'Bu bağlantıdan çok fazla yanlış kod denendi. Bir saat sonra tekrar dene.', kod: 429 };
   }
-  /* Büyük/küçük harf duyarlı; yalnız boşluklar silinir (ekrandaki 5'erli
-     biçim "Ab3#k Qx9+m Pt7?z" yapıştırılınca da olur). Eski 10 haneli kod geçmez.
+  /* Büyük/küçük harf duyarlı; boşluklar ve tireler silinir (ekrandaki 4'erli
+     biçim "Ab3#-kQx9-+mPt-7?zR" yapıştırılınca da olur). Eski 10 ve 15 haneli kod geçmez.
      Kod kullanılınca yenilenmez: anne ve baba aynı kodla ekleyebilir. */
   const code = kisiKoduSade(clean(kodHam, 40));
   const st = code ? await depo.kullanicilar.kodlaOgrenci(code) : null;

@@ -180,22 +180,58 @@ function tcSorunuTR(tc) {
   return '';
 }
 
-/* Kişi kodu (öğrencininki veli kodudur): 15 karakter; büyük ve küçük harf,
-   rakam ve ! ? # * + - işaretleri. Harf duyarlıdır. Ekranda 5'erli gruplar
-   hâlinde, arada boşlukla görünür ("Ab3#k Qx9+m Pt7?z"); Kopyala ham kodu
-   (boşluksuz) verir. Girişte yalnız boşluklar silinir: '-' kodun bir
-   karakteridir, ayırıcı değildir. Asıl denetim sunucudadır (ortak.js). */
-var KISI_KODU_UZUNLUK = 15;
-function kisiKoduSade(kod) { return String(kod || '').replace(/\s+/g, ''); }
-function kisiKoduBicim(kod) { return kisiKoduSade(kod).replace(/(.{5})(?=.)/g, '$1 '); }
-/* Kod ve Kopyala düğmesi (her yerde aynı). id verilirse kod sonradan
-   kisiKoduYenile ile değiştirilebilir; buyuk: Ekle penceresindeki iri gösterim;
-   ekDugme: Kopyala'nın yanına konacak düğme (ör. "Yeni kod üret"). */
+/* Kişi kodu (öğrencininki veli kodudur): 16 karakter; büyük ve küçük harf,
+   rakam ve ! ? # * + = işaretleri. Harf duyarlıdır. Ekranda 4'erli dört grup
+   hâlinde, arada tireyle görünür ("Ab3#-kQx9-+mPt-7?zR"); Kopyala da bu
+   biçimi verir. Tire kodun karakteri değildir, ayırıcıdır: girişte boşluklar
+   ve tireler silinir (tireli, tiresiz, boşluklu yapıştırma olur). Asıl denetim
+   sunucudadır (ortak.js). */
+var KISI_KODU_UZUNLUK = 16;
+/* Ayırıcılar (sunucudaki ortak.js ve Android'deki KisiKodu.java ile aynı küme):
+   boşluklar (bölünmez ve dar boşluk da); tire ve kopyalanınca tire kılığına
+   giren benzerleri (U+2010..U+2015, U+2212 eksi, U+FE63 küçük tire, U+FF0D tam
+   genişlikli tire); görünmez karakterler (U+00AD yumuşak tire, U+200B..U+200D
+   sıfır genişlikli karakterler, U+2060, U+FEFF). */
+var KISI_KODU_AYIRICI = /[\s\-\u2010-\u2015\u2212\uFE63\uFF0D\u00AD\u200B-\u200D\u2060\uFEFF]+/g;
+function kisiKoduSade(kod) { return String(kod || '').replace(KISI_KODU_AYIRICI, ''); }
+function kisiKoduBicim(kod) { return kisiKoduSade(kod).replace(/(.{4})(?=.)/g, '$1-'); }
+/* Kodun karakterleri ve geçerli bir kod (sunucudaki KISI_KODU_DESENI): ilk
+   karakter harf; büyük harf, küçük harf, rakam ve işaretin her birinden en az biri. */
+var KISI_KODU_KARAKTER = 'A-HJKMNP-Za-km-np-z2-9!?#*+=';
+var KISI_KODU_GECERLI = /^(?=.*[A-HJKMNP-Z])(?=.*[a-km-np-z])(?=.*[2-9])(?=.*[!?#*+=])[A-HJKMNP-Za-km-np-z][A-HJKMNP-Za-km-np-z2-9!?#*+=]{15}$/;
+/* Yapıştırılan metindeki tam kod ("Veli kodu: Ab3#-kQx9-+mPt-7?zR" içinden
+   yalnız kod). Sırayla aranır: ekrandaki tireli biçim, başka ayırıcılarla
+   4'erli gruplar, 16 bitişik karakter. Adayın iki yanında kod karakteri
+   olmamalı ve aday geçerli bir kod olmalı. Tam kod yoksa '' döner. */
+function kisiKoduAyikla(metin) {
+  var sade = kisiKoduSade(metin);
+  if (sade.length < KISI_KODU_UZUNLUK) return '';
+  if (sade.length === KISI_KODU_UZUNLUK) return KISI_KODU_GECERLI.test(sade) ? sade : '';
+  /* Görünmez karakterler atılır, tire benzerleri '-', boşluklar ' ' olur. */
+  var m = String(metin).replace(/[\u00AD\u200B-\u200D\u2060\uFEFF]/g, '')
+    .replace(/[\-\u2010-\u2015\u2212\uFE63\uFF0D]/g, '-').replace(/\s/g, ' ');
+  var g = '([' + KISI_KODU_KARAKTER + ']{4})', bas = '(?:^|[^' + KISI_KODU_KARAKTER + '])', son = '(?![' + KISI_KODU_KARAKTER + '])';
+  var desenler = [bas + g + '-' + g + '-' + g + '-' + g + son, bas + g + '[ -]+' + g + '[ -]+' + g + '[ -]+' + g + son,
+    bas + '([' + KISI_KODU_KARAKTER + ']{16})' + son];
+  for (var i = 0; i < desenler.length; i++) {
+    var re = new RegExp(desenler[i], 'g'), b;
+    while ((b = re.exec(m))) {
+      var aday = b.slice(1).join('');
+      if (KISI_KODU_GECERLI.test(aday)) return aday;
+      re.lastIndex = b.index + 1;
+    }
+  }
+  return '';
+}
+/* Kod ve Kopyala düğmesi (her yerde aynı; Kopyala tireli biçimi verir). id
+   verilirse kod sonradan kisiKoduYenile ile değiştirilebilir; buyuk: Ekle
+   penceresindeki iri gösterim; ekDugme: Kopyala'nın yanına konacak düğme
+   (ör. "Yeni kod üret"). */
 function kisiKoduKutusu(kod, id, buyuk, ekDugme) {
-  var ham = kisiKoduSade(kod);
+  var bicimli = kisiKoduBicim(kod);
   return '<div class="kisi-kodu-satir' + (buyuk ? ' buyuk' : '') + '">' +
-    '<code class="kisi-kodu"' + (id ? ' id="' + esc(id) + '"' : '') + '>' + esc(kisiKoduBicim(ham)) + '</code>' +
-    '<span class="kisi-kodu-dugmeler"><button type="button" class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(ham) + '">' +
+    '<code class="kisi-kodu"' + (id ? ' id="' + esc(id) + '"' : '') + '>' + esc(bicimli) + '</code>' +
+    '<span class="kisi-kodu-dugmeler"><button type="button" class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(bicimli) + '">' +
     'Kopyala</button>' + (ekDugme || '') + '</span></div>';
 }
 function kisiKoduYenile(id, kod) {
@@ -203,20 +239,112 @@ function kisiKoduYenile(id, kod) {
   if (!el) return;
   el.textContent = kisiKoduBicim(kod);
   var kopya = el.parentNode.querySelector('[data-act="kod-kopyala"]');
-  if (kopya) kopya.setAttribute('data-kod', kisiKoduSade(kod));
+  if (kopya) kopya.setAttribute('data-kod', kisiKoduBicim(kod));
 }
-/* Kod yazılan kutu: telefon klavyesi harfi büyütmesin, düzeltmesin. */
+/* Kod yazılan kutu: telefon klavyesi harfi büyütmesin, düzeltmesin. Tireler
+   yazarken kendiliğinden gelir (aşağıda); 16 karakter ve 3 tire: en çok 19. */
 function kisiKoduGirdisi(id, etiket) {
   return '<input type="text" id="' + esc(id) + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" ' +
-    'maxlength="20" placeholder="Ab3#k Qx9+m Pt7?z" class="kisi-kodu-girdi"' + (etiket ? ' aria-label="' + esc(etiket) + '"' : '') + '>';
+    'maxlength="19" placeholder="Ab3#-kQx9-+mPt-7?zR" class="kisi-kodu-girdi"' + (etiket ? ' aria-label="' + esc(etiket) + '"' : '') + '>';
 }
-/* Kutudaki kod: boşluksuz; 15 karakter değilse hata metni döner. */
+/* Kutudaki kod: boşluksuz, tiresiz; 16 karakter değilse hata metni döner. */
 function kisiKoduDenetle(deger, ad) {
   var k = kisiKoduSade(deger);
   if (!k) return (ad || 'Kişi kodu') + 'nu yaz.';
-  if (k.length !== KISI_KODU_UZUNLUK) return (ad || 'Kişi kodu') + ' 15 karakterdir.';
+  if (k.length !== KISI_KODU_UZUNLUK) return (ad || 'Kişi kodu') + ' 16 karakterdir.';
   return '';
 }
+
+/* Kod kutusunda tire kendiliğinden gelir: 4 karakterden sonra, bir sonraki
+   karakter yazılınca (sonda tire kalmaz; silerken tire de gider). İmleç
+   yazılan ya da silinen yerde kalır: imleçten önceki kod karakterleri
+   sayılır, yeni biçimde aynı sayının ardına konur. Yalnız bir tire silindiyse
+   (geri tuşu tirenin hemen ardında, Delete hemen önünde) tirenin yanındaki
+   karakter de silinir; yoksa tire hemen geri gelir, silme işe yaramazdı.
+   Yapıştırmada boşluklar ve tireler atılır; yapıştırma burada yapılır ki
+   kutunun 19 karakter sınırı yapıştırılan metnin sonunu kesmesin. Yapıştırılan
+   metinde tam bir kod varsa kutuda yalnız o kalır.
+   Telefon klavyesi harfleri çoğu zaman birleştirerek yazar (IME composition:
+   sözcük altı çizili durur). Birleştirme sürerken kutuya dokunulmaz: değer
+   değişirse klavye birleştirdiği yeri şaşırır, harfler çoğalır. Tireler
+   birleştirme bitince (compositionend) bir kez gelir. */
+function kisiKoduKutusuMu(el) {
+  return !!(el && el.tagName === 'INPUT' && el.classList && el.classList.contains('kisi-kodu-girdi'));
+}
+/* adet kod karakterinin ardı, biçimli metinde kaçıncı yer? */
+function kisiKoduImlecYeri(adet) { return adet > 0 ? adet + Math.floor((adet - 1) / 4) : 0; }
+function kisiKoduKutuYaz(kutu, sade, once) {
+  sade = sade.slice(0, KISI_KODU_UZUNLUK);
+  if (once > sade.length) once = sade.length;
+  var yeni = kisiKoduBicim(sade);
+  if (kutu.value !== yeni) kutu.value = yeni;
+  kutu._kisiKoduOnceki = yeni;
+  if (document.activeElement === kutu) {
+    var yer = kisiKoduImlecYeri(once);
+    try { kutu.setSelectionRange(yer, yer); } catch (x) { /* imleç ayarlanamadı */ }
+  }
+}
+/* Kutudaki değeri biçime sokar; tur: "input" olayının inputType'ı. */
+function kisiKoduKutuDuzenle(kutu, tur) {
+  var deger = kutu.value;
+  var imlec = typeof kutu.selectionEnd === 'number' ? kutu.selectionEnd : deger.length;
+  var sade = kisiKoduSade(deger);
+  var once = kisiKoduSade(deger.slice(0, imlec)).length;
+  var onceki = kutu._kisiKoduOnceki;
+  var tekSilme = tur === 'deleteContentBackward' || tur === 'deleteContentForward' || !tur;
+  if (tekSilme && typeof onceki === 'string' && onceki.length - deger.length === 1 && sade === kisiKoduSade(onceki)) {
+    if (tur === 'deleteContentForward') sade = sade.slice(0, once) + sade.slice(once + 1);
+    else if (once > 0) { sade = sade.slice(0, once - 1) + sade.slice(once); once--; }
+  }
+  kisiKoduKutuYaz(kutu, sade, once);
+}
+/* Kutuyu dinleyen öteki kodlar (hata temizleme, "Bul" sonucunu silme) duysun. */
+function kisiKoduDuyur(kutu) {
+  var olay = document.createEvent('Event');
+  olay.initEvent('input', true, false);
+  kutu.dispatchEvent(olay);
+}
+document.addEventListener('focusin', function (e) {
+  if (!kisiKoduKutusuMu(e.target)) return;
+  e.target._kisiKoduOnceki = e.target.value;
+  e.target._kisiKoduBirlesim = false;
+});
+/* Yakalama evresinde: kutuyu dinleyen öteki kodlar biçimlenmiş değeri görür.
+   Birleştirme sürerken dokunulmaz (yukarıda). */
+document.addEventListener('input', function (e) {
+  var kutu = e.target;
+  if (!kisiKoduKutusuMu(kutu) || e.isComposing || kutu._kisiKoduBirlesim) return;
+  kisiKoduKutuDuzenle(kutu, e.inputType || '');
+}, true);
+document.addEventListener('compositionstart', function (e) {
+  if (kisiKoduKutusuMu(e.target)) e.target._kisiKoduBirlesim = true;
+}, true);
+/* Birleştirme bitti: bir kez biçimlenir. Chrome son "input" olayını bundan
+   önce gönderir; Firefox ve Safari sonra gönderir, o zaman değer zaten biçimlidir. */
+document.addEventListener('compositionend', function (e) {
+  var kutu = e.target;
+  if (!kisiKoduKutusuMu(kutu)) return;
+  kutu._kisiKoduBirlesim = false;
+  var deger = kutu.value;
+  kisiKoduKutuDuzenle(kutu, 'insertCompositionText');
+  if (kutu.value !== deger) kisiKoduDuyur(kutu);
+}, true);
+document.addEventListener('paste', function (e) {
+  var kutu = e.target;
+  if (!kisiKoduKutusuMu(kutu) || typeof kutu.selectionStart !== 'number') return;
+  var pano = e.clipboardData || window.clipboardData;
+  var metin = pano && pano.getData ? pano.getData('text') : null;
+  if (typeof metin !== 'string') return;   // pano okunamadı: tarayıcı yapıştırır, "input" biçimler
+  e.preventDefault();
+  var kod = kisiKoduAyikla(metin);
+  if (kod) kisiKoduKutuYaz(kutu, kod, kod.length);   // tam kod: kutuda yalnız o kalır
+  else {
+    var deger = kutu.value;
+    var basi = kisiKoduSade(deger.slice(0, kutu.selectionStart)), eklenen = kisiKoduSade(metin);
+    kisiKoduKutuYaz(kutu, basi + eklenen + kisiKoduSade(deger.slice(kutu.selectionEnd)), basi.length + eklenen.length);
+  }
+  kisiKoduDuyur(kutu);
+}, true);
 
 /* Sunucudaki okul aramasıyla aynı sadeleştirme (sunucu/okullar.js aramaSade):
    Türkçe harfler düzlenir, noktalama boşluğa döner. */

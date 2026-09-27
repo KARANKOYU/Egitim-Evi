@@ -125,7 +125,7 @@ const rolSatirlarinaKvkk = (anaId, kvkk) => calistir(
 
 /* Okul rolünü bırakma / kaldırma: yalnızca bu yetişkinin bu satırı. */
 const rolSatiriniSil = (id, anaId) => calistir('DELETE FROM kullanicilar WHERE id = $1 AND ana_hesap_id = $2', [id, anaId]);
-/* kod: kisiKoduSade'den geçmiş hâli (boşluksuz; büyük/küçük harf duyarlı). */
+/* kod: kisiKoduSade'den geçmiş hâli (boşluksuz, tiresiz; büyük/küçük harf duyarlı). */
 const kodlaOgrenci = kod => bir("k.rol = 'student' AND k.veli_kodu = $1", [kod]);
 const okulunMuduru = okulId =>
   bir("k.rol = 'principal' AND k.okul_id = $1 AND k.durum = 'approved'", [okulId]);

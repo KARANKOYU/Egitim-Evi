@@ -75,7 +75,7 @@ async function uclar(k) {
     return ok(res, Object.assign(liste, {
       hesap: { fullName: ana.fullName, username: ana.username },
       aktif: me.anaHesapId ? me.id : 'hesap',
-      /* Ham kod (boşluksuz); ekran 5'erli gösterir, Kopyala bunu verir. */
+      /* Ham kod (tiresiz); ekran ve Kopyala 4'erli tireli biçimi kullanır. */
       kisiKodu: ana.eslesmeKodu || ''
     }));
   }

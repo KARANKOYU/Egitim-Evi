@@ -20,7 +20,7 @@ SAYFALAR.cocuklarim = function () {
     var h = hero('ÇOCUKLARIM', 'Çocuğunun kartına tıklayarak portalını aç.');
     h += '<div class="kart"><h3>Çocuk ekle</h3>' +
       '<div class="hint" style="margin-bottom:9px">Çocuğunun <b>veli kodunu</b> gir. Kodu okulundan alırsın. ' +
-      'Büyük/küçük harfe dikkat et; boşluklar önemli değil.</div>' +
+      'Büyük/küçük harfe dikkat et; tireler kendiliğinden gelir.</div>' +
       '<div class="rolsuz-satir">' + kisiKoduGirdisi('veliKod', 'Veli kodu') +
       '<button class="btn" data-act="cocuk-ekle">Ekle</button></div><div id="veliMesaj" style="margin-top:9px"></div></div>';
     h += cocukKartlari(d.children);
@@ -119,7 +119,7 @@ function profilCiz(hs) {
     h += '<div class="kart"><h3>Veli olarak çocuğunu ekle</h3>' +
       '<div class="hint" style="margin-bottom:9px">Çocuğun (bu okulda ya da başka bir okulda) okuyorsa ' +
       '<b>veli kodunu</b> gir. Menüne "Velisi olduğum" bölümü eklenir; okul yönetimi de seni veli olarak bağlayabilir. ' +
-      'Büyük/küçük harfe dikkat et; boşluklar önemli değil.</div>' +
+      'Büyük/küçük harfe dikkat et; tireler kendiliğinden gelir.</div>' +
       '<div class="rolsuz-satir">' + kisiKoduGirdisi('veliKod', 'Veli kodu') +
       '<button class="btn" data-act="cocuk-ekle">Ekle</button></div><div id="veliMesaj" style="margin-top:9px"></div>' +
       (S.children && S.children.length ? '<div class="hint" style="margin-top:9px">Bağlı çocuğun: ' +

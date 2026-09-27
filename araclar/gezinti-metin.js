@@ -128,7 +128,7 @@ const ADIM_METNI = {
     Duyuru cevaplanmaz; gelen herkese bildirim gider.`),
   'mudur|Öğretmenler': A(`Okulun öğretmenleri, branşları ve rolleri. Öğretmen okuldan çıkarılınca verdiği ödevler ve notlar okulda kalır.`,
     'Öğretmenler ve öğrenciler'),
-  'mudur|Öğretmeni kodla ekleme penceresi': A(`Öğretmen kendi hesabını açar ve <b>+ Ekle &gt; Öğretmen</b>'deki 15 karakterlik
+  'mudur|Öğretmeni kodla ekleme penceresi': A(`Öğretmen kendi hesabını açar ve <b>+ Ekle &gt; Öğretmen</b>'deki 16 karakterlik
     kişi kodunu müdüre verir; müdür kodu buraya yazar, adın bir kısmını görüp öğretmeni okula ekler. Kod büyük/küçük harfe
     duyarlıdır, bir kez kullanılır.`),
   'mudur|Öğrenciler': A(`Okulun öğrencileri sınıf sınıf. Öğrenci hesaplarını okul açar; her öğrencinin veli kodu vardır,
@@ -252,8 +252,8 @@ const ADIM_METNI = {
   'ogretmen|Ana sayfa': A(`Öğretmenin ana sayfası: bugünkü dersleri, sonuçlandırılmayı bekleyen ödevler ve kısayollar.`, 'Başlangıç'),
   'ogretmen|Portallarım (iki okulda öğretmen)': A(`Öğretmen iki okulda ders veriyor; iki okul aynı hesapta, aralarında
     sol üstteki menüden geçer. Buradan bir okuldan ayrılabilir.`),
-  'ogretmen|Kişi kodum (+ Ekle > Öğretmen)': A(`Öğretmenin kişi kodu: 15 karakter, 5'erli gruplar hâlinde. Bir okula katılmak
-    için bu kodu o okulun müdürüne verir; <b>Kopyala</b> kodu boşluksuz kopyalar. Kod bir kez kullanılır, müdür ekleyince yenilenir.`),
+  'ogretmen|Kişi kodum (+ Ekle > Öğretmen)': A(`Öğretmenin kişi kodu: 16 karakter, tireyle ayrılmış 4'erli gruplar. Bir okula katılmak
+    için bu kodu o okulun müdürüne verir; <b>Kopyala</b> kodu tireli kopyalar. Kod bir kez kullanılır, müdür ekleyince yenilenir.`),
   'ogretmen|Takvim': A(`Takvim: okul etkinlikleri, tatiller ve öğretmenin kendi ödevlerinin son günleri.`),
   'ogretmen|Takvim — gün ayrıntısı': A(`Güne dokununca o günün etkinlikleri ve ödevleri listelenir.`),
   'ogretmen|Mesajlar': A(`Öğretmenin mesaj kutusu: gelenler ve gönderilenler.`, 'Mesajlar'),
@@ -499,8 +499,8 @@ const ADIM_METNI = {
   'rolsuz|+ Ekle penceresi: Veli, Öğretmen, Müdür': A(`Üç yol: Veli (çocuğun veli kodu), Öğretmen (kişi kodunu müdüre
     vermek), Müdür (okulunu açtırmak).`),
   'rolsuz|Ekle — Veli: çocuğun veli kodu': A(`Çocuğun veli kodu yazılır; çocuk hesaba eklenir, veli portalı açılır. Kod büyük/küçük
-    harfe duyarlıdır; boşluklu yazılsa da olur.`),
-  'rolsuz|Ekle — Öğretmen: kişi kodu müdüre verilir': A(`Kişinin kendi kodu 5'erli gruplar hâlinde; <b>Kopyala</b> boşluksuz
+    harfe duyarlıdır; yazarken tireler kendiliğinden gelir, tireli ya da tiresiz yapıştırılsa da olur.`),
+  'rolsuz|Ekle — Öğretmen: kişi kodu müdüre verilir': A(`Kişinin kendi kodu tireyle ayrılmış 4'erli gruplar hâlinde; <b>Kopyala</b> tireli
     kopyalar. Müdür bu kodla onu okula ekler; kod bir kez kullanılır.`),
   'rolsuz|Ekle — Müdür: okulunu açtır': A(`Müdür başvuru formu yok: kişi aynı kodu ve okulunun adını site yöneticisine verir,
     yönetici okulu ve adresini açıp onu müdür yapar. Yöneticinin iletişim bilgisi burada yazar.`),

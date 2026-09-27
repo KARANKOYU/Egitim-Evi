@@ -233,9 +233,9 @@ async function iceAktar(veri) {
         atla('kullanici'); continue;
       }
       const tel = normTelefon(u.phone || '');
-      /* Kişi kodu geçerli biçimdeyse (15 karakter, bkz. ortak.js) ve tekse
-         korunur, veliye verilmiş kod geçersiz kalmasın; eski biçimse (10 haneli)
-         ya da çakışıyorsa yeniden üretilir. */
+      /* Kişi kodu geçerli biçimdeyse (16 karakter, bkz. ortak.js) ve tekse
+         korunur, veliye verilmiş kod geçersiz kalmasın; eski biçimse (10 ya da
+         15 haneli) ya da çakışıyorsa yeniden üretilir. */
       const kisiKodu = k => {
         let yeni = KISI_KODU_DESENI.test(String(k || '')) && !kod.has(k) ? String(k) : '';
         while (!yeni || kod.has(yeni)) yeni = kisiKoduUret();

@@ -26,10 +26,10 @@ const J = x => JSON.stringify(x).slice(0, 160);
   const mat = await girisYap('mat', 'Test1234!');
   const once = await iste('/api/me', 'GET', null, mat.token);
   kontrol('öğretmenin başta çocuğu yok', (once.body.children || []).length === 0);
-  /* Ekrandaki 5'erli biçim (boşluklu) yapıştırılsa da olur. */
-  const bosluklu = ' ' + o2.code.slice(0, 5) + ' ' + o2.code.slice(5, 10) + ' ' + o2.code.slice(10) + ' ';
-  const bag = await iste('/api/parent/link', 'POST', { code: bosluklu }, mat.token);
-  kontrol('öğretmen veli koduyla (boşluklu yazılmış) çocuğunu bağladı', bag.status === 200 && (bag.body.children || []).length === 1, J(bag.body));
+  /* Ekrandaki 4'erli tireli biçim yapıştırılsa da olur. */
+  const tireli = ' ' + o2.code.slice(0, 4) + '-' + o2.code.slice(4, 8) + '-' + o2.code.slice(8, 12) + '-' + o2.code.slice(12) + ' ';
+  const bag = await iste('/api/parent/link', 'POST', { code: tireli }, mat.token);
+  kontrol('öğretmen veli koduyla (tireli yazılmış) çocuğunu bağladı', bag.status === 200 && (bag.body.children || []).length === 1, J(bag.body));
   /* Çocuk yetişkin hesabına bağlanır; öğretmen rolü değişmez. Velilik ayrı
      bir portaldır (menüde "Veli · çocuğun adı"). */
   const matMe = await iste('/api/me', 'GET', null, mat.token);

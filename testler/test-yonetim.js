@@ -35,8 +35,8 @@ async function hamGiris(kimlik, sifre, okul) {
     fullName: 'deniz kara', username: kadi, password: 'Ogrenci2026', tc: tc1
   }, T);
   kontrol('hesap acildi', olustur.status === 200, J(olustur.body));
-  kontrol('veli kodu 15 karakter (harfle baslar; buyuk, kucuk, rakam, ozel)', olustur.body.student &&
-    /^(?=.*[A-Z])(?=.*[a-z])(?=.*[2-9])(?=.*[!?#*+-])[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(olustur.body.student.code || ''),
+  kontrol('veli kodu 16 karakter (harfle baslar; buyuk, kucuk, rakam, ozel)', olustur.body.student &&
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*[2-9])(?=.*[!?#*+=])[A-Za-z][A-Za-z0-9!?#*+=]{15}$/.test(olustur.body.student.code || ''),
     olustur.body.student && olustur.body.student.code);
   kontrol('ad kucuk yazilsa da duzeltiliyor', olustur.body.student && olustur.body.student.fullName === 'Deniz Kara');
   const yeniId = olustur.body.student.id;
@@ -116,7 +116,7 @@ async function hamGiris(kimlik, sifre, okul) {
   const eskiKod = olustur.body.student.code;
   const kodYeni = await iste('/api/school/student-code-reset', 'POST', { studentId: yeniId }, T);
   kontrol('yeni kod uretildi', kodYeni.status === 200 && kodYeni.body.code !== eskiKod, kodYeni.body.code);
-  kontrol('yeni kod 15 karakter', /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(kodYeni.body.code || ''), kodYeni.body.code);
+  kontrol('yeni kod 16 karakter', /^[A-Za-z][A-Za-z0-9!?#*+=]{15}$/.test(kodYeni.body.code || ''), kodYeni.body.code);
 
   console.log('=== 7) MUDUR OGRENCI PORTALINI ACIYOR ===');
   const ilerleme = await iste('/api/progress?studentId=' + yeniId, 'GET', null, T);
@@ -254,11 +254,11 @@ async function hamGiris(kimlik, sifre, okul) {
   const oaEposta = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde,
     { mudurKodu: undefined, mudur: { eposta: oa + '@test.com', ad: 'Selin', soyad: 'Kaya', kullaniciAdi: oa + 'x', sifre: 'Acilis2026!' } }), A);
   kontrol('e-postayla / yeni hesapla mudur yapma yolu yok', oaEposta.status === 400 && oaEposta.body.alan === 'mudurKodu', J(oaEposta.body));
-  const oaYanlis = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { mudurKodu: 'Zz9#zZz9#zZz9#z' }), A);
+  const oaYanlis = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { mudurKodu: 'Zz9#zZz9#zZz9#zZ' }), A);
   kontrol('kimsede olmayan kod 404', oaYanlis.status === 404 && oaYanlis.body.alan === 'mudurKodu', J(oaYanlis.body));
   const oaAc = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde,
-    { mudurKodu: ' ' + oaKod.slice(0, 5) + ' ' + oaKod.slice(5, 10) + ' ' + oaKod.slice(10) + ' ' }), A);
-  kontrol('yonetici okulu acti; mudur kisi koduyla bulundu (bosluklu yazilsa da)', oaAc.status === 200 &&
+    { mudurKodu: ' ' + oaKod.slice(0, 4) + '-' + oaKod.slice(4, 8) + ' ' + oaKod.slice(8, 12) + ' - ' + oaKod.slice(12) + ' ' }), A);
+  kontrol('yonetici okulu acti; mudur kisi koduyla bulundu (tireli, bosluklu yazilsa da)', oaAc.status === 200 &&
     oaAc.body.okul.kisaAd === 'acilis-' + z && oaAc.body.mudur.ad === 'Selin Kaya' && !oaAc.body.mudur.eposta, J(oaAc.body));
   const oaYeniKod = await kisiKodu(oaIlk.token);
   kontrol('okul acilinca kisinin kodu yenilendi', !!oaYeniKod && oaYeniKod !== oaKod, oaYeniKod);

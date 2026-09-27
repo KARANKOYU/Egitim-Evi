@@ -41,8 +41,8 @@ async function ilkAdim(kimlik, sifre, okul) {
   kontrol('rolü olmayan yetişkin kendi hesabına giriyor, seçim ekranı yok',
     H1.user.yetiskin === true && !H1.user.role && !H1.kisilikSec, J(H1.user));
   const k1 = await iste('/api/kisilikler', 'GET', null, H1.token);
-  kontrol('portal listesi: rol yok, çocuk yok, kişi kodu var (15 karakter, ham)', k1.status === 200 && !k1.body.roller.length &&
-    !k1.body.cocuklar.length && /^[A-Za-z][A-Za-z0-9!?#*+-]{14}$/.test(k1.body.kisiKodu), J(k1.body));
+  kontrol('portal listesi: rol yok, çocuk yok, kişi kodu var (16 karakter, ham)', k1.status === 200 && !k1.body.roller.length &&
+    !k1.body.cocuklar.length && /^[A-Za-z][A-Za-z0-9!?#*+=]{15}$/.test(k1.body.kisiKodu), J(k1.body));
   kontrol('girişte portal listesi boş, oturum hesabın kendisinde', Array.isArray(H1.portallar) && !H1.portallar.length &&
     H1.hesapAktif === true, J(H1.portallar));
   const ogrKis = await iste('/api/kisilikler', 'GET', null, ogrIlk.body.token);
