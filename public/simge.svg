@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!-- araclar/simge-uret.js üretir; elle değiştirme -->
+  <title>Eğitim Evi</title>
+  <defs>
+    <linearGradient id="zemin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d62839"/><stop offset="1" stop-color="#a51d2c"/></linearGradient>
+    <linearGradient id="gecis2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd35a" stop-opacity="0.75"/><stop offset="1" stop-color="#ffd35a" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42.24" fill="url(#zemin)"/>
+  <g transform="translate(18 18) scale(1.56)">
+    <rect x="41.5" y="59.5" width="17" height="24.5" fill="#ffd35a"/>
+    <path fill="#ffffff" fill-rule="evenodd" d="M50 16 L66 28 L66 20 L76 20 L76 35.5 L90 46 L80 46 L80 84 L20 84 L20 46 L10 46Z M42 60H58V84H42Z M27 54H37V64H27Z M63 54H73V64H63Z"/>
+    <polygon points="52.3,84 58,84 68,96 50.5,96" fill="url(#gecis2)"/>
+    <polygon points="42,60 52.3,62 52.3,84 42,84" fill="#a51d2c"/>
+    <circle cx="50.3" cy="73.5" r="1" fill="#ffd35a"/>
+  </g>
+</svg>

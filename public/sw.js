@@ -9,7 +9,7 @@
       Böylece güncelleme yaptığında kullanıcı eski sürümde takılı kalmaz.
 */
 
-const SURUM = 'egitim-evi-v8';   // dosya listesi ya da sayfa adresleri değişince artır (v8: "no-store" önbelleğe girmez)
+const SURUM = 'egitim-evi-v9';   // dosya listesi ya da sayfa adresleri değişince artır (v9: yeni simge, ?v=2)
 const KABUK = [
   '/',
   '/index.html',
@@ -21,8 +21,8 @@ const KABUK = [
   '/yazitipi/newsreader-700-latin.woff2',
   '/yazitipi/newsreader-700-latin-ext.woff2',
   '/manifest.json',
-  '/simge-192.png',
-  '/simge-512.png'
+  '/simge-192.png?v=2',
+  '/simge-512.png?v=2'
 ];
 
 self.addEventListener('install', function (e) {
@@ -55,8 +55,8 @@ self.addEventListener('push', function (e) {
   const metin = typeof veri.b === 'string' ? veri.b.slice(0, 300) : '';
   e.waitUntil(self.registration.showNotification(baslik, {
     body: metin,
-    icon: '/simge-192.png',
-    badge: '/simge-192.png',
+    icon: '/simge-192.png?v=2',
+    badge: '/simge-rozet.png?v=2',   // tek renk siluet: telefon rozetin yalnız saydamlığını kullanır
     data: { adres: typeof veri.u === 'string' ? veri.u : '/' }
   }));
 });
