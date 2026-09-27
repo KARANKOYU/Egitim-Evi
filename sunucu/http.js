@@ -283,6 +283,8 @@ const PARCA_KLASORLERI = [JS_PARCA, YONETIM_PARCA, path.join(PUB, 'css', 'parcal
 /* Gizli yönetim paneli: /admin ve altı (bkz. yonetimSun). */
 const YONETIM_KLASORU = path.join(PUB, 'admin').toLowerCase();
 const YONETIM_JS_YOLU = path.join(PUB, 'admin', 'yonetim.js').toLowerCase();
+/* Belge dosyası (.md) adresi; bkz. serveStatic. */
+const BELGE_DOSYASI = /\.md[\s.]*(?::.*)?[\s.\\/]*$/;
 
 /* Tek sayfalık uygulamanın (index.html) açtığı adresler: açılış, giriş (/login, /giris),
    kayıt (/signup, /kayit), Hakkında (/hakkinda, /about), SSS (/sss/sss.html) ve okul
@@ -356,7 +358,7 @@ async function okulVarMi(kisa) {
 }
 
 /* "Sayfa bulunamadı" (404.html) cevabı. Bilinmeyen her adres, gizli dosyalar,
-   ön yüz parçaları ve çerezsiz /admin aynı yoldan geçer: durum, başlıklar
+   ön yüz parçaları, belgeler (.md) ve çerezsiz /admin aynı yoldan geçer: durum, başlıklar
    (ETag dahil) ve gövde bayt bayt aynıdır; dizin tarayıcıları farkı göremez. */
 function bulunamadi(req, res) {
   statikOku(path.join(PUB, '404.html'), (e, kabuk) => {
@@ -409,6 +411,10 @@ function serveStatic(req, res, urlPath) {
   if (kucuk === YONETIM_KLASORU || kucuk.startsWith(YONETIM_KLASORU + path.sep)) {
     return fs.stat(full, () => yonetimSun(req, res, kucuk));
   }
+  /* Belgeler (.md): kod dosyalarının yanındaki açıklamalar yalnız depoda okunur, web'den
+     hiç sunulmaz (dosya diskte olsa da bilinmeyen adresle aynı 404). Sondaki nokta, boşluk,
+     "/" ve Windows'un "::$DATA" eki de aynı dosyayı açtığı için onlar da sayılır. */
+  if (BELGE_DOSYASI.test(kucuk)) return bulunamadiCerezli(req, res);
   statikOku(full, (err, kayit) => {
     /* Dosya yoksa: uygulamanın adresiyse kabuğu (index.html); okul adresi ama
        böyle bir okul yoksa "Okul bulunamadı"; başka her şey "Sayfa bulunamadı" (404). */

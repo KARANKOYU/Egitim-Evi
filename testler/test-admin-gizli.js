@@ -1,7 +1,7 @@
 /* Gizli yönetim paneli (/admin):
    - çerezsiz (ya da geçersiz çerezli) /admin ve altı, bilinmeyen bir adresle BAYT
      BAYT aynı 404 (durum, başlıklar, ETag, gövde; GET/HEAD, sıkıştırmalı/sıkıştırmasız);
-     ön yüz parça klasörleri de aynı 404; uydurma ama biçimli çerezle /admin de bilinmeyen adres de
+     ön yüz parça klasörleri ve .md belgeleri (diskte olsa da) de aynı 404; uydurma ama biçimli çerezle /admin de bilinmeyen adres de
      çerezi bir kez veritabanında arar (süre farkı yok), çerezsiz ikisi de hiç aramaz; /admin
      bilinmeyen adres kadar diske bakar (fs.stat);
    - yönetici girişinde HttpOnly, SameSite=Strict, Path=/admin çerezi; yönetici olmayana çerez
@@ -155,6 +155,44 @@ const cerezAl = r => {
   kontrol('/admin bilinmeyen adres kadar diske bakıyor (fs.stat; süre farkı yok)', dk('/admin') > 0 &&
     dk('/admin') === dk('/olmayan-sayfa') && dk('/admin/site-ayarlari') === dk('/olmayan-klasor/site-ayarlari') &&
     dk('/admin ' + sahte.slice(0, 14)) === dk('/olmayan-sayfa ' + sahte.slice(0, 14)), J(disk));
+
+  console.log('=== 1b) BELGELER (.md) WEB\'DEN OKUNMAZ ===');
+  /* Kod dosyalarının yanındaki .md belgeleri public/ altında da durabilir; statik sunucu
+     onları hiç vermez: dosya diskte olsa da bilinmeyen adresle bayt bayt aynı 404. Deneme
+     için public/ altına geçici .md (ve karşılaştırma için .txt) yazılır, sonunda silinir. */
+  const PUB = path.join(__dirname, '..', 'public');
+  const gecici = 'zz-belge-denetimi-' + process.pid;
+  const geciciDosyalar = [path.join(PUB, gecici + '.md'), path.join(PUB, 'js', gecici + '.md'),
+    path.join(PUB, 'kvkk', gecici + '.md'), path.join(PUB, gecici + '.txt')];
+  const geciciSil = () => { for (const d of geciciDosyalar) { try { fs.unlinkSync(d); } catch (e) { /* yok */ } } };
+  process.on('exit', geciciSil);
+  try {
+    for (const d of geciciDosyalar) fs.writeFileSync(d, '# gizli olmayan deneme belgesi\n');
+    const txt = await ham('/' + gecici + '.txt', 'GET', {});
+    kontrol('aynı yerdeki deneme .txt 200 (sunucu bu public/ klasöründen okuyor)', txt.durum === 200, txt.durum);
+    const belgeler = ['/js/belge.md', '/js/parcalar/05-giris.md', '/TANITIM.md', '/tanitim.md', '/kvkk/x.md', '/sunucu/api.md',
+      '/' + gecici + '.md', '/' + gecici + '.MD', '/js/' + gecici + '.md', '/kvkk/' + gecici + '.md', '/' + gecici + '.md.',
+      '/' + gecici + '.md%20', '/' + gecici + '.md::$DATA', '/js/' + gecici + '.md/', '/js/' + gecici + '%2Emd',
+      '/' + gecici + '.md?v=1'];
+    const mdFark = [];
+    let mdDenenen = 0;
+    for (const yol of belgeler) {
+      for (const k of kodlamalar) {
+        for (const yontem of ['GET', 'HEAD']) {
+          const [a, b] = await Promise.all([ham(yol, yontem, k), ham('/olmayan-belge-sayfasi', yontem, k)]);
+          mdDenenen++;
+          if (a.durum !== 404 || !(await ayniMi(a, b))) mdFark.push(yontem + ' ' + yol + ' ' + J(k) + ': ' + farkAnlat(a, b));
+        }
+      }
+    }
+    kontrol('.md adresleri (diskte olan dahil) bilinmeyen adresle aynı 404 (' + mdDenenen + ' deneme)', !mdFark.length,
+      mdFark.slice(0, 3).join(' | '));
+    const [m1, m2] = await Promise.all([ham('/' + gecici + '.md', 'GET', { cookie: sahte }), ham('/olmayan-belge-sayfasi', 'GET', { cookie: sahte })]);
+    kontrol('uydurma çerezle .md de aynı 404', m1.durum === 404 && await ayniMi(m1, m2), farkAnlat(m1, m2));
+  } finally {
+    geciciSil();
+  }
+  kontrol('geçici deneme dosyaları silindi', geciciDosyalar.every(d => !fs.existsSync(d)));
 
   console.log('=== 2) YÖNETİCİ GİRİŞİ: ÇEREZ ===');
   const g = await yoneticiGirisi('admin@egitimevi.com', 'admin123');
