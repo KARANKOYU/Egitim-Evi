@@ -143,10 +143,39 @@ const HATA_KODLARI = {
 };
 const BAGLANTI_HATALARI = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', '57P01', '57P03', '08001', '08006'];
 
+/* Tekillik çakışması (23505): aynı anda gelen iki istek uygulamanın "var mı"
+   denetimini birlikte geçip aynı e-postayı, kullanıcı adını ya da T.C. no'yu
+   yazmaya kalkarsa ikincisini veritabanı durdurur. Kısıt adından hangi alan
+   olduğu bulunur; istemciye kısıt adı değil alan ve açık bir ileti gider
+   (031 şema dosyası). */
+const CAKISMALAR = {
+  kullanicilar_eposta_key: ['eposta', 'Bu e-posta başka bir hesapta kayıtlı.'],
+  kullanicilar_kadi_okul: ['kullaniciAdi', 'Bu kullanıcı adı okulda alınmış. Başka bir ad dene.'],
+  kullanicilar_kadi_genel: ['kullaniciAdi', 'Bu kullanıcı adı alınmış. Başka bir ad dene.'],
+  kullanicilar_kadi_yonetici: ['kullaniciAdi', 'Bu kullanıcı adı alınmış. Başka bir ad dene.'],
+  kullanicilar_tc_okul: ['tc', 'Bu T.C. kimlik no okulda başka bir hesapta kayıtlı.'],
+  kullanicilar_tc_genel: ['tc', 'Bu T.C. kimlik numarası kullanılamıyor. Yanlış yazmadıysan okul yönetimine başvur.'],
+  kullanicilar_tc_ogrenci: ['tc', 'Bu T.C. kimlik no başka bir okulda kayıtlı bir öğrencinin. Öğrenciyi okuluna almak için ' +
+    '"Öğrenci ekle"den doğum tarihiyle birlikte ekle.'],
+  kullanicilar_okul_no: ['okulNo', 'Bu okul numarası başka bir öğrencide.'],
+  kullanicilar_ana_okul: ['kod', 'Bu kişinin bu okulda zaten bir rolü var.'],
+  okullar_kisa_ad: ['kisaAd', 'Bu adres başka bir okulda. Başka bir ad dene.'],
+  okullar_meb_kodu_tekil: ['okul', 'Bu okul zaten kayıtlı.']
+};
+
+/* 23505 hatasının alanı ve iletisi: { alan, mesaj } ya da (başka hata) null. */
+function cakisma(err) {
+  if (!err || err.code !== '23505') return null;
+  const c = CAKISMALAR[err.constraint];
+  return c ? { alan: c[0], mesaj: c[1] } : null;
+}
+
 function hataCevir(err) {
   const kod = err && typeof err.code === 'string' ? err.code : '';
   if (!kod) return null;
   if (BAGLANTI_HATALARI.indexOf(kod) >= 0) return { kod: 503, mesaj: 'Veritabanına şu an ulaşılamıyor, biraz sonra tekrar dene' };
+  const c = cakisma(err);
+  if (c) return { kod: 400, mesaj: c.mesaj, alan: c.alan };
   if (HATA_KODLARI[kod]) return { kod: HATA_KODLARI[kod][0], mesaj: HATA_KODLARI[kod][1] };
   if (/^[0-9A-Z]{5}$/.test(kod)) return { kod: 500, mesaj: 'Sunucu hatası' };
   return null;
@@ -154,5 +183,5 @@ function hataCevir(err) {
 
 module.exports = {
   sorgu, tek, calistir, islem, metinCalistir, veritabaniAdi, kapat, havuzuAc,
-  tr, turkceSiralamaKontrol, hataCevir
+  tr, turkceSiralamaKontrol, hataCevir, cakisma
 };

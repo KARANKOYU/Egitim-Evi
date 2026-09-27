@@ -11,6 +11,8 @@ var S = {
      dışında mı (ana sayfası "Portalların"; 08c-kisilikler.js). */
   portallar: null, hesapAktif: false, portalDisi: false,
   unread: 0,
+  /* Bildirimlerin yoklama aralığı (dakika): sitenin ayarı, giriş ve /me cevabından gelir. */
+  bildirimAralikDk: 5,
   /* ödev filtreleri + sayfaya özel arama kancası */
   odevF: { ders: '', yildiz: '', durum: '', bas: '', bit: '', mod: 'ogrenci' },
   odevHam: [],
@@ -22,3 +24,8 @@ var S = {
   bekleyenKayit: null,
   odevHedef: null, odevSinif: ''
 };
+
+/* Sistem yöneticisinin ekranları bu dosyada yoktur: ayrı bir adreste, ayrı bir
+   dosyayla yüklenir ve bu kancayı doldurur ({ menu, anaSayfa, disariMi }).
+   Burada null ise o ekranlar bu sayfada yok demektir. */
+var YONETIM = null;

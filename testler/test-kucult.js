@@ -55,6 +55,18 @@ kontrol('app.js yorumsuz hâliyle derleniyor', !hata, hata);
 kontrol('app.js içinde parça adı ve açıklama kalmadı', jsTemiz && jsTemiz.indexOf('==== parcalar/') < 0 &&
   !/\/\*[\s\S]*?\*\//.test(jsTemiz.replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, '""').replace(/\/(?:[^/\\\n[]|\\.|\[[^\]\n]*\])+\/[a-z]*/g, '/r/')));
 kontrol('app.js küçüldü', jsTemiz.length < js.length * 0.95, js.length + ' -> ' + jsTemiz.length);
+/* Yönetim paketi (/admin/yonetim.js): uygulama ve yönetim parçaları ad sırasıyla tek IIFE'de. */
+const yonetimKlasoru = path.join(kok, 'js', 'yonetim');
+const yonetimDosyalari = [path.join(kok, 'js', 'parcalar'), yonetimKlasoru].filter(k => fs.existsSync(k))
+  .map(k => fs.readdirSync(k).filter(a => a.endsWith('.js')).map(a => ({ a, k })))
+  .reduce((x, y) => x.concat(y), []).sort((x, y) => (x.a < y.a ? -1 : x.a > y.a ? 1 : 0));
+const ayniAd = yonetimDosyalari.filter((d, i) => yonetimDosyalari.findIndex(e => e.a === d.a) !== i).map(d => d.a);
+kontrol('yönetim ve uygulama parçalarında aynı adlı dosya yok', !ayniAd.length, ayniAd.join(', '));
+const yonetimJs = "(function () {\n  'use strict';\n" + yonetimDosyalari.map(d => '\n/* ==== ' + d.a + ' ==== */\n' +
+  fs.readFileSync(path.join(d.k, d.a), 'utf8')).join('\n') + '\n})();\n';
+let yonetimHata = '';
+try { new vm.Script(jsYorumSil(yonetimJs)); } catch (e) { yonetimHata = e.message; }
+kontrol('yönetim paketi (/admin/yonetim.js) yorumsuz hâliyle derleniyor', !yonetimHata, yonetimHata);
 const css = paket(path.join(kok, 'css', 'parcalar'), '.css', '', '');
 const cssTemiz = cssYorumSil(css);
 kontrol('style.css yorumsuz', cssTemiz.indexOf('/*') < 0 && cssTemiz.length < css.length, css.length + ' -> ' + cssTemiz.length);

@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const { DATA } = require('../yollar');
 const { iceAktar, disaAktar } = require('./json-aktarim');
+const { cakisma } = require('./baglanti');
 
 const YEDEK_KLASOR = path.join(DATA, 'yedek');
 const YEDEK_SAKLA = 14;                       // kaç kopya tutulsun
@@ -102,6 +103,11 @@ async function yedekGeriYukle(ad) {
     const r = await iceAktar(icerik);
     return { ad: guvenli, kullanici: r.kullanici, atlanan: r.atlanan };
   } catch (e) {
+    /* Yedekte kurallara aykırı çift kalmışsa (aynı e-posta, kullanıcı adı ya da
+       T.C.; aktarım çoğunu ayıklar) işlem geri alınır, veri olduğu gibi kalır.
+       Kısıt adı değil hangi alan olduğu söylenir. */
+    const c = cakisma(e);
+    if (c) return { hata: 'Geri yüklenemedi: yedekte kurallara aykırı bir çift kayıt var (' + c.mesaj.replace(/\.$/, '') + '). Veri değişmedi.' };
     return { hata: 'Geri yüklenemedi: ' + e.message };
   }
 }

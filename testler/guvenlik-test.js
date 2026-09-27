@@ -124,7 +124,9 @@ function cevapla(soruMetni) {
       ilerleme.status === 200 && ilerleme.body.assignments && ilerleme.body.assignments.length === 5,
       'adet ' + ((ilerleme.body.assignments || []).length));
     const yetkisiz = await iste('/api/admin/overview', 'GET', null, ogr.body.token);
-    kontrol('ogrenci admin ucuna erisemiyor', yetkisiz.status === 403, 'status ' + yetkisiz.status);
+    /* Yönetici ucu yönetici olmayana bilinmeyen adres gibi görünür: 403 değil 404. */
+    kontrol('ogrenci admin ucuna erisemiyor (bilinmeyen adres gibi 404)', yetkisiz.status === 404 &&
+      yetkisiz.body.error === 'Böyle bir adres yok', 'status ' + yetkisiz.status);
     const sahte = await iste('/api/progress', 'GET', null, 'sahtetoken123');
     kontrol('sahte token reddediliyor', sahte.status === 401, 'status ' + sahte.status);
   }

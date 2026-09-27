@@ -14,16 +14,18 @@ const { bad, ok, sendJSON } = require('../http');
 const { childrenOf } = require('../iliskiler');
 const { okulAra, okulArama, okulVeri } = require('../okullar');
 const {
-  CITIES, SUBJECTS, adDuzelt, clean, dogumSorunu, kullaniciAdiSorunu, normEmail, normKullaniciAdi,
+  CITIES, EPOSTA_DESENI, SUBJECTS, adDuzelt, clean, dogumSorunu, epostaSorunu, kullaniciAdiSorunu, normEmail, normKullaniciAdi,
   gucluSifreli, normTc, normTelefon, now, okulHesabiMi, sifreSorunu, tcSorunu, telefonSorunu, uid
 } = require('../ortak');
 const { hashPw, verifyPw } = require('../sifre');
-const { depo, islem } = require('../veri');
+const { cakisma, depo, islem } = require('../veri');
 const { pub } = require('../yetki');
 const { islemYaz } = require('./islem-kaydi');
 const { kullanicininKapalilari } = require('./ozellikler');
 const { okulSayfasiGorunumu } = require('./okul-sayfasi');
 const { AramaDizini, sade: sadeArama } = require('../yardimci/bulanik-arama');
+const { istemciAyarlari } = require('../site');
+const yonetimCerezi = require('../yonetim-cerezi');
 
 /* Aydınlatma metninin sürümü. Metin değişirse burayı da artır:
    kullanıcıların onayı yeniden istenmelidir. */
@@ -118,6 +120,16 @@ async function portalBilgisi(u, cocuk) {
   return { portallar, hesapAktif };
 }
 
+/* Sistem yöneticisinin /admin çerezi (yonetim-cerezi.js): oturuma bağlı yeni
+   bir çerez yazılır ve cevaba yonetimAdresi eklenir; ön yüz yöneticiyi oraya
+   (tam sayfa geçişiyle) götürür. Yönetici olmayan hiçbir cevapta bu alan ve
+   çerez yoktur. Şifresini başkası vermiş yönetici çerezi şifresini
+   değiştirince alır. Döner: cevaba eklenecek alanlar. */
+async function yonetimAlanlari(res, anahtar, u) {
+  if (!yonetimCerezi.yoneticiMi(u)) return {};
+  return await yonetimCerezi.cerezVer(res, anahtar, u) ? { yonetimAdresi: yonetimCerezi.YONETIM_ADRESI } : {};
+}
+
 /* Oturum açar ve giriş cevabını yazar (giriş, kod doğrulama, portal değiştirme).
    secenek.uygulama: oturum telefon uygulamasından açılıyor (30 gün geçerli;
    tarayıcıda 7 gün). secenek.olusturma: portal değişiminde eski oturumun
@@ -128,9 +140,10 @@ async function oturumCevabi(res, u, ek, secenek) {
   await depo.kullanicilar.girisYazildi(u.id);
   const cocuklar = await childrenOf(u);
   const portal = await portalBilgisi(u, ek && ek.cocuk);
+  const yonetim = await yonetimAlanlari(res, token, u);
   return ok(res, Object.assign({ token, user: benimGorunum(u), children: cocuklar,
     kapaliOzellikler: kullanicininKapalilari(u, cocuklar),
-    kvkkGuncel: kvkkGuncelMi(u), kvkkSurum: KVKK_SURUM }, portal || {}, ek || {}));
+    kvkkGuncel: kvkkGuncelMi(u), kvkkSurum: KVKK_SURUM }, istemciAyarlari(), portal || {}, yonetim, ek || {}));
 }
 
 /* Yetişkin hesabıyla giriş: tek portalı olan doğrudan o portala girer (tek
@@ -170,8 +183,11 @@ async function register(res, body, req) {
   const fullName = adDuzelt(clean(body.fullName, 80));
   if (fullName.split(/\s+/).filter(Boolean).length < 2) return alanHata('ad', 'Adını ve soyadını birlikte yaz.');
 
+  /* E-posta, kullanıcı adı ve T.C. no karşılaştırılacak hâlde saklanır
+     (ortak.js kimlikSade): "Ayse@X.com " ile "ayse@x.com" aynı hesaptır. */
   const email = normEmail(body.email);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return alanHata('email', 'Geçerli bir e-posta adresi gir.');
+  const epSorun = epostaSorunu(email);
+  if (epSorun) return alanHata('email', epSorun);
   if (await depo.kullanicilar.epostaVarMi(email)) {
     return alanHata('email', 'Bu e-posta zaten kayıtlı. Giriş yapmayı dene.');
   }
@@ -244,8 +260,11 @@ async function register(res, body, req) {
 }
 
 /* Onay bağlantısı tıklandı: kayıtta hesap açılır, e-posta değişikliğinde adres
-   değişir. Bu arada adres ya da kullanıcı adı başkası tarafından alındıysa
-   söylenir. Anahtar tek kullanımlıktır. */
+   değişir. Bu arada adres, kullanıcı adı ya da T.C. no başkası tarafından
+   alındıysa söylenir (alan ile). Anahtar tek kullanımlıktır: satırı silen istek
+   devam eder; bağlantıya aynı anda iki kez tıklanırsa ikincisi "geçersiz" alır.
+   Aynı adla ya da adresle bekleyen iki kayıt aynı anda onaylanırsa tekil indeks
+   birini durdurur; o da açık bir ileti alır (23505 -> cakisma). */
 async function epostaOnayi(res, body, req) {
   /* Anahtar 256 bit rastgele: tahmin edilemez. Yine de yalnızca hatalı
      denemeler sayılır (okul ağında aynı IP'den çok kişi onay verebilir). */
@@ -253,24 +272,38 @@ async function epostaOnayi(res, body, req) {
   if (hataSiniriDoldu(hataAnahtari, 30)) return bad(res, 'Çok fazla hatalı deneme. Biraz bekle.', 429);
   const anahtar = String(body.token || '');
   const o = /^[a-f0-9]{64}$/.test(anahtar) ? await depo.onaylar.bul(kodOzeti(anahtar)) : null;
+  const gecersiz = () => bad(res, 'Bağlantı geçersiz ya da süresi dolmuş. Yeniden kayıt ol ya da adresi yeniden değiştir.');
   if (!o) {
     hataSay(hataAnahtari, 30, 15 * 60 * 1000);
-    return bad(res, 'Bağlantı geçersiz ya da süresi dolmuş. Yeniden kayıt ol ya da adresi yeniden değiştir.');
+    return gecersiz();
   }
-  await depo.onaylar.sil(o.anahtar_ozeti);
-  if (await depo.kullanicilar.epostaVarMi(o.eposta, o.kullanici_id || '')) {
-    return bad(res, 'Bu e-posta bu arada başka bir hesaba kaydedilmiş.');
-  }
+  if (!await depo.onaylar.sil(o.anahtar_ozeti)) return gecersiz();
+  const alanHata = (alan, mesaj) => sendJSON(res, 400, { error: mesaj, alan });
+  const EPOSTA_ALINDI = 'Bu e-posta bu arada başka bir hesaba kaydedilmiş.';
+  const adAlindi = ad => '"' + ad + '" kullanıcı adı bu arada alınmış. Başka bir adla yeniden kayıt ol.';
+  const TC_ALINDI = 'Bu T.C. kimlik numarası kullanılamıyor. Yeniden kayıt ol; T.C. alanını boş bırakabilirsin.';
+  /* Yazarken tekil indekse takılırsa: alanına göre ileti. */
+  const cakismaCevabi = (e, ad) => {
+    const c = cakisma(e);
+    if (!c) throw e;
+    if (c.alan === 'eposta') return alanHata('email', EPOSTA_ALINDI);
+    if (c.alan === 'kullaniciAdi') return alanHata('kullaniciAdi', adAlindi(ad));
+    if (c.alan === 'tc') return alanHata('tc', TC_ALINDI);
+    return alanHata(c.alan, c.mesaj);
+  };
+  if (await depo.kullanicilar.epostaVarMi(o.eposta, o.kullanici_id || '')) return alanHata('email', EPOSTA_ALINDI);
   if (o.tur === 'eposta') {
     const hesap = await depo.kullanicilar.bul(o.kullanici_id);
     if (!hesap) return bad(res, 'Hesap bulunamadı.');
-    await depo.kullanicilar.guncelle(hesap.id, { email: o.eposta });
+    try {
+      await depo.kullanicilar.guncelle(hesap.id, { email: o.eposta });
+    } catch (e) { return cakismaCevabi(e, hesap.username); }
     await islemYaz(hesap, 'hesap.eposta', o.eposta, req);
     return ok(res, { tur: 'eposta', message: 'E-posta adresin değişti. Bundan sonra giriş kodları bu adrese gelir.' });
   }
-  if (await depo.kullanicilar.kullaniciAdiHerhangiYerde(o.kullanici_adi)) {
-    return bad(res, '"' + o.kullanici_adi + '" kullanıcı adı bu arada alınmış. Başka bir adla yeniden kayıt ol.');
-  }
+  if (await depo.kullanicilar.kullaniciAdiHerhangiYerde(o.kullanici_adi)) return alanHata('kullaniciAdi', adAlindi(o.kullanici_adi));
+  /* T.C. no kayıtta denetlendi; bekleme sırasında başka bir hesaba yazılmış olabilir. */
+  if (o.tc_kimlik && await depo.kullanicilar.tcVarMi(o.tc_kimlik)) return alanHata('tc', TC_ALINDI);
   /* Kişi kodu hesapla birlikte üretilir (+ Ekle > Öğretmen / Müdür'de görünür). */
   const u = {
     id: uid('u'), username: o.kullanici_adi, email: o.eposta, pass: o.sifre_ozeti, fullName: o.ad_soyad,
@@ -278,7 +311,9 @@ async function epostaOnayi(res, body, req) {
     eslesmeKodu: await depo.kullanicilar.yeniKisiKodu(),
     createdAt: now(), kvkk: { onay: true, tarih: o.olusturma, surum: o.kvkk_surum }
   };
-  await depo.kullanicilar.ekle(u);
+  try {
+    await depo.kullanicilar.ekle(u);
+  } catch (e) { return cakismaCevabi(e, o.kullanici_adi); }
   await depo.onaylar.adresinkileriSil(o.eposta, 'kayit');
   return ok(res, { tur: 'kayit', kullaniciAdi: u.username,
     message: 'Hesabın açıldı. Kullanıcı adın: ' + u.username + '. Şimdi giriş yapabilirsin.' });
@@ -418,7 +453,7 @@ async function uclar(k) {
       message: 'Bu adres kayıtlıysa şifre sıfırlama bağlantısı gönderildi. ' +
         'Gelen kutunu ve gereksiz posta klasörünü kontrol et.'
     };
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return ok(res, ayniCevap);
+    if (!EPOSTA_DESENI.test(email)) return ok(res, ayniCevap);
 
     /* Aynı adrese arka arkaya posta yağdırılmasın. */
     if (!hizSinir('sifirlamaEposta:' + email, 3, 60 * 60 * 1000)) return ok(res, ayniCevap);
@@ -641,7 +676,10 @@ async function uclar(k) {
 
   if (p === 'logout' && method === 'POST') {
     const anahtar = istekAnahtari(req);
+    /* Oturum silinince /admin çerezleri de silinir (yabancı anahtar). Tarayıcıdaki
+       çerez de silinsin; başlık yalnız yöneticiye gider (adres başkasına görünmesin). */
     if (anahtar) await depo.oturumlar.kapat(anahtar);
+    if (me && me.role === 'admin') yonetimCerezi.cerezSil(res);
     return ok(res);
   }
 
@@ -649,8 +687,11 @@ async function uclar(k) {
   if (p === 'me' && method === 'GET') {
     if (!me) return bad(res, 'Giriş yapmalısın', 401);
     const cocuklar = await childrenOf(me);
+    /* Yöneticinin /admin çerezi her /api/me'de yenilenir (tarayıcı çerezi
+       kaybetmiş ya da oturum bu sürümden önce açılmış olabilir). */
+    const yonetim = await yonetimAlanlari(res, istekAnahtari(req), me);
     return ok(res, Object.assign({ user: benimGorunum(me), children: cocuklar, kapaliOzellikler: kullanicininKapalilari(me, cocuklar),
-      kvkkGuncel: kvkkGuncelMi(me), kvkkSurum: KVKK_SURUM }, await portalBilgisi(me) || {}));
+      kvkkGuncel: kvkkGuncelMi(me), kvkkSurum: KVKK_SURUM }, istemciAyarlari(), await portalBilgisi(me) || {}, yonetim));
   }
 
   /* Aydınlatma metnini onaylama: girişte pencere çıkar, buraya gelir. */
@@ -692,9 +733,13 @@ async function uclar(k) {
     await islem(async () => {
       await depo.kullanicilar.guncelle(hesap.id, { pass: ozet, sifreDegismeli: false });
       await depo.oturumlar.hesabinOturumlariniKapat(hesap.id, istekAnahtari(req));
+      /* Yöneticinin eski /admin çerezleri (bu oturumunki dahil) geçersiz olur. */
+      if (hesap.role === 'admin') await depo.oturumlar.yonetimCerezleriniSil(hesap.id);
     });
     me.sifreDegismeli = false;
-    return ok(res, { user: benimGorunum(me) });
+    /* Yönetici yeni çerezini burada alır (şifresini başkası vermiş yönetici ilk kez). */
+    const yonetim = hesap.role === 'admin' ? await yonetimAlanlari(res, istekAnahtari(req), me) : {};
+    return ok(res, Object.assign({ user: benimGorunum(me) }, yonetim));
   }
 
   if (p === 'profile' && method === 'POST') {
@@ -712,16 +757,21 @@ async function uclar(k) {
     }
     if (body.tc !== undefined && normTc(body.tc) !== (hesap.tc || '')) {
       /* Okulun açtığı hesapta T.C. no'yu okul yönetir (kullanıcı adı da T.C. olabilir). */
-      if (okulHesabiMi(hesap.role) && hesap.okulActi) return bad(res, 'T.C. kimlik numaranı okul yönetimi düzenler.');
+      const tcAlanHata = (mesaj, kod) => sendJSON(res, kod || 400, { error: mesaj, alan: 'tc' });
+      if (okulHesabiMi(hesap.role) && hesap.okulActi) return tcAlanHata('T.C. kimlik numaranı okul yönetimi düzenler.');
       const tc = normTc(body.tc);
       const tcHata = tcSorunu(tc);
-      if (tcHata) return bad(res, tcHata);
+      if (tcHata) return tcAlanHata(tcHata);
       /* Numara deneme aracına dönmesin: hesap başına günde en fazla 5 değişiklik. */
       if (!hizSinir('tcDegisim:' + hesap.id, 5, 24 * 60 * 60 * 1000)) {
-        return bad(res, 'T.C. kimlik numarasını bugün çok kez değiştirdin. Yarın tekrar dene.', 429);
+        return tcAlanHata('T.C. kimlik numarasını bugün çok kez değiştirdin. Yarın tekrar dene.', 429);
       }
-      if (tc && await depo.kullanicilar.tcVarMi(tc, hesap.id, okulHesabiMi(hesap.role) ? hesap.schoolId : '')) {
-        return bad(res, 'Bu T.C. kimlik numarası kullanılamıyor. Yanlış yazmadıysan okul yönetimine başvur.');
+      /* Aynı anda iki hesap aynı numarayı yazarsa ikincisini tekil indeks durdurur
+         (kullanicilar_tc_genel / _okul / _ogrenci); cevap aynı ileti ve alanla gider. */
+      const ogrenciTc = tc && hesap.role === 'student' ? await depo.kullanicilar.ogrenciTcIle(tc) : null;
+      if (tc && ((ogrenciTc && ogrenciTc.id !== hesap.id) ||
+          await depo.kullanicilar.tcVarMi(tc, hesap.id, okulHesabiMi(hesap.role) ? hesap.schoolId : ''))) {
+        return tcAlanHata('Bu T.C. kimlik numarası kullanılamıyor. Yanlış yazmadıysan okul yönetimine başvur.');
       }
       d.tc = tc;
     }

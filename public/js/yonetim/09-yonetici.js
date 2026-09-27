@@ -1,4 +1,8 @@
-/* Sistem yöneticisi sayfaları: müdürler, okullar (okul açma), yedekler, yorumlar. */
+/* Sistem yöneticisi sayfaları: müdürler, okullar (okul açma), yedekler, yorumlar.
+   Bu klasördeki parçalar herkese giden uygulama dosyasına girmez; yalnız
+   yönetici çereziyle, yönetim adresinden ayrı bir dosya olarak gelir
+   (sunucu/http.js). Uygulamanın bütün işlevlerini ve SAYFALAR, EYLEMLER
+   tablolarını görürler. */
 
 /* ---- ADMIN ---- */
 SAYFALAR.yedekler = function () {
@@ -40,12 +44,47 @@ SAYFALAR.yedekler = function () {
   });
 };
 
-/* Dosya boyutu: 812 B, 34 KB, 2,4 MB (yedekler ve ödev dosyaları). */
-function boyutYaz(n) {
-  if (n >= 1024 * 1024) return sayiTR(Math.round(n / 1024 / 1024 * 10) / 10) + ' MB';
-  if (n >= 1024) return Math.round(n / 1024) + ' KB';
-  return n + ' B';
-}
+EYLEMLER['yedek-al'] = function (el) {
+  el.disabled = true;
+  return api('/admin/backup-now', 'POST')
+    .then(function (r) {
+      mesajGoster('yedekMesaj', 'iyi', r.yedek.ad + ' alındı (' + boyutYaz(r.yedek.boyut) + ')');
+      setTimeout(function () { git('yedekler'); }, 900);
+    })['catch'](function (e) {
+      el.disabled = false;
+      mesajGoster('yedekMesaj', 'hata', e.message);
+    });
+};
+
+EYLEMLER['yedek-indir'] = function (el) {
+  var ad = el.getAttribute('data-ad');
+  el.disabled = true;
+  return dosyaIndir('/api/admin/backup-download?ad=' + encodeURIComponent(ad), ad)
+    .then(function () { el.disabled = false; })
+    ['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+EYLEMLER['yedek-geri'] = function (el) {
+  var ad = el.getAttribute('data-ad');
+  if (!confirm(ad + ' geri yüklensin mi?\n\nBu yedekten sonraki bütün değişiklikler ' +
+    'kaybolur. Şimdiki hâl geri-alma kopyası olarak saklanacak.')) return;
+  el.disabled = true;
+  return api('/admin/backup-restore', 'POST', { ad: ad })
+    .then(function (r) {
+      /* Oturum yedekte de varsa yönetim çerezi korunur, sayfa yenilenir. Yoksa
+         oturum kapanmıştır: sitenin kendi adresi giriş kartını açar. */
+      alert(r.message + '\n\n' + (r.oturumKaldi ? 'Sayfa yenilenecek.' : 'Giriş sayfası açılacak.'));
+      if (r.oturumKaldi) location.reload();
+      else location.replace('/');
+    })['catch'](function (e) { el.disabled = false; hataGoster(e); });
+};
+
+EYLEMLER['yedek-sil'] = function (el) {
+  var ad = el.getAttribute('data-ad');
+  if (!confirm(ad + ' silinsin mi?')) return;
+  return api('/admin/backup-delete', 'POST', { ad: ad })
+    .then(function () { git('yedekler'); })['catch'](hataGoster);
+};
 
 SAYFALAR.mudurler = function () {
   return api('/admin/principals').then(function (d) {
@@ -74,6 +113,16 @@ SAYFALAR.mudurler = function () {
   });
 };
 
+EYLEMLER['mudur-sil'] = function (el, id) {
+  var ad = el.getAttribute('data-ad') || 'Bu müdür';
+  var okul = el.getAttribute('data-okul') || '';
+  if (!confirm(ad + ' hesabı silinsin mi? (' + okul + ')\n\n' +
+    'Okul kapanır, kimse giremez. Öğretmen ve öğrenci hesapları silinmez; ' +
+    'Okullar > Okul aç ile okula yeni müdür atayabilirsin.')) return;
+  return api('/admin/principal-delete', 'POST', { userId: id })
+    .then(function () { git('mudurler'); })['catch'](hataGoster);
+};
+
 SAYFALAR.okullar = function () {
   return api('/admin/overview').then(function (d) {
     var h = hero('KAYITLI OKULLAR', d.schools.length + ' okul kayıtlı.');
@@ -93,7 +142,9 @@ SAYFALAR.okullar = function () {
         esc(s.city) + ' / ' + esc(s.district) + '</td><td>' + esc(s.principal) + '</td><td>' +
         s.teachers + '</td><td>' + s.students + '</td><td>' + dur + '</td></tr>';
     }
-    yaz(h + '</tbody></table></div></div>');
+    yaz(h + '</tbody></table></div></div>' +
+      '<div class="dugme-satir yonetim-gecis"><span class="hint">Okulların giriş adreslerini Site Ayarları sayfasında değiştirebilirsin.</span>' +
+      '<button type="button" class="btn kucuk ghost" data-nav="site-ayarlari">Site Ayarları</button></div>');
   });
 };
 
@@ -187,8 +238,9 @@ EYLEMLER['admin-okul-ac-kaydet'] = function (el) {
   })['catch'](function (e) {
     dugmeBitir(el);
     var v = e.veri || {};
-    var hedef = { okul: 'bOkulAra', il: 'bIl', ilce: 'bIlce', kisaAd: 'aoKisa', mudurKodu: 'aoKod' }[v.alan];
-    if (v.alan === 'mudurKodu') { adminKisi.kod = ''; $('aoKisi').innerHTML = ''; }
+    /* Sunucunun söylediği alan (aynı adres, aynı okul, kişinin okulda zaten rolü var). */
+    var hedef = { okul: 'bOkulAra', il: 'bIl', ilce: 'bIlce', kisaAd: 'aoKisa', mudurKodu: 'aoKod', kod: 'aoKod' }[v.alan];
+    if (v.alan === 'mudurKodu' || v.alan === 'kod') { adminKisi.kod = ''; $('aoKisi').innerHTML = ''; }
     if (hedef) { alanHatasi(hedef, e.message); ilkHatayaGit(kart); }
     else mesajGoster('aoMesaj', 'hata', e.message);
   });

@@ -166,6 +166,7 @@ function siteBilgisiYukle() {
     sayilariCiz(d.sayilar);
     iletisimCiz(d.iletisim);
     yapimcilariCiz(d.yapimcilar || []);
+    if (d.bildirimAralikDk) bildirimAraligiAl(d.bildirimAralikDk);
   })['catch'](function () {
     siteBilgisi.yukleniyor = false;
     var bantlar = document.querySelectorAll('.v-sayilar');
@@ -184,7 +185,7 @@ function sayilariCiz(s) {
 
 /* E-posta sayfanın kaynağında düz yazı olarak durmaz: toplayıcı botlar
    HTML'den adres süpürür. Adres burada, sunucudan gelen veriyle kurulur. */
-/* İletişim bilgileri (data/config.yml): dış sayfaların alt bilgisi, Hakkında
+/* İletişim bilgileri (sitenin ayarı): dış sayfaların alt bilgisi, Hakkında
    ve uygulamanın içindeki her sayfanın alt bilgisi ([data-iletisim]).
    E-posta adresi HTML'e yazılmaz, yazı olarak sonradan konur (adres
    toplayan botlar kaynakta bulamasın). */

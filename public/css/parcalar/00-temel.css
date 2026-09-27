@@ -61,11 +61,13 @@
   --bordo: #7f1d1d;   --bordo-yazi: #ffffff;    /* "gelmedi (izinsiz)" */
   --camgobegi: #0d9488;
 
-  /* --- ana sayfa kutucukları: dolu, düz renk (gradyan yok) --- */
+  /* --- ana sayfa kutucukları: dolu, düz renk (gradyan yok) ---
+     Kutucuğun küçük alt yazısı (12.5 px) beyaz: her zemin beyazla en az 4.5:1
+     (WCAG AA) olacak kadar koyu. Sarı hiçbir kutucukta kullanılmıyor. */
   --kutu-yazi: #ffffff;
-  --kutu-turuncu: #ea580c; --kutu-yesil: #16a34a; --kutu-kirmizi: #dc2626;
-  --kutu-sari: #b5b508;    --kutu-mor: #7c3aed;   --kutu-mavi: #0284c7;
-  --kutu-gri: #6b7280;     --kutu-camgobegi: #0d9488; --kutu-lacivert: #4338ca;
+  --kutu-turuncu: #c2410c; --kutu-yesil: #15803d; --kutu-kirmizi: #dc2626;
+  --kutu-sari: #b5b508;    --kutu-mor: #7c3aed;   --kutu-mavi: #0369a1;
+  --kutu-gri: #6b7280;     --kutu-camgobegi: #0f766e; --kutu-lacivert: #4338ca;
   --kutu-rozet-zemin: rgba(255, 255, 255, .95);  /* kutucuk üstündeki sayı hapı, iki temada aynı */
   --kutu-rozet-yazi: #1f2937;
 

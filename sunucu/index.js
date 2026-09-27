@@ -8,7 +8,7 @@ const { handleApi } = require('./api');
 const { ayarlar, ayarlariYukle, epostaKurulu } = require('./ayarlar');
 const { guvenlikTemizle, hizSinir, istekAnahtari, istemciIp } = require('./guvenlik');
 const { HATIRLATMA_ARALIK_MS, hatirlatmalariCalistir } = require('./hatirlatma');
-const { bad, baslikEkle, serveStatic } = require('./http');
+const { bad, baslikEkle, sendJSON, serveStatic } = require('./http');
 const { okullariYukle } = require('./okullar');
 const { iletisimVarMi } = require('./site');
 const { YEDEK_ARALIK_MS, baslat, hataCevir, kapat, yedekKontrol } = require('./veri');
@@ -102,6 +102,8 @@ const server = http.createServer((req, res) => {
         const vt = hataCevir(err);
         if (vt) {
           if (vt.kod >= 500) console.error('Veritabanı hatası [' + err.code + ']:', err.message, urlPath);
+          /* Tekillik çakışmasında hangi alan olduğu da gider (form o kutuyu gösterir). */
+          if (vt.alan) return sendJSON(res, vt.kod, { error: vt.mesaj, alan: vt.alan });
           return bad(res, vt.mesaj, vt.kod);
         }
         const mesaj = (err && err.message) ? err.message : 'Sunucu hatası';
@@ -245,7 +247,7 @@ server.listen(PORT, HOST, () => {
   /* Okulunu açtırmak isteyen kişi yöneticiye buradaki e-posta ya da telefonla ulaşır. */
   if (!iletisimVarMi()) {
     console.log('     ! Iletisim bilgisi yok: "+ Ekle > Mudur" penceresi yoneticiye ulasma yolu gostermez.');
-    console.log('       Ayarlamak icin: data/config.yml (ornegi belge/config.ornek.yml)');
+    console.log('       Ayarlamak icin: yonetim paneli > Site ayarlari ya da data/config.yml (ornegi belge/config.ornek.yml)');
   }
   console.log('     Kapatmak icin bu pencereyi kapatin.');
   console.log('  ==========================================');
@@ -253,8 +255,20 @@ server.listen(PORT, HOST, () => {
 });
 }
 
+/* data/admins.json sunucu çalışırken de düzenlenebilir: "admins.json okuma
+   aralığı"nda (site ayarı, varsayılan 1 dk) değişme zamanı ve boyutu yoklanır,
+   değiştiyse yeniden uygulanır (ilk okuma açılışta, veri/index.js baslat). */
+function yoneticiDosyasiniIzle() {
+  const { ilkSifreUret } = require('./veri');
+  const site = require('./site');
+  require('./yonetici-dosyasi').zamanla(veriDeposu, {
+    sifreUret: ilkSifreUret,
+    aralikMs: () => site.ayar('adminsAralikDk') * 60 * 1000
+  });
+}
+
 baslat()
-  .then(dinlemeyeBasla)
+  .then(() => { dinlemeyeBasla(); yoneticiDosyasiniIzle(); })
   .catch(e => {
     console.error('\n  HATA: veritabanı açılamadı: ' + e.message);
     if (/Veritabanı ayarı yok/.test(e.message)) {

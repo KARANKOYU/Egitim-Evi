@@ -1,13 +1,18 @@
 /* Bildirimler, sayfa içi arama, mobil menü. */
 
 /* ================= bildirimler ================= */
-/* 30 saniyede bir yoklanır. Sunucuya son bilinen sürüm gönderilir; kutu
-   değişmediyse liste gelmez, cevap birkaç bayttır. Arka plandaki sekme hiç
-   yoklamaz, sekmeye dönülünce hemen tazelenir. */
+/* Sitenin yoklama aralığıyla (yönetim panelindeki ayar, varsayılan 5 dakika;
+   giriş, /me ve /site cevabındaki bildirimAralikDk) yoklanır. Sunucuya son
+   bilinen sürüm gönderilir; kutu değişmediyse liste gelmez, cevap birkaç
+   bayttır. Arka plandaki sekme hiç yoklamaz; sekmeye dönülünce ve bildirim
+   paneli açılınca beklemeden yoklanır. */
 function bildirimleriYenile() {
-  if (!S.token || document.hidden) return;
+  if (!S.token || document.hidden || S._bildirimYoklaniyor) return;
   var onceki = S.bildirimSurum;
+  S._bildirimYoklaniyor = true;
   api('/notifications' + (onceki ? '?surum=' + encodeURIComponent(onceki) : '')).then(function (d) {
+    S._bildirimYoklaniyor = false;
+    if (!S.token) return;   // bu arada çıkış yapıldı
     S.bildirimSurum = d.surum;
     S.unread = d.unread;
     var r = $('bildirimRozet');
@@ -18,10 +23,27 @@ function bildirimleriYenile() {
          söylüyor olabilir: menüdeki portallar da tazelensin. */
       if (onceki && S.portallar) portallariTazele();
       S._bildirimler = d.notifications;
+      /* Panel açıkken yeni bildirim geldiyse panel de tazelensin. */
+      if ($('bildirimPanel').innerHTML) bildirimPaneliCiz();
     }
-  })['catch'](function () { });
+  })['catch'](function () { S._bildirimYoklaniyor = false; });
 }
 document.addEventListener('visibilitychange', function () { if (!document.hidden) bildirimleriYenile(); });
+
+/* Yoklama aralığı (dakika, 1-30). Değişirse çalışan sayaç yeni aralıkla kurulur. */
+function bildirimAraligiAl(dk) {
+  var n = Math.round(Number(dk));
+  if (!n || n < 1) return;
+  n = Math.min(30, n);
+  if (S.bildirimAralikDk === n) return;
+  S.bildirimAralikDk = n;
+  if (S._bildirimSayac) bildirimSayaciKur();
+}
+
+function bildirimSayaciKur() {
+  if (S._bildirimSayac) clearInterval(S._bildirimSayac);
+  S._bildirimSayac = setInterval(bildirimleriYenile, (S.bildirimAralikDk || 5) * 60 * 1000);
+}
 
 /* Bildirime tıklayınca ilgili sayfa açılır ("Yeni ödev" -> Ödevler). */
 EYLEMLER['bildirim-git'] = function (el) {
@@ -35,6 +57,13 @@ EYLEMLER['bildirim-git'] = function (el) {
 function bildirimPaneliAcKapa() {
   var p = $('bildirimPanel');
   if (p.innerHTML) { p.innerHTML = ''; return; }
+  bildirimPaneliCiz();
+  /* Yoklama aralığı dakikalarca olabilir: panel açılınca hemen sorulur. */
+  bildirimleriYenile();
+}
+
+function bildirimPaneliCiz() {
+  var p = $('bildirimPanel');
   var list = S._bildirimler || [];
   var h = '<div class="panel">';
   if (!list.length) h += '<div style="padding:22px;text-align:center;color:var(--soluk)">Bildirim yok.</div>';

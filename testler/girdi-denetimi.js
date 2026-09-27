@@ -218,6 +218,33 @@ const KOTU = [
     kontrol('ikinci okul kurulamadi (atlandi)', true);
   }
 
+  console.log('=== 6b) YONETICI: SITE AYARLARI VE OKUL ADRESI ===');
+  /* Bozuk değerle 500 yok; bozuk değer kaydedilmez (sonra /api/site sağlam). */
+  let ayar500 = '';
+  /* Oturum başına dakikada 300 istek sınırı var: gerçek anahtarlar bütün kötü değerlerle,
+     kötü anahtarlar tek değerle (~200 istek). */
+  const ayarAnahtarlari = ['iletisim', 'yapimcilar', 'playStore', 'bildirimAralikDk', 'cevrimiciDk', 'adminsAralikDk', 'yok'];
+  const ayarDegerleri = KOTU.concat([{ eposta: KOTU[7], telefon: KOTU[10] }, [{ ad: KOTU[8], github: KOTU[11], katki: KOTU[7] }],
+    [null, 5, 'x'], { eposta: ['a'], telefon: { b: 1 } }]);
+  const ayarDenemeleri = [];
+  for (const anahtar of ayarAnahtarlari) for (const deger of ayarDegerleri) ayarDenemeleri.push({ anahtar, deger });
+  for (const anahtar of KOTU) ayarDenemeleri.push({ anahtar, deger: 5 });
+  for (const govde of ayarDenemeleri) {
+    const c = await iste('/api/admin/site-ayarlari', 'POST', govde, A);
+    if (c.status >= 500) { ayar500 = JSON.stringify(govde).slice(0, 50) + ' -> ' + c.status; break; }
+  }
+  kontrol('site ayarlarina bozuk deger 500 dondurmuyor', !ayar500, ayar500);
+  for (const anahtar of ayarAnahtarlari.slice(0, 6)) await iste('/api/admin/site-ayarlari', 'POST', { anahtar, sifirla: true }, A);
+  const siteSonra = await iste('/api/site');
+  kontrol('bozuk denemelerden sonra /api/site saglam', siteSonra.status === 200 && Array.isArray(siteSonra.body.yapimcilar) &&
+    typeof siteSonra.body.bildirimAralikDk === 'number', JSON.stringify(siteSonra.body).slice(0, 120));
+  let adres500 = '';
+  for (const v of KOTU) {
+    const c = await iste('/api/admin/okul-adres', 'POST', { okulId: v, kisaAd: v }, A);
+    if (c.status >= 500 || c.status === 200) { adres500 = JSON.stringify(v).slice(0, 30) + ' -> ' + c.status; break; }
+  }
+  kontrol('okul adresi ucuna bozuk deger 500 ve 200 dondurmuyor', !adres500, adres500);
+
   console.log('=== 7) BUYUK GOVDE ===');
   let devDurum = 0, devHata = '';
   try {

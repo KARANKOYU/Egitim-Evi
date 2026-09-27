@@ -1,0 +1,11 @@
+{
+  "_aciklama": "ÖRNEK. Sunucuda data/admins.json olarak kopyala, örnek satırı kendi bilgilerinle değiştir ve 'chmod 600 data/admins.json' yap. data/ klasörü depoya girmez; bu açıklama satırı kalabilir. Sunucu açılışta okur; çalışırken de her 'admins.json okuma aralığı'nda (yönetim paneli > Site Ayarları, varsayılan 1 dakika) dosyanın değişip değişmediğine bakar, değiştiyse yeniden okur (panelde 'Yönetici Dosyası > Şimdi oku' ile hemen okutulur; sonuç ve atlanan satırların nedeni orada görünür). Dosyada olup veritabanında olmayan yöneticiyi açar (en fazla 50 satır). Var olan hesaba dokunmaz, dosyadan silineni silmez; başka birinin (öğretmen, veli...) e-postasıyla ya da başka bir hesabın (herhangi bir okuldaki hesap dahil) kullanıcı adıyla yazılan satır yönetici yapılmaz; büyük/küçük harf ve boşluk farkı sayılmaz, e-postada Türkçe ya da başka alfabeden harf olamaz. 'ad' zorunlu; 'kullaniciAdi' yazılmazsa e-postadan türetilir. Şifreyi dosyaya yazmak önerilir (en az 8 karakter; büyük, küçük harf, rakam, özel karakter): 'sifre' boş bırakılırsa rastgele üretilir ve yalnız sunucu penceresine bir kez yazılır, panelde asla görünmez. İki durumda da ilk girişte şifre değiştirilir; sonra dosyadaki şifreyi silebilirsin. E-posta gerçek olmalı: giriş kodu oraya gelir.",
+  "yoneticiler": [
+    {
+      "ad": "Ayşe Yılmaz",
+      "eposta": "ayse.yilmaz@ornek.com",
+      "kullaniciAdi": "ayse.yilmaz",
+      "sifre": ""
+    }
+  ]
+}

@@ -775,6 +775,9 @@ const ROLLER = [
   },
   {
     ad: 'admin', baslik: 'Yönetici', eposta: 'admin@egitimevi.com', sifre: 'admin123',
+    /* Yönetici ekranları /admin adresinde, ayrı dosyayla açılır: uygulama girişten
+       (/api/me) sonra oraya tam sayfa geçer; tur bu geçişi bekler. */
+    yonetimAdresi: '/admin',
     /* Okulunu açtırmak isteyen kişinin kodu (kişi kendi hesabında + Ekle > Müdür'de görür). */
     once: async () => {
       const h = await girisYap('hulya.demirtas@test.com', 'Mudur2026!');
@@ -796,6 +799,17 @@ const ROLLER = [
             `var b = document.getElementById('aoKisi'); if (!b || !b.textContent) throw new Error('kişi bulunamadı'); ` +
             `b.scrollIntoView({ block: 'center' }); ${bekleJs(300)}`;
         } },
+      { ad: 'Site ayarları', git: 'site-ayarlari' },
+      { ad: 'Site ayarları — yapımcı eklendi, hatalar kutuların altında', git: 'site-ayarlari', tam: false,
+        eylem: `__tikla('[data-act="sa-yapimci-ekle"]'); ${bekleJs(300)} ` +
+          `var s = document.querySelectorAll('#saYapimciListe .sirali-satir'); var n = s.length - 1; ` +
+          `__yaz('#saYGh' + n, '-kotu-ad-'); __yaz('#saYKatki' + n, 'Tasarım'); ` +
+          `__tikla('[data-act="sa-kaydet"][data-anahtar="yapimcilar"]'); ${bekleJs(300)} ` +
+          `document.getElementById('saKartYapimci').scrollIntoView({ block: 'start' }); ${bekleJs(300)}` },
+      { ad: 'Okul adresini değiştir penceresi (eski adres uyarısı)', git: 'site-ayarlari', tam: false,
+        eylem: `__satirdaTikla('/school/test-ortaokulu', '[data-act="sa-okul-adres"]'); ${bekleJs(500)}` },
+      { ad: 'Yönetici dosyası', git: 'yonetici-dosyasi' },
+      { ad: 'Yönetici dosyası — Şimdi oku', git: 'yonetici-dosyasi', eylem: `__tikla('[data-act="yd-oku"]'); ${bekleJs(900)}` },
       { ad: 'Yedekler (elle yedek alındı)', git: 'yedekler', eylem: `__tikla('[data-act="yedek-al"]')` },
       { ad: 'Açılış sayfası yorumları (gizle / göster)', git: 'yorumlar' },
       { ad: 'İşlem kaydı', git: 'islem-kaydi' },
@@ -805,9 +819,10 @@ const ROLLER = [
       { ad: 'Üstteki ay düğmesi — koyu görünüme geçti', git: 'ana', tema: 'serbest', eylem: `__tikla('#btnTema')` },
       { ad: 'Güneş düğmesi — açık görünüme döndü', git: 'ana', tema: 'serbest', eylem: `__tikla('#btnTema')` }
     ],
-    koyu: ['ana|Ana sayfa (koyu)|', 'okullar|Okullar (koyu)|'],
+    koyu: ['ana|Ana sayfa (koyu)|', 'okullar|Okullar (koyu)|', 'site-ayarlari|Site ayarları (koyu)|'],
     telefon: ['okullar|Okullar (telefon)|',
-      { ad: 'Okul aç penceresi (telefon)', git: 'okullar', tam: false, eylem: `__tikla('[data-act="admin-okul-ac"]'); ${bekleJs(900)}` }]
+      { ad: 'Okul aç penceresi (telefon)', git: 'okullar', tam: false, eylem: `__tikla('[data-act="admin-okul-ac"]'); ${bekleJs(900)}` },
+      'site-ayarlari|Site ayarları (telefon)|', 'yonetici-dosyasi|Yönetici dosyası (telefon)|']
   }
 ];
 
@@ -999,6 +1014,20 @@ async function calistir() {
       await ekranBoyutu(t, MASAUSTU);
       await t.gonder('Page.reload', {});
       await sakinlesmeyiBekle(t, 800);
+      /* Yönetici: /api/me cevabındaki yonetimAdresi'yle sayfa yönetim adresine
+         tam sayfa geçer (05b-sifre-zorunlu.js yonetimeGec); geçiş beklenir. */
+      if (rol.yonetimAdresi) {
+        const acik = 'location.pathname + "|" + !!(document.getElementById("app") && document.getElementById("app").classList.contains("on"))';
+        for (let i = 0; i < 60; i++) {
+          const yer = await degerlendir(t, acik).catch(() => '');
+          if (yer === rol.yonetimAdresi + '|true') break;
+          await bekle(250);
+        }
+        await sakinlesmeyiBekle(t, 600);
+        if (!(await degerlendir(t, 'location.pathname')).startsWith(rol.yonetimAdresi)) {
+          throw new Error('yönetim adresine geçilmedi');
+        }
+      }
       /* Uygulama girişten sonra #app'e "on" sınıfını koyar (26-baslat.js). */
       girdi = await degerlendir(t, '!!(document.getElementById("app") && document.getElementById("app").classList.contains("on"))');
     } catch (e) {

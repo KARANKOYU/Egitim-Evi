@@ -132,19 +132,63 @@ chown -R egitimevi:egitimevi data
 chmod 600 data/ayarlar.json
 ```
 
+### Yönetici hesabın (data/admins.json)
+
+Sistem yöneticisi hesapları `data/admins.json` dosyasından açılır (depoya girmez). Örneği
+kopyala, örnek satırı **kendi** adın, gerçek e-postan (giriş kodu oraya gelir) ve kullanıcı
+adınla değiştir; birden çok yönetici için satır ekle:
+
+```
+cp /opt/egitimevi/belge/admins.ornek.json /opt/egitimevi/data/admins.json
+nano /opt/egitimevi/data/admins.json
+chown egitimevi:egitimevi /opt/egitimevi/data/admins.json
+chmod 600 /opt/egitimevi/data/admins.json
+```
+
+```json
+{
+  "yoneticiler": [
+    { "ad": "Adın Soyadın", "eposta": "sen@alanadin.org", "kullaniciAdi": "kullanici.adin", "sifre": "<güçlü bir ilk şifre>" }
+  ]
+}
+```
+
+- `chmod 600`: dosyayı yalnız uygulamanın kullanıcısı okuyabilir. İzinler açıksa sunucu
+  pencerede ve yönetim panelinde uyarır.
+- **Şifreyi dosyaya yazmak önerilir** (en az 8 karakter; büyük, küçük harf, rakam, özel
+  karakter). Kurala uymayan şifreli satır açılmaz, nedeni yazılır. Boş bırakırsan rastgele
+  üretilir ve yalnız sunucu penceresine (servis olarak çalışırken `journalctl`'a) bir kez
+  yazılır. İki durumda da ilk girişte kendi şifreni belirlersin; ondan sonra dosyadaki
+  şifreyi silebilirsin.
+- `_aciklama` satırı kalabilir, sunucu onu okumaz.
+- Dosya yalnız hesap **açar**: var olan hesabı değiştirmez, dosyadan sildiğin yöneticiyi
+  silmez; başka birinin e-postası ya da kullanıcı adıyla yazılan satır atlanır.
+- **Sunucu çalışırken de düzenleyebilirsin** (`nano` ile aç, kaydet). Sunucu dosyanın değişip
+  değişmediğine her "admins.json okuma aralığı"nda (varsayılan 1 dakika; yönetim panelinde
+  Site Ayarları) bakar, değiştiyse yeni satırları açar; yeniden başlatmak gerekmez. Beklemeden
+  okutmak için yönetim panelinde **Yönetici Dosyası → Şimdi oku**. Sonuç (açılan hesaplar,
+  atlanan satırlar ve nedenleri) aynı sayfada görünür; şifre hiçbir zaman görünmez.
+
+Dosyayı hazırlamazsan ilk açılışta varsayılan bir yönetici (`admin@egitimevi.com`) kurulur
+(aşağıda). Canlı sitede bu adres senin okuduğun bir kutu değilse giriş kodunu alamazsın; bu
+yüzden `data/admins.json` önerilir.
+
 Sonra bir kez elle aç:
 
 ```
 sudo -u egitimevi node sunucu/index.js
 ```
 
-Şemalar (`sunucu/veri/sema/*.sql`) sırayla uygulanır, ilk yönetici hesabı oluşur ve
-şifresi **yalnızca bu seferlik** ekrana yazılır; not al. "EGITIM EVI calisiyor" görünce
-Ctrl+C ile kapat; kalıcı çalıştırma aşağıdaki systemd adımında.
+Şemalar (`sunucu/veri/sema/*.sql`) sırayla uygulanır, `data/admins.json`'daki yöneticiler
+açılır ("Yönetici hesabı açıldı"; atlanan satır varsa nedeni yazar). Veritabanında hiç
+yönetici yoksa ve dosyadan da kimse açılmadıysa ilk yönetici hesabı (`admin@egitimevi.com`)
+oluşur ve şifresi **yalnızca bu seferlik** ekrana yazılır; not al. "EGITIM EVI calisiyor"
+görünce Ctrl+C ile kapat; kalıcı çalıştırma aşağıdaki systemd adımında.
 
-> Kendi bilgisayarındaki veriyi taşımak istersen: orada admin → **Yedekleme** → yedek
+> Kendi bilgisayarındaki veriyi taşımak istersen: orada yönetim paneli → **Yedekleme** → yedek
 > indir, dosyayı sunucuda `data/yedek/` altına kopyala, sunucuda aynı sayfadan o yedeğe
-> geri dön. Sıfırdan başlıyorsan gerek yok.
+> geri dön. Sıfırdan başlıyorsan gerek yok. Panelden kaydedilen site ayarları yedekle
+> gelmez; sunucuda yeniden gir.
 
 ---
 
@@ -196,8 +240,11 @@ Kaydet: `Ctrl+O`, `Enter`, `Ctrl+X`
 
 ### İletişim bilgileri (sayfaların altı) — yayından önce ZORUNLU
 
-Sitenin altında ve Hakkında sayfasında görünecek e-posta ve telefon kodda değil,
-`data/config.yml` dosyasındadır (depo herkese açık olduğu için).
+Sitenin altında ve Hakkında sayfasında görünecek e-posta ve telefon kodda değildir (depo
+herkese açık olduğu için). İki yerden birine yazılır: site açıldıktan sonra yönetim panelinde
+**Site Ayarları → İletişim bilgileri** (veritabanına kaydedilir, hemen geçerli olur) ya da
+sunucudaki `data/config.yml` dosyası. İkisi de doluysa paneldeki geçerlidir; panelde
+**Varsayılana dön** denirse dosyadaki değer yeniden geçerli olur. Panel dosyayı yazmaz.
 
 **Yayına almadan önce en az birini (e-posta ya da telefon) doldur.** Müdür başvurusu
 yoktur: okulunu açtırmak isteyen kişi **+ Ekle → Müdür** penceresinde yöneticinin
@@ -218,7 +265,10 @@ iletisim:
 ```
 
 Boş bırakılan satır sitede görünmez. Değişiklik en geç 30 saniyede siteye yansır,
-yeniden başlatmak gerekmez.
+yeniden başlatmak gerekmez. Aynı dosyada Play Store adresi (`uygulama: playstore:`) ve
+aralıklar (`araliklar:` bildirim yoklama, çevrimiçi sayma, admins.json okuma) da durur;
+hepsi yönetim panelinin **Site Ayarları** sayfasından da değiştirilir (örnek dosyadaki
+açıklamalara bak).
 
 ---
 
@@ -260,6 +310,11 @@ WantedBy=multi-user.target
 
 > `HOST=127.0.0.1` sayesinde uygulama doğrudan internete açılmaz; yalnızca
 > Caddy üzerinden erişilir.
+
+> **Tek süreç.** Uygulama tek süreç olarak çalışır: panelden kaydedilen site ayarları,
+> `data/admins.json` yoklaması, hız sınırları ve "şu an açık" sayısı o sürecin belleğindedir.
+> Aynı veritabanıyla ikinci bir kopya (pm2 cluster, ikinci servis) çalıştırma; çalıştırırsan
+> bir kopyada kaydedilen ayarı öteki ancak yeniden başlatılınca görür.
 
 Başlat:
 
@@ -324,19 +379,39 @@ ufw --force enable
 
 ## 9. İlk giriş
 
-İlk yönetici şifresi rastgele üretilir ve uygulamanın ilk açılışında (4. adımda elle
-açtığında) yalnızca bir kez ekrana yazılır. Kaçırdıysan servis günlüğüne bak:
+`https://egitimevi.org/login` adresinden yönetici hesabınla gir:
 
-```
-journalctl -u egitimevi | grep -A3 "İlk yönetici"
-```
+- **`data/admins.json`'daki hesap** (4. adım): dosyaya yazdığın şifreyle gir. Şifreyi boş
+  bıraktıysan üretilen şifre hesap açıldığı an sunucu penceresine yazıldı: 4. adımdaki elle
+  açılışta ekrana, servis çalışırken eklenen satırda servis günlüğüne:
 
-`https://egitimevi.org` adresine `admin@egitimevi.com` ve bu şifreyle gir.
-**Girer girmez Ayarlar'dan şifreyi değiştir.**
+  ```
+  journalctl -u egitimevi | grep -A4 "Yönetici hesabı açıldı"
+  ```
 
-Sayfanın altında yöneticinin e-postası ya da telefonu görünmüyorsa `data/config.yml`
-eksiktir (5. adım, "İletişim bilgileri"); doldurmadan okullara duyurma: okulunu
-açtırmak isteyen müdür adayı kişi kodunu kime vereceğini göremez.
+  İlk girişte kendi şifreni belirlersin; sonra dosyadaki şifreyi silebilirsin.
+- **Varsayılan yönetici** (dosya yoksa ya da dosyadan kimse açılmadıysa):
+  `admin@egitimevi.com` ve 4. adımda ekrana yazılan şifre. Hesap servis olarak ilk açılışta
+  kurulduysa şifre servis günlüğündedir (`journalctl -u egitimevi | grep -A3 "İlk yönetici"`);
+  elle açılışın çıktısı günlüğe girmez. Şifreyi kaçırdıysan `data/admins.json` ile kendine
+  yeni bir yönetici hesabı aç. Sistem şifre değiştirmeyi zorlamaz; **girer girmez
+  Ayarlar'dan şifreyi değiştir.**
+
+Şifreden sonra e-postana gelen 6 haneli kodu girersin (e-posta ayarlanmamışsa kod servis
+günlüğüne yazılır). Giriş bitince sayfa kendiliğinden **yönetim paneline**
+(`https://egitimevi.org/admin`) geçer.
+
+> **Yönetim paneli gizlidir.** `/admin` yalnız giriş yapmış yöneticinin tarayıcısında açılır
+> (girişte verilen çerezle); başka herkes, arama motorları ve dizin tarayıcıları orada
+> bilinmeyen bir adresle aynı "Sayfa bulunamadı" sayfasını görür. Adresi okul duyurularında,
+> sosyal medyada ya da hata bildirimlerinde **paylaşma**. Koruma adresin gizliliğine değil
+> çereze ve yetki denetimine dayanır (kod zaten herkese açık); adres yalnızca gereksiz yere
+> dikkat çekmesin.
+
+Sayfanın altında yöneticinin e-postası ya da telefonu görünmüyorsa iletişim bilgisi
+eksiktir: yönetim panelinde **Site Ayarları → İletişim bilgileri**'ni doldur (ya da 5. adım,
+`data/config.yml`). Doldurmadan okullara duyurma: okulunu açtırmak isteyen müdür adayı kişi
+kodunu kime vereceğini göremez.
 
 ---
 
@@ -350,14 +425,18 @@ elle kopya alabilir, indirebilir, istediğine geri dönebilirsin.
 > Geri yükleme öncesi o anki hâl `yedek-elle-geri-alma-…` adıyla ayrıca
 > saklanır; yanlış yedeği seçersen kaybolmazsın.
 
-Yedek dosyasına girmeyen iki şey var, bunları da kopyala:
+Yedek dosyasına girmeyenler var, bunları da kopyala:
 
 | Ne | Nerede | Kaybolursa |
 |---|---|---|
 | Ödev teslim dosyaları | `data/dosyalar/` | öğrencilerin yüklediği dosyalar gider |
 | Okul sayfası fotoğrafları | `data/okul-fotolari/` | okulların kapak, logo ve galeri fotoğrafları gider |
-| İletişim bilgileri | `data/config.yml` | sitenin altındaki e-posta ve telefon görünmez olur |
+| İletişim bilgileri (dosyadaki) | `data/config.yml` | panelde kaydedilmemişse sitenin altındaki e-posta ve telefon görünmez olur |
+| Site ayarları (panelden kaydedilenler) | veritabanı; JSON yedeğe girmez, aşağıdaki `pg_dump` alır | iletişim, yapımcılar, Play Store ve aralıklar `config.yml`'deki ya da varsayılan değere döner; panelden yeniden girilir |
 | Telefon bildirimi anahtarı | `data/push-anahtar.json` | herkesin bildirimleri yeniden açması gerekir |
+
+`data/admins.json` yalnız hesap açar; yöneticiler veritabanında (yedekte) durduğu için
+dosyanın kaybolması bir hesabı silmez. İçindeki ilk şifreler de ilk girişten sonra geçersizdir.
 
 **Ama bu tek başına yetmez.** Kopyalar sunucunun kendi diskinde duruyor;
 disk giderse yedekler de gider. Ayda bir kendi bilgisayarına çek:
@@ -411,6 +490,9 @@ Ama şu üçünü ihmal etme:
 2. **Yedeklemeyi kur** (yukarıdaki cron)
 3. **E-postayı ayarla** — kurulmazsa giriş kodları sunucu günlüğüne yazılır,
    sen `journalctl -u egitimevi -f` ile bakmak zorunda kalırsın
+
+Yönetim panelinin adresini (`/admin`) herkese açık yerlerde paylaşma; `data/admins.json`
+`chmod 600` kalsın.
 
 ---
 
@@ -476,3 +558,11 @@ journalctl -u caddy -n 50       # sertifika hataları
 
 Site açılmıyorsa sırayla bak: DNS doğru mu (`ping egitimevi.org`),
 servis çalışıyor mu, Caddy ayakta mı, güvenlik duvarı 443'ü açtı mı.
+
+Yönetim paneli (`/admin`) "Sayfa bulunamadı" diyorsa bu tarayıcıda yönetim çerezi yoktur ya
+da geçersizdir (çıkış yapıldı, oturum süresi doldu, şifre değişti): `/login`'den yönetici
+hesabıyla yeniden gir. `data/ayarlar.json`'da `site.adres` `https://` ile başlıyorsa çerez
+yalnız https'te gider; siteyi `http://` ile açtıysan https ile aç.
+
+`data/admins.json`'daki bir yönetici açılmadıysa nedenini servis günlüğünde ya da yönetim
+panelinde **Yönetici Dosyası** sayfasında gör (`journalctl -u egitimevi | grep admins.json`).

@@ -188,18 +188,8 @@ function navTanim() {
       { k: 'yoklama', g: 'onay', ad: 'Yoklama' }
     ].concat(veliBolumu());
   }
-  if (u.role === 'admin') {
-    return [
-      { k: 'ana', g: 'ev', ad: 'Ana Sayfa' },
-      { k: 'mudurler', g: 'mudur', ad: 'Müdürler' },
-      { k: 'okullar', g: 'okul', ad: 'Okullar' },
-      { k: 'yorumlar', g: 'posta', ad: 'Yorumlar' },
-      { k: 'hatirlaticilar', g: 'bildirim', ad: 'Hatırlatıcılar' },
-      { ayrac: 1 },
-      { k: 'yedekler', g: 'kutu', ad: 'Yedekleme' },
-      { k: 'islem-kaydi', g: 'belge', ad: 'İşlem Kaydı' }
-    ];
-  }
+  /* Sistem yöneticisinin menüsü kendi dosyasında (00-durum.js YONETIM). */
+  if (u.role === 'admin') return YONETIM ? YONETIM.menu() : [{ k: 'ana', g: 'ev', ad: 'Ana Sayfa' }];
   return [];
 }
 

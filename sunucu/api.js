@@ -106,6 +106,18 @@ const BOLUM = {
   'yorumlar': yorum,
 };
 
+/* Yöneticiye özel uçlar: /api/admin/... ve yorumların yönetimi. Yönetici
+   olmayana (giriş yapmamış tarayıcı, öğrenci, öğretmen, müdür, veli,
+   servisçi, rolsüz yetişkin) bilinmeyen bir API adresiyle AYNI cevabı verir:
+   aynı kapılardan geçer, sonunda aynı 404 {"error":"Böyle bir adres yok"}.
+   401/403 dönmez: dışarıdan bakan, yönetici uçlarının var olduğunu
+   bilinmeyen adreslerden ayırt edemesin. Bu denetim yalnız burada yapılır. */
+function yoneticiUcuMu(p, segs) {
+  if (p === 'admin') return true;
+  return p === 'yorumlar' && (segs[2] === 'hepsi' || segs[2] === 'gizle');
+}
+const yoneticiMi = me => !!me && me.role === 'admin' && me.status === 'approved';
+
 /* Yıla bağlı kayıt yazan istekler: ödev, sınav, yoklama, takvim etkinliği ve
    ders programı. Sınıflar, öğrenciler ve sınav şablonları yıllar arası ortak. */
 function arsivYazmasiMi(p, segs, body) {
@@ -127,6 +139,10 @@ async function handleApi(req, res, segs, method) {
   if (me) site.goruldu(me.anaHesapId || me.id);
   const q = new URL(req.url, 'http://x').searchParams;
   const p = segs[1] || '';
+  /* Yönetici olmayan için yönetici ucu bilinmeyen bir adrestir: aşağıdaki
+     kapılar ona yolun adıyla değil boş adla (kp) bakar, sonunda 404 döner. */
+  const gizli = yoneticiUcuMu(p, segs) && !yoneticiMi(me);
+  const kp = gizli ? '' : p;
 
   /* Dosya yükleme: gövde JSON değil, dosyanın kendisi. JSON okuyucusuna
      (2 MB sınır) girmez, diske akarak yazılır; bütün denetimleri kendisi yapar. */
@@ -177,14 +193,14 @@ async function handleApi(req, res, segs, method) {
 
   /* Onayı güncel olmayan kullanıcı yalnızca onay verebilir ya da çıkabilir.
      Herkese açık uçlar (giriş, kayıt, okul arama) ve /me serbest kalır. */
-  if (me && !kayit.kvkkGuncelMi(me) && KVKK_SERBEST.indexOf(p) < 0) {
+  if (me && !kayit.kvkkGuncelMi(me) && KVKK_SERBEST.indexOf(kp) < 0) {
     return sendJSON(res, 403, {
       error: 'Aydınlatma metni güncellendi. Devam etmek için okuyup onaylaman gerekiyor.',
       kvkkGerek: true
     });
   }
 
-  if (me && me.sifreDegismeli && SIFRE_SERBEST.indexOf(p) < 0) {
+  if (me && me.sifreDegismeli && SIFRE_SERBEST.indexOf(kp) < 0) {
     return sendJSON(res, 403, {
       error: 'Sana verilen şifreyle girdin. Devam etmeden önce kendi şifreni belirle.',
       sifreDegismeli: true
@@ -193,7 +209,7 @@ async function handleApi(req, res, segs, method) {
 
   /* Olmayan (ya da kaldırılmış: okul-basvurusu) yol rolsüz kişiye de 404
      döner; kapı yalnız var olan bölümleri kapatır. */
-  if (me && !me.role && BOLUM[p] && ROLSUZ_SERBEST.indexOf(p) < 0) {
+  if (me && !me.role && BOLUM[kp] && ROLSUZ_SERBEST.indexOf(kp) < 0) {
     return sendJSON(res, 403, {
       error: 'Hesabın henüz bir okula bağlı değil. Okul yönetimi seni ekleyince bu bölüm açılır.',
       rolsuz: true
@@ -202,18 +218,18 @@ async function handleApi(req, res, segs, method) {
 
   /* Müdürün okulda kapattığı bölüm (ödev, sınav, devamsızlık...): hiçbir
      rolden istek o bölüme girmez. */
-  if (me && await ozellikler.kapaliysaReddet(res, me, p, q, body)) return;
+  if (me && await ozellikler.kapaliysaReddet(res, me, kp, q, body)) return;
 
   /* Geçmiş eğitim yılına bakan okul personeli o yılın kayıtlarını
      değiştiremez: arşiv salt okunur (yeni kayıt da eski yıla damgalanıp
      aktif yılda kaybolurdu). */
   if (me && method === 'POST' && (me.role === 'teacher' || me.role === 'principal') &&
-      arsivYazmasiMi(p, segs, body) && await egitim_yili.arsivdeMi(me)) {
+      arsivYazmasiMi(kp, segs, body) && await egitim_yili.arsivdeMi(me)) {
     return sendJSON(res, 409, { arsiv: true, error: 'Geçmiş bir eğitim yılına bakıyorsun; kayıtlar salt okunur. ' +
       'Değişiklik için üstteki yıl seçiciden aktif yıla dön.' });
   }
 
-  const bolum = BOLUM[p];
+  const bolum = gizli ? null : BOLUM[p];
   if (bolum) {
     await bolum.uclar({ req, res, me, body, q, p, segs, method, need });
     if (res.writableEnded || res.headersSent) return;
@@ -222,5 +238,6 @@ async function handleApi(req, res, segs, method) {
 }
 
 module.exports = {
-  handleApi
+  handleApi,
+  yoneticiUcuMu
 };

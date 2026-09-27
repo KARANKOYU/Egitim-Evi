@@ -19,11 +19,11 @@
 const aktarim = require('../yardimci/aktarim');
 const xlsx = require('../yardimci/xlsx');
 const { tabloOku } = require('../yardimci/tablo-oku');
-const { bad, ok } = require('../http');
+const { bad, ok, sendJSON } = require('../http');
 const { hizSinir } = require('../guvenlik');
 const { adDuzelt, clean, metinYap, normEmail, normKullaniciAdi, normTc, now, uid } = require('../ortak');
 const { hashPwToplu } = require('../sifre');
-const { depo, islem } = require('../veri');
+const { cakisma, depo, islem } = require('../veri');
 const { yetkiVarMi } = require('../yetki');
 const { islemYaz } = require('./islem-kaydi');
 const { hesapDogrula, hesapNesnesi, ROL_AD, YETKI } = require('./hesaplar');
@@ -369,32 +369,43 @@ async function iceAktar(k) {
   if (!hizSinir('kisiAktarim:' + me.schoolId, 20, 60 * 60 * 1000)) return bad(res, 'Bu saat içinde çok fazla aktarım yapıldı.', 429);
 
   const ozetler = await hashPwToplu(hazir.map(h => h.s.sifre));
-  const acilan = await islem(async () => {
-    /* Yeni sınıflar */
-    const sinifId = new Map();
-    for (const [anahtar, ad] of acilacakSinif) {
-      const c = { id: uid('c'), schoolId: me.schoolId, name: ad, createdAt: now() };
-      await depo.siniflar.ekle(c);
-      sinifId.set(anahtar, c.id);
-    }
-    const liste = [];
-    for (let i = 0; i < hazir.length; i++) {
-      const h = hazir[i];
-      if (h.yeniSinif) h.s.d.classId = sinifId.get(aktarim.anahtarla(h.yeniSinif));
-      const u = await hesapNesnesi(me, h.rol, h.s, ozetler[i]);
-      await depo.kullanicilar.ekle(u);
-      if (h.servisId) await depo.okulHayati.servisSoforYaz(h.servisId, me.schoolId, u.id);
-      const sinifAdiBul = id => ((siniflar.find(c => c.id === id) || {}).name || '');
-      liste.push({ ad: u.fullName, rol: h.rol, sinif: h.yeniSinif || (u.classId ? sinifAdiBul(u.classId) : ''), kullaniciAdi: u.username,
-        sifre: h.s.varsayilanSifre ? '' : h.s.sifre, tcIle: h.s.varsayilanSifre, veliKodu: u.code || '' });
-    }
-    for (const gu of guncel) {
-      if (gu.yeniSinif) gu.d.classId = sinifId.get(aktarim.anahtarla(gu.yeniSinif));
-      if (Object.keys(gu.d).length) await depo.kullanicilar.guncelle(gu.u.id, gu.d);
-      if (gu.servisId) await depo.okulHayati.servisSoforYaz(gu.servisId, me.schoolId, gu.u.id);
-    }
-    return liste;
-  });
+  /* Önizlemeden sonra (ya da aynı anda yüklenen başka bir listeyle) biri aynı
+     T.C. no'yu, kullanıcı adını, e-postayı ya da okul no'yu almışsa tekil indeks
+     yazmayı durdurur; işlem bütünüyle geri alınır (hiçbir hesap açılmaz). */
+  let acilan;
+  try {
+    acilan = await islem(async () => {
+      /* Yeni sınıflar */
+      const sinifId = new Map();
+      for (const [anahtar, ad] of acilacakSinif) {
+        const c = { id: uid('c'), schoolId: me.schoolId, name: ad, createdAt: now() };
+        await depo.siniflar.ekle(c);
+        sinifId.set(anahtar, c.id);
+      }
+      const liste = [];
+      for (let i = 0; i < hazir.length; i++) {
+        const h = hazir[i];
+        if (h.yeniSinif) h.s.d.classId = sinifId.get(aktarim.anahtarla(h.yeniSinif));
+        const u = await hesapNesnesi(me, h.rol, h.s, ozetler[i]);
+        await depo.kullanicilar.ekle(u);
+        if (h.servisId) await depo.okulHayati.servisSoforYaz(h.servisId, me.schoolId, u.id);
+        const sinifAdiBul = id => ((siniflar.find(c => c.id === id) || {}).name || '');
+        liste.push({ ad: u.fullName, rol: h.rol, sinif: h.yeniSinif || (u.classId ? sinifAdiBul(u.classId) : ''), kullaniciAdi: u.username,
+          sifre: h.s.varsayilanSifre ? '' : h.s.sifre, tcIle: h.s.varsayilanSifre, veliKodu: u.code || '' });
+      }
+      for (const gu of guncel) {
+        if (gu.yeniSinif) gu.d.classId = sinifId.get(aktarim.anahtarla(gu.yeniSinif));
+        if (Object.keys(gu.d).length) await depo.kullanicilar.guncelle(gu.u.id, gu.d);
+        if (gu.servisId) await depo.okulHayati.servisSoforYaz(gu.servisId, me.schoolId, gu.u.id);
+      }
+      return liste;
+    });
+  } catch (e) {
+    const c = cakisma(e);
+    if (!c) throw e;
+    return sendJSON(res, 409, { alan: c.alan, error: 'Liste işlenirken bir kayıt bu arada başka bir hesaba yazılmış: ' +
+      c.mesaj.charAt(0).toLocaleLowerCase('tr') + c.mesaj.slice(1) + ' Hiçbir hesap açılmadı; listeyi yeniden yükle.' });
+  }
   await islemYaz(me, 'hesap.toplu-acildi', acilan.length + ' hesap açıldı, ' + guncel.length + ' güncellendi', req);
   res.setHeader('Cache-Control', 'no-store');
   return ok(res, {

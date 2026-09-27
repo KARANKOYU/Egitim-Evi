@@ -21,13 +21,13 @@
    öğrenciye veli bağlar (veli kodu yolu ayrıca açık). */
 
 const { hataSay, hataSiniriDoldu, hizSinir, istemciIp } = require('../guvenlik');
-const { bad, ok } = require('../http');
+const { bad, ok, okulOnbellekBosalt, sendJSON } = require('../http');
 const {
-  SUBJECTS, adDuzelt, clean, dogumSorunu, kisaAdSorunu, kisiKoduSade, kullaniciAdiSorunu, metinYap, normEmail,
+  SUBJECTS, adDuzelt, clean, dogumSorunu, epostaSorunu, kisaAdSorunu, kisiKoduSade, kullaniciAdiSorunu, metinYap, normEmail,
   gucluSifreli, normKullaniciAdi, normTc, normTelefon, now, sifreSorunu, tarihCoz, tcSorunu, telefonSorunu, uid
 } = require('../ortak');
 const { hashPw } = require('../sifre');
-const { depo, bildir, islem } = require('../veri');
+const { cakisma, depo, bildir, islem } = require('../veri');
 const { ogrenciKapsamindaMi, pub, yetkiVarMi } = require('../yetki');
 const { islemYaz } = require('./islem-kaydi');
 const nakil = require('./nakil');
@@ -38,7 +38,6 @@ const YETKI = {
   teacher: { ac: 'ogretmen.onayla', duzenle: 'ogretmen.duzenle', sifre: 'ogretmen.duzenle', sil: 'ogretmen.cikar' },
   servisci: { ac: 'servis.yonet', duzenle: 'servis.yonet', sifre: 'servis.yonet', sil: 'servis.yonet' }
 };
-const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* "Ayşe Yılmaz" -> "Ay** Yı****": veli aranırken tam ad verilmez. */
 function adMaskele(ad) {
@@ -59,6 +58,8 @@ function adSoyad(g) {
    Dönen: { sorunlar: [], d: { yazılacak alanlar }, sifre, varsayilanSifre } */
 async function hesapDogrula(me, rol, g, mevcut, dosya) {
   const sorunlar = [];
+  const alanlar = [];   // her sorunun alanı (tek hesap açarken form o kutuyu gösterir)
+  const sorun = (alan, mesaj) => { sorunlar.push(mesaj); alanlar.push(alan); };
   const d = {};
   const yeni = !mevcut;
   const okulId = me.schoolId;
@@ -66,7 +67,7 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
 
   if (yeni || g.ad !== undefined || g.soyad !== undefined || g.fullName !== undefined) {
     const ad = adSoyad(g);
-    if (ad.split(/\s+/).filter(Boolean).length < 2) sorunlar.push('Ad ve soyad gerekli');
+    if (ad.split(/\s+/).filter(Boolean).length < 2) sorun('ad', 'Ad ve soyad gerekli');
     else d.fullName = ad;
   }
 
@@ -75,14 +76,14 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
   if (yeni || g.tc !== undefined) {
     tc = normTc(g.tc);
     if (!tc) {
-      if (yeni) sorunlar.push('T.C. kimlik no gerekli');
-    } else if (tcSorunu(tc)) sorunlar.push(tcSorunu(tc));
-    else if (await depo.kullanicilar.tcVarMi(tc, haric, okulId)) sorunlar.push('Bu T.C. kimlik no okulda başka bir hesapta kayıtlı');
+      if (yeni) sorun('tc', 'T.C. kimlik no gerekli');
+    } else if (tcSorunu(tc)) sorun('tc', tcSorunu(tc));
+    else if (await depo.kullanicilar.tcVarMi(tc, haric, okulId)) sorun('tc', 'Bu T.C. kimlik no okulda başka bir hesapta kayıtlı');
     else if (rol === 'student' && await nakil.baskaOkulOgrencisi(tc, okulId, haric)) {
-      sorunlar.push('Bu T.C. kimlik no başka bir okulda kayıtlı bir öğrencinin. Öğrenciyi okuluna almak için ' +
+      sorun('tc', 'Bu T.C. kimlik no başka bir okulda kayıtlı bir öğrencinin. Öğrenciyi okuluna almak için ' +
         '"Öğrenci ekle"den doğum tarihiyle birlikte tek tek ekle');
     }
-    else if (dosya && dosya.tc.has(tc)) sorunlar.push('Bu T.C. kimlik no dosyada ' + dosya.tc.get(tc) + '. satırda da var');
+    else if (dosya && dosya.tc.has(tc)) sorun('tc', 'Bu T.C. kimlik no dosyada ' + dosya.tc.get(tc) + '. satırda da var');
     if (tc || !yeni) d.tc = tc;
   }
 
@@ -91,47 +92,47 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
     let kadi = normKullaniciAdi(g.kullaniciAdi);
     if (!kadi) kadi = tc;
     if (!kadi) {
-      if (!yeni) sorunlar.push('Kullanıcı adı boş olamaz');
+      if (!yeni) sorun('kullaniciAdi', 'Kullanıcı adı boş olamaz');
     } else if (/^[0-9]+$/.test(kadi)) {
-      if (kadi !== tc) sorunlar.push('Rakamlardan oluşan kullanıcı adı yalnızca kişinin T.C. kimlik no\'su olabilir');
-    } else if (kullaniciAdiSorunu(kadi)) sorunlar.push(kullaniciAdiSorunu(kadi));
+      if (kadi !== tc) sorun('kullaniciAdi', 'Rakamlardan oluşan kullanıcı adı yalnızca kişinin T.C. kimlik no\'su olabilir');
+    } else if (kullaniciAdiSorunu(kadi)) sorun('kullaniciAdi', kullaniciAdiSorunu(kadi));
     if (kadi && !sorunlar.length) {
-      if (await depo.kullanicilar.kullaniciAdiVarMi(kadi, haric, okulId)) sorunlar.push('Bu kullanıcı adı okulda alınmış');
-      else if (dosya && dosya.kadi.has(kadi)) sorunlar.push('Bu kullanıcı adı dosyada ' + dosya.kadi.get(kadi) + '. satırda da var');
+      if (await depo.kullanicilar.kullaniciAdiVarMi(kadi, haric, okulId)) sorun('kullaniciAdi', 'Bu kullanıcı adı okulda alınmış');
+      else if (dosya && dosya.kadi.has(kadi)) sorun('kullaniciAdi', 'Bu kullanıcı adı dosyada ' + dosya.kadi.get(kadi) + '. satırda da var');
       else d.username = kadi;
     }
   } else if (g.tc !== undefined && mevcut && /^[0-9]{11}$/.test(mevcut.username) && mevcut.username !== tc) {
     /* T.C. no değişti, kullanıcı adı eski T.C. no ise o da değişir. */
     if (tc) {
-      if (await depo.kullanicilar.kullaniciAdiVarMi(tc, haric, okulId)) sorunlar.push('Bu kullanıcı adı okulda alınmış');
+      if (await depo.kullanicilar.kullaniciAdiVarMi(tc, haric, okulId)) sorun('kullaniciAdi', 'Bu kullanıcı adı okulda alınmış');
       else d.username = tc;
-    } else sorunlar.push('Kullanıcı adı T.C. no; T.C. no silinecekse önce kullanıcı adını değiştir');
+    } else sorun('kullaniciAdi', 'Kullanıcı adı T.C. no; T.C. no silinecekse önce kullanıcı adını değiştir');
   }
 
   if (yeni || g.eposta !== undefined) {
     const eposta = normEmail(g.eposta);
-    if (eposta && !EPOSTA.test(eposta)) sorunlar.push('E-posta geçersiz');
-    else if (eposta && await depo.kullanicilar.epostaVarMi(eposta, haric)) sorunlar.push('Bu e-posta başka bir hesapta kayıtlı');
-    else if (eposta && dosya && dosya.eposta.has(eposta)) sorunlar.push('Bu e-posta dosyada ' + dosya.eposta.get(eposta) + '. satırda da var');
+    if (eposta && epostaSorunu(eposta)) sorun('eposta', epostaSorunu(eposta));
+    else if (eposta && await depo.kullanicilar.epostaVarMi(eposta, haric)) sorun('eposta', 'Bu e-posta başka bir hesapta kayıtlı');
+    else if (eposta && dosya && dosya.eposta.has(eposta)) sorun('eposta', 'Bu e-posta dosyada ' + dosya.eposta.get(eposta) + '. satırda da var');
     else if (mevcut && !mevcut.okulActi && eposta !== (mevcut.email || '')) {
       /* Kendi kaydolduğu hesabın e-postası onun kurtarma yoludur. */
-      sorunlar.push('Bu hesabı kişi kendisi açtı; e-postasını yalnızca kendisi değiştirebilir');
+      sorun('eposta', 'Bu hesabı kişi kendisi açtı; e-postasını yalnızca kendisi değiştirebilir');
     } else d.email = eposta;
   }
 
   if (g.dogum !== undefined && metinYap(g.dogum).trim()) {
     const dogum = tarihCoz(g.dogum);
     if (!dogum) {
-      sorunlar.push(/^\d{1,2}[./-]\d{1,2}[./-]\d{4}$/.test(metinYap(g.dogum).trim())
+      sorun('dogum', /^\d{1,2}[./-]\d{1,2}[./-]\d{4}$/.test(metinYap(g.dogum).trim())
         ? 'Böyle bir gün yok: doğum tarihini kontrol et' : 'Doğum tarihi anlaşılmadı (gg.aa.yyyy yaz)');
     }
-    else if (dogumSorunu(dogum, false)) sorunlar.push(dogumSorunu(dogum, false));
+    else if (dogumSorunu(dogum, false)) sorun('dogum', dogumSorunu(dogum, false));
     else d.dogum = dogum;
   } else if (g.dogum !== undefined && !yeni) d.dogum = '';
 
   if (g.telefon !== undefined) {
     const tel = clean(g.telefon, 30);
-    if (tel && telefonSorunu(tel)) sorunlar.push(telefonSorunu(tel));
+    if (tel && telefonSorunu(tel)) sorun('telefon', telefonSorunu(tel));
     else d.phone = tel ? normTelefon(tel) : '';
   }
   if (g.adres !== undefined) d.address = clean(g.adres, 200);
@@ -139,8 +140,8 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
   if (rol === 'student') {
     if (g.okulNo !== undefined) {
       const no = clean(g.okulNo, 20).replace(/\s+/g, '');
-      if (no && await depo.kullanicilar.okulNoVarMi(okulId, no, haric)) sorunlar.push('Bu okul numarası başka bir öğrencide');
-      else if (no && dosya && dosya.no.has(no)) sorunlar.push('Bu okul numarası dosyada ' + dosya.no.get(no) + '. satırda da var');
+      if (no && await depo.kullanicilar.okulNoVarMi(okulId, no, haric)) sorun('okulNo', 'Bu okul numarası başka bir öğrencide');
+      else if (no && dosya && dosya.no.has(no)) sorun('okulNo', 'Bu okul numarası dosyada ' + dosya.no.get(no) + '. satırda da var');
       else d.okulNo = no;
     }
     if (g.sinifId !== undefined) {
@@ -150,10 +151,10 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
          ve yeni sınıfın ikisi de kapsamda olmalı. */
       if (cid !== eski && (!yetkiVarMi(me, 'ogrenci.yerlestir', cid ? { sinif: cid } : null) ||
           (eski && !yetkiVarMi(me, 'ogrenci.yerlestir', { sinif: eski })))) {
-        sorunlar.push('Öğrenciyi bu sınıfa yerleştirme yetkin yok');
+        sorun('sinifId', 'Öğrenciyi bu sınıfa yerleştirme yetkin yok');
       } else if (cid) {
         const c = await depo.siniflar.bul(cid);
-        if (!c || c.schoolId !== okulId) sorunlar.push('Sınıf bulunamadı');
+        if (!c || c.schoolId !== okulId) sorun('sinifId', 'Sınıf bulunamadı');
         else d.classId = c.id;
       } else d.classId = '';
     }
@@ -164,7 +165,7 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
     if (g.brans !== undefined) {
       const b = clean(g.brans, 60);
       const esit = SUBJECTS.find(x => x.toLocaleLowerCase('tr') === b.toLocaleLowerCase('tr'));
-      if (b && !esit) sorunlar.push('"' + b + '" branş listesinde yok');
+      if (b && !esit) sorun('brans', '"' + b + '" branş listesinde yok');
       else d.branch = esit || '';
     }
     /* Ek rol vermek yetki dağıtmaktır: "rol yönetir" yetkisi ister (Roller
@@ -172,11 +173,11 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
        rolü ayrıca verilmez. */
     if (g.rolId !== undefined && clean(g.rolId, 60) !== ((mevcut && mevcut.customRoleId) || '')) {
       const rid = clean(g.rolId, 60);
-      if (!yetkiVarMi(me, 'rol.yonet')) sorunlar.push('Rol vermek için "rol yönetir" yetkisi gerekir');
-      else if (mevcut && mevcut.id === me.id) sorunlar.push('Kendine rol veremezsin');
+      if (!yetkiVarMi(me, 'rol.yonet')) sorun('rolId', 'Rol vermek için "rol yönetir" yetkisi gerekir');
+      else if (mevcut && mevcut.id === me.id) sorun('rolId', 'Kendine rol veremezsin');
       else if (rid) {
         const r = await depo.roller.bul(rid);
-        if (!r || r.schoolId !== okulId || r.tur === 'ogretmen') sorunlar.push('Rol bulunamadı');
+        if (!r || r.schoolId !== okulId || r.tur === 'ogretmen') sorun('rolId', 'Rol bulunamadı');
         else d.customRoleId = r.id;
       } else d.customRoleId = '';
     }
@@ -188,10 +189,13 @@ async function hesapDogrula(me, rol, g, mevcut, dosya) {
     sifre = metinYap(g.sifre);
     if (!sifre) { sifre = tc; varsayilanSifre = true; }
     else if (sifre === tc) varsayilanSifre = true;
-    else if (sifreSorunu(sifre, gucluSifreli({ role: rol }))) sorunlar.push(sifreSorunu(sifre, gucluSifreli({ role: rol })));
+    else if (sifreSorunu(sifre, gucluSifreli({ role: rol }))) sorun('sifre', sifreSorunu(sifre, gucluSifreli({ role: rol })));
   }
-  return { sorunlar, d, sifre, varsayilanSifre };
+  return { sorunlar, alanlar, d, sifre, varsayilanSifre };
 }
+
+/* Doğrulama sorunlarının cevabı: bütün iletiler ve ilk sorunun alanı. */
+const sorunCevabi = (res, s) => sendJSON(res, 400, { error: s.sorunlar.join('; '), alan: s.alanlar[0] || '' });
 
 /* Yeni hesap nesnesi (doğrulanmış alanlardan). */
 async function hesapNesnesi(me, rol, s, ozet) {
@@ -268,7 +272,7 @@ async function uclar(k, sub) {
       if (baska) return nakil.nakilEt(k, baska, g);
     }
     const s = await hesapDogrula(me, rol, g, null, null);
-    if (s.sorunlar.length) return bad(res, s.sorunlar.join('; '));
+    if (s.sorunlar.length) return sorunCevabi(res, s);
     const u = await hesapNesnesi(me, rol, s, await hashPw(s.sifre));
     await depo.kullanicilar.ekle(u);
     await islemYaz(me, 'hesap.acildi', u.fullName + ' (' + ROL_AD[rol] + ')', req);
@@ -306,7 +310,7 @@ async function uclar(k, sub) {
       }
     }
     const s = await hesapDogrula(me, r.u.role, alanlar, r.u, null);
-    if (s.sorunlar.length) return bad(res, s.sorunlar.join('; '));
+    if (s.sorunlar.length) return sorunCevabi(res, s);
     if (Object.keys(s.d).length) await depo.kullanicilar.guncelle(r.u.id, s.d);
     Object.assign(r.u, s.d);
     const c = r.u.classId ? await depo.siniflar.bul(r.u.classId) : null;
@@ -387,7 +391,7 @@ async function uclar(k, sub) {
       if (body.brans !== undefined) g.brans = body.brans;
       if (body.rolId !== undefined) g.rolId = body.rolId;
       const s = await hesapDogrula(me, 'teacher', g, { id: '', role: 'teacher', schoolId: me.schoolId }, null);
-      if (s.sorunlar.length) return bad(res, s.sorunlar.join('; '));
+      if (s.sorunlar.length) return sorunCevabi(res, s);
       const okul = await depo.okullar.bul(me.schoolId);
       const satir = {
         id: uid('u'), anaHesapId: kisi.id, username: await depo.kullanicilar.okuldaBosAd(kisi.username, me.schoolId),
@@ -398,11 +402,22 @@ async function uclar(k, sub) {
       /* Kod harcanır ve rol satırı yazılır: ikisi birlikte. Aynı kod bu arada
          başka yerde kullanıldıysa hiçbir şey yazılmaz. */
       const yeniKod = await depo.kullanicilar.yeniKisiKodu();
-      const tuketildi = await islem(async () => {
-        if (!await depo.kullanicilar.eslesmeKoduTuket(kisi.id, kod, yeniKod)) return false;
-        await depo.kullanicilar.ekle(satir);
-        return true;
-      });
+      let tuketildi;
+      try {
+        tuketildi = await islem(async () => {
+          if (!await depo.kullanicilar.eslesmeKoduTuket(kisi.id, kod, yeniKod)) return false;
+          await depo.kullanicilar.ekle(satir);
+          return true;
+        });
+      } catch (e) {
+        /* Bu arada kişi okula eklendiyse (kullanicilar_ana_okul) ya da seçilen
+           kullanıcı adı okulda alındıysa hiçbir şey yazılmaz, kod harcanmaz. */
+        const c = cakisma(e);
+        if (!c) throw e;
+        return sendJSON(res, 400, c.alan === 'kod'
+          ? { error: 'Bu kişi okulunda zaten öğretmen.', alan: 'kod' }
+          : { error: 'Öğretmenin kullanıcı adı bu arada okulda başka birine verildi. Yeniden dene.', alan: 'kod' });
+      }
       if (!tuketildi) return bad(res, 'Bu kod az önce kullanıldı. Öğretmenden yeni kodunu iste.', 404);
       await bildir(kisi.id, (me._okulAdi || 'Bir okul') + ' seni öğretmen olarak ekledi. Sol üstteki menüden okuluna geçebilirsin.');
       await islemYaz(me, 'ogretmen.eklendi', kisi.fullName, req);
@@ -433,7 +448,7 @@ async function uclar(k, sub) {
   if (sub === 'veli-bul' && method === 'GET') {
     if (!yetkiVarMi(me, 'ogrenci.duzenle')) return bad(res, 'Bu işlem için yetkin yok', 403);
     if (!hizSinir('kisiBul:' + me.id, 60, 60 * 1000)) return bad(res, 'Çok fazla arama yaptın. Bir dakika bekle.', 429);
-    const kimlik = clean(q.get('kimlik'), 40).replace(/\s/g, '');
+    const kimlik = normTc(clean(q.get('kimlik'), 40));   // boşluksuz; tam genişlikli rakam da olur
     let adaylar;
     if (/^[0-9]+$/.test(kimlik)) {
       if (tcSorunu(kimlik)) return bad(res, tcSorunu(kimlik));
@@ -459,7 +474,12 @@ async function uclar(k, sub) {
     if (await depo.kullanicilar.bagliMi(u.id, st.id)) return bad(res, 'Bu kişi zaten bu öğrencinin velisi.');
     /* Rolsüz hesap veli olur (yalnızca hâlâ rolsüzse); öğretmen/müdür rolünü korur. */
     const olmadi = await islem(async () => {
-      if (!u.role && !await depo.kullanicilar.rolsuzuVeliYap(u.id)) return true;
+      /* Aynı anda iki bağlama: öteki istek hesabı az önce veli yaptıysa sürer
+         (bağ tekildir: veli_baglari UNIQUE, ON CONFLICT DO NOTHING). */
+      if (!u.role && !await depo.kullanicilar.rolsuzuVeliYap(u.id)) {
+        const simdi = await depo.kullanicilar.bul(u.id);
+        if (!simdi || simdi.role !== 'parent') return true;
+      }
       await depo.kullanicilar.bagla(uid('pl'), u.id, st.id, now());
       if ((!u.role || u.role === 'parent') && !u.schoolId) await depo.kullanicilar.guncelle(u.id, { schoolId: st.schoolId });
       return false;
@@ -501,6 +521,7 @@ async function uclar(k, sub) {
     if (simdiki && simdiki.kisaAd === kisa) return ok(res, { kisaAd: kisa, message: 'Okulun adresi zaten bu.' });
     hataSay(anahtar, 10, 24 * 60 * 60 * 1000);
     await depo.okullar.kisaAdYaz(me.schoolId, kisa);
+    okulOnbellekBosalt();   // eski adres hemen "Okul bulunamadı" olsun
     await islemYaz(me, 'okul.adres', kisa, req);
     return ok(res, { kisaAd: kisa, message: 'Okulun adresi kaydedildi.' });
   }

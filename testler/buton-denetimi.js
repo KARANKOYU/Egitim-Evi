@@ -7,10 +7,15 @@ const fs = require('fs');
 const path = require('path');
 
 const KOK = path.join(__dirname, '..');
-/* Arayuz artik parcalar halinde; sunucunun yaptigi gibi ad sirasiyla birlestir. */
-const PARCA_KLASOR = path.join(KOK, 'public', 'js', 'parcalar');
-const APP = fs.readdirSync(PARCA_KLASOR).filter(a => a.endsWith('.js')).sort()
-  .map(a => fs.readFileSync(path.join(PARCA_KLASOR, a), 'utf8')).join(String.fromCharCode(10));
+/* Arayuz artik parcalar halinde; sunucunun yaptigi gibi ad sirasiyla birlestir.
+   Yonetim parcalari (public/js/yonetim/) herkese giden app.js'e girmez ama
+   yonetim paketinde (/admin/yonetim.js) uygulama parcalariyla birlesir:
+   dugmeleri ve sayfalari birlikte denetlenir. */
+const PARCA_KLASORLERI = [path.join(KOK, 'public', 'js', 'parcalar'), path.join(KOK, 'public', 'js', 'yonetim')];
+const APP = PARCA_KLASORLERI.filter(k => fs.existsSync(k))
+  .map(k => fs.readdirSync(k).filter(a => a.endsWith('.js')).map(a => ({ a, k })))
+  .reduce((x, y) => x.concat(y), []).sort((x, y) => (x.a < y.a ? -1 : x.a > y.a ? 1 : 0))
+  .map(d => fs.readFileSync(path.join(d.k, d.a), 'utf8')).join(String.fromCharCode(10));
 const HTML = fs.readFileSync(path.join(KOK, 'public', 'index.html'), 'utf8');
 const KAYNAK = APP + '\n' + HTML;
 

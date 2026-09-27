@@ -57,7 +57,10 @@ const ROL_METNI = {
       menüde görünür. Tek portalı olduğu için girişte doğrudan okuluna girer.` },
   admin: { baslik: 'Site yöneticisi',
     giris: `Site yöneticisi okulları açar: okulu MEB listesinden seçer, adresini yazar, müdürü kişi koduyla bulur
-      (tam adı ve gizlenmiş e-postasıyla). Müdürleri görür, yedek alır, açılış sayfasındaki yorumları denetler.` }
+      (tam adı ve gizlenmiş e-postasıyla). Müdürleri görür, yedek alır, açılış sayfasındaki yorumları denetler;
+      <b>Site Ayarları</b>'nda sitenin iletişim bilgilerini, yapımcılarını, zamanlamalarını ve okul adreslerini değiştirir.
+      Yönetim paneli kendi adresinde, ayrı bir dosyayla açılır: yönetici giriş yapınca sayfa oraya geçer, yönetici
+      oturumu olmayan herkes o adreste yalnız "Sayfa bulunamadı" görür.` }
 };
 
 const ADIM_METNI = {
@@ -517,7 +520,8 @@ const ADIM_METNI = {
   'yeni-mudur|Portal menüsü (telefon)': A(`Telefonda menü: okul Portallarım'da, altında müdürün menüsü.`),
 
   /* ================= site yöneticisi ================= */
-  'admin|Ana sayfa': A(`Site yöneticisinin ana sayfası.`),
+  'admin|Ana sayfa': A(`Site yöneticisinin ana sayfası. Yönetim paneli kendi adresinde açılır; bu ekranlar ve uç adları
+    herkese giden uygulama dosyasında yoktur.`),
   'admin|Müdürler': A(`Okulların müdürleri.`),
   'admin|Okullar': A(`Eğitim Evi'ni kullanan okullar.`),
   'admin|Okul aç penceresi': A(`Okulları yönetici açar: okul MEB listesinden seçilir (listede yoksa adı yazılır), adresi
@@ -525,14 +529,30 @@ const ADIM_METNI = {
   'admin|Okul aç — okul seçildi, adres önerildi, müdür kişi koduyla bulundu': A(`Okulun adresi adından önerilir. Kişinin
     verdiği kod yazılıp <b>Bul</b>'a basılınca kodun sahibi görünür: tam adı, gizlenmiş e-postası ve kullanıcı adı. Yönetici
     bunları kişiyle karşılaştırıp okulu açar; kişinin kodu yenilenir.`),
+  'admin|Site ayarları': A(`Sayfaların altındaki iletişim bilgileri, yapımcılar listesi, Play Store bağlantısı, zamanlamalar
+    (bildirim yoklama aralığı, çevrimiçi sayma süresi, admins.json okuma aralığı) ve okul adresleri. Her kart değerin nereden
+    geldiğini yazar: panelden kaydedilen, sunucudaki config.yml ya da varsayılan. Kaydedilen değer sunucu yeniden
+    başlamadan geçerli olur.`),
+  'admin|Site ayarları — yapımcı eklendi, hatalar kutuların altında': A(`Yapımcılar satır satır düzenlenir: eklenir, oklarla
+    sıralanır, listeden çıkarılır. Adı yazılmamış satır ve kurala uymayan GitHub kullanıcı adı kaydedilmeden ilgili kutunun
+    altında söylenir.`),
+  'admin|Okul adresini değiştir penceresi (eski adres uyarısı)': A(`Yönetici her okulun giriş adresini değiştirebilir. Pencere
+    eski adresin hemen çalışmaz olacağını söyler; adres değişince okulun müdürüne bildirim gider.`),
+  'admin|Yönetici dosyası': A(`Yönetici hesapları sunucudaki admins.json dosyasından açılır; dosya sunucu çalışırken de
+    düzenlenebilir. Sayfa son okumayı, açılan hesapları, atlanan satırları ve nedenlerini gösterir. Şifre burada hiç görünmez.`),
+  'admin|Yönetici dosyası — Şimdi oku': A(`<b>Şimdi oku</b> dosyayı aralığı beklemeden okur; sonuç sayfanın üstünde yazar ve
+    işlem kaydına geçer.`),
   'admin|Yedekler (elle yedek alındı)': A(`Veritabanı her gün yedeklenir; yönetici elle de yedek alır ve geri yükler.`),
   'admin|Açılış sayfası yorumları (gizle / göster)': A(`Açılış sayfasındaki yorumlar; uygunsuz olan gizlenir.`),
   'admin|İşlem kaydı': A(`Site genelindeki işlem kaydı.`),
   'admin|Ayarlar': A(`Yöneticinin ayarları.`),
   'admin|Ana sayfa (koyu)': A(`Ana sayfa koyu görünümde.`),
   'admin|Okullar (koyu)': A(`Okullar koyu görünümde.`),
+  'admin|Site ayarları (koyu)': A(`Site ayarları koyu görünümde.`),
   'admin|Okullar (telefon)': A(`Okullar telefonda.`),
   'admin|Okul aç penceresi (telefon)': A(`Okul aç penceresi telefonda.`),
+  'admin|Site ayarları (telefon)': A(`Site ayarları telefonda: yapımcı satırlarının kutuları alt alta dizilir.`),
+  'admin|Yönetici dosyası (telefon)': A(`Yönetici dosyası telefonda.`),
   'admin|Üstteki ay düğmesi — koyu görünüme geçti': A(`Uygulamanın içinde de üstteki ay düğmesi koyu görünüme geçirir.`),
   'admin|Güneş düğmesi — açık görünüme döndü': A(`Güneş düğmesi açık görünüme döndürür.`)
 };

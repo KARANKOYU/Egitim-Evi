@@ -141,7 +141,8 @@ function testDeposu() {
     kb.body.eposta === md.slice(0, 2) + '****@test.com', J(kb.body));
   const kbMudur = await iste('/api/admin/kisi-bul', 'POST', { kod: mdKod }, M);
   const kbYetiskin = await iste('/api/admin/kisi-bul', 'POST', { kod: mdKod }, MD);
-  kontrol('kişi bulmayı yalnız yönetici yapar', kbMudur.status === 403 && kbYetiskin.status === 403, kbMudur.status + ' ' + kbYetiskin.status);
+  kontrol('kişi bulmayı yalnız yönetici yapar (öbürlerine uç yok: 404)', kbMudur.status === 404 && kbYetiskin.status === 404,
+    kbMudur.status + ' ' + kbYetiskin.status);
   const kbYok = await iste('/api/admin/kisi-bul', 'POST', { kod: 'Zz9#zZz9#zZz9#z' }, A);
   const kbOgr = await iste('/api/admin/kisi-bul', 'POST', { kod: yenile.body.code }, A);
   const kbTers = await iste('/api/admin/kisi-bul', 'POST', { kod: tersHarf(mdKod) }, A);

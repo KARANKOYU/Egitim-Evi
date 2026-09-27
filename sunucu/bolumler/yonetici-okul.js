@@ -11,11 +11,11 @@
    yenilenir (tek kullanımlık). Kişi okuluna sol üstteki menüden geçer.
    E-postayla ya da yeni hesap açarak müdür yapma yolu yoktur. */
 
-const { ok, sendJSON } = require('../http');
+const { ok, sendJSON, okulOnbellekBosalt } = require('../http');
 const { CITIES, clean, kisaAdSorunu, kisiKoduSade, now, uid } = require('../ortak');
 const { okulKimlikBul } = require('../okullar');
 const { hataSay, hataSiniriDoldu, hizSinir, istemciIp } = require('../guvenlik');
-const { depo, bildir, islem } = require('../veri');
+const { cakisma, depo, bildir, islem } = require('../veri');
 const { islemYaz } = require('./islem-kaydi');
 
 /* Kişi kodunun sahibi. Kod tahmin aracına dönmesin: aynı bağlantıdan saatte
@@ -123,11 +123,17 @@ async function okulAc(req, res, me, body) {
       return true;
     });
   } catch (e) {
-    /* Aynı okul ya da adres aynı anda iki kez açılmaya çalışıldı (tekil indeks). */
+    /* Aynı okul, adres ya da kişi aynı anda iki kez kullanılmaya çalışıldı
+       (tekil indeks): hangisi olduğu kısıttan anlaşılır. */
+    const c = cakisma(e);
+    if (c && c.alan === 'kisaAd') return alanHata('kisaAd', 'Bu adres az önce başka bir okula verildi. Başka bir ad dene.');
+    if (c && c.alan === 'kod') return alanHata('mudurKodu', 'Bu kişinin bu okulda az önce bir rolü açıldı. Listeyi yenileyip yeniden dene.');
+    if (c && c.alan === 'kullaniciAdi') return alanHata('mudurKodu', 'Müdürün kullanıcı adı bu arada okulda başka birine verildi. Yeniden dene.');
     if (e && e.code === '23505') return alanHata('okul', 'Bu okul ya da adres az önce kaydedildi. Listeyi yenileyip yeniden dene.');
     throw e;
   }
   if (!tuketildi) return alanHata('mudurKodu', 'Bu kod az önce kullanıldı. Kişiden yeni kodunu iste.', 404);
+  okulOnbellekBosalt();   // adres az önce "yok" diye önbelleğe girmiş olabilir
   await islemYaz(me, 'okul.acildi', ad + ' (' + kisaAd + ') — müdür ' + ana.username, req);
   await bildir(ana.id, ad + ' okulunun müdürü olarak eklendin. Sol üstteki menüden okuluna geçebilirsin.');
   return ok(res, {

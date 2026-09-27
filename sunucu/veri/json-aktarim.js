@@ -16,7 +16,8 @@
 
 const crypto = require('crypto');
 const { sorgu, islem, metinCalistir } = require('./baglanti');
-const { ESKI_SAATLER, KISI_KODU_DESENI, kisaAdSorunu, kisiKoduUret, kullaniciAdiSorunu, normTelefon, okulHesabiMi, tcSorunu, uid } = require('../ortak');
+const { ESKI_SAATLER, KISI_KODU_DESENI, kisaAdSorunu, kisiKoduUret, kullaniciAdiSorunu, normEmail, normKullaniciAdi, normTc,
+  normTelefon, okulHesabiMi, tcSorunu, uid } = require('../ortak');
 const { saatlerSorunu } = require('../yardimci/servis-pencere');
 const e = require('./esleme');
 const yaz = require('./yazici');
@@ -82,6 +83,10 @@ async function iceAktar(veri) {
        yoksa geri yüklemeden sonra bütün cihazlarda bildirimler sessizce kesilirdi. */
     const abonelikler = await sorgu('SELECT * FROM push_abonelikleri');
     const cihazAnahtarlari = await sorgu('SELECT * FROM cihaz_anahtarlari');
+    /* Yöneticilerin /admin çerezleri de oturumlara bağlı (030) ve yedekte yok:
+       oturum yedekte de varsa çerez korunur. Yoksa yedeği geri yükleyen yönetici
+       sayfa yenilenince /admin'de "Sayfa bulunamadı" görürdü. */
+    const yonetimCerezleri = await sorgu('SELECT * FROM yonetim_cerezleri');
     await metinCalistir('TRUNCATE ' + TABLOLAR.join(', ') + ' RESTART IDENTITY CASCADE');
 
     /* --- okullar --- */
@@ -171,22 +176,34 @@ async function iceAktar(veri) {
        aralarında tektir (009 şema dosyası). Yedekte ad varsa korunur; eski
        veride yoksa e-postanın @ öncesinden türetilir. */
     const adAlani = (rolAd, okulId) => okulHesabiMi(rolAd) ? (okulId || '') : '';
-    /* Öğrencinin T.C. no'su bütün sistemde tek (hesap kişiye ait, 021). */
-    const tcAlani = (rolAd, okulId) => rolAd === 'student' ? 'ogrenci' : adAlani(rolAd, okulId);
-    const kullaniciAdiUret = (ep, var_, alan, tc) => {
-      const hazir = String(var_ || '').trim().toLowerCase();
+    /* T.C. no okulda tek (okul hesapları), yetişkinlerde kendi aralarında tek;
+       öğrencinin T.C. no'su ayrıca bütün sistemde tek (hesap kişiye ait, 021):
+       öğrenci hem kendi okulunun hem öğrenci ad alanına bakar. */
+    const tcAlanlari = (rolAd, okulId) => rolAd === 'student' ? ['ogrenci', adAlani(rolAd, okulId)] : [adAlani(rolAd, okulId)];
+    /* Yöneticinin adı hiçbir hesapta olamaz (031): yöneticilerin yedekteki adları
+       baştan ayrılır, okul hesapları bu adları almaz; yönetici de o ana kadar
+       herhangi bir hesaba verilmiş adı almaz. */
+    const yoneticiAdlari = new Set(dizi(veri.users).filter(u => u && u.role === 'admin' && u.username)
+      .map(u => normKullaniciAdi(u.username)));
+    const tumAdlar = new Set();
+    const kullaniciAdiUret = (ep, var_, alan, tc, rolAd) => {
+      const alinmis = ad => kullaniciAdlari.has(alan + '|' + ad) ||
+        (rolAd === 'admin' ? tumAdlar.has(ad) : okulHesabiMi(rolAd) && yoneticiAdlari.has(ad));
+      const ver = ad => {
+        kullaniciAdlari.add(alan + '|' + ad);
+        tumAdlar.add(ad);
+        if (rolAd === 'admin') yoneticiAdlari.add(ad);
+        return ad;
+      };
+      const hazir = normKullaniciAdi(var_);
       const gecerli = hazir && (!kullaniciAdiSorunu(hazir) || (/^[0-9]{11}$/.test(hazir) && hazir === tc));
-      if (gecerli && !kullaniciAdlari.has(alan + '|' + hazir)) {
-        kullaniciAdlari.add(alan + '|' + hazir);
-        return hazir;
-      }
+      if (gecerli && !alinmis(hazir)) return ver(hazir);
       let kok = String(ep || 'kullanici').split('@')[0].replace(/[^a-z0-9._]/g, '').replace(/^[^a-z]+/, '');
       if (kok.length < 3) kok = 'kullanici' + kok;
       kok = kok.slice(0, 24);
       let aday = kok;
-      for (let n = 2; kullaniciAdlari.has(alan + '|' + aday); n++) aday = kok + n;
-      kullaniciAdlari.add(alan + '|' + aday);
-      return aday;
+      for (let n = 2; alinmis(aday); n++) aday = kok + n;
+      return ver(aday);
     };
     /* Okul rolü satırları (yetişkin hesabına bağlı öğretmen/müdür) bağlı
        oldukları hesaptan sonra yazılır (yabancı anahtar). */
@@ -199,7 +216,7 @@ async function iceAktar(veri) {
       /* Rol boşsa hesap rolsüzdür (okul henüz eklememiş); bilinmeyen rol atlanır. */
       const rolAd = u.role ? secim(u.role, ['admin', 'principal', 'teacher', 'student', 'parent', 'servisci'], null) : null;
       if (u.role && !rolAd) { atla('kullanici'); continue; }
-      const ep = metin(u.email, 200).trim().toLowerCase();
+      const ep = normEmail(metin(u.email, 200));
       const okulId = okul.has(u.schoolId) ? u.schoolId : null;
       /* Okul rolü satırı: bağlı olduğu yetişkin hesabı yüklenmiş olmalı; yalnızca
          öğretmen ya da müdür, okullu, e-postasız, okul başına bir tane. */
@@ -227,10 +244,10 @@ async function iceAktar(veri) {
       };
       const veliKodu = rolAd === 'student' ? kisiKodu(u.code) : '';
       const alan = adAlani(rolAd, okulId);
-      const tc = String(u.tc || '');
-      const tcAlan = tcAlani(rolAd, okulId);
-      const tcYaz = tc && !tcSorunu(tc) && !tcler.has(tcAlan + '|' + tc) ? tc : null;
-      if (tcYaz) tcler.add(tcAlan + '|' + tcYaz);
+      const tc = normTc(u.tc || '');
+      const tcAlan = tcAlanlari(rolAd, okulId);
+      const tcYaz = tc && !tcSorunu(tc) && !tcAlan.some(a => tcler.has(a + '|' + tc)) ? tc : null;
+      if (tcYaz) for (const a of tcAlan) tcler.add(a + '|' + tcYaz);
       let okulNo = rolAd === 'student' ? metin(u.okulNo, 20) : '';
       if (okulNo && okulNolari.has(okulId + '|' + okulNo)) okulNo = '';
       if (okulNo) okulNolari.add(okulId + '|' + okulNo);
@@ -245,7 +262,7 @@ async function iceAktar(veri) {
       const yetiskin = !anaId && (!rolAd || rolAd === 'parent');
       const eslesme = yetiskin ? kisiKodu(u.eslesmeKodu) : '';
       await ekle('kullanicilar', {
-        id: u.id, kullanici_adi: kullaniciAdiUret(ep, u.username, alan, tcYaz), eposta: ep || null, tc_kimlik: tcYaz,
+        id: u.id, kullanici_adi: kullaniciAdiUret(ep, u.username, alan, tcYaz, rolAd), eposta: ep || null, tc_kimlik: tcYaz,
         ana_hesap_id: anaId, eslesme_kodu: eslesme, okul_acti: u.okulActi === true || !!u.createdBy,
         okul_no: okulNo, sifre_degismeli: u.sifreDegismeli === true, son_giris: u.sonGiris ? zaman(u.sonGiris) : null,
         sifre_ozeti: metin(u.pass), ad_soyad: ad, rol: rolAd,
@@ -731,6 +748,7 @@ async function iceAktar(veri) {
 
     await abonelikleriGeriYaz(abonelikler);
     await cihazAnahtarlariniGeriYaz(cihazAnahtarlari);
+    await yonetimCerezleriniGeriYaz(yonetimCerezleri);
   });
   await require('./depo/ozellikler').yukle();   // bellekteki kopya yedekle aynı olsun
 
@@ -754,6 +772,17 @@ async function cihazAnahtarlariniGeriYaz(liste) {
       'INSERT INTO cihaz_anahtarlari (id, kullanici_id, anahtar_ozeti, ad, platform, surum, olusturma, son_gorulme, son_bildirim) ' +
       'SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9 WHERE EXISTS (SELECT 1 FROM kullanicilar WHERE id = $2) ON CONFLICT DO NOTHING',
       [c.id, c.kullanici_id, c.anahtar_ozeti, c.ad, c.platform, c.surum, c.olusturma, c.son_gorulme, c.son_bildirim]);
+  }
+}
+
+/* /admin çerezleri: bağlı oldukları oturum yedekte de varsa geri yazılır (çerezin
+   geçerliliğine yine her istekte bakılır: oturum süresi, hesabın yöneticiliği). */
+async function yonetimCerezleriniGeriYaz(liste) {
+  for (const c of liste) {
+    await sorgu(
+      'INSERT INTO yonetim_cerezleri (ozet, oturum_ozeti, olusturma) ' +
+      'SELECT $1, $2, $3 WHERE EXISTS (SELECT 1 FROM oturumlar WHERE anahtar_ozeti = $2) ON CONFLICT DO NOTHING',
+      [c.ozet, c.oturum_ozeti, c.olusturma]);
   }
 }
 

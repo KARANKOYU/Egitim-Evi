@@ -81,9 +81,7 @@ function uygulamayiBaslat() {
   bildirimleriYenile();
   bildirimEsitle();
   siteBilgisiYukle();   // alt bilgideki iletişim bilgileri
-  if (!S._bildirimSayac) {
-    S._bildirimSayac = setInterval(bildirimleriYenile, 30000);
-  }
+  bildirimSayaciKur();  // sitenin yoklama aralığıyla (24-bildirim-arama-mobil.js)
 }
 
 function cikisYap(sessiz) {
@@ -99,6 +97,9 @@ function cikisYap(sessiz) {
     $('app').classList.remove('on');
     $('sayfa').innerHTML = '';
     if (S._bildirimSayac) { clearInterval(S._bildirimSayac); S._bildirimSayac = null; }
+    /* Yönetim adresinden çıkış: yönetim dosyası bu sayfada kalmasın; giriş
+       sayfası baştan, herkese giden dosyayla açılır. */
+    if (YONETIM) { location.replace('/login'); return; }
     if (!sessiz) $('authMesaj').innerHTML = '';
     /* Sonraki kişi öncekinin açık bıraktığı sayfaya düşmesin. */
     if (!/yeni-sifre/.test(location.hash)) {
@@ -137,14 +138,22 @@ var onayAnahtari = (function () {
   return (m && /eposta-onay/.test(location.hash)) ? m[1] : '';
 })();
 var onaySonucu = !onayAnahtari ? Promise.resolve(null) : api('/eposta-onay', 'POST', { token: onayAnahtari })
-  .then(function (d) { return { tur: 'iyi', d: d }; })['catch'](function (e) { return { tur: 'hata', d: { message: e.message } }; });
+  .then(function (d) { return { tur: 'iyi', d: d }; })['catch'](function (e) {
+    return { tur: 'hata', d: { message: e.message, alan: (e.veri && e.veri.alan) || '' } };
+  });
 if (onayAnahtari) { try { history.replaceState(null, '', location.pathname); } catch (e) { } }
 
-var kayitli = sifirlamaAnahtari ? null : tokenOku();
+/* Yönetim adresine tam sayfa geçişte bırakılan anahtar ("hiçbir şey kaydetme"
+   seçildiyse) önce gelir (05b-sifre-zorunlu.js yonetimeGec). */
+var kayitli = sifirlamaAnahtari ? null : (gecisAnahtari() || tokenOku());
 disSayfalariKur().then(function () { return onaySonucu; }).then(function (onay) {
+  /* Hesap açılırken kullanıcı adı ya da T.C. no bu arada başkasına geçmişse
+     kişi yeniden kaydolur: ileti kayıt kartında ilgili kutunun altında. */
+  var kayitHatasi = onay && !kayitli && onay.tur === 'hata' &&
+    (onay.d.alan === 'kullaniciAdi' || onay.d.alan === 'tc') ? onay.d : null;
   /* Onay sonucu: giriş ekranındaysa kartın üstünde, uygulamadaysa sayfada. */
   if (onay && kayitli) S._acilisMesaji = onay;
-  else if (onay) {
+  else if (onay && !kayitHatasi) {
     if (onay.tur === 'iyi' && onay.d.kullaniciAdi) {
       girisKimlikAyarla('kadi', false);
       $('gEmail').value = onay.d.kullaniciAdi;
@@ -158,7 +167,11 @@ disSayfalariKur().then(function () { return onaySonucu; }).then(function (onay) 
     yeniSifreEkraniAcDisaridan(sifirlamaAnahtari);
     return;
   }
-  if (!kayitli) { girisEkraniGoster(); return; }
+  if (!kayitli) {
+    girisEkraniGoster();
+    if (kayitHatasi) kayitAlanHatasi(kayitHatasi.alan, kayitHatasi.message);
+    return;
+  }
   S.token = kayitli;
   api('/me').then(function (d) {
     if (d.user.status !== 'approved') { cikisYap(true); return; }

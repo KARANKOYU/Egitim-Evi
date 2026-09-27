@@ -28,7 +28,7 @@ okulunun adresinden girer; okul o sayfayı kendi fotoğrafları ve renkleriyle d
 | **Öğretmen** | Ödev verir (isterse içine quiz koyar, cevapları okur) ve sonuçlandırır, sınav açar ve not girer, yoklama alır, sınıfına ya da velilere mesaj yazar |
 | **Müdür** | Sınıfları, dersleri, ders programını, öğretmen ve öğrenci hesaplarını, rolleri ve yetkileri yönetir; okulun giriş sayfasını düzenler |
 | **Servisçi** | Okulun servis saatlerinde **Yoklama** alır (sabah Bindi / Binmedi, akşam Geldi / Gelmedi ve İndi), sırayı düzenler, velilere not yazar; sefer sürerken konumu velilere görünür |
-| **Sistem yöneticisi** | Okulu açar ve müdürünü kişi koduyla atar, müdürleri yönetir, yedek alır |
+| **Sistem yöneticisi** | Okulu açar ve müdürünü kişi koduyla atar, müdürleri yönetir, sitenin ayarlarını (iletişim, yapımcılar, okul adresleri, zamanlamalar) değiştirir, yedek alır; ekranları ayrı bir adresteki yönetim panelindedir |
 
 **Tek hesap, birden çok rol.** Bir kişi aynı hesapla bir okulda öğretmen, başka bir
 okulda müdür ve kendi çocuğunun velisi olabilir. Bunlar **portal**dır: sol üstteki menüde
@@ -91,8 +91,9 @@ doğum tarihi eşleşirse aynı hesabı kendi okuluna alır. Eski okulun kayıtl
 - Her API ucu her rol için otomatik olarak denenir: yetkisiz geçen istek var mı, bozuk
   veri sunucuyu düşürüyor mu, SQL'e kullanıcı değeri karışıyor mu.
 
-Listesi [yapimcilar.json](../yapimcilar.json) dosyasındadır; sitede üst şeritteki
-**Yapımcılar** düğmesinde görünür.
+Projede emeği geçenler sitede üst şeritteki **Yapımcılar** düğmesinde görünür. Liste
+yönetim panelinin **Site Ayarları** sayfasından düzenlenir; orada kaydedilmemişse depodaki
+[yapimcilar.json](../yapimcilar.json) dosyasından gelir.
 
 ---
 
@@ -132,10 +133,16 @@ Kurulum aracı şunları yapar:
 yapan kişi dosyayı `data/` altına ayrıca kopyalar. Dosya yoksa uygulama çalışır, yalnızca
 MEB listesinde okul araması kapalı olur.
 
-**İletişim bilgileri** (`data/config.yml`, örneği `belge/config.ornek.yml`): yayına
-almadan önce yöneticinin e-postası ya da telefonu yazılır. Müdür adayı kişi kodunu
+**İletişim bilgileri**: yayına almadan önce yöneticinin e-postası ya da telefonu yazılır;
+yönetim panelinde **Site Ayarları → İletişim bilgileri**'nden ya da sunucudaki
+`data/config.yml` dosyasına (örneği `belge/config.ornek.yml`). Müdür adayı kişi kodunu
 bu bilgilerle yöneticiye verir; ikisi de boşsa ulaşacak yer göremez (aşağıda
-"İletişim bilgileri").
+"İletişim bilgileri" ve "Site ayarları").
+
+**Yönetici hesapları** (`data/admins.json`, örneği `belge/admins.ornek.json`; isteğe bağlı):
+sistem yöneticileri bu dosyaya yazılır, sunucu açılışta ve çalışırken aralıkla okuyup
+hesaplarını açar. Veritabanında hiç yönetici yoksa ve dosyadan da kimse açılmadıysa
+varsayılan bir yönetici kurulur (aşağıda "İlk giriş (admin)").
 
 **Çalıştırmak:** `npm start`, sonra tarayıcıda http://localhost:3000
 (`node sunucu/index.js` ile aynı; kökteki `server.js` de aynı işi yapan 3 satırlık kabuktur.)
@@ -151,11 +158,202 @@ adresini telefonun tarayıcısına yaz (telefon ve bilgisayar aynı wifi'de olma
 
 ## İlk giriş (admin)
 
-İlk çalıştırmada otomatik bir yönetici hesabı oluşur. E-postası
-`admin@egitimevi.com`; şifresi **rastgele üretilir ve terminale yalnızca
-bir kez yazılır** (kod herkese açık depoda olduğu için sabit bir şifre yok).
+Sistem yöneticisi hesabı iki yoldan açılır. Sunucu açılışta önce `data/admins.json`
+dosyasını uygular (aşağıda "Yönetici dosyası"); ondan sonra veritabanında hâlâ hiç yönetici
+yoksa (dosya yok ya da dosyadan kimse açılamadı) **varsayılan ilk yöneticiyi** kurar:
 
-**Önemli:** Giriş yaptıktan sonra **Ayarlar → Şifre değiştir** bölümünden bu şifreyi hemen değiştir.
+- E-postası `admin@egitimevi.com`, kullanıcı adı `admin` (bu ad bir hesapta varsa `admin2`,
+  `admin3`...). Şifresi **rastgele üretilir ve terminale yalnızca bir kez yazılır** (kod
+  herkese açık depoda olduğu için sabit bir şifre yok). Testler `EE_ADMIN_SIFRE` ile bilinen
+  bir şifre verir.
+- `admin@egitimevi.com` başka bir hesapta kayıtlıysa bu yönetici kurulmaz; sunucu yine açılır,
+  pencereye uyarı yazar. Yönetici o zaman `data/admins.json` ile eklenir.
+- **Önemli:** Sistem şifre değiştirmeyi zorlamaz; giriş yaptıktan sonra **Ayarlar → Şifre
+  değiştir** bölümünden bu şifreyi hemen değiştir.
+- İki adımlı girişin kodu hesabın e-postasına gider (e-posta ayarlanmamışsa sunucu
+  penceresine). `admin@egitimevi.com` senin okuduğun bir kutu değilse canlı sitede yöneticiyi
+  `data/admins.json` ile kendi e-postanla aç.
+
+Giriş bitince yönetici kendiliğinden yönetim paneline geçer (aşağıda "Yönetim paneli").
+
+### Yönetici dosyası (data/admins.json)
+
+Sistem yöneticileri elle bu dosyaya yazılır. Örneği depodaki `belge/admins.ornek.json`;
+sunucuda `data/admins.json` olarak kopyalanır (`data/` depoya girmez) ve yalnız sunucu
+kullanıcısı okuyabilsin diye `chmod 600 data/admins.json` yapılır.
+
+```json
+{
+  "yoneticiler": [
+    { "ad": "Ayşe Yılmaz", "eposta": "ayse.yilmaz@ornek.com", "kullaniciAdi": "ayse.yilmaz", "sifre": "" }
+  ]
+}
+```
+
+- **Dosya yalnız hesap açar.** Dosyada olup veritabanında olmayan yöneticiyi açar. Var olan
+  hesabın şifresine ve adına dokunmaz; dosyadan silinen yönetici veritabanından silinmez.
+  Dosya bir şifre sıfırlama yolu değildir.
+- E-postası ya da kullanıcı adı başka bir hesapta (öğretmen, veli ya da herhangi bir okuldaki
+  hesap) olan satır atlanır: var olan hesap dosyaya yazılan bir satırla yönetici **yapılmaz**.
+  Karşılaştırma öteki yollardaki gibidir (aşağıda "Aynı e-posta, kullanıcı adı ve T.C.").
+- `ad` zorunludur (en az 2 harf). `kullaniciAdi` isteğe bağlıdır: yazılmazsa e-postanın @
+  öncesinden türetilir, alınmışsa sonuna sayı eklenir. Dosyada en fazla 50 yönetici olur.
+- **Şifre.** Dosyaya yazmak önerilir; yetişkin şifre kuralına uymalı (en az 8 karakter; büyük,
+  küçük harf, rakam, özel karakter). Boş bırakılırsa rastgele üretilir ve **yalnız sunucu
+  penceresine bir kez** yazılır; sunucu çalışırken eklenen satırda o pencereye bakılmayabilir,
+  bu yüzden şifreyi dosyaya yazmak daha rahattır. Şifre yönetim panelinde ve işlem kaydında
+  hiçbir zaman görünmez. İki durumda da yönetici **ilk girişte kendi şifresini belirler**;
+  ondan sonra dosyadaki şifre geçersizdir, dosyadan silinebilir.
+- E-posta gerçek olmalı: iki adımlı girişin kodu oraya gider.
+- Bozuk dosya (JSON hatası, `yoneticiler` listesi yok) sunucuyu durdurmaz: sorun yazılır,
+  dosya atlanır. Linux'ta dosyanın izinleri sunucu kullanıcısından başkasına açıksa sunucu
+  penceresinde ve panelde `chmod 600` uyarısı çıkar.
+- **Sunucu çalışırken de düzenlenebilir.** Sunucu her **admins.json okuma aralığı**nda (Site
+  Ayarları; varsayılan 1 dakika, 1–60) dosyanın değişme zamanına ve boyutuna bakar (yalnız
+  `fs.stat`; dosya izleyicisi kullanılmaz); değiştiyse dosyayı yeniden uygular. Yeniden
+  başlatmak gerekmez. Aralık değişince yeni aralık hemen kurulur.
+- Yönetim panelindeki **Yönetici Dosyası** sayfası son okumayı gösterir: dosya var mı, son
+  okuma, dosyanın son değişikliği, okuma aralığı, açılan hesaplar ("Şifre dosyadan" ya da
+  "Şifre üretildi, yalnız sunucu penceresinde") ve atlanan satırlar nedenleriyle ("zaten
+  yönetici" satırları ayrı bir notta). Nedenler kısa ve Türkçedir ("şifre en az 8 karakter
+  olmalı", "ad en az 2 harf olmalı", "JSON biçimi bozuk (dosyanın 3. satırı): virgül, tırnak ya
+  da parantez eksik ya da fazla olabilir"). *Var/Yok* ve son değişiklik dosyanın şu anki
+  hâlidir; dosya son okumadan sonra değiştiyse (yazıldı ya da silindi) kart bunu söyler ve
+  en geç bir aralık içinde okunacağını yazar, aşağıdaki sonuçlar son okumaya aittir.
+  **Şimdi oku** dosyayı aralığı beklemeden okutur.
+  Dosyadan açılan her yönetici (`yonetici.eklendi`) ve elle okuma (`yonetici.dosya-okundu`)
+  işlem kaydına yazılır.
+
+Kod: `sunucu/yonetici-dosyasi.js`; testi `testler/test-yonetici-dosyasi.js` (yalnız
+`testler/testdata/` altındaki dosyalarla çalışır, gerçek `data/admins.json`'a dokunmaz).
+
+### Yönetim paneli (/admin)
+
+Sistem yöneticisinin ekranları (menüde Ana Sayfa, Müdürler, Okullar, Yorumlar,
+Hatırlatıcılar, Site Ayarları, Yönetici Dosyası, Yedekleme, İşlem Kaydı) sitenin geri kalanından ayrıdır ve
+`egitimevi.org/admin` adresinde açılır.
+
+- **Giriş.** Yönetici herkes gibi `/login`'den iki adımlı girer. Giriş bitince sunucu ayrıca
+  bir **yönetim çerezi** yazar ve cevapta yönetim adresini söyler (`yonetimAdresi`); sayfa
+  kendiliğinden `/admin`'e geçer. Geçiş tam sayfa yüklemesidir, çünkü tarayıcı çerezi ancak o
+  adrese giderken gönderir. Oturumu açık yönetici `/`'i açtığında da `/admin`'e geçer. Şifresini
+  başkası vermiş yönetici (`data/admins.json`) önce kendi şifresini belirler, çerezi şifre
+  değiştirme cevabıyla alır. Çerez geçerli ama bu sekmede oturum yoksa `/admin` giriş kartını
+  gösterir.
+- **Çerez.** Adı `ee_yonetim`. Değeri oturum anahtarından bağımsız, rastgele 32 bayttır;
+  veritabanında yalnız SHA-256 özeti durur (`yonetim_cerezleri`, şema 030). `HttpOnly`,
+  `SameSite=Strict`, `Path=/admin`, site https ise `Secure`; ömrü oturumunki kadardır. Yalnız
+  `/admin` altına gider, `/api`'ye gitmez: API yine yalnız `Authorization` başlığıyla çalışır,
+  çerezle gelen bir istek hiçbir şey yapamaz (CSRF yüzeyi açılmaz). Her `/api/me`'de yenilenir;
+  aynı anda açık iki sekme birbirini düşürmesin diye oturumun en yeni 3 çerezi geçerlidir.
+  Çerez çıkışta (tarayıcıdaki de silinir), oturumun süresi dolunca, şifre değişince ya da
+  sıfırlanınca, hesap yöneticilikten ya da onaydan düşünce geçersiz olur. Çerez yalnız
+  yöneticiye verilir; yönetici olmayan hiçbir cevapta çerez ya da `/admin` adresi geçmez.
+- **Çerezsiz `/admin` bilinmeyen bir adrestir.** Çerezi olmayan (ya da geçersiz çerezli) herkes
+  `/admin`, `/admin/` ve `/admin/<herhangi>` adreslerinde bilinmeyen bir adresle **bayt bayt
+  aynı** cevabı alır: GET ve HEAD'de aynı 404 sayfası, durum, başlıklar ve sıraları, ETag,
+  sıkıştırma; POST gibi öteki yöntemlerde bilinmeyen adresin aldığı aynı 405. Çerez yoksa ya da
+  biçimsizse veritabanına hiç gidilmez. Biçimi doğru (64 onaltılık hane) ama uydurma bir
+  `ee_yonetim` çereziyle gelen istek ise `/admin`'de de bilinmeyen adreste de çerezi veritabanında
+  arar, sonra 404 verir. Bilinmeyen adres önce diskte dosyayı yoklar; `/admin` de aynı yoklamayı
+  yapar. İki yolun işi aynı kalır, yanıt süresinden adres ayırt edilmez.
+  Asıl gizlilik baytların aynılığındadır; ağ gecikmesindeki küçük oynamalar hiçbir adresi ele vermez.
+  Böylece dirb, gobuster, ffuf, nikto gibi dizin tarayıcıları adresi bilinmeyen adreslerden
+  ayırt edemez. `robots.txt` ve site haritası yoktur; herkese giden sayfalarda ve dosyalarda
+  adres geçmez. Gizli dosyalar, boş baytlı adresler ve ön yüz parçaları da aynı 404'ü verir.
+- **Geçerli çerezle** `/admin` ve altı yönetim kabuğunu verir: aynı `index.html`, ama
+  `/js/app.js` yerine `/admin/yonetim.js`'i yükler. Bu cevaplar önbelleğe alınmaz
+  (`Cache-Control: no-store`; servis işçisi de saklamaz) ve arama motorlarına kapalıdır
+  (`X-Robots-Tag: noindex, nofollow`).
+- **Yönetim kodu ayrı dosyadır.** Herkese giden `/js/app.js`'te yönetim ekranları ve yönetici
+  uçlarının adları yoktur. Yönetim ön yüzü `public/js/yonetim/` altındadır ve yalnız geçerli
+  çerezle `/admin/yonetim.js`'ten gider (aşağıda "Ön yüz nasıl tek dosya oluyor?").
+- **Yönetici uçları da görünmez.** `/api/admin/...` ve yorumların yönetimi
+  (`/api/yorumlar/hepsi`, `/api/yorumlar/gizle`) yönetici olmayana (giriş yapmamış tarayıcı,
+  öğrenci, öğretmen, müdür, veli, servisçi, rolsüz yetişkin) bilinmeyen bir API adresiyle aynı
+  cevabı verir: `404 {"error":"Böyle bir adres yok"}` (401 ya da 403 değil). Bu kararı
+  `sunucu/api.js` (`yoneticiUcuMu`) tek yerde verir.
+- **Çıkış.** Yönetim adresinden çıkınca sayfa `/login`'e döner, yönetim dosyası bellekte kalmaz
+  ve `/admin` yeniden 404 olur. Aynı tarayıcıda çerez hâlâ geçerliyken yönetici olmayan bir
+  hesabın anahtarıyla `/admin` açılırsa sayfa sitenin kendi adresine döner.
+- **Adres bir parola değildir.** Kod herkese açık depoda; koruma adresin bilinmemesine değil,
+  çereze ve sunucudaki yetki denetimine dayanır. Yine de adresi herkese açık yerlerde (okul
+  duyurusu, sosyal medya, hata bildirimi) paylaşma. Hata iletileri, bildirimler ve e-postalar
+  bu adresi anmaz.
+
+Kod: `sunucu/yonetim-cerezi.js`, `sunucu/http.js` (`yonetimSun`, `bulunamadi`, `bulunamadiCerezli`); testleri
+`testler/test-admin-gizli.js` (404 eşitliği, çerez, `app.js`'te yönetim kodu olmaması,
+yönetici uçlarının 404'ü) ve `testler/yetki-denetimi.js` (her yönetici ucu × her rol).
+
+---
+
+## Site ayarları
+
+Yönetim panelindeki **Site Ayarları** sayfası sitenin herkese görünen bilgilerini ve
+zamanlamalarını değiştirir. Kaydedilen değer hemen geçerli olur; sunucuyu yeniden başlatmak
+gerekmez.
+
+| Ayar | Ne işe yarar | Kural |
+|---|---|---|
+| **İletişim bilgileri** | Sayfaların altı, Hakkında ve **+ Ekle → Müdür** penceresindeki e-posta ve telefon | E-posta biçimi hesap e-postalarındaki gibi (yalnız İngilizce harf, rakam ve işaretler; `ı ş ğ ü ö ç` olmaz); telefon ülke koduyla ya da başında 0 ile (yalnız rakam, boşluk, `+`, tire, parantez; en fazla 24 karakter), yazıldığı gibi görünür. İkisi de boş olabilir |
+| **Yapımcılar** | Üst şeritteki **Yapımcılar** listesi ve Hakkında | Ekle, sil, yukarı/aşağı taşı; en fazla 50 kişi. Ad 1–60 karakter; GitHub kullanıcı adı isteğe bağlı (harf, rakam, tire; tireyle başlayıp bitemez; en fazla 39 karakter); katkı en fazla 80 karakter |
+| **Play Store bağlantısı** | İndirme sayfasındaki **Google Play'den yükle** düğmesi; boşsa düğme görünmez | Boş ya da `https://play.google.com/...` |
+| **Bildirim yoklama aralığı** | Açık sayfanın yeni bildirimleri sorma aralığı (aşağıda "Otomatik bildirimler") | 1–30 dakika, varsayılan 5 |
+| **Çevrimiçi sayma süresi** | Açılış sayfasındaki **şu an açık** sayısı: son bu kadar dakikada uygulamaya istek gönderen farklı kişi | 1–60 dakika, varsayılan 5. Yoklama aralığından kısa olamaz: sunucu en az yoklama aralığı + 1 dakika kullanır (varsayılanlarla 6). Kart kullanılan süreyi kutunun altına yazar; kaydedilen (ya da config.yml'deki) süre bu yüzden kullanılamıyorsa ayrıca uyarır |
+| **admins.json okuma aralığı** | Sunucunun `data/admins.json`'a bakma aralığı (yukarıda "Yönetici dosyası") | 1–60 dakika, varsayılan 1 |
+| **Okul adresleri** | Okulların `egitimevi.org/school/<ad>` adresleri | Aşağıda |
+
+- **Değer nereden gelir?** Öncelik: panelden kaydedilen değer (veritabanı, `site_ayarlari`
+  tablosu, şema 030) > sunucudaki `data/config.yml` (örneği `belge/config.ornek.yml`) > kodun
+  varsayılanı. Yapımcılarda ikinci adım depodaki `yapimcilar.json` dosyasıdır. Her kart
+  değerin nereden geldiğini yazar (*Panelden kaydedildi*, *data/config.yml*,
+  *yapimcilar.json*, *Varsayılan*); panelden kaydedildiyse kaydeden kişi ve zaman da görünür.
+- **Varsayılana dön** (yapımcılarda **yapimcilar.json listesine dön**) panelden kaydedilen
+  değeri siler; ayar `data/config.yml`'deki değere, orada da yoksa varsayılana döner. Panel
+  `data/config.yml`'i hiçbir zaman yazmaz. Dosya elle düzenlenir ve değişince en geç 30 saniyede
+  yeniden okunur; panelden kaydedilmiş bir ayarı ezmez.
+- Doğrulama sunucudadır (`sunucu/bolumler/site-ayarlari.js`); ekran aynı kuralları kayıttan
+  önce de uygular. Hata ilgili kutunun altına yazılır (sunucunun cevabında `alan`;
+  yapımcılarda ayrıca satırın `sira`'sı ve `altAlan`: `ad`, `github` ya da `katki`).
+- Kaydedince yalnız o kart yeniden çizilir; öbür kutulara yazılıp kaydedilmemiş değerler
+  kaybolmaz. Yöneticinin sekmesinde sayfanın altındaki iletişim bilgisi, yapımcı listesi ve
+  bildirim yoklama aralığı hemen güncellenir. Öteki ziyaretçiler yeni değeri sayfayı yenileyince
+  ya da yeniden açınca hemen alır (`/api/site` ve indirme sayfasının `/api/uygulama` cevabı
+  tarayıcıda saklanmaz: `Cache-Control: no-store`).
+- Değeri değişmeden kaydedilen ayar (ör. varsayılan 1 dakikayı yeniden kaydetmek) panelden
+  **sabitlenir**: kaynağı *Panelden kaydedildi* olur, `data/config.yml` ya da varsayılan sonra
+  değişse de bu değer kalır. İşlem kaydına "1 → 1 dk" değil "1 dk (varsayılan değeri panelden
+  sabitlendi)" yazılır.
+- Her değişiklik işlem kaydına okulsuz yazılır (`site.iletisim`, `site.yapimcilar`,
+  `site.playstore`, `site.aralik`, `okul.adres-yonetici`); bunları yalnız sistem yöneticisi
+  görür. Site ayarları yedeğe girmez; yedekten geri yüklemede olduğu gibi kalır.
+
+**Okul adresleri.** Kartta bütün okullar adresleriyle listelenir (üstteki arama kutusu
+süzer; müdürü kaldırılmış okulda *Müdür bekliyor* yazar). **Adresi değiştir** penceresinde
+müdürün kullandığı kurallar geçerlidir (küçük harf, Türkçe harf olmadan, rakam ve tire;
+3–40 karakter; sitenin kendi sayfa adları (`admin`, `api`, `kvkk`, adresin kendi öneki `school` gibi) ve başka okulun adresi alınamaz). Adres değişince
+eski adres **hemen** çalışmaz olur (sunucudaki okul adresi önbelleği boşalır): onu kaydetmiş
+öğrenci ve öğretmen okulu bulamaz, yeni adresi okula duyurmak gerekir. Pencere bunu önceden
+uyarır; okulun müdürüne bildirim gider. Müdürün kendi okulunun adresini değiştirmesi aynen
+durur (aşağıda "Okul adresi").
+
+| Uç (yalnız yönetici; başkasına bilinmeyen adres gibi 404) | Ne yapar |
+|---|---|
+| `GET /api/admin/site-ayarlari` | Her ayarın değeri, kaynağı (`veritabani`, `config`, `dosya`, `varsayilan`), son değiştiren ve zamanı; aralıklarda sınırlar ve varsayılan, çevrimiçi sürede kullanılan süre ve uyarı |
+| `POST /api/admin/site-ayarlari {anahtar, deger}` ya da `{anahtar, sifirla: true}` | Kaydeder ya da panelden kaydedileni siler; hatada `400 {error, alan}` |
+| `GET /api/admin/okul-adresleri` | Okullar ve adresleri |
+| `POST /api/admin/okul-adres {okulId, kisaAd}` | Okulun adresini değiştirir; hatada `alan: kisaAd` (400) ya da `okulId` (404) |
+| `GET /api/admin/yonetici-dosyasi` | `data/admins.json`'un son okuması (şifresiz) ve okuma aralığı |
+| `POST /api/admin/yonetici-dosyasi/oku` | Dosyayı hemen okur; işlem kaydına yazılır |
+
+Herkese açık `GET /api/site` sayılar, iletişim ve yapımcılarla birlikte `bildirimAralikDk` ve
+`cevrimiciDk` (kullanılan süre) verir; giriş cevabı ve `/api/me` de `bildirimAralikDk` taşır.
+
+**Tek süreç.** Site ayarları açılışta belleğe okunur, kaydedilince bellek de güncellenir.
+Sunucunun tek süreç olarak çalıştığı varsayılır (systemd ile tek bir `node sunucu/index.js`).
+Aynı veritabanıyla birden çok süreç çalıştırılırsa (cluster, `pm2 -i`, iki makine) bir süreçte
+kaydedilen ayar ötekilerde ancak yeniden başlatılınca görünür; `data/admins.json` yoklaması,
+okul adresi önbelleği, hız sınırları ve **şu an açık** sayısı da süreç başınadır.
 
 ---
 
@@ -338,7 +536,8 @@ portalına geçince yalnızca seçili çocuk değişir. Her şeyi sunucu denetle
 - Üst çubuğun sağındaki **+ Ekle** (dar ekranda yalnız + simgesi) yetişkin hesabında ve okul
   rolünde görünür; öğrenci, servisçi ve yöneticide yoktur. Üç yol açar: **Veli** (çocuğun
   veli kodu), **Öğretmen** (kişi kodu ve **Kopyala**, **Yeni kod üret**) ve **Müdür** (kişi
-  kodu, **Kopyala** ve yöneticinin `data/config.yml`'deki e-postası ile telefonu).
+  kodu, **Kopyala** ve sitenin iletişim bilgilerindeki yönetici e-postası ile telefonu; yukarıda
+  "Site ayarları").
 
 **Kişi kodu.** Her yetişkin hesabının 15 karakterlik kişi kodu vardır (hesap açılınca
 üretilir); öğrencinin kodu **veli kodu**dur. Servisçide ve yöneticide kod yoktur.
@@ -404,10 +603,12 @@ tablosu (sürüm, tarih, değişiklik notu, boyut, SHA-256 özeti, İndir) ve ku
 uygulama deposunun GitHub **Releases** bölümünden gelir: sunucu listeyi 15 dakikada bir alır, yalnızca
 o deponun `.apk` dosyalarını gösterir (taslak ve ön sürüm yok); GitHub'a ulaşılamazsa son liste kalır.
 Yeni sürüm çıkarmak için GitHub'da sürüm açıp `egitim-evi.apk` eklemek yeter. Play Store'a çıkınca
-`data/config.yml` içinde `uygulama: playstore:` satırına oranın adresi yazılır, sayfada
-**Google Play'den yükle** düğmesi çıkar. Testlerde `EE_DIS_ISTEK=0` ile dışarı istek atılmaz. **Yapımcılar**'a
-basınca projede emeği geçenlerin listesi açılır; liste depodaki
-`yapimcilar.json` dosyasındadır, projeye katılan kendini oraya ekler:
+oranın adresi yönetim panelinde **Site Ayarları → Play Store bağlantısı**'na (ya da `data/config.yml`
+içinde `uygulama: playstore:` satırına) yazılır, sayfada **Google Play'den yükle** düğmesi çıkar.
+Testlerde `EE_DIS_ISTEK=0` ile dışarı istek atılmaz. **Yapımcılar**'a
+basınca projede emeği geçenlerin listesi açılır. Liste yönetim panelinde **Site Ayarları →
+Yapımcılar**'dan düzenlenir; orada kaydedilmemişse depodaki `yapimcilar.json` dosyasından gelir,
+projeye katılan kendini oraya ekler:
 
 ```json
 [
@@ -449,9 +650,12 @@ Tabloda olmayan adres "Sayfa bulunamadı" (404) verir (ör. `/kvkk/olmayan.html`
 `sunucu/http.js` içindeki `YONLENDIRMELER` ve `UYGULAMA_YOLLARI` listelerindedir; denetimi
 `testler/test-adresler.js`.
 
-"Şu an açık": son 5 dakikada uygulamaya istek gönderen farklı kişi sayısı;
-yalnızca sayı tutulur, kimin açık olduğu tutulmaz. Rakamlar dakikada bir
-yenilenir (`/api/site`).
+"Şu an açık": son **çevrimiçi sayma süresi** içinde uygulamaya istek gönderen farklı kişi
+sayısı. Süre bir site ayarıdır (varsayılan 5 dakika); açık sayfa ancak bildirim yoklama
+aralığıyla istek gönderdiği için sunucu en az yoklama aralığı + 1 dakika kullanır
+(varsayılanlarla 6 dakika; yukarıda "Site ayarları"). Yalnızca sayı tutulur,
+kimin açık olduğu tutulmaz. Okul ve kişi sayıları sunucuda dakikada bir hesaplanır
+(`/api/site`).
 
 **Yorumlar.** Açılış sayfasının altında kullanıcı yorumları durur (0-5 yıldız ve
 en fazla 500 harf). Yalnızca **yetişkinler** yazar: rolü (öğretmen, müdür) ya da
@@ -463,10 +667,12 @@ büyük/küçük harf, Türkçe harf, harf uzatma ("salaaak") ve harf aralarına
 konan boşluk/nokta ("a p t a l") fark etmez. İnternet adresi de kabul edilmez.
 Yönetici **Yorumlar** sayfasından bir yorumu gizler ya da yeniden gösterir.
 
-**İletişim bilgileri kodda değil**, sunucudaki `data/config.yml` dosyasındadır
-(depoya girmez; örneği `belge/config.ornek.yml`). Dosyaya e-posta ve telefon
-yazılınca en geç 30 saniyede Hakkında sayfasına ve alt bilgiye eklenir; boş
-alan görünmez. Aynı bilgiler **+ Ekle → Müdür** penceresinde de "Yöneticimize ulaş"
+**İletişim bilgileri kodda değil** (depo herkese açık). Yönetim panelinde **Site Ayarları →
+İletişim bilgileri**'nden kaydedilir (veritabanında durur, hemen geçerli olur); orada
+kaydedilmemişse sunucudaki `data/config.yml` dosyasından gelir (depoya girmez; örneği
+`belge/config.ornek.yml`; dosyaya yazılan değer en geç 30 saniyede sayfaya geçer). Bilgiler
+Hakkında sayfasında ve alt bilgide görünür; boş alan görünmez. Aynı bilgiler
+**+ Ekle → Müdür** penceresinde de "Yöneticimize ulaş"
 diye çıkar: okulunu açtırmak isteyen kişi kodunu buradan verir. E-posta sayfanın HTML
 kaynağında düz yazı olarak durmaz (adres toplayan botlar için), tarayıcıda kurulur.
 **Yayından önce en az biri (e-posta ya da telefon) doldurulmalıdır:** ikisi de boşsa
@@ -485,8 +691,9 @@ iletisim:
 Her okulun kendi adresi vardır: `egitimevi.org/school/doruk-koleji` gibi. Adresi okulu
 açarken yönetici yazar (okulun adından önerilir); müdür **Okul Adresi ve Konumu**
 sayfasından kendisi değiştirir (küçük harf, rakam, tire; 3–40 karakter; sitenin kendi
-sayfa adları alınamaz).
-Adres değişince eski adres çalışmaz.
+sayfa adları alınamaz). Sistem yöneticisi de her okulun adresini yönetim panelinde
+**Site Ayarları → Okul adresleri**'nden değiştirebilir; o zaman okulun müdürüne bildirim gider.
+Adres değişince eski adres hemen çalışmaz ("Okul bulunamadı").
 
 - Okul adresi açılış sayfasında tanıtılmaz. Öğrenci `/login` sayfasında okulunu seçer, okulun
   sayfasına gider; müdür okulun bağlantısını dağıtabilir. Son girilen okul bu tarayıcıda hatırlanır.
@@ -526,11 +733,13 @@ Güvenlik için:
 
 ### Sistemi ilk kez kurma sırası
 
-1. `admin@egitimevi.com` ile gir. Sayfanın altında e-postan ya da telefonun görünmüyorsa
-   önce `data/config.yml`'deki iletişim bilgilerini doldur: müdür adayı sana onlarla ulaşır.
+1. Yönetici hesabınla gir (`data/admins.json`'daki ya da ilk açılışta kurulan
+   `admin@egitimevi.com`; yukarıda "İlk giriş (admin)"). Giriş bitince yönetim paneline
+   geçersin. Sayfanın altında e-postan ya da telefonun görünmüyorsa önce **Site Ayarları →
+   İletişim bilgileri**'ni doldur: müdür adayı sana onlarla ulaşır.
 2. Müdür adayı yetişkin hesabını açsın (**Hesap Aç**), girince **+ Ekle → Müdür**'deki
    kişi kodunu ve okulunun adını sana versin. Kişiyi telefon ya da e-postayla doğrula.
-3. Admin panelinde **Okullar → Okul aç**: okulu seç, adresini yaz, kişi kodunu girip
+3. Yönetim panelinde **Okullar → Okul aç**: okulu seç, adresini yaz, kişi kodunu girip
    **Bul** ile kime ait olduğuna bak, **Okulu aç**. Okul ve müdürü onaylı açılır; okul
    müdürün sol üstteki menüsünde görünür, aramada da çıkar.
 4. Müdür **Okul Adresi ve Konumu** sayfasında gerekirse adresi değiştirir, okulun haritadaki
@@ -768,6 +977,21 @@ gitmez.
 açıklandı: Yaptı"** gider; sonuç sonradan değişirse "... ödevi sonucu değişti: Geç yaptı".
 Sınav sonucu ilk girildiğinde **"Matematik dersinden "2. Yazılı" sınavının sonucu açıklandı."**
 Quizin sonucu öğrenciye açılınca (bir kez) **"Matematik dersinden "Oran orantı" quizinin sonucu açıklandı."**
+
+### Bildirimler sayfaya nasıl gelir (yoklama aralığı)
+
+Açık sayfa üst çubuktaki zil için sunucuya yeni bildirim olup olmadığını
+(`GET /api/notifications`) **bildirim yoklama aralığı**yla sorar. Aralık bir site ayarıdır
+(yönetim panelinde **Site Ayarları → Zamanlamalar**; varsayılan 5 dakika, 1–30).
+
+- Sekmeye dönülünce ve bildirim paneli açılınca aralık beklenmeden sorulur; arka plandaki
+  sekme hiç sormaz. Panel açıkken yeni bildirim gelirse panel de tazelenir. Aynı anda iki
+  yoklama çalışmaz.
+- Sunucuya son bilinen sürüm gönderilir; kutu değişmediyse liste gelmez, cevap birkaç bayttır.
+- Aralık giriş cevabında, `/api/me`'de ve `/api/site`'ta (`bildirimAralikDk`) gelir; açık sayfa
+  değişen aralığı yeniden açılınca ya da yeniden girişte alır.
+- Telefon bildirimi (Web Push) ve telefon uygulamasının kendi yoklaması bu aralığa bağlı
+  değildir: Web Push bildirim yazılınca gönderilir.
 
 ### Öğrencinin bildirimi veliye de gider
 
@@ -1742,13 +1966,13 @@ Veriler **PostgreSQL** veritabanında tutulur. Şema okunur SQL dosyalarıyla s�
 (`sunucu/veri/sema/001-ilk.sql` ...); sunucu açılışta uygulanmamış olanları sırayla
 uygular ve hangisinin uygulandığını `sema_surumleri` tablosuna yazar.
 
-- 73 tablo (`sema_surumleri` dahil); başlıcaları: okullar, eğitim yılları, sınıflar, roller
+- 75 tablo (`sema_surumleri` dahil); başlıcaları: okullar, eğitim yılları, sınıflar, roller
   ve yetkileri, kullanıcılar, veli bağları, dersler, ders programı, ödevler, öğrencileri ve
   teslim dosyaları, ödev quizleri (soru, şık, deneme, cevap), sınav şablonları, sınavlar, ölçümler ve değerler, devamsızlık, etütler,
   mesajlar, alıcıları ve okunmaları, anketler (seçenek, hedef, oy), yemek listesi, servisler,
   öğrencileri ve seferleri, servis yoklaması, notları ve "binmeyecek" işaretleri, kulüpler ve
   üyeleri, takvim, hatırlatıcılar, bildirimler, oturumlar, telefon bildirimi abonelikleri ve
-  cihaz anahtarları, Eğitim Evi Aile, işlem kaydı.
+  cihaz anahtarları, Eğitim Evi Aile, işlem kaydı, site ayarları ve yönetim paneli çerezleri.
 - Yabancı anahtarlar uygulamanın silme kuralını taşır: sınıf silinince dersleri ve
   programı gider (CASCADE), öğrenciler sınıfsız kalır (SET NULL).
 - CHECK kısıtları geçersiz veriyi veritabanı katında da durdurur (telefon biçimi, puan
@@ -1758,18 +1982,22 @@ uygular ve hangisinin uygulandığını `sema_surumleri` tablosuna yazar.
 - Toplu işler (Excel ile 300 hesap açma, yoklama, mesaj alıcıları) tek işlemde
   (transaction): yarıda hata olursa hiçbiri yazılmaz.
 - Oturum anahtarının kendisi değil SHA-256 özeti saklanır: veritabanı sızsa bile
-  açık oturumlar kullanılamaz. Telefon uygulamasının cihaz anahtarı da öyle.
+  açık oturumlar kullanılamaz. Telefon uygulamasının cihaz anahtarı ve yönetim paneli çerezi
+  de öyle.
 - Uygulama `postgres` süper kullanıcısıyla değil, yalnızca kendi veritabanına yetkili
   `egitimevi` kullanıcısıyla bağlanır.
 - **Eski `data/db.json`** varsa ilk açılışta tek işlemde veritabanına aktarılır ve
   `db.json.tasindi` adıyla saklanır.
-- **Yedek:** Yönetici → Yedekler (günlük otomatik, 14 tane saklanır; en yeniler
+- **Yedek:** yönetim panelinde **Yedekleme** (günlük otomatik, 14 tane saklanır; en yeniler
   kalır). Adlar: `yedek-2026-09-26_0300.json` (otomatik), `yedek-elle-…` (elle alınan),
   `yedek-geri-alma-…` (geri yüklemeden hemen önceki hâl). Yedek elle okunabilir
-  JSON'dur. Sunucuda bunun yanında
+  JSON'dur. Geri yüklemeden sonra oturumu yedekte de olan yöneticinin `/admin` çerezi korunur,
+  sayfa yenilenir; oturumu yedekte yoksa (yedek o girişten önce alınmışsa) giriş sayfası açılır. Sunucuda bunun yanında
   günlük `pg_dump` alınır (belge/SUNUCUYA-KURULUM.md).
 - **Ödev dosyaları** JSON yedeğe girmez (yalnızca bilgileri girer): dosyaların kendisi
   `data/dosyalar/` klasöründedir, sunucu yedeğinde bu klasör de alınmalı.
+- **Site ayarları** (panelden kaydedilenler) JSON yedeğe girmez; yedekten geri yüklemede
+  olduğu gibi kalır. `pg_dump` onları da alır.
 
 Şifreler `scrypt` ile şifrelenmiş olarak saklanır — düz metin şifre hiçbir yerde tutulmaz
 ve sunucudan dışarı çıkmaz.
@@ -1789,6 +2017,7 @@ ve sunucudan dışarı çıkmaz.
 | Güvenlik başlıkları | CSP, X-Frame-Options, nosniff, Referrer-Policy — XSS ve çerçeveleme engeli |
 | Girdi temizliği | Gelen JSON'daki `__proto__` gibi tehlikeli anahtarlar ve NUL karakteri ayıklanır |
 | Hata gizliliği | Veritabanı hatasında tablo/kısıt adı istemciye gitmez; ayrıntı yalnızca günlükte |
+| Gizli yönetim paneli | `/admin` yalnız yönetici çereziyle açılır, çerezsiz bilinmeyen adresle bayt bayt aynı 404 verir; yönetim ön yüzü herkese giden `app.js`'te yoktur; yönetici uçları yönetici olmayana bilinmeyen API adresi gibi 404 döner (yukarıda "Yönetim paneli") |
 | Yavaş bağlantı koruması | Açık tutulan boş bağlantılar 20-30 sn sonra kapatılır (slowloris) |
 | Şifre politikası | Yetişkin hesabında en az 8 karakter; büyük ve küçük harf, rakam ve özel karakter zorunlu. Öğrenci ve servisçide en az 8 karakter, harf ve rakam |
 | İki adımlı giriş | E-postası olan hesapta her girişte e-posta ile 6 haneli kod — kapatılamaz |
@@ -1825,7 +2054,9 @@ systemd servisi yap, önüne Caddy koy (HTTPS'i kendisi halleder).
 > **Vekil arkasında değilken açma** — açıkken herkes başlığı uydurup sınırı aşar.
 
 İnternete açılınca uygulama olarak kurma, telefon bildirimi ve servisçinin konum
-göndermesi de çalışmaya başlar (üçü de HTTPS istiyor).
+göndermesi de çalışmaya başlar (üçü de HTTPS istiyor). `site.adres` `https://` ile
+başlıyorsa (ya da güvenilen vekil `x-forwarded-proto: https` diyorsa) yönetim paneli çerezi
+`Secure` işaretiyle yazılır: tarayıcı onu yalnız https bağlantıda gönderir.
 
 ### Yük ve saldırı koruması
 
@@ -1907,7 +2138,7 @@ eğitim evi/
 ├── ekran-goruntuleri/         ← ekranlarla kılavuz: index.html (müdürün gözünden her bölüm) ve fotoğraflar
 ├── package.json               ← tek bağımlılık (pg) ve komutlar: start, veritabani-kur, eposta-ayarla, test
 ├── server.js                  ← 3 satırlık kabuk: sunucu/index.js'i çağırır
-├── yapimcilar.json            ← "Yapımcılar" listesi (ad, GitHub kullanıcı adı, katkı)
+├── yapimcilar.json            ← "Yapımcılar" listesi (ad, GitHub kullanıcı adı, katkı); panelde liste kaydedilmemişse bu gösterilir
 ├── .gitignore                 ← data/ ve gizli dosyalar depoya girmez
 │
 ├── sunucu/                    ← ARKA UÇ
@@ -1916,12 +2147,14 @@ eğitim evi/
 │   ├── yollar.js              ← klasör yolları, port, dinleme adresi (EE_DATA, PORT, HOST)
 │   ├── ortak.js               ← sabitler ve küçük yardımcılar (ders listesi, iller, tarih, temizleme, kişi kodu)
 │   ├── ayarlar.js             ← data/ayarlar.json (e-posta, site adresi, ters vekil)
+│   ├── yonetici-dosyasi.js    ← data/admins.json: yönetici hesaplarını açar, dosyayı aralıkla yoklar
+│   ├── yonetim-cerezi.js      ← gizli yönetim panelinin (/admin) çerezi
 │   ├── veri/                  ← VERİ KATMANI (SQL yalnızca burada)
 │   │   ├── index.js           ← tek giriş noktası: depo, bildir, açılış, yedek
 │   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
 │   │   ├── sema.js            ← şema dosyalarını sırayla uygular
 │   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
-│   │   ├── sema/002...029     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   ├── sema/002...031     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
 │   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
 │   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
 │   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
@@ -1931,7 +2164,9 @@ eğitim evi/
 │   │   │                        024 hatırlatıcılar, 025 ödev başlama saati, 026 Eğitim Evi
 │   │   │                        Aile, 027 kişi kodu ve müdür başvurusunun kalkması, 028 servis
 │   │   │                        yoklaması, servis saatleri, cihaz anahtarı, uygulama oturumu,
-│   │   │                        029 ödevin quizi: sorular, şıklar, denemeler, cevaplar)
+│   │   │                        029 ödevin quizi: sorular, şıklar, denemeler, cevaplar,
+│   │   │                        030 site ayarları ve yönetim paneli çerezleri, 031 aynı
+│   │   │                        e-posta/kullanıcı adı/T.C. kuralları ve yönetici adı tetikleyicisi)
 │   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
 │   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
 │   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)
@@ -1939,17 +2174,18 @@ eğitim evi/
 │   │   └── yedek.js           ← günlük yedek, geri yükleme
 │   ├── guvenlik.js            ← hız sınırı, kaba kuvvet kilidi, bot sorusu, 2FA, oturum
 │   ├── sifre.js               ← scrypt ile şifre özetleme
-│   ├── http.js                ← JSON cevap, gövde okuma, sıkıştırma, statik dosya, parça birleştirme
+│   ├── http.js                ← JSON cevap, gövde okuma, sıkıştırma, statik dosya, parça birleştirme, /admin
 │   ├── yetki.js               ← roller, yetkiler, kapsam, dışarı verilen kullanıcı görünümü
 │   ├── iliskiler.js           ← kim kimin öğretmeni; sınıf, ders, program yardımcıları
 │   ├── okullar.js             ← MEB okul listesi ve arama
 │   ├── hatirlatma.js          ← ders/ödev hatırlatma bildirimleri
 │   ├── push.js                ← telefon bildirimi: RFC 8291 şifreleme, VAPID, gönderim kuyruğu
-│   ├── site.js                ← /api/site: açılış sayfası rakamları, data/config.yml'deki iletişim
+│   ├── site.js                ← /api/site: açılış sayfası rakamları; site ayarları (veritabanı > data/config.yml > varsayılan)
 │   ├── bolumler/              ← her bölüm kendi uçlarını sunar (uclar(k))
 │   │   ├── kayit.js           ← kayıt, giriş, şifre, profil, bildirimler
 │   │   ├── kisilik.js         ← yetişkin hesabı: portallar, + Ekle, kişi kodu, hesap bilgisi, hesabı sil
-│   │   ├── yonetici.js        ← /api/admin: müdürler, okullar, yedekler
+│   │   ├── yonetici.js        ← /api/admin: müdürler, okullar, yedekler, yönetici dosyası
+│   │   ├── site-ayarlari.js   ← /api/admin/site-ayarlari, okul-adresleri, okul-adres: Site Ayarları
 │   │   ├── yonetici-okul.js   ← /api/admin/kisi-bul ve okul-ac: yöneticinin okulu kişi koduyla açması
 │   │   ├── okul-sayfasi.js    ← /api/okul-sayfa, /api/okul-foto: okulun giriş sayfası
 │   │   ├── okul.js            ← /api/school: sınıf, ders, program, roller, ders programı Excel'i
@@ -1993,8 +2229,9 @@ eğitim evi/
 │   ├── 404.html, okul-bulunamadi.html ← "Sayfa bulunamadı" ve "Okul bulunamadı"
 │   ├── manifest.json, sw.js   ← telefona kurulabilir uygulama (PWA)
 │   ├── js/tema.js             ← açık/koyu tema; sayfa çizilmeden önce çalışır
-│   ├── js/parcalar/           ← arayüz mantığı, 56 parça (00-durum ... 28-grafik; 14c-quiz, 19i-servis-yoklama)
-│   ├── css/parcalar/          ← stiller, 37 parça (00-temel: renk/tema değişkenleri)
+│   ├── js/parcalar/           ← arayüz mantığı, 55 parça (00-durum ... 28-grafik; 14c-quiz, 19i-servis-yoklama)
+│   ├── js/yonetim/            ← yönetim paneli ekranları, 4 parça (yalnız /admin/yonetim.js ile gider)
+│   ├── css/parcalar/          ← stiller, 38 parça (00-temel: renk/tema değişkenleri)
 │   └── yazitipi/              ← IBM Plex Sans ve Newsreader (woff2, kendi sunucumuzdan)
 │
 ├── data/                      ← VERİ (depoya girmez)
@@ -2002,7 +2239,9 @@ eğitim evi/
 │   ├── push-anahtar.json      ← telefon bildirimi anahtar çifti (ilk açılışta üretilir; yedekle)
 │   ├── dosyalar/              ← ödev teslim dosyaları
 │   ├── okul-fotolari/         ← okul sayfalarının fotoğrafları (konum bilgisi silinmiş)
-│   ├── config.yml             ← sitenin iletişim bilgileri (örneği belge/config.ornek.yml)
+│   ├── config.yml             ← site ayarlarının dosyadaki değerleri: iletişim, Play Store, aralıklar
+│   │                            (örneği belge/config.ornek.yml; panelde kaydedilen değer bunu ezer)
+│   ├── admins.json            ← yönetici hesapları (isteğe bağlı; örneği belge/admins.ornek.json; chmod 600)
 │   ├── okullar.json           ← 67.661 okulluk arama listesi (sunucuya ayrıca kopyalanır)
 │   └── yedek/                 ← günlük yedekler
 │
@@ -2029,7 +2268,8 @@ eğitim evi/
 ├── belge/                     ← BELGELER
 │   ├── KILAVUZ.md             ← bu dosya: kurulum ve her bölümün ayrıntısı
 │   ├── SUNUCUYA-KURULUM.md    ← internete açma rehberi (Linux VPS + egitimevi.org)
-│   ├── config.ornek.yml       ← data/config.yml örneği (iletişim bilgileri)
+│   ├── config.ornek.yml       ← data/config.yml örneği (iletişim, Play Store, aralıklar)
+│   ├── admins.ornek.json      ← data/admins.json örneği (yönetici hesapları)
 │   ├── NASIL-YAPILDI.html     ← projenin nasıl yazıldığının hikâyesi
 │   └── ekran-goruntuleri/     ← albüm (üretilir, depoya girmez)
 │
@@ -2043,6 +2283,16 @@ eğitim evi/
 `public/js/parcalar/` ve `public/css/parcalar/` altındaki dosyalar geliştirirken ayrı
 durur; sunucu bunları ad sırasıyla birleştirip `/js/app.js` ve `/css/style.css` olarak
 sunar, bir parça değişince yeniden okur. Derleyici, paket, kurulum yok.
+
+**Yönetim paketi.** Sistem yöneticisinin ekranları `public/js/yonetim/` altındadır ve herkese
+giden `/js/app.js`'e girmez. Sunucu yalnız geçerli yönetici çereziyle
+`/admin/yonetim.js` adresinden ayrı bir paket verir: `public/js/parcalar/` ile
+`public/js/yonetim/` parçaları dosya adına göre tek sırada, tek IIFE içinde birleşir; yönetim
+parçaları uygulamanın bütün işlevlerini ve `SAYFALAR`, `EYLEMLER` tablolarını görür. Ortak
+parçalar yönetime yalnız `00-durum.js`'teki boş `YONETIM` kancasıyla bakar; kancayı yönetim
+paketi doldurur. İki klasörde aynı adlı parça olmamalı (`testler/test-kucult.js` denetler).
+Yönetim parçaları tarayıcıya tek tek gitmez; `/js/yonetim/...` adresleri de bilinmeyen adres
+gibi 404 verir. `buton-denetimi`, `yazim-denetimi` ve `test-kucult` iki klasörü de okur.
 
 Tarayıcıya giden dosyada **yorumlar yoktur** (`sunucu/yardimci/kucult.js`): dizgi ve
 düzenli ifade içindeki `//`, `/*` işaretlerine dokunmayan küçük bir ayrıştırıcı yorumları
@@ -2101,6 +2351,45 @@ kullanıcıya "Dur!" uyarısı çıkar (biri ona kod yapıştırtmaya çalışı
   koduyla müdür yapar (yukarıda "Admin: okul açma"). E-postası onaylanmamış hesap zaten
   yoktur; kodu tahmin etmeye karşı hız sınırları var.
 
+### Aynı e-posta, kullanıcı adı ve T.C. (çakışmalar)
+
+Kurallar bütün yollarda aynıdır: kayıt ve e-posta onayı, e-posta ya da kullanıcı adı
+değiştirme, okulun açtığı öğrenci/servisçi (tek tek ya da Excel ile), nakil, kişi koduyla
+öğretmen/müdür ekleme, veli bağlama, `data/admins.json` ve yedekten geri yükleme.
+
+- **E-posta bütün sistemde tektir.** Karşılaştırmadan önce adres tek biçime getirilir:
+  büyük/küçük harf, baştaki/sondaki boşluk, Türkçe büyük **İ** (i olur), tam genişlikli
+  harfler (`ａｙｓｅ＠ｘ．ｃｏｍ`) ve görünmez karakterler (sıfır genişlikli boşluk, yumuşak
+  tire) fark etmez: `Ayse@X.com`, ` AYSE@x.com ` ve `ayse@x.com` aynı hesaptır. Adreste
+  yalnız İngilizce harf, rakam ve `. _ - +` gibi işaretler olabilir; `ı ş ğ ü ö ç`,
+  aksanlı harf ya da Latin harfine benzeyen başka alfabeden harf (Kiril `а` gibi) kabul
+  edilmez, görünüşte aynı iki adresle iki hesap açılamaz.
+- **Kullanıcı adı** aynı biçimde karşılaştırılır (`İSMAİL` = `ismail`). Okul hesaplarında
+  (müdür, öğretmen, öğrenci, servisçi) okul içinde, yetişkin/veli/yönetici hesaplarında
+  kendi aralarında tektir: aynı ad iki okulda olabilir, giriş okul adresinden
+  (`/school/<okul>`) ayrılır; adresiz girişte ad birden çok okulda varsa okul sorulur.
+  **Sistem yöneticisinin kullanıcı adı hiçbir hesapla aynı olamaz** (hiçbir okulda da).
+- **T.C. kimlik no** okulda tektir; öğrencinin T.C. no'su bütün sistemde tektir (başka
+  okuldaki öğrenci yalnız nakille, doğum tarihiyle gelir); yetişkin hesabında yazılmışsa
+  yetişkinler arasında tektir.
+- **Aynı anda gelen istekler.** Her kural veritabanında da korunur (tekil indeksler;
+  yönetici adı için tetikleyici, `031-cakismalar.sql`). İki istek "var mı" denetimini
+  birlikte geçse de ikincisini veritabanı durdurur; kişi hangi alanın çakıştığını söyleyen
+  açık bir ileti alır (cevapta `alan`: `eposta`/`email`, `kullaniciAdi`, `tc`, `okulNo`).
+  Excel listesi bu yüzden durursa hiçbir hesap açılmaz, liste yeniden yüklenir.
+- **Eski biçimde saklanmış e-posta.** Eski sürümler adresi yalnız kırpıp küçük harfe çevirerek
+  saklardı: büyük **İ** ile yazılmış adres `i̇` (i + birleşik nokta) olarak dururdu. Böyle bir hesap
+  bugün e-postayla giremez, şifresini sıfırlayamaz ve aynı adresle ikinci bir hesap açılabilirdi.
+  Sunucu her açılışta bu adresleri bugünkü biçime getirir (pencereye kaç adres düzeltildiği
+  yazılır). Bu, `data/admins.json` okunmadan önce yapılır: dosyaya aynı adres büyük İ ile
+  yazılmış olsa da o satır "yönetici olmayan bir hesapta" diye atlanır, ikinci bir hesap açılmaz.
+  Aynı biçimde başka bir hesap zaten varsa ikisine de dokunulmaz, açılış raporunda görünür.
+- **Eski veri.** Şema dosyası var olan kayıtlara dokunmaz ve sunucuyu durdurmaz. Kurallara
+  aykırı eski kayıt varsa (aynı T.C. ile iki okulda öğrenci, bir yöneticiyle aynı adlı hesap,
+  yalnız harf farkıyla ayrılan e-postalar) sunucu açılışta pencereye yazar; yönetici elle
+  düzeltir. Yedekten geri yüklemede kurala aykırı çift ayıklanır: T.C. no'su çakışan hesap
+  T.C.'siz, yöneticinin adını taşıyan hesap başka adla yüklenir, e-postası çakışan hesap atlanır.
+
 ---
 
 ## Veli paneli
@@ -2120,7 +2409,8 @@ her mesaj velisine de düşer; mesajda "Zeynep için" notu görünür. Eski yol 
   (yalnızca IPv4 dinlenince tarayıcı önce IPv6'yı deneyip ~200 ms bekliyordu).
 - Betik ve stil adresleri kendi sürümünü taşır (`/js/app.js?v=…`): tarayıcı bir yıl
   saklar, dosya değişince adres değişir. İkinci açılışta yalnızca HTML sorulur.
-- Yazı tipi ve simgeler de bir yıl önbellekte; arayüz kodu brotli ile 229 KB → 53 KB.
+- Yazı tipi ve simgeler de bir yıl önbellekte; arayüz kodu (`/js/app.js`, yorumsuz) brotli ile
+  yaklaşık 680 KB → 155 KB, stil dosyası 170 KB → 29 KB. Yönetim paketi yalnız yöneticiye gider.
 
 ---
 
@@ -2141,14 +2431,21 @@ node testler/yazim-denetimi.js     # sunucusuz
 node testler/buton-denetimi.js     # sunucusuz
 ```
 
+Yönetim paneli ve site ayarları için ayrı paketler: `test-admin-gizli.js` (çerezsiz `/admin`
+ile bilinmeyen adresin bayt bayt karşılaştırması, çerez, `app.js`'te yönetim kodu olmaması,
+yönetici uçlarının 404'ü), `test-site-ayarlari.js` (öncelik, doğrulama, sıfırlama, okul
+adresi), `test-yonetici-dosyasi.js` (`admins.json`, canlı okuma; yalnız
+`testler/testdata/` altında) ve `test-cakisma.js` (aynı e-posta, kullanıcı adı ve T.C.;
+aynı anda gelen istekler). Hepsi `tumtest.sh` listesindedir.
+
 ---
 
 ## Depo ve gizli bilgiler
 
 Depo herkese açıktır; **`data/` asla girmez** (`.gitignore`): veritabanı bağlantısı,
-e-posta şifresi, iletişim bilgileri (`config.yml`), yedekler, yüklenen dosyalar ve
-telefon bildirimi anahtarı sunucuda kalır. Commit atmadan önce `git status` çıktısında
-`data/` görünmediğini kontrol et.
+e-posta şifresi, iletişim bilgileri (`config.yml`), yönetici hesapları dosyası
+(`admins.json`), yedekler, yüklenen dosyalar ve telefon bildirimi anahtarı sunucuda kalır.
+Commit atmadan önce `git status` çıktısında `data/` görünmediğini kontrol et.
 
 ---
 

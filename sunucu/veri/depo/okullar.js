@@ -62,6 +62,14 @@ const kisaAdsizlar = () => sorgu("SELECT id, ad, ilce FROM okullar WHERE kisa_ad
 const adresliOkullar = () => sorgu(
   "SELECT id, ad, il, ilce, kisa_ad FROM okullar WHERE durum = 'approved' AND kisa_ad IS NOT NULL ORDER BY ad" + tr());
 
+/* Yönetim paneli > Site ayarları > Okul adresleri: kapatılmamış bütün okullar ve adresleri. */
+const adresListesi = () => sorgu(
+  "SELECT id, ad, il, ilce, durum, kisa_ad FROM okullar WHERE durum <> 'rejected' ORDER BY ad" + tr());
+
+/* Okulun müdür rolü satırları (adres değişince bildirim gider). */
+const mudurKimlikleri = async okulId => (await sorgu(
+  "SELECT id FROM kullanicilar WHERE okul_id = $1 AND rol = 'principal' AND durum = 'approved'", [okulId])).map(r => r.id);
+
 const konumYaz = (id, enlem, boylam) =>
   calistir('UPDATE okullar SET enlem = $2, boylam = $3 WHERE id = $1', [id, enlem, boylam]);
 
@@ -111,6 +119,6 @@ async function yilAktifYap(okulId, id) {
 
 module.exports = {
   bul, ekle, durumYaz, cakisan, kayitIcin, genelBakis,
-  kisaAdla, kisaAdVarMi, kisaAdYaz, kisaAdsizlar, adresliOkullar, konumYaz, servisSaatleriYaz,
+  kisaAdla, kisaAdVarMi, kisaAdYaz, kisaAdsizlar, adresliOkullar, adresListesi, mudurKimlikleri, konumYaz, servisSaatleriYaz,
   yillari, yilBul, yilEkle, yilAktifYap
 };

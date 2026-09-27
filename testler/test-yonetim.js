@@ -234,7 +234,7 @@ async function hamGiris(kimlik, sifre, okul) {
   const ilk = liste.body.principals[0];
   kontrol('okul ve sayilar dolu', !!ilk.schoolName && typeof ilk.students === 'number', J(ilk));
   const mudurDener = await iste('/api/admin/principals', 'GET', null, T);
-  kontrol('mudur bu listeye erisemiyor', mudurDener.status === 403, 'status ' + mudurDener.status);
+  kontrol('mudur bu listeye erisemiyor (bilinmeyen adres gibi 404)', mudurDener.status === 404, 'status ' + mudurDener.status);
 
   console.log('=== 9b) YONETICI OKUL ACIYOR (MUDURUN KISI KODUYLA) ===');
   /* Müdür kendi hesabını açar, kişi kodunu yöneticiye verir. Yönetici e-postayla
@@ -246,7 +246,7 @@ async function hamGiris(kimlik, sifre, okul) {
   const okulGovde = { schoolName: 'Deneme Açılış Ortaokulu ' + z, city: 'Ankara', district: 'Çankaya', kisaAd: 'acilis-' + z,
     mudurKodu: oaKod };
   const oaMudur = await iste('/api/admin/okul-ac', 'POST', okulGovde, T);
-  kontrol('mudur okul acamiyor (yalniz yonetici)', oaMudur.status === 403, 'status ' + oaMudur.status);
+  kontrol('mudur okul acamiyor (yalniz yonetici; ona uc yok: 404)', oaMudur.status === 404, 'status ' + oaMudur.status);
   const oaAdres = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { kisaAd: 'a b' }), A);
   kontrol('gecersiz adres reddedildi', oaAdres.status === 400 && oaAdres.body.alan === 'kisaAd', J(oaAdres.body));
   const oaKodsuz = await iste('/api/admin/okul-ac', 'POST', Object.assign({}, okulGovde, { mudurKodu: '' }), A);

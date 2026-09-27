@@ -82,17 +82,28 @@ function kontrol(ad, sart, detay) {
   console.log('=== 4) YETKI ===');
   const mudur = await girisYap('mudur@test.com', 'Test1234!');
   const yasak = await iste('/api/admin/backups', 'GET', null, mudur.token);
-  kontrol('mudur yedeklere erisemiyor', yasak.status === 403, 'status ' + yasak.status);
+  kontrol('mudur yedeklere erisemiyor (bilinmeyen adres gibi 404)', yasak.status === 404, 'status ' + yasak.status);
   const yasak2 = await iste('/api/admin/backup-now', 'POST', {}, mudur.token);
-  kontrol('mudur yedek alamiyor', yasak2.status === 403, 'status ' + yasak2.status);
+  kontrol('mudur yedek alamiyor (404)', yasak2.status === 404, 'status ' + yasak2.status);
 
   console.log('=== 5) GERI YUKLEME ===');
   /* Once bir degisiklik yap: yeni sinif ac */
   const yeniSinif = await iste('/api/school/class', 'POST', { name: 'YEDEK-DENEME' }, mudur.token);
   kontrol('gecici sinif acildi', yeniSinif.status === 200);
 
+  /* Yöneticinin /admin çerezi (oturumu yedekte var: yedekten önce açıldı). */
+  const TABAN = process.env.EE_BASE || 'http://localhost:3000';
+  const meOnce = await iste('/api/me', 'GET', null, T);
+  const cerez = (/ee_yonetim=[a-f0-9]{64}/.exec(meOnce.headers.get('set-cookie') || '') || [''])[0];
+  const adminOnce = await fetch(TABAN + '/admin', { headers: { cookie: cerez } });
+  kontrol('geri yüklemeden önce /admin açılıyor', !!cerez && adminOnce.status === 200, adminOnce.status);
+
   const geri = await iste('/api/admin/backup-restore', 'POST', { ad: yedekAd }, T);
   kontrol('geri yukleme calisti', geri.status === 200, JSON.stringify(geri.body).slice(0, 100));
+  const adminSonra = await fetch(TABAN + '/admin', { headers: { cookie: cerez } });
+  const adminSonraMetin = await adminSonra.text();
+  kontrol('geri yüklemeden sonra aynı çerezle /admin yine açılıyor (sayfa yenilenince 404 yok)', geri.body.oturumKaldi === true &&
+    adminSonra.status === 200 && !/Sayfa bulunamadı/.test(adminSonraMetin), geri.body.oturumKaldi + ' ' + adminSonra.status);
 
   /* Geri yukleme sonrasi o sinif olmamali */
   const mudur2 = await girisYap('mudur@test.com', 'Test1234!');
@@ -143,9 +154,15 @@ function kontrol(ad, sart, detay) {
     sira[o1.user.id] === 2, JSON.stringify(yon.saatler) + JSON.stringify(sira));
   const srv2 = await girisYap(sK, 'Test1234!');
   const anahtar = (await iste('/api/cihaz', 'POST', { ad: 'Geri yükleme telefonu' }, srv2.token)).body.cihazAnahtari;
-  const geri2 = await iste('/api/admin/backup-restore', 'POST', { ad: yedekAd }, T);
+  /* Bu geri yüklemeyi yedekten SONRA açılmış bir oturum yapar: oturum yedekte yok. */
+  const T2 = (await girisYap('admin@egitimevi.com', 'admin123')).token;
+  const geri2 = await iste('/api/admin/backup-restore', 'POST', { ad: yedekAd }, T2);
   const ayar = await fetch((process.env.EE_BASE || 'http://localhost:3000') + '/api/cihaz/ayar', { headers: { 'X-Cihaz': anahtar } });
   kontrol('geri yüklemeden sonra telefonun uygulama anahtarı çalışıyor', geri2.status === 200 && ayar.status === 200, geri2.status + ' ' + ayar.status);
+  const me2 = await iste('/api/me', 'GET', null, T2);
+  kontrol('oturumu yedekte olmayan yönetici: cevap bunu söylüyor (ön yüz giriş sayfasına döner), oturum kapandı',
+    geri2.body.oturumKaldi === false && /yeniden giriş/.test(geri2.body.message) && me2.status === 401,
+    geri2.body.oturumKaldi + ' ' + me2.status + ' ' + geri2.body.message);
 
   console.log('=== 6) BOZUK YEDEK ===');
   const sahte = await iste('/api/admin/backup-restore', 'POST', { ad: 'yedek-yok-boyle.json' }, T);

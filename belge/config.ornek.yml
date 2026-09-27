@@ -1,15 +1,39 @@
 # Eğitim Evi site ayarları: ÖRNEK. Sunucuda data/config.yml olarak kopyala
 # ve doldur. data/config.yml depoya girmez (.gitignore).
+#
+# Bu ayarların hepsi sistem yöneticisinin yönetim panelinde ("Site Ayarları")
+# de değiştirilebilir. Öncelik: panelden kaydedilen değer (veritabanı) >
+# bu dosya > varsayılan. Yani panelde kaydedilmiş bir ayar bu dosyayı ezer;
+# dosyayı değiştirmek o ayarı değiştirmez. Panel bu dosyayı yazmaz; panelde
+# "Varsayılana dön" denirse panelden kaydedilen değer silinir ve bu dosyadaki
+# değer (yoksa varsayılan) yeniden geçerli olur. Her kart değerin nereden
+# geldiğini yazar. Dosya değişince sunucu yeniden başlamadan okunur (en geç
+# 30 saniyede). "Yapımcılar" listesi bu dosyada değil: panelde ya da depodaki
+# yapimcilar.json dosyasında.
 
-# Sayfaların altındaki "İletişim" satırı. Boş bırakılan görünmez. Aynı bilgiler
-# "+ Ekle > Müdür" penceresinde de çıkar: okulunu açtırmak isteyen kişi kişi kodunu
-# buradan yöneticiye verir.
+# Sayfaların altındaki "İletişim" satırı. Boş bırakılan görünmez; biçimi bozuk olan
+# (e-posta ad@alan.uzantı değilse, telefonda 7'den az rakam varsa) boş sayılır. Aynı
+# bilgiler "+ Ekle > Müdür" penceresinde de çıkar: okulunu açtırmak isteyen kişi kişi
+# kodunu buradan yöneticiye verir.
 iletisim:
   eposta: ""
   telefon: ""
 
-# Uygulama Play Store'a çıkınca oranın adresi (https://play.google.com/... ile başlamalı).
+# Uygulama Play Store'a çıkınca oranın adresi (https://play.google.com/... ile başlamalı;
+# başka adres yok sayılır).
 # Doluysa egitimevi.org/indir/indir.html sayfasında "Google Play'den yükle" düğmesi çıkar. Sürüm tablosu
 # her durumda GitHub'daki sürümlerden gelir.
 uygulama:
   playstore: ""
+
+# Aralıklar (dakika, tam sayı). Yazılmayan ya da sınır dışı olan varsayılanı kullanır.
+#   bildirim_dk   sitenin bildirimleri yoklama aralığı (1-30, varsayılan 5)
+#   cevrimici_dk  "şu an açık" sayma süresi: son bu kadar dakikada isteği gelen kişi
+#                 çevrimiçi sayılır (1-60, varsayılan 5). Yoklama aralığından kısa
+#                 olamaz: sunucu en az yoklama aralığı + 1 dakika kullanır
+#                 (varsayılanlarla 6).
+#   admins_dk     data/admins.json dosyasına bakma aralığı (1-60, varsayılan 1)
+araliklar:
+  bildirim_dk: 5
+  cevrimici_dk: 5
+  admins_dk: 1

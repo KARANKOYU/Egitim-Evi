@@ -19,6 +19,10 @@ const DOSYALAR = [
   ...sunucuDosyalari(),
   ...fs.readdirSync(path.join(KOK, 'public', 'js', 'parcalar')).filter(a => a.endsWith('.js')).sort()
     .map(a => path.join('public', 'js', 'parcalar', a)),
+  /* Yönetim ön yüzü (/admin/yonetim.js'e giren parçalar) */
+  ...(fs.existsSync(path.join(KOK, 'public', 'js', 'yonetim'))
+    ? fs.readdirSync(path.join(KOK, 'public', 'js', 'yonetim')).filter(a => a.endsWith('.js')).sort()
+      .map(a => path.join('public', 'js', 'yonetim', a)) : []),
   path.join('public', 'index.html'),
   path.join('public', 'kvkk', 'kvkk.html')
 ];

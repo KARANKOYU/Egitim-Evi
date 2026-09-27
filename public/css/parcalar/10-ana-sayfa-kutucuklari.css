@@ -50,7 +50,7 @@
 .kutucuk .kutucuk-alt {
   margin-top: 3px;
   font-size: 12.5px;
-  opacity: .92;
+  /* Saydamlık yok: küçük yazı zeminle tam kontrastta kalsın (00-temel.css --kutu-*). */
   overflow-wrap: anywhere;
 }
 

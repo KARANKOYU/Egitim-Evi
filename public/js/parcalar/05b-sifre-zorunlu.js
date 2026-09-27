@@ -3,7 +3,39 @@
    belirlemesi. İkisi de bitmeden
    uygulama açılmaz; sunucu da bu durumdaki isteği reddeder. */
 
+/* Sistem yöneticisinin ekranları kendi adresinde ve ayrı bir dosyayla açılır.
+   Adresi sunucu söyler (giriş, /me ve şifre değiştirme cevabındaki
+   yonetimAdresi; yalnız yöneticiye gelir). Kişi o adreste değilse tam sayfa
+   geçişiyle oraya gider: tarayıcı yönetim çerezini ancak o adrese giderken
+   gönderir. Döner: sayfa değişiyorsa true. */
+function yonetimeGec(d) {
+  var adres = d && d.yonetimAdresi;
+  if (typeof adres !== 'string' || !/^\/[a-z0-9-]+$/i.test(adres)) return false;
+  var yol = location.pathname;
+  if (yol === adres || yol.indexOf(adres + '/') === 0) return false;
+  /* "Hiçbir şey kaydetme" seçildiyse anahtar yalnızca bellekte: geçişte
+     kaybolmasın diye bir kez bu sekmeye bırakılır, açılışta hemen silinir. */
+  try {
+    if (S.token && sessionStorage.getItem('ee_token') !== S.token) sessionStorage.setItem('ee_gecis', S.token);
+  } catch (e) { /* gizli sekme: yeniden giriş istenir */ }
+  location.replace(adres + (adrestenSayfa() ? location.hash : ''));
+  return true;
+}
+
+/* Tam sayfa geçişinde bırakılan anahtar (yonetimeGec): bir kez okunur, silinir. */
+function gecisAnahtari() {
+  try {
+    var t = sessionStorage.getItem('ee_gecis');
+    sessionStorage.removeItem('ee_gecis');
+    return t;
+  } catch (e) { return null; }
+}
+
 function girisSonrasi(d) {
+  /* Yönetici kendi adresine geçer; yönetim adresinde yönetici olmayan bir
+     hesap açıldıysa (aynı tarayıcıdaki başka sekmenin anahtarı) siteye döner. */
+  if (yonetimeGec(d) || (YONETIM && YONETIM.disariMi())) return;
+  if (d && d.bildirimAralikDk) bildirimAraligiAl(d.bildirimAralikDk);
   /* Birden çok portalı olan yetişkin önce hesabının ana sayfasını görür
      (portal kartları; soldaki menüden seçer). Tek çocuğu olan veli o çocukla
      açılır. Yeni oturumda (giriş, portal değişimi) portal dışı bilgisi
@@ -64,6 +96,8 @@ EYLEMLER['zorunlu-sifre-kaydet'] = function (el) {
   dugmeBekle(el, 'Kaydediliyor...');
   return api('/password', 'POST', { old: eski, 'new': y1 }).then(function (d) {
     S.user = d.user;
+    /* Şifresini başkası vermiş yönetici kendi adresini şimdi alır. */
+    if (yonetimeGec(d)) return;
     modalKapat();
     uygulamayiBaslat();
   })['catch'](function (e) {

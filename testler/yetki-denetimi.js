@@ -1,5 +1,8 @@
 /* Yetki denetimi: her API ucunu her rolle deneyip yetkisiz gecen var mi bakar.
-   Amac "403/401 donmesi gerekirken 200 donen" ucu yakalamak. */
+   Amac "403/401 donmesi gerekirken 200 donen" ucu yakalamak.
+   Yalniz yoneticiye ozel uclar (izinli: ['admin']) ayrica tek tek denetlenir:
+   yonetici olmayana (giris yapmamis dahil) bilinmeyen bir API adresiyle AYNI
+   cevap (404 {"error":"Böyle bir adres yok"}) donmeli; 401/403 degil. */
 const { iste, epostaOnayla, girisYap, botCevabi, tcUret, okulHesabi } = require('./giris');
 
 let sorun = 0, kontrolSayisi = 0;
@@ -114,6 +117,14 @@ function bekleniyor(ad, cevap, izinliMi) {
     ['kisi koduyla kisi bul', '/api/admin/kisi-bul', 'POST', { kod: vKod }, ['admin']],
     ['yedek listesi', '/api/admin/backups', 'GET', null, ['admin']],
     ['yedek al', '/api/admin/backup-now', 'POST', {}, ['admin']],
+    ['yonetici genel bakis', '/api/admin/overview', 'GET', null, ['admin']],
+    ['mudur listesi (yonetici)', '/api/admin/principals', 'GET', null, ['admin']],
+    ['site ayarlari', '/api/admin/site-ayarlari', 'GET', null, ['admin']],
+    ['site ayari kaydet', '/api/admin/site-ayarlari', 'POST', { anahtar: 'bildirimAralikDk', deger: 5 }, ['admin']],
+    ['okul adresleri (yonetici)', '/api/admin/okul-adresleri', 'GET', null, ['admin']],
+    ['yonetici dosyasi', '/api/admin/yonetici-dosyasi', 'GET', null, ['admin']],
+    ['yonetici dosyasi simdi oku', '/api/admin/yonetici-dosyasi/oku', 'POST', {}, ['admin']],
+    ['yorumlarin hepsi (yonetici)', '/api/yorumlar/hepsi', 'GET', null, ['admin']],
 
     /* --- aktarim --- */
     ['excel sablonu', '/api/school/aktarim-sablon?tur=program', 'GET', null,
@@ -247,6 +258,28 @@ function bekleniyor(ad, cevap, izinliMi) {
     }
     console.log('  ' + ad.padEnd(30) + satir.join(''));
   }
+
+  /* Yoneticiye ozel uclar: yonetici olmayana bilinmeyen adresle ayni cevap. */
+  console.log();
+  console.log('=== YONETICI UCLARI YONETICI OLMAYANA BILINMEYEN ADRES GIBI (404, ayni govde) ===');
+  let yoneticiDenetimi = 0;
+  for (const [ad, yol, method, govde, izinli] of UCLAR) {
+    if (izinli.length !== 1 || izinli[0] !== 'admin') continue;
+    for (const rol of ['mudur', 'ogretmen', 'ogrenci', 'veli', 'servisci', 'yok']) {
+      const tok = roller[rol];
+      const [cevap, bilinmeyen] = await Promise.all([iste(yol, method, govde, tok),
+        iste('/api/boyle-bir-uc-yok-denetim', method, govde, tok)]);
+      yoneticiDenetimi++;
+      kontrolSayisi++;
+      if (cevap.status !== 404 || cevap.status !== bilinmeyen.status ||
+          JSON.stringify(cevap.body) !== JSON.stringify(bilinmeyen.body)) {
+        sorun++;
+        bulgular.push({ tur: 'ACIK', ad: ad + ' [' + rol + '] bilinmeyen adresten ayirt ediliyor', durum: cevap.status,
+          mesaj: JSON.stringify(cevap.body).slice(0, 80) + ' / bilinmeyen: ' + bilinmeyen.status });
+      }
+    }
+  }
+  console.log('  ' + yoneticiDenetimi + ' yonetici ucu x rol denendi');
 
   console.log();
   console.log('  + izin verildi (dogru)   . engellendi (dogru)');

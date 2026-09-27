@@ -14,21 +14,12 @@ SAYFALAR.ana = function () {
   /* Servisçinin ana sayfası servis yoklamasıdır (19i-servis-yoklama.js). */
   if (u.role === 'servisci') return servisYoklamaSayfasi();
 
+  /* Sistem yöneticisinin ana sayfası kendi dosyasında (00-durum.js YONETIM);
+     o dosya yüklenmediyse bu adreste açılmaz. */
   if (u.role === 'admin') {
-    return api('/admin/overview').then(function (d) {
-      var s = d.stats;
-      yaz(hero('EĞİTİM EVİNE HOŞ GELDİNİZ', 'Merhaba ' + ad + ', sistem yöneticisi panelindesin.') +
-        kutucuklar([
-          { k: 'okullar', ad: 'Okullar', renk: 'lacivert', ikon: 'okul', alt: s.okul + ' okul kayıtlı · Okul aç' },
-          { k: 'mudurler', ad: 'Müdürler', renk: 'yesil', ikon: 'mudur', alt: s.mudur + ' müdür' },
-          { k: 'yedekler', ad: 'Yedekleme', renk: 'camgobegi', ikon: 'kutu', alt: 'Veri kopyaları' },
-          { k: 'profil', ad: 'Ayarlar', renk: 'gri', ikon: 'ayar', alt: 'Yönetici hesabın' }
-        ]) +
-        '<div class="grid k4">' +
-        stat(s.okul, 'Okul') + stat(s.mudur, 'Müdür') + stat(s.ogretmen, 'Öğretmen') +
-        stat(s.ogrenci, 'Öğrenci') + stat(s.veli, 'Veli') +
-        '</div>');
-    });
+    if (YONETIM) return YONETIM.anaSayfa(ad);
+    yaz(bosKutu('kilit', 'Bu hesabın ekranları bu adreste açılmıyor. Sayfayı yenile.'));
+    return;
   }
 
   if (u.role === 'parent') {

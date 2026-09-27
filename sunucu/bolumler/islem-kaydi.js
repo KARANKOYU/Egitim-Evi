@@ -59,7 +59,15 @@ const ISLEM_AD = {
   'hesap.bilgi': 'Hesap bilgileri değişti',
   'ogrenci.nakil': 'Öğrenci başka okuldan nakil geldi',
   'okul.ozellik': 'Okulun özellikleri değişti (bölüm açıldı ya da kapandı)',
-  'servis.saatler': 'Servis saatleri değişti'
+  'servis.saatler': 'Servis saatleri değişti',
+  /* Sistem yöneticisi (okulsuz yazılır, yalnız yönetici görür). */
+  'yonetici.eklendi': 'Yönetici hesabı admins.json dosyasından açıldı',
+  'yonetici.dosya-okundu': 'admins.json dosyası elle yeniden okundu',
+  'site.iletisim': 'Site iletişim bilgileri değişti',
+  'site.yapimcilar': 'Yapımcılar listesi değişti',
+  'site.playstore': 'Play Store bağlantısı değişti',
+  'site.aralik': 'Site aralık ayarı değişti',
+  'okul.adres-yonetici': 'Okulun adresi yönetici tarafından değişti'
 };
 
 /* Kayıt yazılamazsa asıl işlem bozulmasın: hata yalnızca günlüğe düşer. */

@@ -76,6 +76,47 @@ async function hesabinOturumlariniKapat(anaId, haricAnahtar) {
     'AND anahtar_ozeti <> $2', [anaId, ozet(haricAnahtar || '')]);
 }
 
+/* ---------------- /admin çerezleri (030) ----------------
+   Yönetici oturumuna bağlı, oturum anahtarından bağımsız rastgele değer.
+   Veritabanında özeti durur. Oturum silinince (çıkış, süre, şifre değişimi)
+   çerez de silinir. Çerez her girişte ve /api/me'de yenilenir; aynı anda açık
+   iki sekmenin yenilemesi birbirini düşürmesin diye oturumun en yeni
+   YONETIM_CEREZ_SAKLA çerezi geçerli kalır, eskiler silinir. */
+const YONETIM_CEREZ_SAKLA = 3;
+
+/* Oturum yoksa (az önce kapandıysa) hiçbir şey yazılmaz: false. */
+async function yonetimCereziEkle(anahtar, cerez) {
+  const o = ozet(anahtar);
+  const eklenen = await calistir(
+    'INSERT INTO yonetim_cerezleri (ozet, oturum_ozeti) SELECT $1, anahtar_ozeti FROM oturumlar WHERE anahtar_ozeti = $2',
+    [ozet(cerez), o]);
+  await calistir(
+    'DELETE FROM yonetim_cerezleri WHERE oturum_ozeti = $1 AND ozet NOT IN (' +
+    '  SELECT ozet FROM yonetim_cerezleri WHERE oturum_ozeti = $1 ORDER BY olusturma DESC LIMIT $2)',
+    [o, YONETIM_CEREZ_SAKLA]);
+  return eklenen > 0;
+}
+
+/* Çerez geçerli bir yönetici oturumuna mı ait? Kullanıcı kimliği ya da null.
+   Oturum süresi dolmamış, hesap onaylı yönetici ve kendi şifresini koymuş olmalı. */
+async function yonetimCereziSahibi(cerez) {
+  if (!cerez) return null;
+  const r = await tek(
+    'SELECT k.id FROM yonetim_cerezleri c ' +
+    'JOIN oturumlar o ON o.anahtar_ozeti = c.oturum_ozeti ' +
+    'JOIN kullanicilar k ON k.id = o.kullanici_id ' +
+    'WHERE c.ozet = $1 ' +
+    'AND o.olusturma > now() - make_interval(days => CASE WHEN o.uygulama THEN $3::int ELSE $2::int END) ' +
+    "AND k.rol = 'admin' AND k.durum = 'approved' AND NOT k.sifre_degismeli",
+    [ozet(cerez), OTURUM_OMRU_GUN, UYGULAMA_OMRU_GUN]);
+  return r ? r.id : null;
+}
+
+/* Kişinin bütün oturumlarının /admin çerezleri (şifre değişince). */
+const yonetimCerezleriniSil = kullaniciId => calistir(
+  'DELETE FROM yonetim_cerezleri WHERE oturum_ozeti IN (SELECT anahtar_ozeti FROM oturumlar WHERE kullanici_id = $1)',
+  [kullaniciId]);
+
 /* Süresi dolanları ve üst sınırı aşanları (en eskiler) siler. */
 async function temizle(ustSinir) {
   const eski = await calistir(
@@ -88,4 +129,5 @@ async function temizle(ustSinir) {
 }
 
 module.exports = { OTURUM_OMRU_GUN, UYGULAMA_OMRU_GUN, ozet, ac, kullaniciKimligi, oturumBilgisi, geriTarihle, kapat, hepsiniKapat,
-  digerleriniKapat, hesabinOturumlariniKapat, temizle };
+  digerleriniKapat, hesabinOturumlariniKapat, temizle,
+  YONETIM_CEREZ_SAKLA, yonetimCereziEkle, yonetimCereziSahibi, yonetimCerezleriniSil };

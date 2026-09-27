@@ -1,0 +1,48 @@
+/* Ayar kartlarının küçük parçaları: kartın açıklama yazısı, değerin nereden
+   geldiği satırı, dakika gibi kısa sayı kutusu ve satır satır düzenlenen
+   sıralı liste (ad, bağlantı, açıklama; yukarı, aşağı, çıkar). */
+
+.kart-aciklama { margin: 0 0 10px; }
+.ayar-kart h3 .ikon { width: 18px; height: 18px; margin-right: 7px; vertical-align: -3px; color: var(--ana); }
+
+.kaynak-satir {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+  margin: 0 0 12px; font-size: 12.5px; color: var(--soluk);
+}
+
+/* Birbirinin altındaki ayarlar (her biri kendi Kaydet düğmesiyle) */
+.ayar-blok + .ayar-blok { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--cizgi); }
+.ayar-blok .field { margin-bottom: 8px; }
+.ayar-blok .msg { margin-top: 8px; }
+
+.sayi-satir { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.field .sayi-satir input { width: 104px; flex: 0 0 auto; }
+.sayi-satir .birim { color: var(--soluk); font-size: 14px; margin-right: 4px; }
+
+/* ---- sıralı liste ---- */
+.sirali-liste { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.sirali-satir {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr) auto;
+  gap: 10px; align-items: end;
+  padding: 10px 12px; border: 1.5px solid var(--cizgi); border-radius: var(--r-kucuk);
+  background: var(--kart-ust);
+}
+.sirali-satir .field { margin: 0; min-width: 0; }
+.sirali-no { align-self: center; font-weight: 700; font-size: 13px; color: var(--soluk); text-align: center; }
+.sirali-dugmeler { display: flex; gap: 2px; align-self: end; padding-bottom: 3px; }
+
+/* Dar ekranda satırın kutuları alt alta; sıra numarası ve düğmeler en üstte. */
+@media (max-width: 760px) {
+  .sirali-satir { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+  .sirali-no { grid-column: 1; grid-row: 1; text-align: left; }
+  .sirali-dugmeler { grid-column: 2; grid-row: 1; padding-bottom: 0; }
+  .sirali-satir .field { grid-column: 1 / -1; }
+}
+
+/* Dokunmatik ekranda ayar kartlarının küçük düğmeleri (Kaydet, Varsayılana dön,
+   Adresi değiştir, Aralığı değiştir) ve yönetim sayfaları arası geçiş düğmeleri de
+   en az 44 piksel (30-dokunmatik.css küçük düğmeyi 40 yapar). */
+@media (pointer: coarse) {
+  .ayar-kart .btn.kucuk, .yonetim-gecis .btn.kucuk { min-height: 44px; }
+}

@@ -107,7 +107,7 @@ function bosKutu(g, metin) {
 }
 
 /* Her sayfanın altı: aydınlatma metni, sistem hakkında ve sitenin iletişim
-   bilgileri (data/config.yml doluysa; iletisimleriDoldur koyar). */
+   bilgileri (ayarlanmışsa; iletisimleriDoldur koyar). */
 function altBilgi() {
   return '<div class="footer">' +
     '<p><b>Eğitim Evi</b> — okul yönetim sistemi</p>' +

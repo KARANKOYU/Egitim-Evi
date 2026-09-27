@@ -98,6 +98,11 @@ function tokenSil(eski) {
   } catch (e) { }
 }
 
+/* E-posta onayı hesabı açamadıysa (kullanıcı adı ya da T.C. no bu arada
+   başkasına geçti): kayıt kartı açılır, ileti ilgili kutunun altında
+   (26-baslat.js). authKur doldurur. */
+var kayitAlanHatasi = function () { };
+
 var botSoru = { id: '', yukleniyor: false };      // kayıt formu
 var girisSoru = { id: '', yukleniyor: false };    // giriş formu
 
@@ -733,6 +738,14 @@ function authKur() {
   var KAYIT_ALANLARI = {
     bot: 'kBot', ad: 'kAd', kullaniciAdi: 'kKullaniciAdi', email: 'kEmail', sifre: 'kSifre',
     kvkk: 'kKvkk', telefon: 'kTelefon', tc: 'kTc'
+  };
+
+  kayitAlanHatasi = function (alan, mesaj) {
+    kayitSekmesi(function () {
+      var hedef = KAYIT_ALANLARI[alan];
+      if (hedef && $(hedef)) { alanHatasi(hedef, mesaj); $(hedef).focus(); }
+      else mesajGoster('authMesaj', 'hata', mesaj);
+    });
   };
 
   function kayitGovdesi() {

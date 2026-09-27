@@ -102,6 +102,23 @@ function hesapGovdesi(rol) {
   return g;
 }
 
+/* Sunucunun hata cevabındaki alan (aynı T.C. no, kullanıcı adı, e-posta, okul
+   no ...) -> penceredeki kutu. Kutu yoksa ileti pencerenin altına yazılır. */
+var HESAP_HATA_ALANI = {
+  ad: 'hfAd', tc: 'hfTc', kullaniciAdi: 'hfKadi', eposta: 'hfEposta', dogum: 'hfDogumGun', telefon: 'hfTelefon',
+  okulNo: 'hfOkulNo', sinifId: 'hfSinif', brans: 'hfBrans', sifre: 'hfSifre'
+};
+function hesapHatasi(e, mesajYeri) {
+  var v = e.veri || {};
+  var hedef = HESAP_HATA_ALANI[v.alan];
+  if (hedef && $(hedef) && !$(hedef).disabled) {
+    alanHatasi(hedef, e.message);
+    ilkHatayaGit($('modalGovde'));
+    return;
+  }
+  mesajGoster(mesajYeri, 'hata', e.message);
+}
+
 /* Sunucuya gitmeden önce: zorunlu alanlar ve biçim. mevcut: düzenlenen hesap
    (kullanıcı adı eski T.C. no olarak kalmışsa ve değiştirilmiyorsa engellenmez). */
 function hesapDenetle(g, yeni, mevcut) {
@@ -191,8 +208,12 @@ EYLEMLER['hesap-ac-kaydet'] = function (el) {
   })['catch'](function (e) {
     dugmeBitir(el);
     /* T.C. başka okuldaki bir öğrencinin: doğum tarihiyle doğrulanınca taşınır. */
-    if (e.veri && e.veri.nakil === 'dogum' && $('hfDogumGun')) alanHatasi('hfDogumGun', 'Doğum tarihini seç.');
-    mesajGoster('hesapMesaj', 'hata', e.message);
+    if (e.veri && e.veri.nakil === 'dogum' && $('hfDogumGun')) {
+      alanHatasi('hfDogumGun', 'Doğum tarihini seç.');
+      mesajGoster('hesapMesaj', 'hata', e.message);
+      return;
+    }
+    hesapHatasi(e, 'hesapMesaj');
   });
 };
 
@@ -360,7 +381,12 @@ EYLEMLER['ogretmen-kod-ekle'] = function (el) {
     .then(function (d) {
       modalKapat();
       return git('ogretmenler').then(function () { sayfaMesaji('iyi', d.message); });
-    })['catch'](function (e) { dugmeBitir(el); mesajGoster('okMesaj', 'hata', e.message); });
+    })['catch'](function (e) {
+      dugmeBitir(el);
+      /* Kişi bu arada okula eklendiyse ya da kod kullanıldıysa ileti kod kutusunun altında. */
+      if (e.veri && e.veri.alan === 'kod' && $('okKod')) { alanHatasi('okKod', e.message); $('okKod').focus(); }
+      else mesajGoster('okMesaj', 'hata', e.message);
+    });
 };
 
 EYLEMLER['hesap-duzenle'] = function (el, id) {
@@ -396,7 +422,7 @@ EYLEMLER['hesap-bilgi-kaydet'] = function (el, id) {
     if (r && S.page === r.sayfa) git(S.page);
   })['catch'](function (e) {
     dugmeBitir(el);
-    mesajGoster('hesapMesaj', 'hata', e.message);
+    hesapHatasi(e, 'hesapMesaj');
   });
 };
 

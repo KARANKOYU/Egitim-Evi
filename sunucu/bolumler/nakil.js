@@ -63,14 +63,22 @@ async function nakilEt(k, st, g) {
       'Bilgileri velisinden ya da önceki okulundan doğrula.' });
   }
 
+  /* T.C. no okulda tek: yeni okulda aynı numarayla başka bir hesap (servisçi,
+     eski usul öğretmen) varsa öğrenci taşınamaz (kullanicilar_tc_okul). */
+  const alanHata = (alan, mesaj) => sendJSON(res, 400, { error: mesaj, alan });
+  if (await depo.kullanicilar.tcVarMi(st.tc, st.id, me.schoolId)) {
+    return alanHata('tc', 'Bu T.C. kimlik no okulunda başka bir hesapta kayıtlı; öğrenci taşınamadı.');
+  }
   const classId = clean(g.classId, 60);
   const sinif = classId ? await depo.siniflar.bul(classId) : null;
-  if (classId && (!sinif || sinif.schoolId !== me.schoolId)) return bad(res, 'Sınıf bulunamadı');
+  if (classId && (!sinif || sinif.schoolId !== me.schoolId)) return alanHata('sinifId', 'Sınıf bulunamadı');
   const okulNo = clean(g.okulNo, 20);
-  if (okulNo && await depo.kullanicilar.okulNoVarMi(me.schoolId, okulNo, st.id)) return bad(res, 'Bu okul numarası başka bir öğrencide');
+  if (okulNo && await depo.kullanicilar.okulNoVarMi(me.schoolId, okulNo, st.id)) return alanHata('okulNo', 'Bu okul numarası başka bir öğrencide');
 
   /* Kullanıcı adı yeni okulda boşsa aynen kalır; alınmışsa T.C. no, o da
-     alınmışsa adından türetilir. */
+     alınmışsa adından türetilir. Aynı anda başka biri aynı adı alırsa tekil
+     indeks (kullanicilar_kadi_okul) taşımayı durdurur; hiçbir şey değişmez ve
+     cevap alanıyla gider (veri/baglanti.js cakisma). */
   let kadi = st.username;
   if (!kadi || await depo.kullanicilar.kullaniciAdiVarMi(kadi, st.id, me.schoolId)) {
     kadi = st.tc && !await depo.kullanicilar.kullaniciAdiVarMi(st.tc, st.id, me.schoolId)

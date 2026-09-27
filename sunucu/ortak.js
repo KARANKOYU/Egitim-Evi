@@ -111,7 +111,23 @@ function kisiKoduBicim(kod) {
    String() hata atıyordu; bkz. clean). */
 const metinYap = v => (v == null || typeof v === 'object') ? '' : String(v);
 
-function normKullaniciAdi(ad) { return metinYap(ad).trim().toLowerCase(); }
+/* Kimlik alanlarının (e-posta, kullanıcı adı, T.C. no) karşılaştırılacak hâli.
+   Görünüşte aynı iki yazım iki ayrı hesap açtırmasın, girişte de aynı hesabı bulsun:
+     - NFKC: tam genişlikli harf ve rakamlar ("ａｙｓｅ", "１２３"), bitişik harfler
+       ("ﬁ") ve birleşik aksanlar (e + ́ = é) tek biçime iner;
+     - görünmez biçim karakterleri (sıfır genişlikli boşluk, yumuşak tire, yön
+       işaretleri) silinir;
+     - Türkçe büyük İ küçük i olur: "İ".toLowerCase() "i̇" (i + nokta) verir, bu da
+       "i" ile aynı değildir (tarayıcıda küçültülüp gelen "i̇" de "i" olur). Küçük ı
+       olduğu gibi kalır; doğrulama onu reddeder (e-posta ve kullanıcı adında
+       Türkçe harf yok).
+   Sonra baştaki/sondaki boşluk atılır ve küçük harfe çevrilir (dilden bağımsız). */
+function kimlikSade(v) {
+  return metinYap(v).normalize('NFKC').replace(/\p{Cf}/gu, '').replace(/\u0130/g, 'i').trim().toLowerCase()
+    .replace(/i\u0307/g, 'i');
+}
+
+function normKullaniciAdi(ad) { return kimlikSade(ad); }
 
 function kullaniciAdiSorunu(ad) {
   const s = normKullaniciAdi(ad);
@@ -139,7 +155,9 @@ function tcSorunu(tc) {
   if (d[9] !== onuncu || d[10] !== onbirinci) return 'T.C. kimlik numarası geçersiz, rakamları kontrol et.';
   return '';
 }
-function normTc(tc) { return metinYap(tc).replace(/\s/g, ''); }
+/* Tam genişlikli rakamlar ("１２３…") NFKC ile ASCII rakama iner; boşluklar ve
+   görünmez karakterler silinir. */
+function normTc(tc) { return metinYap(tc).normalize('NFKC').replace(/[\s\p{Cf}]/gu, ''); }
 
 /* ---------------- okul hesapları ve okul adresi ---------------- */
 
@@ -157,7 +175,7 @@ function asciiYap(s) {
 /* Okulun kısa adı: egitimevi.org/school/<kisa-ad>. Sitenin kendi yollarıyla
    karışmasın diye bazı adlar ayrılmıştır. */
 const KISA_AD_YASAK = new Set(('api css js yazitipi kvkk sw manifest simge index admin yonetici giris kayit cikis ' +
-  'okul okullar veli ogretmen ogrenci mudur servis servisci destek yardim hakkinda iletisim www static assets ' +
+  'okul okullar school schools veli ogretmen ogrenci mudur servis servisci destek yardim hakkinda iletisim www static assets ' +
   'favicon robots sitemap egitimevi public sunucu data dosya dosyalar indir sifre hesap ayarlar login signup ' +
   'logout register about gorsel sss kosullar kullanim-kosullari gizlilik cerez indir download uygulama').split(' '));
 
@@ -257,7 +275,25 @@ function telefonSorunu(t) {
   return '';
 }
 
-function normEmail(e) { return metinYap(e).trim().toLowerCase(); }
+/* E-posta bütün sistemde tektir; karşılaştırma bu hâlle yapılır ("  Ayse@X.com " =
+   "ayse@x.com", "AYSE.İNCE@X.COM" = "ayse.ince@x.com"). Bkz. kimlikSade. */
+function normEmail(e) { return kimlikSade(e); }
+
+/* E-posta biçimi: yalnız ASCII (İngilizce harf, rakam ve . _ - + gibi işaretler).
+   Türkçe ya da benzer görünen başka alfabeden harf (Kiril "а" gibi) kabul
+   edilmez: "ayşe@x.com" ile "ayse@x.com", "аyse@x.com" ile "ayse@x.com" iki ayrı
+   hesap olmasın. normEmail'den geçmiş adres verilir. */
+const EPOSTA_DESENI = /^[!#-?A-~]+@[!#-?A-~]+\.[!#-?A-~]{2,}$/;
+function epostaSorunu(e) {
+  const s = metinYap(e);
+  if (!s) return 'E-posta adresini yaz.';
+  if (s.length > 254) return 'E-posta adresi çok uzun.';
+  if (/[^\x21-\x7e]/.test(s) && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s)) {
+    return 'E-posta adresinde Türkçe ya da başka alfabeden harf olamaz (ı, ş, ğ, ü, ö, ç gibi); İngilizce harflerle yaz.';
+  }
+  if (!EPOSTA_DESENI.test(s)) return 'Geçerli bir e-posta adresi gir.';
+  return '';
+}
 
 /* Şifre kuralı tek yerde: kayıt, şifre değiştirme ve okulun açtığı hesaplar
    aynı kuralı kullansın. Sorun varsa metin döner, yoksa null.
@@ -345,6 +381,9 @@ module.exports = {
   telefonSorunu,
   dogumSorunu,
   normEmail,
+  kimlikSade,
+  EPOSTA_DESENI,
+  epostaSorunu,
   sifreSorunu,
   clean,
   ondalik,

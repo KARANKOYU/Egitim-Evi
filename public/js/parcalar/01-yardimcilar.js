@@ -47,6 +47,13 @@ function sayiTR(n, basamak) {
   return Number(n).toLocaleString('tr-TR', { maximumFractionDigits: basamak === undefined ? 3 : basamak });
 }
 
+/* Dosya boyutu: 812 B, 34 KB, 2,4 MB. */
+function boyutYaz(n) {
+  if (n >= 1024 * 1024) return sayiTR(Math.round(n / 1024 / 1024 * 10) / 10) + ' MB';
+  if (n >= 1024) return Math.round(n / 1024) + ' KB';
+  return n + ' B';
+}
+
 /* Giriş kutusuna yazılacak hâli: binlik ayracı yok, ondalık virgül. */
 function sayiGirdi(n) {
   if (n === null || n === undefined || n === '') return '';

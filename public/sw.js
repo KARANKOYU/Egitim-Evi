@@ -9,7 +9,7 @@
       Böylece güncelleme yaptığında kullanıcı eski sürümde takılı kalmaz.
 */
 
-const SURUM = 'egitim-evi-v7';   // dosya listesi ya da sayfa adresleri değişince artır (v7: /kvkk/kvkk.html ...)
+const SURUM = 'egitim-evi-v8';   // dosya listesi ya da sayfa adresleri değişince artır (v8: "no-store" önbelleğe girmez)
 const KABUK = [
   '/',
   '/index.html',
@@ -94,8 +94,10 @@ self.addEventListener('fetch', function (e) {
   e.respondWith(
     fetch(istek)
       .then(function (yanit) {
-        /* Başarılı yanıtı bir kenara yaz, çevrimdışı için dursun. */
-        if (yanit && yanit.status === 200 && yanit.type === 'basic') {
+        /* Başarılı yanıtı bir kenara yaz, çevrimdışı için dursun. Sunucunun
+           "saklama" dediği (Cache-Control: no-store) yanıt diske yazılmaz. */
+        if (yanit && yanit.status === 200 && yanit.type === 'basic' &&
+            !/no-store/i.test(yanit.headers.get('Cache-Control') || '')) {
           const kopya = yanit.clone();
           caches.open(SURUM).then(function (c) { c.put(istek, kopya); }).catch(function () {});
         }

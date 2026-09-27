@@ -6,7 +6,7 @@
    iliştirilir; böylece pub() ve yetki kontrolleri ayrıca sorgu atmaz. */
 
 const { sorgu, tek, calistir, islem, tr } = require('../baglanti');
-const { kisiKoduUret } = require('../../ortak');
+const { kisiKoduUret, normEmail } = require('../../ortak');
 const e = require('../esleme');
 const yaz = require('../yazici');
 const roller = require('./roller');
@@ -145,11 +145,12 @@ async function epostaVarMi(eposta, haricId) {
 }
 
 /* Kullanıcı adı alınmış mı? okulId verilirse o okulun ad alanında, verilmezse
-   okuldan bağımsız hesaplarda bakılır. */
+   okuldan bağımsız hesaplarda bakılır. Sistem yöneticisinin adı hiçbir okulda
+   kullanılamaz (031 şema dosyası): okul ad alanında yöneticiler de sayılır. */
 async function kullaniciAdiVarMi(ad, haricId, okulId) {
   if (okulId) {
-    return !!(await tek('SELECT 1 FROM kullanicilar k WHERE ' + OKUL_HESABI +
-      ' AND k.okul_id = $3 AND k.kullanici_adi = $1 AND k.id <> $2', [ad, haricId || '', okulId]));
+    return !!(await tek('SELECT 1 FROM kullanicilar k WHERE ((' + OKUL_HESABI +
+      " AND k.okul_id = $3) OR k.rol = 'admin') AND k.kullanici_adi = $1 AND k.id <> $2", [ad, haricId || '', okulId]));
   }
   return !!(await tek('SELECT 1 FROM kullanicilar k WHERE ' + GENEL_HESAP +
     ' AND k.kullanici_adi = $1 AND k.id <> $2', [ad, haricId || '']));
@@ -354,6 +355,65 @@ async function sayimlar() {
     'FROM kullanicilar');
 }
 
+/* ---------------- çakışma raporu (açılışta, 031) ----------------
+   Şema dosyaları eski veriye dokunmaz; kurallara aykırı kalanlar sayılır:
+     ogrenciTcCift: aynı T.C. ile birden çok öğrenci (tekil indeks kurulamadıysa)
+     yoneticiAdCift: bir yöneticinin adını taşıyan öteki hesapların adları
+     epostaCift: normEmail'le aynı olan farklı yazılmış adresler ("a = b"). */
+/* Eski sürümde e-posta yalnız kırpılıp küçük harfe çevrilerek saklanırdı: "İ" ile
+   yazılmış adres "i̇" (i + birleşik nokta) olarak durur, tam genişlikli harf ya da
+   görünmez karakter de olduğu gibi kalırdı. Bugün her yol adresi normEmail ile arar;
+   böyle bir hesap e-postayla giremez, şifresini sıfırlayamaz ve aynı adresle ikinci
+   bir hesap açılabilirdi. Açılışta bu adresler bugünkü biçime getirilir. Aynı biçimde
+   başka bir hesap zaten varsa ikisine de dokunulmaz (cakismaRaporu pencereye yazar).
+   Yalnız ASCII dışı karakter ya da boşluk taşıyan adreslere bakılır (öbürleri zaten
+   küçük harfle saklanıyor, 001'deki CHECK). Döner: { duzeltilen, cakisan: [adres] } */
+async function eskiEpostalariSadelestir() {
+  const sonuc = { duzeltilen: 0, cakisan: [] };
+  const adaylar = await sorgu("SELECT id, eposta FROM kullanicilar WHERE eposta IS NOT NULL AND eposta !~ '^[!-~]+$' " +
+    'ORDER BY olusturma, id LIMIT 5000');
+  for (const r of adaylar) {
+    const sade = normEmail(r.eposta);
+    if (!sade || sade === r.eposta) continue;
+    if (await tek('SELECT 1 FROM kullanicilar WHERE eposta = $1 AND id <> $2', [sade, r.id])) {
+      sonuc.cakisan.push(r.eposta);
+      continue;
+    }
+    try {
+      sonuc.duzeltilen += await calistir('UPDATE kullanicilar SET eposta = $1 WHERE id = $2 AND eposta = $3', [sade, r.id, r.eposta]);
+    } catch (e) {
+      /* Aynı anda aynı adres başka hesaba yazıldıysa (tekil indeks) dokunulmaz. */
+      if (e && e.code === '23505') { sonuc.cakisan.push(r.eposta); continue; }
+      /* Veritabanının küçük harf denetimine (001 CHECK) uymayan tuhaf bir harf: olduğu gibi kalır. */
+      if (e && e.code === '23514') continue;
+      throw e;
+    }
+  }
+  return sonuc;
+}
+
+async function cakismaRaporu() {
+  const r = { ogrenciTcCift: 0, yoneticiAdCift: [], epostaCift: [] };
+  if (!await tek("SELECT 1 FROM pg_indexes WHERE schemaname = current_schema() AND indexname = 'kullanicilar_tc_ogrenci'")) {
+    r.ogrenciTcCift = (await tek("SELECT count(*) AS n FROM (SELECT tc_kimlik FROM kullanicilar WHERE rol = 'student' " +
+      'AND tc_kimlik IS NOT NULL GROUP BY tc_kimlik HAVING count(*) > 1) x')).n;
+  }
+  r.yoneticiAdCift = (await sorgu('SELECT DISTINCT b.kullanici_adi FROM kullanicilar a JOIN kullanicilar b ' +
+    "ON b.kullanici_adi = a.kullanici_adi AND b.id <> a.id WHERE a.rol = 'admin' ORDER BY 1 LIMIT 20")).map(x => x.kullanici_adi);
+  /* Yalnız ASCII dışı karakter ya da boşluk içeren adresler başka bir adresle
+     aynı çıkabilir (öbürleri zaten küçük harfle saklanıyor). */
+  const tuhaf = (await sorgu("SELECT eposta FROM kullanicilar WHERE eposta IS NOT NULL AND eposta !~ '^[!-~]+$' LIMIT 500"))
+    .map(x => x.eposta);
+  const gorulen = new Map();
+  for (const ep of tuhaf) {
+    const sade = normEmail(ep);
+    if (gorulen.has(sade)) r.epostaCift.push(gorulen.get(sade) + ' = ' + ep);
+    else if (sade !== ep && await tek('SELECT 1 FROM kullanicilar WHERE eposta = $1', [sade])) r.epostaCift.push(sade + ' = ' + ep);
+    gorulen.set(sade, ep);
+  }
+  return r;
+}
+
 /* ---------------- yazma ---------------- */
 async function ekle(u) {
   const s = e.kullaniciSutunlari(u);
@@ -470,7 +530,7 @@ async function engelHaritasi(idler) {
 }
 
 module.exports = {
-  zenginlestir, bul, epostayla, kullaniciAdiyla, tcIle, ogrenciTcIle, girisKimligiyle, girisYazildi, topluSifreYaz, kodlaOgrenci, okulunMuduru,
+  cakismaRaporu, eskiEpostalariSadelestir, zenginlestir, bul, epostayla, kullaniciAdiyla, tcIle, ogrenciTcIle, girisKimligiyle, girisYazildi, topluSifreYaz, kodlaOgrenci, okulunMuduru,
   yetiskinMi, rolleri, eslesmeKoduyla, eslesmeKoduSahibi, eslesmeKoduYaz, eslesmeKoduTuket,
   rolSatirlariniGuncelle, rolSatirlarinaKvkk, rolSatiriniSil,
   okulunMuduruVarMi, okuldaKimseVarMi,

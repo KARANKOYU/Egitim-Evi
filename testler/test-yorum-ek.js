@@ -97,7 +97,7 @@ function buyukBildir(token) {
   const hepsi = await iste('/api/yorumlar/hepsi', 'GET', null, A);
   const mudurunki = (hepsi.body.yorumlar || []).find(y => y.adKisa === 'Me. De.');
   const ogretmenGizle = await iste('/api/yorumlar/gizle', 'POST', { id: mudurunki && mudurunki.id, gizli: true }, mat.token);
-  kontrol('yönetici olmayan gizleyemez', ogretmenGizle.status === 403, 'status ' + ogretmenGizle.status);
+  kontrol('yönetici olmayan gizleyemez (ona uç yok: 404)', ogretmenGizle.status === 404, 'status ' + ogretmenGizle.status);
   const gizle = await iste('/api/yorumlar/gizle', 'POST', { id: mudurunki.id, gizli: true }, A);
   const gizliSonra = await iste('/api/yorumlar');
   kontrol('gizlenen yorum açılışta görünmüyor', gizle.status === 200 && gizliSonra.body.sayi === 1 &&

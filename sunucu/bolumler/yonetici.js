@@ -1,17 +1,24 @@
 'use strict';
 /* Sistem yöneticisi uçları (/api/admin).
    Okul açma ve kişi koduyla kişi bulma (yonetici-okul.js), müdürler, okullar,
-   yedek alma ve geri yükleme. Müdür başvurusu yoktur: okulu yönetici açar. */
+   yedek alma ve geri yükleme, site ayarları ve okul adresleri
+   (site-ayarlari.js), yönetici dosyası (data/admins.json). Müdür başvurusu
+   yoktur: okulu yönetici açar. Yönetici olmayan bu uçları hiç göremez: api.js
+   ona bilinmeyen adresle aynı 404'ü verir. */
 
 const fs = require('fs');
 const path = require('path');
 const { bad, baslikEkle, ok } = require('../http');
 const { clean } = require('../ortak');
+const { istekAnahtari } = require('../guvenlik');
 const {
   YEDEK_KLASOR, YEDEK_SAKLA, depo, islem, yedekAl, yedekGeriYukle, yedekListesi
 } = require('../veri');
 const { islemYaz } = require('./islem-kaydi');
 const { kisiBul, okulAc } = require('./yonetici-okul');
+const siteAyarlari = require('./site-ayarlari');
+const yoneticiDosyasi = require('../yonetici-dosyasi');
+const site = require('../site');
 
 /* ---- uçlar ---- */
 /* k: istek bağlamı (api.js kurar). Cevap yazılmadıysa yönlendirici 404 döner. */
@@ -25,6 +32,32 @@ async function uclar(k) {
     /* Yönetici okulu açar ve kişiyi kişi koduyla müdür yapar (yonetici-okul.js). */
     if (sub === 'okul-ac' && method === 'POST') return okulAc(req, res, me, body);
     if (sub === 'kisi-bul' && method === 'POST') return kisiBul(req, res, me, body);
+
+    /* ---------- site ayarları ve okul adresleri (site-ayarlari.js) ---------- */
+    if (sub === 'site-ayarlari' && !segs[3]) {
+      if (method === 'GET') return ok(res, siteAyarlari.gorunum());
+      if (method === 'POST') return siteAyarlari.ayarKaydet(req, res, me, body);
+    }
+    if (sub === 'okul-adresleri' && method === 'GET') return siteAyarlari.okulAdresleri(res);
+    if (sub === 'okul-adres' && method === 'POST') return siteAyarlari.okulAdresiDegistir(req, res, me, body);
+
+    /* ---------- yönetici dosyası (data/admins.json) ----------
+       Son okumanın sonucu (şifre asla yok) ve "Şimdi oku". */
+    if (sub === 'yonetici-dosyasi') {
+      const gorunum = () => Object.assign(yoneticiDosyasi.gorunum(), { aralikDk: site.ayar('adminsAralikDk') });
+      if (method === 'GET' && !segs[3]) return ok(res, gorunum());
+      if (method === 'POST' && segs[3] === 'oku' && !segs[4]) {
+        const { ilkSifreUret } = require('../veri');
+        const s = await yoneticiDosyasi.oku(depo, { sifreUret: ilkSifreUret });
+        const acilan = s.eklenen.length, atlanan = s.atlanan.filter(a => !/^zaten yönetici/.test(a.neden)).length;
+        await islemYaz(me, 'yonetici.dosya-okundu', !s.dosyaVar ? 'dosya yok' : s.hata ? 'dosya atlandı: ' + s.hata
+          : acilan + ' hesap açıldı, ' + atlanan + ' satır atlandı', req);
+        return ok(res, Object.assign(gorunum(), {
+          message: !s.dosyaVar ? 'data/admins.json dosyası yok.' : s.hata ? 'Dosya okunamadı: ' + s.hata
+            : 'Dosya okundu: ' + acilan + ' yönetici açıldı, ' + atlanan + ' satır atlandı.'
+        }));
+      }
+    }
 
     /* ---------- yedekleme ---------- */
 
@@ -64,8 +97,13 @@ async function uclar(k) {
       /* Geri yüklemeden sonra yöneticinin kimliği değişmiş olabilir;
          kayıt, yüklenen verideki aynı kişiye yazılır. */
       await islemYaz(await depo.kullanicilar.bul(me.id), 'yedek.geri-yuklendi', r.ad, req);
+      /* Oturum (ve /admin çerezi, json-aktarim.js) yedekte de varsa yönetici
+         sayfayı yeniler; yoksa oturum kapanmıştır, ön yüz giriş sayfasına döner. */
+      const oturumKaldi = !!(await depo.oturumlar.kullaniciKimligi(istekAnahtari(req)));
       return ok(res, {
-        message: r.ad + ' geri yüklendi. ' + r.kullanici + ' kullanıcı okundu.',
+        message: r.ad + ' geri yüklendi. ' + r.kullanici + ' kullanıcı okundu.' +
+          (oturumKaldi ? '' : ' Oturumun bu yedekte olmadığı için yeniden giriş yapman gerekecek.'),
+        oturumKaldi,
         yedekler: yedekListesi()
       });
     }

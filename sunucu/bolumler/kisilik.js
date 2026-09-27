@@ -25,15 +25,13 @@
 const { ONAY_OMRU_MS, epostaAlaniVarMi, epostaMaskele, hizSinir, istekAnahtari, kodOzeti, onayBaglantisiGonder } = require('../guvenlik');
 const { bad, ok, sendJSON } = require('../http');
 const {
-  clean, kullaniciAdiSorunu, normEmail, normKullaniciAdi, normTelefon, telefonSorunu
+  clean, epostaSorunu, kullaniciAdiSorunu, normEmail, normKullaniciAdi, normTelefon, telefonSorunu
 } = require('../ortak');
 const { verifyPw } = require('../sifre');
 const { depo, bildir, islem } = require('../veri');
 const { kisilikListesi, oturumCevabi } = require('./kayit');
 const { islemYaz } = require('./islem-kaydi');
 const { cocukBagla } = require('./veli');
-
-const EPOSTA = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* Portal değişiminde yeni oturumun seçeneği: eski oturumun türü ve açılış anı. */
 const oturumSecenegi = eski => ({ uygulama: !!(eski && eski.uygulama), olusturma: eski ? eski.olusturma : null });
@@ -173,6 +171,8 @@ async function uclar(k) {
     const d = {};
     let yeniEposta = '';
     if (body.kullaniciAdi !== undefined) {
+      /* Aynı anda iki kişi aynı adı alırsa ikincisini tekil indeks durdurur
+         (kullanicilar_kadi_genel); işlem geri alınır, cevap alanıyla gider. */
       const kadi = normKullaniciAdi(body.kullaniciAdi);
       const sorun = kullaniciAdiSorunu(kadi);
       if (sorun) return sendJSON(res, 400, { error: sorun, alan: 'kullaniciAdi' });
@@ -186,7 +186,8 @@ async function uclar(k) {
     if (body.eposta !== undefined) {
       const eposta = normEmail(body.eposta);
       /* Yetişkin hesabında e-posta zorunlu: giriş kodu ve şifre sıfırlama oraya gider. */
-      if (!EPOSTA.test(eposta)) return sendJSON(res, 400, { error: 'Geçerli bir e-posta adresi gir.', alan: 'eposta' });
+      const epSorun = epostaSorunu(eposta);
+      if (epSorun) return sendJSON(res, 400, { error: epSorun, alan: 'eposta' });
       if (eposta !== ana.email) {
         if (await depo.kullanicilar.epostaVarMi(eposta, ana.id)) {
           return sendJSON(res, 400, { error: 'Bu e-posta başka bir hesapta kayıtlı.', alan: 'eposta' });

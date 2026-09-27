@@ -336,55 +336,8 @@ function islem(act, el) {
     });
   }
 
-  /* Excel aktarım düğmeleri 15-aktarim.js içinde (EYLEMLER). */
-
-  /* ---- yedekleme ---- */
-  if (act === 'yedek-al') {
-    el.disabled = true;
-    return api('/admin/backup-now', 'POST')
-      .then(function (r) {
-        mesajGoster('yedekMesaj', 'iyi', r.yedek.ad + ' alındı (' + boyutYaz(r.yedek.boyut) + ')');
-        setTimeout(function () { git('yedekler'); }, 900);
-      })['catch'](function (e) {
-        el.disabled = false;
-        mesajGoster('yedekMesaj', 'hata', e.message);
-      });
-  }
-  if (act === 'yedek-indir') {
-    var iad = el.getAttribute('data-ad');
-    el.disabled = true;
-    return dosyaIndir('/api/admin/backup-download?ad=' + encodeURIComponent(iad), iad)
-      .then(function () { el.disabled = false; })
-      ['catch'](function (e) { el.disabled = false; hataGoster(e); });
-  }
-  if (act === 'yedek-geri') {
-    var yad = el.getAttribute('data-ad');
-    if (!confirm(yad + ' geri yüklensin mi?\n\nBu yedekten sonraki bütün değişiklikler ' +
-      'kaybolur. Şimdiki hâl geri-alma kopyası olarak saklanacak.')) return;
-    el.disabled = true;
-    return api('/admin/backup-restore', 'POST', { ad: yad })
-      .then(function (r) {
-        alert(r.message + '\n\nSayfa yenilenecek.');
-        location.reload();
-      })['catch'](function (e) { el.disabled = false; hataGoster(e); });
-  }
-  if (act === 'yedek-sil') {
-    var sad = el.getAttribute('data-ad');
-    if (!confirm(sad + ' silinsin mi?')) return;
-    return api('/admin/backup-delete', 'POST', { ad: sad })
-      .then(function () { git('yedekler'); })['catch'](hataGoster);
-  }
-
-  /* ---- admin: müdür hesapları ---- */
-  if (act === 'mudur-sil') {
-    var mad = el.getAttribute('data-ad') || 'Bu müdür';
-    var mokul = el.getAttribute('data-okul') || '';
-    if (!confirm(mad + ' hesabı silinsin mi? (' + mokul + ')\n\n' +
-      'Okul kapanır, kimse giremez. Öğretmen ve öğrenci hesapları silinmez; ' +
-      'Okullar > Okul aç ile okula yeni müdür atayabilirsin.')) return;
-    return api('/admin/principal-delete', 'POST', { userId: id })
-      .then(function () { git('mudurler'); })['catch'](hataGoster);
-  }
+  /* Excel aktarım düğmeleri 15-aktarim.js içinde (EYLEMLER). Sistem
+     yöneticisinin düğmeleri (yedekler, müdürler) yönetim dosyasında. */
 
   /* ---- müdür: öğrenci hesapları (hesap penceresi 10b-hesaplar.js) ---- */
   if (act === 'ogrenci-portal') {
@@ -645,7 +598,11 @@ function islem(act, el) {
       $('profilEtiket').textContent = d.user.fullName.split(' ')[0];
       $('profilAvatar').innerHTML = avatar(d.user.fullName, d.user.anaHesapId || d.user.id);
       mesajGoster('pMesaj', 'iyi', 'Bilgilerin kaydedildi.');
-    })['catch'](function (e) { mesajGoster('pMesaj', 'hata', e.message); });
+    })['catch'](function (e) {
+      /* T.C. no başka bir hesaptaysa ileti kutunun altında. */
+      if (e.veri && e.veri.alan === 'tc' && $('pTc')) { alanHatasi('pTc', e.message); $('pTc').focus(); }
+      else mesajGoster('pMesaj', 'hata', e.message);
+    });
   }
   if (act === 'sifre-kaydet') {
     var yeni1 = $('sYeni').value;
@@ -660,7 +617,9 @@ function islem(act, el) {
     if (yeniSorun) { mesajGoster('sMesaj', 'hata', yeniSorun); return; }
     el.disabled = true;
     return api('/password', 'POST', { old: $('sEski').value, 'new': yeni1 })
-      .then(function () {
+      .then(function (d) {
+        /* Yöneticinin yönetim çerezi şifreyle yenilenir; başka adresteyse oraya geçer. */
+        if (yonetimeGec(d)) return;
         el.disabled = false;
         mesajGoster('sMesaj', 'iyi', 'Şifren değiştirildi.');
         $('sEski').value = ''; $('sYeni').value = ''; $('sYeni2').value = '';
