@@ -31,6 +31,7 @@ const depo = {
   okullar: require('./depo/okullar'),
   siniflar: require('./depo/siniflar'),
   odevler: require('./depo/odevler'),
+  quiz: require('./depo/quiz'),
   sinavlar: require('./depo/sinavlar'),
   mesajlar: require('./depo/mesajlar'),
   anketler: require('./depo/anketler'),

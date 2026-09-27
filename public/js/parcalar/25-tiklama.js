@@ -538,6 +538,9 @@ function islem(act, el) {
     var idler = [];
     for (var si = 0; si < secili.length; si++) idler.push(secili[si].value);
     if (ekYukleniyor('odev')) { mesajGoster('mHata', 'uyari', 'Dosyalar yükleniyor; bitince kaydet.'); return; }
+    /* Quiz (varsa) ödevle birlikte gider; bozuksa ödev de verilmez (14c-quiz.js). */
+    var odevQuizi = quizGovdesi('odev');
+    if (odevQuizi.hata) { mesajGoster('mHata', 'hata', odevQuizi.hata); return; }
 
     el.disabled = true;
     return api('/assignments', 'POST', {
@@ -548,7 +551,8 @@ function islem(act, el) {
       endAt: $('mBit').value,
       endTime: $('mBitSaat') ? $('mBitSaat').value : '12:00',
       studentIds: idler,
-      ekIdler: ekIdleri('odev')
+      ekIdler: ekIdleri('odev'),
+      quiz: odevQuizi.quiz || undefined
     }).then(function () {
       modalKapat(); git('ogr-odevler');
     })['catch'](function (e) {
@@ -563,6 +567,10 @@ function islem(act, el) {
       .then(function () { git(S.user.role === 'principal' ? 'ders-odevleri' : 'ogr-odevler'); })['catch'](hataGoster);
   }
   if (act === 'odev-tekrar') {
+    /* Quizli ödevde sonuçlandırma doğru cevapları bitirenlere açtı: tekrar
+       açınca quizi çözmemiş öğrenci başlatabilir (14c-quiz.js quizTekrarAcUyarisi). */
+    var tekrarUyari = quizTekrarAcUyarisi(id);
+    if (tekrarUyari && !confirm(tekrarUyari + '\n\nÖdev tekrar açılsın mı?')) return;
     return api('/assignments/' + id + '/reopen', 'POST')
       .then(function () { git(S.user.role === 'principal' ? 'ders-odevleri' : 'ogr-odevler'); })['catch'](hataGoster);
   }

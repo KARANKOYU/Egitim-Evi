@@ -6,8 +6,9 @@ const {
   branchOf, isTeacherLike, ogretmeninOgrencileri, ogretmeninSiniflari, saatDuzelt, summarize
 } = require('../iliskiler');
 const { RESULT_TYPES, SUBJECTS, clean, now, uid } = require('../ortak');
-const { depo, topluBildir } = require('../veri');
+const { depo, islem, topluBildir } = require('../veri');
 const ekModulu = () => require('./ekler');   // ekler.js odev-dosya.js üzerinden bu dosyayı ister; döngü olmasın diye geç yüklenir
+const quizModulu = () => require('./quiz');  // quiz.js bu dosyanın saat yardımcılarını kullanır; döngü olmasın diye geç yüklenir
 const { yetkiVarMi } = require('../yetki');
 const { yilDamgasi, yilSuz } = require('./egitim-yili');
 
@@ -31,6 +32,15 @@ function odevBitisAni(a) {
   const t = clean(a && a.endAt, 10);
   if (!t) return null;
   const d = new Date(t + 'T' + odevSaati(a) + ':00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/* Ödevin başlama anı — başlangıç tarihi + başlama saati (saat yoksa gün başı).
+   Başlangıç tarihi yoksa null (hemen başlamış). */
+function odevBaslamaAni(a) {
+  const t = clean(a && a.startAt, 10);
+  if (!t) return null;
+  const d = new Date(t + 'T' + (saatDuzelt(a.startTime) || '00:00') + ':00');
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -69,7 +79,13 @@ async function uclar(k) {
       return ok(res, { yildiz: body.yildiz });
     }
 
+    /* Quiz: öğrencinin uçları (durum, başlat, cevap, sonraki, bitir, odak). */
+    if (segs[3] === 'quiz' && me.role === 'student') return quizModulu().ogrenciUcu(k);
+
     if (!isTeacherLike(me) && method !== 'GET') return bad(res, 'Yetkin yok', 403);
+
+    /* "Quiz ekle > Metinden ekle": yapıştırılan metnin önizlemesi. */
+    if (method === 'POST' && segs[2] === 'quiz-metin') return quizModulu().metinUcu(k);
 
     /* Ödev verirken kime gideceğini seçmek için: sınıflar ve öğrencileri. */
     if (method === 'GET' && segs[2] === 'hedefler') {
@@ -112,7 +128,10 @@ async function uclar(k) {
 
     if (method === 'GET' && !segs[2]) {
       if (!isTeacherLike(me)) return bad(res, 'Yetkin yok', 403);
-      const list = (await yilSuz(me, await depo.odevler.ogretmenin(me.id)))
+      const odevler = await yilSuz(me, await depo.odevler.ogretmenin(me.id));
+      /* Quizli ödevde küçük rozet: soru sayısı, süre, kaç öğrenci başladı/bitirdi. */
+      const quizler = await quizModulu().listeOzetleri(odevler.map(a => a.id));
+      const list = odevler
         .map(a => ({
           id: a.id, title: a.title, description: a.description, subject: a.subject,
           startAt: a.startAt, startTime: a.startTime, endAt: a.endAt, endTime: odevSaati(a),
@@ -120,7 +139,8 @@ async function uclar(k) {
           status: a.status, createdAt: a.createdAt,
           studentCount: a.studentIds.length,
           acilan: Object.keys(a.acilma).length,
-          summary: summarize(a)
+          summary: summarize(a),
+          quiz: quizler.get(a.id) || null
         }));
       return ok(res, { assignments: list });
     }
@@ -177,18 +197,27 @@ async function uclar(k) {
 
       const ek = await ekModulu().ekleriDogrula(me, 'odev', body.ekIdler);
       if (ek.hata) return bad(res, ek.hata);
+      /* Ödevle birlikte quiz (isteğe bağlı): bozuksa ödev de verilmez. */
+      const qz = quizModulu().yeniOdevQuizi(body.quiz);
+      if (qz.hata) return bad(res, qz.hata);
 
-      const a = await depo.odevler.ekle({
-        id: uid('a'), teacherId: me.id, schoolId: me.schoolId, subject,
-        title, description: clean(body.description, 1000),
-        startAt: basT, startTime: basSaat, endAt: sonT,
-        endTime: sonSaat,
-        studentIds: secilen, classIds: sinifIdler,
-        status: 'active', yilId: await yilDamgasi(me), createdAt: now()
+      const yilId = await yilDamgasi(me);
+      /* Ödev ve quizi tek işlemde: quiz yazılamazsa ödev de yazılmaz. */
+      const a = await islem(async () => {
+        const yeni = await depo.odevler.ekle({
+          id: uid('a'), teacherId: me.id, schoolId: me.schoolId, subject,
+          title, description: clean(body.description, 1000),
+          startAt: basT, startTime: basSaat, endAt: sonT,
+          endTime: sonSaat,
+          studentIds: secilen, classIds: sinifIdler,
+          status: 'active', yilId, createdAt: now()
+        });
+        if (qz.quiz) await depo.quiz.yaz(yeni.id, qz.quiz);
+        return yeni;
       });
       await ekModulu().ekleriBagla('odev', a.id, ek.idler);
       await topluBildir(secilen, 'Yeni ödev: ' + title + ' (' + subject + ')', '#/odevler');
-      return ok(res, { assignment: a, gonderilen: secilen.length });
+      return ok(res, { assignment: a, gonderilen: secilen.length, quiz: qz.quiz ? await quizModulu().ogretmenQuizi(a) : null });
     }
 
     const a = await depo.odevler.bul(clean(segs[2], 60));
@@ -198,6 +227,9 @@ async function uclar(k) {
     const sahipsiz = !a.teacherId && me.role === 'principal' && a.schoolId === me.schoolId;
     if (a.teacherId !== me.id && !sahipsiz) return bad(res, 'Yetkin yok', 403);
 
+    /* Quiz: öğretmenin uçları (quizi yaz/kaldır, öğrenci ayrıntısı, sonuçları aç). */
+    if (segs[3] === 'quiz') return quizModulu().ogretmenUcu(k, a);
+
     if (method === 'GET') {
       /* Öğrenci adları tek sorguda. Artık öğretmenin sınıfında olmayan
          öğrencinin adı ayrıca okunur. */
@@ -206,11 +238,16 @@ async function uclar(k) {
         const s = await depo.kullanicilar.bul(id);
         adlar.set(id, s ? s.fullName : '(silinmiş öğrenci)');
       }
+      /* Quizli ödevde öğrenci başına durum, puan (öneri) ve sekme kaydı. */
+      const quizOzet = await quizModulu().ogrenciOzetleri(a);
+      const quizDurumu = id => !quizOzet ? null : (quizOzet.get(id) || { durum: 'baslamadi' });
       return ok(res, {
         assignment: a,
         ekler: await ekModulu().hedefinEkleri('odev', a.id),
+        quiz: quizOzet ? await quizModulu().ogretmenQuizi(a) : null,
         students: a.studentIds
-          .map(id => ({ id, fullName: adlar.get(id), result: a.results[id] || null, acilma: a.acilma[id] || null }))
+          .map(id => ({ id, fullName: adlar.get(id), result: a.results[id] || null, acilma: a.acilma[id] || null,
+            quiz: quizDurumu(id) }))
           .sort((x, y) => x.fullName.localeCompare(y.fullName, 'tr'))
       });
     }
@@ -238,7 +275,9 @@ async function uclar(k) {
           (a.results[id] ? 'sonucu değişti: ' : 'açıklandı: ') + SONUC_AD[yeniSonuc] });
       }
       await depo.genel.cokluBildir(giden);
-      return ok(res, { assignment: son, bildirilen: giden.length });
+      /* Quiz kapanır: açık denemeler biter, sonuçlar açılır (bildirimi gider). */
+      const quizBildirilen = await quizModulu().odevSonuclandi(son);
+      return ok(res, { assignment: son, bildirilen: giden.length, quizBildirilen });
     }
     /* Ödevin kendisini düzeltme: sonuçlandıktan sonra da olur. Tarih ya da
        ad değişirse öğrencilere haber gider. */
@@ -261,6 +300,10 @@ async function uclar(k) {
       const kalanBoyut = mevcutEkler.filter(e => !silinecek.has(e.id) && !e.silindi).reduce((t, e) => t + e.boyut, 0);
       const ek = await ekModulu().ekleriDogrula(me, 'odev', body.ekIdler, kalanBoyut);
       if (ek.hata) return bad(res, ek.hata);
+      /* Quizin son teslimle açılmış sonucu (doğru cevapları gören olduysa)
+         tarih değişmeden önce kalıcı olur: son teslim ileri alınsa da sonuçlar
+         kapanmaz, quiz yeniden başlatılamaz. */
+      await quizModulu().teslimSonuclariniSabitle([a.id]);
       const yeni = await depo.odevler.duzelt(a.id, d);
       for (const e of mevcutEkler.filter(x => silinecek.has(x.id))) await depo.ekler.sil(e.id);
       await ekModulu().ekleriBagla('odev', a.id, ek.idler);
@@ -269,11 +312,19 @@ async function uclar(k) {
         await topluBildir(a.studentIds, 'Ödev güncellendi: ' + yeni.title + (tarihDegisti && yeni.endAt
           ? ' (son gün ' + yeni.endAt.slice(8, 10) + '.' + yeni.endAt.slice(5, 7) + ' ' + odevSaati(yeni) + ')' : ''), '#/odevler');
       }
-      return ok(res, { assignment: yeni, message: 'Ödev güncellendi.' });
+      let message = 'Ödev güncellendi.';
+      const qz = tarihDegisti ? await depo.quiz.bul(a.id) : null;
+      if (qz && qz.sonucAcildi && yeni.status === 'active' && !odevGecikti(yeni)) {
+        message += ' Quizin sonuçları açıklandığı için quiz yeniden başlatılamaz.';
+      }
+      return ok(res, { assignment: yeni, message });
     }
     if (method === 'POST' && segs[3] === 'reopen') {
       if (!yetkiVarMi(me, 'odev.sonuclandir', { ders: a.subject })) return bad(res, 'Bu ödevi yeniden açma yetkin yok', 403);
-      return ok(res, { assignment: await depo.odevler.yenidenAc(a.id) });
+      const yeni = await depo.odevler.yenidenAc(a.id);
+      const qz = await depo.quiz.bul(a.id);
+      return ok(res, { assignment: yeni, message: 'Ödev yeniden açıldı.' + (qz && qz.sonucAcildi
+        ? ' Quizin doğru cevapları açıklandığı için quiz yeniden başlatılamaz.' : '') });
     }
     if (method === 'POST' && segs[3] === 'delete') {
       if (!yetkiVarMi(me, 'odev.ver', { ders: a.subject })) return bad(res, 'Bu ödevi silme yetkin yok', 403);
@@ -288,6 +339,7 @@ async function uclar(k) {
 module.exports = {
   ODEV_VARSAYILAN_SAAT,
   odevSaati,
+  odevBaslamaAni,
   odevBitisAni,
   odevGecikti,
   uclar

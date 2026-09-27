@@ -318,6 +318,12 @@ async function fotografCek(t, dosya, boyut, tam) {
    pencereli: giriş sonrası uygulama açılmıyor, bir pencere bekliyor.
    Adımda hazirla: adımdan önce sunucuda çalışan iş (ör. servis saatlerini kurmak). */
 const bekleJs = ms => `await new Promise(r => setTimeout(r, ${ms}));`;
+/* Yeni ödev penceresinde Quiz ekle > Metinden ekle: beş soru yapıştırılır (4. soruda doğru şık
+   işaretli değil; önizleme satır hatasını gösterir). */
+const QUIZ_METNI = '1) 3/4 + 1/4 kaçtır?\\n*A) 1\\nB) 1/2\\nC) 4/8\\n2) Hangileri 12 eder?\\nA) *3 × 4\\nB) 5 × 3\\n*C) 2 × 6\\n' +
+  '3) Güneş bir yıldızdır.\\nCevap: Doğru\\n4) Hangisi asal sayıdır?\\nA) 4\\nB) 9\\nC) 6\\n5) Kesirleri günlük hayatta nerede\\nkullanırsın?';
+const QUIZ_YAPISTIR = `__tikla('[data-act="odev-yeni"]'); ${bekleJs(1200)} __tikla('[data-act="quiz-ekle"]'); ${bekleJs(400)} ` +
+  `__tikla('[data-act="quiz-metin-ac"]'); ${bekleJs(400)} __yaz('.qz-yapistir', '${QUIZ_METNI}'); ${bekleJs(2000)}`;
 /* Ayarlar'daki "Portallarım" kartına kaydırır (tam: false ile). */
 const PORTAL_KARTI = `var k = document.getElementById('portalKart'); if (!k) throw new Error('Portallarım kartı yok'); ` +
   `k.scrollIntoView({ block: 'center' }); ${bekleJs(300)}`;
@@ -539,6 +545,18 @@ const ROLLER = [
         eylem: `__satirdaTikla('Oran orantı', '[data-act="odev-ac"]'); ${bekleJs(1500)} __tikla('[data-act="teslim-ogrenci"]'); ${bekleJs(900)} __tikla('.teslim-oge.video'); ${bekleJs(1500)}` },
       { ad: 'Ödev kontrolü — seçilmemişlerin hepsi: Yaptı', git: 'ogr-odevler',
         eylem: `__satirdaTikla('Denklem çalışması', '[data-act="odev-ac"]'); ${bekleJs(900)} __yaz('.sonuc-kutu', 'gec', 1); __yaz('.sonuc-kutu', 'izinli', 2); __tikla('[data-act="sonuc-hepsi"]')` },
+      /* Quiz: ödev penceresinin içindeki düzenleyici, yapıştırma önizlemesi, kontrol ekranı, ayrıntı. */
+      { ad: 'Yeni ödev — Quiz: Metinden ekle (yapıştırılan soruların önizlemesi, satır hatası)', git: 'ogr-odevler', tam: false,
+        eylem: `${QUIZ_YAPISTIR} __bul('.qz-metin-sonuc').scrollIntoView({ block: 'center' });` },
+      { ad: 'Yeni ödev — Quiz düzenleyici (Doğru/Yanlış, çoktan seçmeli, açık uçlu; soru başına süre)', git: 'ogr-odevler', tam: false,
+        eylem: `${QUIZ_YAPISTIR} __tikla('[data-act="quiz-metin-ekle"]'); ${bekleJs(500)} __tikla('.qz-sure-turu[value="soru"]'); ${bekleJs(500)} __bul('.qz-ayar').scrollIntoView({ block: 'start' });` },
+      { ad: 'Yeni ödev — Quiz önizleme (öğretmen öğrenci gibi görür)', git: 'ogr-odevler', tam: false,
+        eylem: `${QUIZ_YAPISTIR} __tikla('[data-act="quiz-metin-ekle"]'); ${bekleJs(500)} __tikla('[data-act="quiz-onizle"]'); ${bekleJs(500)} __tikla('.qz-onizle .qz-secenek'); ${bekleJs(300)}` },
+      { ad: 'Ödev kontrolü — quiz: öğrenci rozetleri, Sonuçları şimdi aç', git: 'ogr-odevler', eylem: `__satirdaTikla('Kesirler quizi', '[data-act="odev-ac"]'); ${bekleJs(900)}` },
+      { ad: 'Quiz ayrıntısı — yanlışlar kırmızı, açık uçlu cevap', git: 'ogr-odevler', tam: false,
+        eylem: `__satirdaTikla('Kesirler quizi', '[data-act="odev-ac"]'); ${bekleJs(1200)} __satirdaTikla('Zeynep', '[data-act="quiz-ayrinti"]'); ${bekleJs(1200)}` },
+      { ad: 'Quiz ayrıntısı — sekmeden çıkış kaydı', git: 'ogr-odevler', tam: false,
+        eylem: `__satirdaTikla('Kesirler quizi', '[data-act="odev-ac"]'); ${bekleJs(1200)} __satirdaTikla('Burak', '[data-act="quiz-ayrinti"]'); ${bekleJs(1200)}` },
       { ad: 'Sınavlar', git: 'ogr-sinavlar', eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]')` },
       { ad: 'Şablondan sınav: LGS (7 alan, virgüllü)', git: 'ogr-sinavlar',
         eylem: `__tikla('[data-act="sinav-sekme"][data-val="sinavlar"]'); ${bekleJs(900)} __satirdaTikla('LGS Deneme 5', '[data-act="sinav-ac"]')` },
@@ -573,11 +591,16 @@ const ROLLER = [
       { ad: 'Ayarlar', git: 'profil' }
     ],
     koyu: ['ogr-odevler|Ödev kontrolü (koyu)|__satirdaTikla(\'Kesirler alıştırması\', \'[data-act="odev-ac"]\')',
+      { ad: 'Quiz ayrıntısı (koyu)', git: 'ogr-odevler', tam: false,
+        eylem: `__satirdaTikla('Kesirler quizi', '[data-act="odev-ac"]'); ${bekleJs(1200)} __satirdaTikla('Zeynep', '[data-act="quiz-ayrinti"]'); ${bekleJs(1200)}` },
       'ogr-sinavlar|Değer tablosu (koyu)|__tikla(\'[data-act="sinav-sekme"][data-val="sinavlar"]\'); ' + bekleJs(900) + ' __satirdaTikla(\'LGS Deneme 5\', \'[data-act="sinav-ac"]\')',
       'ana|Ana sayfa (koyu)|'],
     telefon: [{ git: 'ogr-odevler', ad: 'Yeni ödev — takvim (telefon)', tam: false,
         eylem: `__tikla('[data-act="odev-yeni"]'); ${bekleJs(1200)} __tikla('#mBitDugme'); ${bekleJs(1200)}` },
       'ogr-odevler|Ödev kontrolü (telefon)|__satirdaTikla(\'Kesirler alıştırması\', \'[data-act="odev-ac"]\')',
+      { ad: 'Ödev kontrolü — quiz (telefon)', git: 'ogr-odevler', eylem: `__satirdaTikla('Kesirler quizi', '[data-act="odev-ac"]'); ${bekleJs(900)}` },
+      { ad: 'Yeni ödev — Quiz düzenleyici (telefon)', git: 'ogr-odevler', tam: false,
+        eylem: `${QUIZ_YAPISTIR} __tikla('[data-act="quiz-metin-ekle"]'); ${bekleJs(500)} __bul('.qz-sorular').scrollIntoView({ block: 'start' });` },
       'ogr-sinavlar|Değer tablosu (telefon)|__tikla(\'[data-act="sinav-sekme"][data-val="sinavlar"]\'); ' + bekleJs(900) + ' __satirdaTikla(\'LGS Deneme 5\', \'[data-act="sinav-ac"]\')',
       'yoklama|Yoklama (telefon)|__tikla(\'[data-act="yoklama-ders"]\')',
       'etutler|Etüt yoklaması (telefon)|__tikla(\'[data-act="etut-yoklama-ac"]\')']
@@ -659,7 +682,18 @@ const ROLLER = [
     /* En sona: ödevi açmak onu "açıldı" yapar, önceki fotoğraflarda turuncu kalsın */
     son: [{ ad: 'Ödev ayrıntısı (açılınca turuncu kalkar)', git: 'odevler', tam: false, eylem: `__tikla('.satir.acilmadi')` },
       { ad: 'Ödevler — açtıktan sonra', git: 'odevler' },
-      { ad: 'Ödevin ekleri (silinme günüyle)', git: 'odevler', tam: false, eylem: `__tikla('[data-act="odev-oku"]', 'Oran orantı')` }]
+      { ad: 'Ödevin ekleri (silinme günüyle)', git: 'odevler', tam: false, eylem: `__tikla('[data-act="odev-oku"]', 'Oran orantı')` },
+      /* Quiz: başlatmak geri alınmaz (tek deneme); bu yüzden en sonda. Sonuç için Zeynep'in
+         bitirdiği "Kesirler quizi" (sonuç hemen açık) kullanılır. */
+      { ad: 'Quizli ödev: ekler listesinde quiz ve Quizi başlat', git: 'odevler', tam: false,
+        eylem: `__tikla('[data-act="odev-oku"]', 'Çarpım tablosu hız quizi'); ${bekleJs(1200)}` },
+      { ad: 'Quiz başlamadan: kurallar (tek hak, soru başına süre, sekmeden çıkınca soru kapanır)', git: 'odevler',
+        eylem: `__tikla('[data-act="odev-oku"]', 'Çarpım tablosu hız quizi'); ${bekleJs(1200)} __tikla('[data-act="quiz-ac"]'); ${bekleJs(1500)}` },
+      { ad: 'Quiz çözülüyor — soru başına süre: kalan süre, Soru 1/4, Kaydedildi', git: 'odevler',
+        eylem: `__tikla('[data-act="odev-oku"]', 'Çarpım tablosu hız quizi'); ${bekleJs(1200)} __tikla('[data-act="quiz-ac"]'); ${bekleJs(1500)} ` +
+          `__tikla('[data-act="quiz-basla"]'); ${bekleJs(1500)} __tikla('.qz-secenek', '56'); ${bekleJs(1500)}` },
+      { ad: 'Quiz sonucu: puan, doğru cevaplar, yanlışlar kırmızı, açık uçlu cevap', git: 'odevler',
+        eylem: `__tikla('[data-act="odev-oku"]', 'Kesirler quizi'); ${bekleJs(1200)} __tikla('[data-act="quiz-ac"]'); ${bekleJs(1500)}` }]
   },
   {
     ad: 'veli', baslik: 'Veli (iki çocuk)', eposta: HESAPLAR.veli.eposta, sifre: HESAPLAR.veli.sifre, portalDisi: true,
@@ -674,6 +708,8 @@ const ROLLER = [
       { ad: 'Ana sayfa', git: 'ana' },
       { ad: 'Çocuklarım', git: 'cocuklarim' },
       { ad: 'Ödevler — tek çocuk', git: 'veli-odevler', eylem: `__tikla('[data-act="veli-cocuk"]', 'Zeynep')` },
+      { ad: 'Quizli ödev: durum ve puan (sorular ve sekme kaydı görünmez)', git: 'veli-odevler', tam: false,
+        eylem: `__tikla('[data-act="veli-cocuk"]', 'Zeynep'); ${bekleJs(900)} __tikla('[data-act="veli-teslim"]', 'Kesirler quizi'); ${bekleJs(1200)}` },
       { ad: 'Devamsızlık', git: 'veli-devamsizlik', eylem: `__tikla('[data-act="veli-cocuk"]', 'Hepsi')` },
       { ad: 'İlerleyiş (çocuk çocuk grafikler)', git: 'veli-ilerleyis' },
       { ad: 'Etütler', git: 'etutlerim' },

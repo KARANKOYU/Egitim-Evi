@@ -296,6 +296,25 @@ const ADIM_METNI = {
   'ogretmen|Videoya tıklayınca oynatıcı açılır': A(`Video indirilmeden oynatılır.`),
   'ogretmen|Ödev kontrolü — seçilmemişlerin hepsi: Yaptı': A(`Kalabalık sınıfta "Seçilmemişlerin hepsi: Yaptı" işi kısaltır;
     altta canlı sayım durur.`),
+  'ogretmen|Yeni ödev — Quiz: Metinden ekle (yapıştırılan soruların önizlemesi, satır hatası)': A(`Yeni ödev penceresinde
+    <b>Quiz ekle</b> ödevin içinde açılır. <b>Metinden ekle</b>: bir belgeden kopyalanan sorular yapıştırılır; soru "1)",
+    şık "A)" ile başlar, doğru şıkkın başında yıldız olur, Doğru/Yanlış sorusunun altına "Cevap: Doğru" yazılır, şıksız soru
+    açık uçludur. Önizleme soruları türüyle listeler ve hatalı satırı gösterir ("4. soruda doğru şık işaretli değil").`, 'Quiz'),
+  'ogretmen|Yeni ödev — Quiz düzenleyici (Doğru/Yanlış, çoktan seçmeli, açık uçlu; soru başına süre)': A(`"Ekle" ile sorular
+    düzenleyiciye geçer, orada düzeltilir. Süre: <b>Süresiz · Soru başına · Bütün quiz</b>. "Uygulamadan/sekmeden çıkınca o soru
+    kapanır" seçeneği ve sonuçların ne zaman görüneceği (son teslimden sonra ya da hemen) buradadır. Her soruda tür, metin, şıklar
+    ve doğru kutuları; birden çok doğru olabilir. Açık uçlu soru puanlanmaz, öğretmen okur.`),
+  'ogretmen|Yeni ödev — Quiz önizleme (öğretmen öğrenci gibi görür)': A(`<b>Önizle</b>: öğretmen quizi öğrencinin göreceği gibi
+    dener; hiçbir şey kaydedilmez.`),
+  'ogretmen|Ödev kontrolü — quiz: öğrenci rozetleri, Sonuçları şimdi aç': A(`Quizli ödevde ekler listesinin başında
+    "Quiz · 5 soru · 20 dk" satırı durur: <b>Önizle</b>, <b>Quizi düzenle</b> (bir öğrenci başladıysa quiz kilitlenir) ve
+    <b>Sonuçları şimdi aç</b>. Her öğrencinin altında quiz rozeti: başlamadı, devam ediyor ya da puanı ve sekmeden kaç kez
+    çıktığı. Puan yalnız öneridir; ödevin sonucunu öğretmen yine kendisi seçer.`),
+  'ogretmen|Quiz ayrıntısı — yanlışlar kırmızı, açık uçlu cevap': A(`Rozete dokununca öğrencinin cevapları açılır: doğru
+    cevap yeşil, yanlış seçim ve yanlış sorular kırmızı, açık uçlu cevap olduğu gibi. Soru başına sürede her sorunun ne kadar
+    sürdüğü ve kapanma nedeni (süre doldu, çıkınca kapandı) de yazar.`),
+  'ogretmen|Quiz ayrıntısı — sekmeden çıkış kaydı': A(`Öğrencinin sekmeden ya da uygulamadan kaç kez ve toplam ne kadar
+    süre çıktığı yazar; öğrenci çözerken de bakılabilir.`),
   'ogretmen|Sınavlar': A(`Öğretmenin sınavları: şablonu, tarihi ve not girilen öğrenci sayısı.`, 'Sınav'),
   'ogretmen|Şablondan sınav: LGS (7 alan, virgüllü)': A(`LGS denemesi şablonu: her ders için doğru, yanlış ve net; puan
     virgüllü girilir.`),
@@ -323,9 +342,13 @@ const ADIM_METNI = {
     Zamanı gelince bildirim gelir; en fazla 50 hatırlatıcı.`),
   'ogretmen|Ayarlar': A(`Kişisel ayarlar ve görünüm.`),
   'ogretmen|Ödev kontrolü (koyu)': A(`Ödev kontrolü koyu görünümde.`, 'Koyu görünüm'),
+  'ogretmen|Quiz ayrıntısı (koyu)': A(`Öğrencinin quiz cevapları koyu görünümde.`),
   'ogretmen|Değer tablosu (koyu)': A(`Not tablosu koyu görünümde.`),
   'ogretmen|Ana sayfa (koyu)': A(`Ana sayfa koyu görünümde.`),
   'ogretmen|Ödev kontrolü (telefon)': A(`Ödev kontrolü telefonda: her öğrencinin sonucu alt alta.`),
+  'ogretmen|Ödev kontrolü — quiz (telefon)': A(`Quizli ödevin kontrolü telefonda: quiz satırı ve her öğrencinin quiz rozeti.`),
+  'ogretmen|Yeni ödev — Quiz düzenleyici (telefon)': A(`Quiz düzenleyici telefonda: sorular alt alta, şıklar ve doğru kutuları
+    parmakla seçilir.`),
   'ogretmen|Değer tablosu (telefon)': A(`Not tablosu telefonda yatay kaydırılır.`),
   'ogretmen|Yoklama (telefon)': A(`Yoklama telefonda.`),
   'ogretmen|Etüt yoklaması (telefon)': A(`Etüt yoklaması telefonda.`),
@@ -395,6 +418,16 @@ const ADIM_METNI = {
     ödevin ne zaman açıldığını görür. Süre bitmeden dosya yüklenir, süre geçince yüklenmez.`, 'Ödev ayrıntısı'),
   'ogrenci|Ödevler — açtıktan sonra': A(`Açılan ödev artık turuncu değil.`),
   'ogrenci|Ödevin ekleri (silinme günüyle)': A(`Öğretmenin eklediği dosyalar; her birinin silineceği gün yazar.`),
+  'ogrenci|Quizli ödev: ekler listesinde quiz ve Quizi başlat': A(`Quiz ödevin eklerinde soru sayısı ve süresiyle görünür.
+    Öğrenci "Quizi başlat"a basar; tek hakkı vardır.`, 'Quiz'),
+  'ogrenci|Quiz başlamadan: kurallar (tek hak, soru başına süre, sekmeden çıkınca soru kapanır)': A(`Başlamadan önce kurallar:
+    kaç soru olduğu, süre, tek hak, sekmeden ya da uygulamadan çıkınca kaydedildiği ve sonuçların ne zaman açılacağı.`),
+  'ogrenci|Quiz çözülüyor — soru başına süre: kalan süre, Soru 1/4, Kaydedildi': A(`Çözme ekranı bir sayfadır: üstte kalan
+    süre ve "Soru 1/4". Her cevap anında kaydedilir ("Kaydedildi"). Soru başına sürede sorular sırayla gelir, geri dönülmez;
+    süre sunucuda işler, sayfa yenilenince kaldığı yerden sürer. Tek doğrulu soruda tek şık, birden çok doğrulu soruda
+    kutucuklar ("Birden çok şık seçebilirsin") vardır.`),
+  'ogrenci|Quiz sonucu: puan, doğru cevaplar, yanlışlar kırmızı, açık uçlu cevap': A(`Sonuç açılınca öğrenci puanını
+    ("2/4 (%50) · 1 açık uçlu soru puanlanmaz"), kendi cevaplarını ve doğru cevapları görür; yanlışlar kırmızıdır.`),
 
   /* ================= veli ================= */
   'veli|Girişte portallar (iki çocuk, iki portal)': A(`Birden çok portalı olan yetişkin girişte portallarını görür: her
@@ -411,6 +444,8 @@ const ADIM_METNI = {
   'veli|Çocuklarım': A(`Çocuklar ve okulları; çocuk veli koduyla eklenir.`),
   'veli|Ödevler (iki çocuk, kimin olduğu yazar)': A(`İki çocuğun ödevleri bir arada; her satırın başında kimin olduğu yazar.`),
   'veli|Ödevler — tek çocuk': A(`Üstteki şeritten tek çocuğa daraltılır.`),
+  'veli|Quizli ödev: durum ve puan (sorular ve sekme kaydı görünmez)': A(`Veli quizin durumunu (başlamadı, devam ediyor,
+    bitirdi) ve sonuç açılınca puanı görür; soruları ve sekme kaydını görmez.`),
   'veli|Devamsızlık': A(`Çocukların devamsızlığı.`),
   'veli|İlerleyiş (çocuk çocuk grafikler)': A(`Her çocuğun grafikleri ayrı ayrı.`),
   'veli|Etütler': A(`Çocukların etütleri ve yoklamaları.`),

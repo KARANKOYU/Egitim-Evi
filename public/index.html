@@ -82,8 +82,8 @@
       <section class="v-ozellikler" aria-labelledby="vOzBaslik">
         <h2 id="vOzBaslik">Neler var?</h2>
         <ul>
-          <li><span class="v-oz-ikon" data-ikon="odev"></span><b>Ödev ve teslim</b>
-            <span>Öğretmen ödev verir, öğrenci dosyasını yükler; açılıp açılmadığı ve sonucu görünür.</span></li>
+          <li><span class="v-oz-ikon" data-ikon="odev"></span><b>Ödev, quiz ve teslim</b>
+            <span>Öğretmen ödev verir, isterse quiz ekler; öğrenci dosyasını yükler, quizi çözer. Açılıp açılmadığı ve sonucu görünür.</span></li>
           <li><span class="v-oz-ikon" data-ikon="sinav"></span><b>Sınavlar</b>
             <span>Yazılı, test ya da LGS şablonuyla sınav; doğru, yanlış, net ve gelişim grafiği.</span></li>
           <li><span class="v-oz-ikon" data-ikon="takvim"></span><b>Ders programı</b>
@@ -217,7 +217,7 @@
           <h2>Başlarken</h2>
           <details>
             <summary>Eğitim Evi nedir?</summary>
-            <p>Okulun günlük işlerini tek yerde toplayan bir okul portalı: ödev, sınav, devamsızlık, ders programı,
+            <p>Okulun günlük işlerini tek yerde toplayan bir okul portalı: ödev ve quiz, sınav, devamsızlık, ders programı,
               mesaj ve duyuru, servis, yemek listesi, kulüp, etüt, anket ve takvim. Tarayıcıda ve telefonda çalışır;
               müdür, öğretmen, öğrenci, veli ve servisçi aynı sistemi kendi yetkisi kadar görür.</p>
           </details>
@@ -345,6 +345,41 @@
               sonuç girilince sana ve velene bildirim gider.</p>
           </details>
           <details>
+            <summary>Quiz nasıl çözülür, kaç hakkım var?</summary>
+            <p>Öğretmen ödeve quiz eklediyse <b>Ödevler</b>'de ödevin adının yanında <b>Quiz</b> yazar. Ödevi açıp
+              Ekler'deki quiz satırında <b>Quizi başlat</b>'a basarsın; kurallar ekranında süreyi ve sonucun ne zaman
+              açılacağını görüp <b>Şimdi başla</b> dersin. <b>Tek hakkın var:</b> başladığın quiz ikinci kez çözülemez.
+              Sayfa kapanırsa ödevi yeniden açıp <b>Devam et</b> ile kaldığın yerden sürdürürsün. Quiz, ödevin başlama
+              saatinden son teslime kadar başlatılabilir; son teslimden önce başladıysan en çok 10 dakika daha sürer. Ödev
+              sonuçlandırılınca ya da öğretmen sonuçları açınca artık başlatılamaz; o an çözmekte olduğun quiz de
+              biter. Her cevap kaydedilince soruda "Kaydedildi" yazar. Bütün quiz için süre varsa süre bitince quiz kendiliğinden biter. Soru başına süreli
+              quizde sorular sırayla gelir, önceki soruya dönülmez; bağlantın kopsa da süre işler. Birden çok doğrusu
+              olan soruda "Birden çok şık seçebilirsin" yazar; puan için doğruların hepsini seçip yanlış şık seçmemelisin.
+              Açık uçlu sorular puanlanmaz, öğretmenin okur. Quiz sürerken başka sekmeye, uygulamaya ya da sitenin
+              başka bir sayfasına geçersen (2 saniyeden uzun) kaydedilir ve öğretmenin görür; öğretmen bu seçeneği açtıysa çıkarken açık olan soru
+              kapanır. Puanını, cevaplarını ve doğru cevapları öğretmenin seçimine göre bitirince ya da son teslimden
+              10 dakika sonra (son tarihi olmayan ödevde öğretmen açınca) görürsün; öğretmen sonuçları erken açarsa ya da ödevi
+              sonuçlandırırsa o an açılır. Sonuç açılınca sana ve velene bildirim gelir. Velin soruları ve cevaplarını
+              görmez, yalnızca durumu ve açılınca puanı görür. Ödevin sonucunu (Yaptı, Eksik gibi) yine öğretmen seçer.</p>
+          </details>
+          <details>
+            <summary>Öğretmen quiz nasıl hazırlar?</summary>
+            <p><b>Yeni ödev ver</b> ya da <b>Ödevi düzenle</b> penceresinde <b>Quiz ekle</b>'ye basar. Her soruya tür
+              seçer: <b>Doğru/Yanlış</b>, <b>Çoktan seçmeli</b> (2–10 şık; doğru şıklar işaretlenir, birden çok doğru
+              olabilir ama en az bir şık yanlış olmalı) ya da <b>Açık uçlu</b> (puanlanmaz). Süre <b>Süresiz</b>, <b>Soru başına</b> (her soruya 10
+              saniye ile 10 dakika) ya da <b>Bütün quiz</b> (1–180 dakika) olur. İsterse "Uygulamadan/sekmeden çıkınca o
+              soru kapanır" seçeneğini açar; sonuçların öğrenciye son teslimden 10 dakika sonra mı, bitirince mi
+              görüneceğini seçer. Sekme kaydı öğrencinin tarayıcısından gelir: caydırıcıdır, kesin kanıt değildir.
+              Soruları Word'den <b>Metinden ekle</b> ile yapıştırabilir: her soru <b>1)</b> gibi bir numarayla başlar,
+              doğru şıkkın başına yıldız konur (<b>*A)</b>), Doğru/Yanlış sorusunun altına <b>Cevap: Doğru</b> yazılır,
+              şıksız soru açık uçlu olur; hatalı satırlar gösterilir. <b>Önizle</b> quizi öğrenci gibi gösterir, hiçbir
+              şey kaydetmez. Bir quizde en fazla 100 soru olur; resim ve formül eklenmez. Bir öğrenci başlayınca quiz
+              kilitlenir, değiştirilemez. Kontrol ekranında her öğrencinin altında durumu, puanı ve sekmeden kaç kez
+              çıktığı yazar; tıklayınca cevaplarını, kırmızıyla yanlışlarını ve açık uçlu cevaplarını görür.
+              <b>Sonuçları şimdi aç</b> ile sonuçları istediği an açar; o an çözmekte olanların quizi biter. Puan yalnızca
+              öneridir; ödevin sonucunu öğretmen kendisi seçer.</p>
+          </details>
+          <details>
             <summary>Ödev serisi nedir?</summary>
             <p>Sonuçlanan ödevlerinde arka arkaya kaç kez "Yaptı" aldığını gösteren sayaç. Bir kez başka bir sonuç
               alırsan seri uyarıya düşer; arka arkaya ikinci kez "Yaptı" alamazsan seri bozulur. Seriyi yalnızca öğrencinin
@@ -352,7 +387,7 @@
           </details>
           <details>
             <summary>Veliye hangi bildirimler gider?</summary>
-            <p>Çocuğa giden ödev, sınav, mesaj ve duyuru bildirimlerinin bir kopyası, başında çocuğun adıyla veliye
+            <p>Çocuğa giden ödev, quiz sonucu, sınav, mesaj ve duyuru bildirimlerinin bir kopyası, başında çocuğun adıyla veliye
               de gider; bildirime dokununca o çocuğun sayfası açılır. Çocuk bir derse gelmediğinde ya da geç
               geldiğinde ayrıca "Çocuğunuz (adı) bugün saat ... dersine gelmedi" gibi bir bildirim gelir. Çocuk servise
               biniyorsa servisçi yoklamayı işaretledikçe yalnızca veliye "Zeynep 07:42'de servise bindi.", "Zeynep 08:05'te

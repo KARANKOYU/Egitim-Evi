@@ -65,6 +65,7 @@ SAYFALAR['veli-odevler'] = function () {
       var liste = r[i].veri.assignments || [];
       for (var j = 0; j < liste.length; j++) { liste[j].cocuk = r[i].cocuk; hepsi.push(liste[j]); }
     }
+    S.veliOdevHam = hepsi;   // satır penceresi quiz durumunu buradan okur (14c-quiz.js)
     /* Teslim saati geçmiş ama henüz sonuçlanmamış ödev "aktif" sayılmaz. */
     var aktif = hepsi.filter(function (a) { return a.status === 'active' && !teslimGecti(a.endAt, a.endTime); })
       .sort(function (a, b) { return String(a.endAt || '').localeCompare(String(b.endAt || '')); });
@@ -101,11 +102,12 @@ function veliOdevListesi(list) {
       ' data-act="veli-teslim" data-id="' + esc(a.id) + '" data-ogrenci="' + esc(a.cocuk.id) + '" data-baslik="' + esc(a.title) + '"' +
       ' data-ara="' + esc(a.cocuk.fullName + ' ' + a.title + ' ' + a.subject) + '">' +
       cocukRozet(a.cocuk) +
-      '<div class="buyu"><div class="ad">' + esc(a.title) + '</div>' +
+      '<div class="buyu"><div class="ad">' + esc(a.title) + quizListeEtiketi(a.quiz) + '</div>' +
       '<div class="alt">' + esc(a.subject) + ' · ' + esc(a.teacherName) +
       (a.endAt ? ' · son teslim ' + tarihGunSaat(a.endAt, a.endTime) : '') + '</div>' +
       (a.description ? '<div class="alt" style="margin-top:4px">' + esc(a.description) + '</div>' : '') +
-      '</div>' + sag + '</div>';
+      /* Quiz: durum; puan yalnız sonuç açılınca (sorular ve sekme kaydı veliye gelmez). */
+      quizListeDurumu(a.quiz, false) + '</div>' + sag + '</div>';
   }
   return h + '</div>';
 }

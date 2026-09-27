@@ -9,6 +9,7 @@ const { depo } = require('../veri');
 const { yilSuz, bakisKisisi } = require('./egitim-yili');
 const { odevBitisAni, odevSaati } = require('./odev');
 const { ekGorunumu } = require('./ekler');
+const { ilerleyisOzetleri } = require('./quiz');
 
 const yuvarla = n => Math.round(n * 100) / 100;
 
@@ -55,6 +56,9 @@ async function progressOf(studentId, bakan) {
   const bakis = bakisKisisi(bakan || st, st);
   const mine = await yilSuz(bakis, odevler);
   const ekHaritasi = await depo.ekler.odevlerin(mine.map(a => a.id));
+  /* Quizli ödevin kısa özeti (durum; puan yalnız sonuç açılınca). Soru, şık,
+     doğru cevap ve sekme kaydı bu uca hiç girmez: veli ve öğretmenler de görür. */
+  const quizHaritasi = await ilerleyisOzetleri(studentId, mine);
   const ogretmenAdi = new Map(ogretmenler.map(t => [t.id, t.fullName]));
 
   const bySubject = {};
@@ -67,7 +71,8 @@ async function progressOf(studentId, bakan) {
       teacherName: ogretmenAdi.get(a.teacherId) || 'Bilinmiyor',
       acildi: !!a.acilma[studentId],
       result: a.status === 'finished' ? r : null,
-      ekler: (ekHaritasi.get(a.id) || []).map(ekGorunumu)
+      ekler: (ekHaritasi.get(a.id) || []).map(ekGorunumu),
+      quiz: quizHaritasi.get(a.id) || null
     });
     if (yildizli) assignmentList[assignmentList.length - 1].yildizli = yildizli.has(a.id);
     if (a.status !== 'finished') continue;

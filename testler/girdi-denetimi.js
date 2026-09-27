@@ -61,6 +61,23 @@ const KOTU = [
   V = (await girisYap(vK, 'Test1234!')).token;
   const o1Id = ogrListe[0] ? ogrListe[0].id : 'yok';
 
+  /* Quiz: öğretmenin gönderdiği quiz gövdesi (sorular, şıklar, süreler) ve
+     öğrencinin cevap/çıkış gövdeleri. Öğrenci (ogrenci1) quizi başlatmış olur. */
+  const quizOgrenciler = [(await iste('/api/me', 'GET', null, S)).body.user.id];
+  const quizOdev = await iste('/api/assignments', 'POST', { title: 'Girdi quizi', subject: 'Matematik', studentIds: quizOgrenciler,
+    quiz: { sorular: [{ tur: 'coktan', metin: 'Çoktan', secenekler: [{ metin: 'a', dogru: true }, { metin: 'b', dogru: true }, { metin: 'c' }] },
+      { tur: 'acik', metin: 'Açık' }] } }, O);
+  const qId = quizOdev.body.assignment ? quizOdev.body.assignment.id : 'yok';
+  const QY = '/api/assignments/' + qId + '/quiz';
+  const qBasla = await iste(QY + '/basla', 'POST', {}, S);
+  const qSorular = (qBasla.body && qBasla.body.sorular) || [];
+  const qCoktan = qSorular[0] || { id: 'yok' }, qAcik = qSorular[1] || { id: 'yok' };
+  kontrol('quiz denetimi için quizli ödev ve başlamış deneme hazır', quizOdev.status === 200 && qBasla.status === 200 && qSorular.length === 2,
+    quizOdev.status + ' ' + qBasla.status);
+  const soruBozuk = v => ({ sureTuru: v, toplamDk: v, sonucGorunum: v, cikincaKapanir: v,
+    sorular: [{ tur: v, metin: v, sureSn: v, dogru: v, secenekler: [{ metin: v, dogru: v }, v, { metin: 'b', dogru: true }] }, v,
+      { tur: 'coktan', metin: v, secenekler: v }, { tur: 'dy', metin: 'x', dogru: v, sureSn: v }] });
+
   console.log('=== 2) BOZUK ALANLAR ===');
   const alanlar = [
     ['sinif adi', '/api/school/class', 'POST', v => ({ name: v }), M],
@@ -80,7 +97,20 @@ const KOTU = [
     ['servis notu sil', '/api/servis/not-sil', 'POST', v => ({ id: v }), SV.token],
     ['binmeyecek', '/api/servis/binmeyecek', 'POST', v => ({ ogrenciId: o1Id, tarih: v, sabah: v, aksam: v, not: v }), V],
     ['uygulama anahtari', '/api/cihaz', 'POST', v => ({ ad: v, platform: v, surum: v }), V],
-    ['uygulama anahtari sil', '/api/cihaz/sil', 'POST', v => ({ id: v, cihazAnahtari: v }), V]
+    ['uygulama anahtari sil', '/api/cihaz/sil', 'POST', v => ({ id: v, cihazAnahtari: v }), V],
+    ['odevle gelen quiz', '/api/assignments', 'POST', v => ({ title: 'Girdi quizli ödev', subject: 'Matematik', studentIds: quizOgrenciler,
+      quiz: v }), O],
+    ['quiz sorulari ve siklari', '/api/assignments', 'POST', v => ({ title: 'Girdi quizli ödev', subject: 'Matematik', studentIds: quizOgrenciler,
+      quiz: soruBozuk(v) }), O],
+    ['quiz yaz', QY, 'POST', v => ({ quiz: soruBozuk(v) }), O],
+    ['quiz kaldir/yaz', QY, 'POST', v => ({ quiz: v }), O],
+    ['quiz metin onizlemesi', '/api/assignments/quiz-metin', 'POST', v => ({ metin: v }), O],
+    ['quiz cevap (soru)', QY + '/cevap', 'POST', v => ({ soruId: v, secilenler: v, metin: v }), S],
+    ['quiz cevap (siklar)', QY + '/cevap', 'POST', v => ({ soruId: qCoktan.id, secilenler: v }), S],
+    ['quiz cevap (sik listesi)', QY + '/cevap', 'POST', v => ({ soruId: qCoktan.id, secilenler: [v, v] }), S],
+    ['quiz cevap (acik uclu)', QY + '/cevap', 'POST', v => ({ soruId: qAcik.id, metin: v }), S],
+    ['quiz sekme kaydi', QY + '/odak', 'POST', v => ({ sure: v, soruId: v }), S],
+    ['quiz sonraki', QY + '/sonraki', 'POST', v => ({ soruId: v }), S]
   ];
 
   for (const [ad, yol, method, kur, tok] of alanlar) {

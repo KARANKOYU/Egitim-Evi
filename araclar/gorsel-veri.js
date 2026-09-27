@@ -13,6 +13,10 @@
        yoklaması, servis ve servisçi, kulüp, anket, yemek listesi, okul
        konumu, düzeltilmiş mesaj, yıldızlı ödev, "Yazılı" şablonundan sınav.
      - Ekli mesaj ve ekli ödev (belge + resim), açılış sayfası yorumları.
+     - Quizli ödev "Kesirler quizi" (bütün quiz 20 dk, sonuç hemen): Zeynep
+       bitirdi (2/4, açık uçlu cevabı var, sonucu açık), Burak yarıda (iki kez
+       sekmeden çıktı), 7-A başlamadı. "Çarpım tablosu hız quizi" (soru başına
+       süreli, çıkınca soru kapanır): kimse başlamadı; turda Zeynep çözer.
      - Nakil: Elif Göçmen Test Ortaokulu'nda ödev ve sınav notu alır, sonra
        Deneme Anadolu Lisesi T.C. no + doğum tarihiyle onu kendi okuluna alır.
 
@@ -409,6 +413,65 @@ async function calistir() {
     }
   } catch (e) { console.log('  ekler kurulamadı: ' + e.message); }
 
+  /* ---- quizli ödevler (bütün çağrılar sunucuya; denemeler öğrencilerin kendi
+     oturumlarıyla). Kesirler quizi: Zeynep bitirdi, Burak yarıda ve iki kez
+     sekmeden çıktı. Hız quizi (soru başına süreli): turda Zeynep çözer. ---- */
+  try {
+    const hedefQ = ((await iste('/api/assignments/hedefler', 'GET', null, MAT)).body.classes || [])
+      .find(c => sinif7A && c.id === sinif7A.id);
+    const quizOgrencileri = [...new Set((hedefQ ? hedefQ.students.map(s => s.id) : [])
+      .concat([zeynep && zeynep.id, burak && burak.id].filter(Boolean)))];
+    const kesir = beklenen(await iste('/api/assignments', 'POST', { title: 'Kesirler quizi', subject: 'Matematik',
+      description: 'Ekteki quizi çöz. Açık uçlu soruyu kendi cümlelerinle yaz.', startAt: gun(0), endAt: gun(3), endTime: '17:00',
+      studentIds: quizOgrencileri, quiz: { sureTuru: 'quiz', toplamDk: 20, sonucGorunum: 'hemen', sorular: [
+        { tur: 'dy', metin: '1/2 ile 2/4 birbirine eşittir.', dogru: true },
+        { tur: 'coktan', metin: '3/4 + 1/4 kaçtır?', secenekler: [{ metin: '1/2' }, { metin: '1', dogru: true }, { metin: '4/8' }, { metin: '3/16' }] },
+        { tur: 'coktan', metin: 'Hangileri 1/2 kesrine eşittir?', secenekler: [{ metin: '2/4', dogru: true }, { metin: '3/5' },
+          { metin: '5/10', dogru: true }, { metin: '4/6' }] },
+        { tur: 'dy', metin: 'Payı paydasından büyük olan kesre basit kesir denir.', dogru: false },
+        { tur: 'acik', metin: 'Günlük hayatta kesirleri nerede kullandığını bir örnekle anlat.' }
+      ] } }, MAT), 'kesirler quizi');
+    const KQ = '/api/assignments/' + kesir.assignment.id + '/quiz';
+    /* secimler: soru sırasıyla seçilen şık metinleri (açık uçlu için null). */
+    const coz = async (tok, secimler, acikMetin) => {
+      const d = beklenen(await iste(KQ + '/basla', 'POST', {}, tok), 'quiz başlat');
+      for (let i = 0; i < d.sorular.length; i++) {
+        const s = d.sorular[i];
+        if (s.tur === 'acik') {
+          if (acikMetin) await iste(KQ + '/cevap', 'POST', { soruId: s.id, metin: acikMetin }, tok);
+        } else if (secimler[i]) {
+          await iste(KQ + '/cevap', 'POST', { soruId: s.id, secilenler: secimler[i].map(m => s.secenekler.find(x => x.metin === m).id) }, tok);
+        }
+      }
+      return d;
+    };
+    /* Burak yarıda bırakır: iki soruyu cevapladı, iki kez sekmeden çıktı (sunucu
+       çıkışı denemenin süresinden uzun saymaz; bu yüzden birkaç saniye beklenir). */
+    let B = null;
+    try {
+      B = (await girisYap('ogrenci2@test.com', 'Test1234!')).token;
+      await iste('/api/kvkk-onay', 'POST', { onay: true }, B);
+    } catch (e) { console.log('  quiz (Burak girişi): ' + e.message); }
+    let bd = null;
+    if (B && (await iste(KQ, 'GET', null, B)).status === 200) bd = await coz(B, [['Doğru'], ['4/8']], null);
+    await coz(Z, [['Doğru'], ['1'], ['2/4'], ['Doğru']], 'Pizzayı dört eşit parçaya bölünce her dilim pizzanın 1/4\'ü olur.');
+    beklenen(await iste(KQ + '/bitir', 'POST', {}, Z), 'quiz bitir');
+    if (bd) {
+      await new Promise(r => setTimeout(r, 6000));
+      await iste(KQ + '/odak', 'POST', { sure: 4, soruId: bd.sorular[1].id }, B);
+      await iste(KQ + '/odak', 'POST', { sure: 2, soruId: bd.sorular[2].id }, B);
+    }
+    beklenen(await iste('/api/assignments', 'POST', { title: 'Çarpım tablosu hız quizi', subject: 'Matematik',
+      description: 'Her sorunun kendi süresi var; geri dönülmez. Sekmeden çıkınca o soru kapanır.', startAt: gun(0), endAt: gun(2),
+      endTime: '17:00', studentIds: quizOgrencileri, quiz: { sureTuru: 'soru', cikincaKapanir: true, sonucGorunum: 'hemen', sorular: [
+        { tur: 'coktan', metin: '7 × 8 kaçtır?', sureSn: 30, secenekler: [{ metin: '54' }, { metin: '56', dogru: true }, { metin: '63' }] },
+        { tur: 'dy', metin: '9 × 6 = 54', sureSn: 20, dogru: true },
+        { tur: 'coktan', metin: 'Hangileri 24 eder?', sureSn: 40, secenekler: [{ metin: '4 × 6', dogru: true }, { metin: '3 × 9' },
+          { metin: '8 × 3', dogru: true }, { metin: '5 × 5' }] },
+        { tur: 'acik', metin: 'Çarpım tablosunu ezberlemek için ne yapıyorsun?', sureSn: 60 }
+      ] } }, MAT), 'hız quizi');
+  } catch (e) { console.log('  quiz kurulamadı: ' + e.message); }
+
   /* ---- bugün şu an süren bir Matematik dersi (7-A): öğretmenin programında
      "Şu an — yoklama al" düğmesi görünsün (tur hangi gün çalışırsa). ---- */
   try {
@@ -497,7 +560,7 @@ async function calistir() {
 
   /* Tek ders kullanan kişiler için: bekleyen bildirimler gerçekçi görünsün. */
   await iste('/api/logout', 'POST', null, FEN);
-  console.log('görsel veri hazır: veli (2 çocuk), müdür + veli, iki okulda öğretmen, okul sayfası, etüt, servis, kulüp, anket, yemek, ekler, yorumlar, nakil');
+  console.log('görsel veri hazır: veli (2 çocuk), müdür + veli, iki okulda öğretmen, okul sayfası, etüt, servis, kulüp, anket, yemek, ekler, quiz, yorumlar, nakil');
 }
 
 module.exports = { HESAPLAR };

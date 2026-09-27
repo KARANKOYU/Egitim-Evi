@@ -40,7 +40,10 @@ const TABLOLAR = [
      Servis saatleri (okullar) ve sıra (servis_ogrencileri) yedeğe girer.
      Telefon uygulamasının cihaz anahtarları yedekte yok (push abonelikleri
      gibi): geri yüklemede sahibi hâlâ varsa korunur. */
-  'servis_yoklamalari', 'servis_gunleri', 'servis_olaylari', 'servis_notlari', 'servis_binmeyecek', 'cihaz_anahtarlari'
+  'servis_yoklamalari', 'servis_gunleri', 'servis_olaylari', 'servis_notlari', 'servis_binmeyecek', 'cihaz_anahtarlari',
+  /* Ödevin quizi, öğrencilerin denemeleri ve cevapları: yedeğe girer
+     (quizler, quizDenemeleri). */
+  'quizler', 'quiz_sorulari', 'quiz_secenekleri', 'quiz_denemeleri', 'quiz_cevaplari'
 ];
 
 /* ---------- küçük doğrulayıcılar ---------- */
@@ -316,9 +319,11 @@ async function iceAktar(veri) {
 
     /* --- ödevler --- */
     const SONUC = ['yapti', 'yapmadi', 'eksik', 'gec', 'izinli', 'gelmedi'];
-    const odevOgr = new Set();   // 'odevId|ogrenciId' (teslim dosyaları için)
+    const odevOgr = new Set();   // 'odevId|ogrenciId' (teslim dosyaları ve quiz denemeleri için)
+    const odevVar = new Set();   // quizler için
     for (const a of dizi(veri.assignments)) {
       if (!a || !a.id || !okul.has(a.schoolId) || !a.title) { atla('odev'); continue; }
+      odevVar.add(a.id);
       let bas = gun(a.startAt), bit = gun(a.endAt);
       if (bas && bit && bit < bas) bas = null;
       await ekle('odevler', { id: a.id, okul_id: a.schoolId, ogretmen_id: kisiId(a.teacherId),
@@ -550,6 +555,66 @@ async function iceAktar(veri) {
         crc32: crc, sha256: d.sha256, yuklenme: zaman(d.yuklenme) });
     }
 
+    /* --- ödevlerin quizleri, denemeler ve cevaplar ---
+       Quiz ödeve, soru quize, deneme ödevin öğrencisine, cevap o denemeye ve
+       aynı quizin sorusuna bağlı olmalı; seçilen şıklar o sorunun şıkları. */
+    const quizVar = new Set(), soruOdevi = new Map(), soruSiklari = new Map(), quizKimlik = new Set();
+    const tamSayi = (v, alt, ust) => { const n = sayi(v); return Number.isInteger(n) && n >= alt && n <= ust ? n : null; };
+    for (const qz of dizi(veri.quizler)) {
+      const sureTuru = qz && secim(qz.sureTuru, ['yok', 'soru', 'quiz'], null);
+      const toplam = qz && tamSayi(qz.toplamSn, 60, 10800);
+      if (!qz || !odevVar.has(qz.odevId) || quizVar.has(qz.odevId) || !sureTuru || (sureTuru === 'quiz' && toplam === null)) {
+        atla('quiz'); continue;
+      }
+      await ekle('quizler', { odev_id: qz.odevId, sure_turu: sureTuru, toplam_sn: sureTuru === 'quiz' ? toplam : null,
+        cikinca_kapanir: qz.cikincaKapanir === true, sonuc_gorunum: secim(qz.sonucGorunum, ['teslim', 'hemen'], 'teslim'),
+        sonuc_acildi: qz.sonucAcildi ? zaman(qz.sonucAcildi) : null, olusturma: zaman(qz.olusturma), guncelleme: zaman(qz.guncelleme) });
+      quizVar.add(qz.odevId);
+      let sira = 0;
+      for (const s of dizi(qz.sorular).slice(0, 100)) {
+        const tur = s && secim(s.tur, ['dy', 'coktan', 'acik'], null);
+        const soruMetni = s && metin(s.metin, 1000).trim();
+        const sure = s && tamSayi(s.sureSn, 10, 600);
+        if (!s || !s.id || quizKimlik.has(s.id) || !tur || !soruMetni || (sureTuru === 'soru' && sure === null)) { atla('quizSorusu'); continue; }
+        quizKimlik.add(s.id);
+        await ekle('quiz_sorulari', { id: s.id, odev_id: qz.odevId, sira: ++sira, tur, metin: soruMetni,
+          sure_sn: sureTuru === 'soru' ? sure : null });
+        soruOdevi.set(s.id, qz.odevId);
+        const siklar = new Set();
+        let csira = 0;
+        for (const c of dizi(s.secenekler).slice(0, 10)) {
+          const cm = c && metin(c.metin, 300).trim();
+          if (!c || !c.id || quizKimlik.has(c.id) || !cm) { atla('quizSecenegi'); continue; }
+          quizKimlik.add(c.id);
+          siklar.add(c.id);
+          await ekle('quiz_secenekleri', { id: c.id, soru_id: s.id, sira: ++csira, metin: cm, dogru: c.dogru === true });
+        }
+        soruSiklari.set(s.id, siklar);
+      }
+    }
+    const denemeVar = new Set(), cevapVar = new Set();
+    for (const d of dizi(veri.quizDenemeleri)) {
+      const anahtar = d && d.odevId + '|' + d.ogrenciId;
+      if (!d || !quizVar.has(d.odevId) || !odevOgr.has(anahtar) || denemeVar.has(anahtar)) { atla('quizDenemesi'); continue; }
+      denemeVar.add(anahtar);
+      const bitis = d.bitis ? zaman(d.bitis) : null;
+      await ekle('quiz_denemeleri', { odev_id: d.odevId, ogrenci_id: d.ogrenciId, baslama: zaman(d.baslama), bitis,
+        bitis_nedeni: bitis ? secim(d.bitisNedeni, ['ogrenci', 'sure', 'teslim', 'sonuclandi', 'cikis'], 'ogrenci') : null,
+        soru_sira: tamSayi(d.soruSira, 1, 101) || 1, soru_baslama: zaman(d.soruBaslama || d.baslama),
+        cikis_sayisi: tamSayi(d.cikisSayisi, 0, 1e9) || 0, cikis_sn: tamSayi(d.cikisSn, 0, 1e9) || 0,
+        dogru: bitis ? tamSayi(d.dogru, 0, 100) : null, puanli: bitis ? tamSayi(d.puanli, 0, 100) : null,
+        sonuc_bildirildi: d.sonucBildirildi === true });
+      for (const c of dizi(d.cevaplar)) {
+        if (!c || soruOdevi.get(c.soruId) !== d.odevId || cevapVar.has(anahtar + '|' + c.soruId)) { atla('quizCevabi'); continue; }
+        cevapVar.add(anahtar + '|' + c.soruId);
+        const siklar = soruSiklari.get(c.soruId) || new Set();
+        await ekle('quiz_cevaplari', { odev_id: d.odevId, ogrenci_id: d.ogrenciId, soru_id: c.soruId,
+          secilenler: [...new Set(dizi(c.secilenler).map(String))].filter(x => siklar.has(x)).slice(0, 10),
+          metin: metin(c.metin, 2000), kayit: c.kayit ? zaman(c.kayit) : null, acilis: c.acilis ? zaman(c.acilis) : null,
+          kapanis: c.kapanis ? zaman(c.kapanis) : null, kapandi: secim(c.kapandi, ['sure', 'cikis', 'gecildi'], null) });
+      }
+    }
+
     /* --- etütler, öğrencileri ve yoklamaları --- */
     const etutOkulu = new Map(), etutteki = new Set();
     for (const x of dizi(veri.etutler)) {
@@ -695,12 +760,29 @@ async function cihazAnahtarlariniGeriYaz(liste) {
 /* ================================================================== */
 async function disaAktar() {
   const tum = async tablo => sorgu('SELECT * FROM ' + yaz.adDogrula(tablo));
+  const hepsi = await Promise.all(TABLOLAR.map(tum));
   const [okullar, yillar, siniflar, rolSatir, rolYetki, rolKapsam, kullanicilar, engeller, baglar,
     dersler, program, odevler, odevSinif, odevOgr, sablonlar, sablonOlcum, gruplar, sinavlar, sinavOlcum,
     degerler, devam, mesajlar, alicilar, okumalar, takvim, bildirimler, oturumlar, hatirlatmalar, islemler,
     anketSatir, anketSecenek, anketHedef, anketOy, yemekler, servisSatir, servisOgr, kulupSatir, kulupUye, dosyalar,
     evKonum, etutSatir, etutOgr, etutYok, okulSayfaSatir, okulFotoSatir, yorumSatir, gecmisSatir, ozellikSatir, hatirlaticiSatir, hatirlaticiGunSatir] =
-    await Promise.all(TABLOLAR.map(tum));
+    hepsi;
+  /* Listenin sonundaki tablolar (aile ve servis yoklaması yedeğe girmez) adıyla alınır. */
+  const tablo = ad => hepsi[TABLOLAR.indexOf(ad)];
+  const [quizSatir, quizSoru, quizSecenek, quizDeneme, quizCevap] =
+    ['quizler', 'quiz_sorulari', 'quiz_secenekleri', 'quiz_denemeleri', 'quiz_cevaplari'].map(tablo);
+  const siraliGrupla = (liste, alan) => {
+    const h = new Map();
+    for (const r of liste.slice().sort((a, b) => a.sira - b.sira)) { if (!h.has(r[alan])) h.set(r[alan], []); h.get(r[alan]).push(r); }
+    return h;
+  };
+  const quizSoruH = siraliGrupla(quizSoru, 'odev_id'), quizSecenekH = siraliGrupla(quizSecenek, 'soru_id');
+  const quizCevapH = new Map();
+  for (const c of quizCevap) {
+    const k = c.odev_id + '|' + c.ogrenci_id;
+    if (!quizCevapH.has(k)) quizCevapH.set(k, []);
+    quizCevapH.get(k).push(c);
+  }
 
   const grupla = (liste, alan) => {
     const h = new Map();
@@ -805,7 +887,16 @@ async function disaAktar() {
     kapaliOzellikler: ozellikSatir.map(o => ({ okulId: o.okul_id, ozellik: o.ozellik, kapatanId: o.kapatan_id, kapanma: o.kapanma })),
     hatirlaticilar: hatirlaticiSatir.map(h => ({ id: h.id, kullaniciId: h.kullanici_id, baslik: h.baslik, aciklama: h.aciklama,
       siklik: h.siklik, tarih: gunYazi(h.tarih), saat: saatYazi(h.saat), ayGunu: h.ay_gunu, aktif: h.aktif, sonGonderim: h.son_gonderim,
-      olusturma: h.olusturma, gunler: hatirlaticiGunSatir.filter(g => g.hatirlatici_id === h.id).map(g => g.gun) }))
+      olusturma: h.olusturma, gunler: hatirlaticiGunSatir.filter(g => g.hatirlatici_id === h.id).map(g => g.gun) })),
+    quizler: quizSatir.map(q => ({ odevId: q.odev_id, sureTuru: q.sure_turu, toplamSn: q.toplam_sn, cikincaKapanir: q.cikinca_kapanir,
+      sonucGorunum: q.sonuc_gorunum, sonucAcildi: q.sonuc_acildi, olusturma: q.olusturma, guncelleme: q.guncelleme,
+      sorular: (quizSoruH.get(q.odev_id) || []).map(s => ({ id: s.id, tur: s.tur, metin: s.metin, sureSn: s.sure_sn,
+        secenekler: (quizSecenekH.get(s.id) || []).map(c => ({ id: c.id, metin: c.metin, dogru: c.dogru })) })) })),
+    quizDenemeleri: quizDeneme.map(d => ({ odevId: d.odev_id, ogrenciId: d.ogrenci_id, baslama: d.baslama, bitis: d.bitis,
+      bitisNedeni: d.bitis_nedeni, soruSira: d.soru_sira, soruBaslama: d.soru_baslama, cikisSayisi: d.cikis_sayisi, cikisSn: d.cikis_sn,
+      dogru: d.dogru, puanli: d.puanli, sonucBildirildi: d.sonuc_bildirildi,
+      cevaplar: (quizCevapH.get(d.odev_id + '|' + d.ogrenci_id) || []).map(c => ({ soruId: c.soru_id, secilenler: c.secilenler || [],
+        metin: c.metin, kayit: c.kayit, acilis: c.acilis, kapanis: c.kapanis, kapandi: c.kapandi })) }))
   };
 }
 

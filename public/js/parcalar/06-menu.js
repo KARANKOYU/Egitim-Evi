@@ -3,7 +3,7 @@
 /* ================= okulun kapattığı bölümler =================
    Müdür Özellikler sayfasından kapatır; sunucu da reddeder. Sayfa -> özellik. */
 var SAYFA_OZELLIK = {
-  'ogr-odevler': 'odev', odevler: 'odev', 'ders-odevleri': 'odev', 'veli-odevler': 'odev',
+  'ogr-odevler': 'odev', odevler: 'odev', 'ders-odevleri': 'odev', 'veli-odevler': 'odev', quiz: 'odev',
   'ogr-sinavlar': 'sinav', sinavlarim: 'sinav',
   yoklama: 'devamsizlik', devamsizlik: 'devamsizlik', devamsizligim: 'devamsizlik', 'veli-devamsizlik': 'devamsizlik',
   etutler: 'etut', etutlerim: 'etut', 'etut-yoklama': 'etut',

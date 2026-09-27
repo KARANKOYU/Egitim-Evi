@@ -27,7 +27,7 @@ const { AramaDizini, sade: sadeArama } = require('../yardimci/bulanik-arama');
 
 /* Aydınlatma metninin sürümü. Metin değişirse burayı da artır:
    kullanıcıların onayı yeniden istenmelidir. */
-const KVKK_SURUM = '1.11';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
+const KVKK_SURUM = '1.12';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
                             // 1.4: ödev dosyaları, anket, servis, kulüp, son giriş;
                             // 1.5: okulun açtığı hesapta T.C., ev ve servis konumu, telefon bildirimi;
                             // 1.6: e-posta onayı, müdür başvurusunda yaş, okul sayfası, ödev yıldızı;
@@ -39,6 +39,10 @@ const KVKK_SURUM = '1.11';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C.
                             // 1.11: servis yoklaması (bindi/indi saatleri, sıra, servisçinin notu, velinin
                             //       "binmeyecek" işareti; kim görür, 30 gün), servis saatleri, telefon
                             //       uygulamasında servisçinin arka plan konumu, cihaz anahtarı, 30 günlük uygulama oturumu
+                            // 1.12: ödevin quizi (cevaplar, açık uçlu metin, başlama/bitiş ve soru başına süreler,
+                            //       sekme/uygulama değiştirme kaydı: kaç kez, toplam kaç sn); kim görür (hepsini ödevi
+                            //       veren öğretmen; öğrenci kendisininkini, puanı ve doğruları sonuç açılınca; veli
+                            //       yalnız durum ve sonuç açılınca puan); ödev silinince silinir
 
 /* ============ kayıt ============ */
 /* Kendisi kaydolan tek tür hesap yetişkin hesabıdır: veli, öğretmen ve müdür

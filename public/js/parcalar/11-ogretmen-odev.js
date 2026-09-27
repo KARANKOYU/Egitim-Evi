@@ -107,7 +107,7 @@ function odevGrubu(baslik, liste) {
         : '<span class="etiket mavi">Aktif</span>');
 
     h += '<div class="satir">' +
-      '<div class="buyu"><div class="ad">' + esc(a.title) + '</div>' +
+      '<div class="buyu"><div class="ad">' + esc(a.title) + quizListeEtiketi(a.quiz) + '</div>' +
       '<div class="alt">' + esc(a.teacherName) + ' · ' + a.studentCount + ' öğrenci · ' +
       (a.endAt ? tarihGunSaat(a.endAt, a.endTime) : 'süresiz') + '</div>' +
       (a.description ? '<div class="alt" style="margin-top:3px">' +
@@ -193,10 +193,10 @@ function odevListesiOgretmen(list) {
         a.studentCount + ' öğrenciden ' + a.acilan + ' kişi açtı</div>';
     }
     h += '<div class="satir" data-ara="' + esc(a.title + ' ' + a.subject) + '">' +
-      '<div class="buyu"><div class="ad">' + esc(a.title) + '</div>' +
+      '<div class="buyu"><div class="ad">' + esc(a.title) + quizListeEtiketi(a.quiz) + '</div>' +
       '<div class="alt">' + esc(a.subject) + ' · ' + a.studentCount + ' öğrenci · ' +
       (a.endAt ? 'Son teslim: ' + tarihGunSaat(a.endAt, a.endTime) : 'süresiz') +
-      '</div>' + ozet + '</div>' +
+      '</div>' + ozet + quizOgretmenListeSatiri(a.quiz, a.studentCount) + '</div>' +
       durum +
       '<button class="btn kucuk ' + (a.status === 'finished' ? 'gri' : '') + '" data-act="odev-ac" data-id="' + esc(a.id) + '">' +
       (a.status === 'finished' ? 'Sonuçları düzenle' : 'Sonuçlandır') + '</button>' +
@@ -266,7 +266,8 @@ function odevYeniModal() {
       }
       h += '</div></div>';
     }
-    h += '</div>' + ekAlani('odev', 'odev') + '<div id="mHata" style="margin-top:9px"></div>';
+    /* Quiz: pencerenin içinde açılıp kapanan bölüm (14c-quiz.js). */
+    h += '</div>' + ekAlani('odev', 'odev') + quizAlani('odev', null) + '<div id="mHata" style="margin-top:9px"></div>';
 
     modalAc('Yeni ödev', h,
       '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
@@ -324,14 +325,16 @@ function odevAc(id) {
     var a = d.assignment;
     S._acikOdev = a;
     S._acikOdevEkleri = d.ekler || [];
+    S._acikOdevQuiz = d.quiz || null;
     var acan = d.students.filter(function (s) { return s.acilma; }).length;
 
+    /* Quiz ekler listesinin başında: "Quiz · 10 soru · 20 dk" (14c-quiz.js). */
     var h = '<div class="odev-bas">' +
       '<h1 class="odev-ad">' + esc(a.title) + '</h1>' +
       '<div class="odev-konu"><span>Konusu</span>' + (a.description ? esc(a.description) : esc(a.subject)) + '</div>' +
       '<div class="odev-meta">' + esc(a.subject) + ' · ' +
       (a.endAt ? 'son teslim ' + tarihGunSaat(a.endAt, a.endTime) : 'süresiz') + ' · ' +
-      d.students.length + ' öğrenci · ' + acan + ' kişi açtı</div>' + ekListesiGoster(d.ekler) + '</div>';
+      d.students.length + ' öğrenci · ' + acan + ' kişi açtı</div>' + ekListesiGoster(d.ekler, quizOgretmenSatiri(d.quiz, a)) + '</div>';
 
     /* Teslim tarihi geçmiş ya da sonuçlanmış olsa da sonuçlar değiştirilebilir;
        öğretmen bunu bilmezse ekranı salt okunur sanıyor. */
@@ -355,9 +358,10 @@ function odevAc(id) {
         var k = ODEV_SONUC_SIRA[j];
         secenek += '<option value="' + k + '"' + (s.result === k ? ' selected' : '') + '>' + SONUC[k].ad + '</option>';
       }
+      /* Quizli ödevde: "Quiz: 8/10 · 2 kez çıktı (35 sn)"; tıklayınca cevapları. */
       h += '<div class="satir ok-satir" data-ara="' + esc(s.fullName) + '">' +
         '<span class="ok-sira">' + (i + 1) + '</span>' +
-        '<div class="buyu"><div class="ad">' + esc(s.fullName) + '</div>' + acilma + '</div>' +
+        '<div class="buyu"><div class="ad">' + esc(s.fullName) + '</div>' + acilma + quizOgrenciRozeti(s.quiz, a.id, s.id) + '</div>' +
         '<select class="sonuc-kutu" data-sid="' + esc(s.id) + '" data-deger="' + esc(s.result || '') + '" ' +
         'aria-label="' + esc(s.fullName) + ' sonucu">' + secenek + '</select></div>';
     }
@@ -438,10 +442,12 @@ EYLEMLER['odev-duzelt'] = function () {
     tarihAlani('odBit', (a.endAt || '').slice(0, 10), { min: 'odBas' }) + '<label class="gizli-etiket" for="odSaat">Son saat</label>' +
     saatAlani('odSaat', a.endTime || '12:00') + '</div></div>' +
     ekAlani('odevDuzelt', 'odev', S._acikOdevEkleri) +
+    quizAlani('duzelt', S._acikOdevQuiz) +
     '<div id="odMesaj"></div>',
     '<button class="btn gri" data-act="modal-kapat">Vazgeç</button>' +
     '<button class="btn" data-act="odev-duzelt-kaydet" data-id="' + esc(a.id) + '">Kaydet</button>');
   ekAlaniKur('odevDuzelt');
+  quizPencereAyari();
   $('odBaslik').focus();
 };
 
@@ -455,8 +461,36 @@ EYLEMLER['odev-duzelt-kaydet'] = function (el, id) {
   if (!g.title) alanHatasi('odBaslik', 'Ödevin adını yaz.');
   if (g.startAt && g.endAt && g.endAt < g.startAt) alanHatasi('odBit', 'Son tarih başlangıçtan önce olamaz.');
   if (kok.querySelector('.hatali')) { ilkHatayaGit(kok); return; }
+  /* Quiz değiştiyse önce o yazılır. Pencere açıkken bir öğrenci başladıysa
+     sunucu kilitli der (409): quiz bölümü kilitli çizilir, ödevin öbür
+     değişiklikleri yine kaydedilir ve pencere açık kalır ki öğretmen görsün. */
+  var qz = quizGovdesi('duzelt');
+  if (qz.hata) { mesajGoster('odMesaj', 'hata', qz.hata); return; }
+  var quizKilidi = '';
+  var quizIstegi = quizDegistiMi('duzelt', qz.quiz)
+    ? api('/assignments/' + id + '/quiz', 'POST', { quiz: qz.quiz }).then(function () { QUIZ_DZ.duzelt.ilk = JSON.stringify(qz.quiz); },
+      function (e) {
+        if (!(e.durum === 409 && e.veri && e.veri.kilitli)) throw e;
+        quizKilidi = e.message;
+        QUIZ_DZ.duzelt.kilitli = true;
+        QUIZ_DZ.duzelt.baslayan = e.veri.baslayan || 1;
+        QUIZ_DZ.duzelt.metin = null; QUIZ_DZ.duzelt.onizle = null;
+      })
+    : Promise.resolve(null);
   dugmeBekle(el, 'Kaydediliyor...');
-  return api('/assignments/' + id + '/update', 'POST', g).then(function (d) {
+  return quizIstegi.then(function () {
+    return api('/assignments/' + id + '/update', 'POST', g);
+  }).then(function (d) {
+    if (quizKilidi) {
+      /* Kilitli quizin düzenleyicisi sunucudaki hâliyle çizilir. */
+      return api('/assignments/' + id + '/quiz').then(function (r) {
+        if (r.quiz) quizAlaniYenile('duzelt', r.quiz);
+      })['catch'](function () { quizYenidenCiz('duzelt'); }).then(function () {
+        dugmeBitir(el);
+        mesajGoster('odMesaj', 'uyari', 'Ödevin öbür değişiklikleri kaydedildi; quiz kaydedilemedi: ' + quizKilidi);
+        odevAc(id)['catch'](function () { /* kontrol ekranı sonra yenilenir */ });
+      });
+    }
     modalKapat();
     return odevAc(id).then(function () { sayfaMesaji('iyi', d.message); });
   })['catch'](function (e) { dugmeBitir(el); mesajGoster('odMesaj', 'hata', e.message); });

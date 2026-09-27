@@ -70,6 +70,18 @@ function bekleniyor(ad, cevap, izinliMi) {
     studentIds: [o1.id, o2.id], endAt: yarin }, O);
   const odevId = odevDen.body.assignment ? odevDen.body.assignment.id : 'yok';
 
+  /* Quizli iki ödev: biri öğrencinin çözdüğü (başlat, cevap, çıkış, bitir),
+     öbürü öğretmenin yeniden yazdığı (kimse başlamadığı için kilitli değil). */
+  const denQuiz = () => ({ sorular: [{ tur: 'dy', metin: 'Denetim sorusu', dogru: true }, { tur: 'acik', metin: 'Açık uçlu denetim' }] });
+  const quizDen = await iste('/api/assignments', 'POST', { title: 'Denetim quizi', subject: 'Matematik',
+    studentIds: [o1.id, o2.id], endAt: yarin, endTime: '23:59', quiz: denQuiz() }, O);
+  const quizId = quizDen.body.assignment ? quizDen.body.assignment.id : 'yok';
+  const qSoru = quizDen.body.quiz ? quizDen.body.quiz.sorular[0] : { id: 'yok', secenekler: [{ id: 'yok' }] };
+  const quizYazDen = await iste('/api/assignments', 'POST', { title: 'Denetim quizi (yazılan)', subject: 'Matematik',
+    studentIds: [o1.id, o2.id], endAt: yarin, quiz: denQuiz() }, O);
+  const quizYazId = quizYazDen.body.assignment ? quizYazDen.body.assignment.id : 'yok';
+  const Q = '/api/assignments/' + quizId + '/quiz';
+
   /* Veli birinci öğrencinin velisi; öğrenci bir serviste (binmeyecek işareti için). */
   const denSv = await iste('/api/servis/kaydet', 'POST', { ad: 'Denetim yoklama servisi' }, M);
   if (denSv.body.id) await iste('/api/servis/ogrenci', 'POST', { servisId: denSv.body.id, ogrenciId: o1.id }, M);
@@ -202,7 +214,20 @@ function bekleniyor(ad, cevap, izinliMi) {
     /* --- ödev teslim dosyaları --- */
     ['odev teslim listesi', '/api/odev-dosya?odev=' + odevId, 'GET', null, ['mudur', 'ogretmen', 'ogrenci']],
     ['cocugun teslim listesi', '/api/odev-dosya?odev=' + odevId + '&ogrenci=' + o1.id, 'GET', null,
-      ['mudur', 'ogretmen', 'ogrenci', 'veli']]
+      ['mudur', 'ogretmen', 'ogrenci', 'veli']],
+
+    /* --- ödevin quizi: öğrenci uçları yalnız ödevin öğrencisine, öğretmen uçları
+       yalnız ödevi verene (müdür yalnız sahipsiz ödevde); veli hiçbirine giremez
+       (puanı /progress'ten görür). Sıra önemli: yazma başlatmadan, bitir cevaptan sonra. --- */
+    ['quiz metin onizlemesi', '/api/assignments/quiz-metin', 'POST', { metin: '1) Soru\n*A) a\nB) b' }, ['mudur', 'ogretmen']],
+    ['quiz yaz', '/api/assignments/' + quizYazId + '/quiz', 'POST', { quiz: denQuiz() }, ['ogretmen']],
+    ['quiz gorunumu', Q, 'GET', null, ['ogretmen', 'ogrenci']],
+    ['quiz baslat', Q + '/basla', 'POST', {}, ['ogrenci']],
+    ['quiz cevap', Q + '/cevap', 'POST', { soruId: qSoru.id, secilenler: [qSoru.secenekler[0].id] }, ['ogrenci']],
+    ['quiz sekme kaydi', Q + '/odak', 'POST', { sure: 3, soruId: qSoru.id }, ['ogrenci']],
+    ['quiz bitir', Q + '/bitir', 'POST', {}, ['ogrenci']],
+    ['quiz ogrenci ayrintisi', Q + '/ayrinti?ogrenci=' + o1.id, 'GET', null, ['ogretmen']],
+    ['quiz sonuclari ac', Q + '/sonuc-ac', 'POST', {}, ['ogretmen']]
   ];
 
   console.log('=== HER UC x HER ROL ===');

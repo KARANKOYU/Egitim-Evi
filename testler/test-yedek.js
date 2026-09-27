@@ -39,6 +39,18 @@ function kontrol(ad, sart, detay) {
     method: 'POST', body: Buffer.from('yedek dosyası'),
     headers: { Authorization: 'Bearer ' + o1.token, 'Content-Type': 'application/octet-stream', 'X-Dosya-Adi': 'yedek.txt' } });
   const dosyaId = (await yukle.json()).dosya.id;
+  /* Quiz: soruları, şıkları (doğrularıyla), öğrencinin bitmiş denemesi ve cevapları. */
+  const quizOdev = (await iste('/api/assignments', 'POST', { title: 'Yedek quizi', subject: 'Matematik', studentIds: [o1.user.id],
+    endAt: yarin, quiz: { sureTuru: 'quiz', toplamDk: 20, cikincaKapanir: true, sonucGorunum: 'hemen', sorular: [
+      { tur: 'coktan', metin: 'Yedek sorusu', secenekler: [{ metin: 'a', dogru: true }, { metin: 'b' }, { metin: 'c', dogru: true }] },
+      { tur: 'acik', metin: 'Yedek açık uçlu' }] } }, mat.token)).body;
+  const quizId = quizOdev.assignment.id;
+  const quizYolu = '/api/assignments/' + quizId + '/quiz';
+  const qb = (await iste(quizYolu + '/basla', 'POST', {}, o1.token)).body;
+  await iste(quizYolu + '/cevap', 'POST', { soruId: qb.sorular[0].id,
+    secilenler: [qb.sorular[0].secenekler[0].id, qb.sorular[0].secenekler[2].id] }, o1.token);
+  await iste(quizYolu + '/cevap', 'POST', { soruId: qb.sorular[1].id, metin: 'Yedekteki cevap' }, o1.token);
+  await iste(quizYolu + '/bitir', 'POST', {}, o1.token);
 
   console.log('=== 1) YEDEK ALMA ===');
   const al = await iste('/api/admin/backup-now', 'POST', {}, T);
@@ -113,6 +125,16 @@ function kontrol(ad, sart, detay) {
   const dosyaGeri = await iste('/api/odev-dosya?odev=' + odev, 'GET', null, o1b.token);
   kontrol('teslim dosyasının kaydı geri geldi', (dosyaGeri.body.dosyalar || []).some(d => d.id === dosyaId && d.ad === 'yedek.txt'),
     JSON.stringify(dosyaGeri.body).slice(0, 160));
+  const matB = await girisYap('mat', 'Test1234!');
+  const quizGeri = (await iste(quizYolu, 'GET', null, matB.token)).body.quiz || {};
+  kontrol('quiz, ayarları, soruları ve doğru şıkları geri geldi', quizGeri.sureTuru === 'quiz' && quizGeri.toplamDk === 20 &&
+    quizGeri.cikincaKapanir === true && quizGeri.sonucGorunum === 'hemen' && (quizGeri.sorular || []).length === 2 &&
+    quizGeri.sorular[0].secenekler.filter(s => s.dogru).length === 2 && quizGeri.sorular[1].metin === 'Yedek açık uçlu' &&
+    quizGeri.kilitli === true, JSON.stringify(quizGeri).slice(0, 200));
+  const quizOgr = (await iste(quizYolu, 'GET', null, o1b.token)).body;
+  kontrol('öğrencinin denemesi, puanı ve cevapları geri geldi', quizOgr.durum === 'bitti' && quizOgr.sonucAcik === true &&
+    quizOgr.sonuc && quizOgr.sonuc.dogruSayisi === 1 && quizOgr.sonuc.puanliSayisi === 1 && (quizOgr.sorular || []).length === 2 &&
+    quizOgr.sorular[1].cevap && quizOgr.sorular[1].cevap.metin === 'Yedekteki cevap', JSON.stringify(quizOgr).slice(0, 200));
 
   const yon = (await iste('/api/servis', 'GET', null, M3)).body;
   const ys = (yon.servisler || []).find(x => x.id === servis.body.id);

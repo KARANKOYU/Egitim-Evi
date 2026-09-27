@@ -131,10 +131,11 @@ function ekYukleniyor(kimlik) {
   return !!EKLER[kimlik] && EKLER[kimlik].dosyalar.some(function (d) { return d.durum === 'yukleniyor'; });
 }
 
-/* Okuma tarafı: mesajın ya da ödevin ekleri, indirme düğmesiyle. */
-function ekListesiGoster(ekler) {
-  if (!ekler || !ekler.length) return '';
-  return '<div class="ekler-kutu"><h4>Ekler</h4><ul class="ek-liste">' + ekler.map(function (e) {
+/* Okuma tarafı: mesajın ya da ödevin ekleri, indirme düğmesiyle.
+   ilkSatir: listenin başına konan hazır satır (ödevin quizi, 14c-quiz.js). */
+function ekListesiGoster(ekler, ilkSatir) {
+  if ((!ekler || !ekler.length) && !ilkSatir) return '';
+  return '<div class="ekler-kutu"><h4>Ekler</h4><ul class="ek-liste">' + (ilkSatir || '') + (ekler || []).map(function (e) {
     var kalan = Math.ceil((new Date(e.bitis).getTime() - Date.now()) / 86400000);
     return '<li class="ek-satir' + (e.suresiDoldu ? ' soluk-satir' : '') + '">' + ik('belge') +
       '<span class="ek-ad"><b>' + esc(e.ad) + '</b><small>' + boyutYazi(e.boyut) + ' · ' +

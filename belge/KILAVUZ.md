@@ -23,9 +23,9 @@ okulunun adresinden girer; okul o sayfayı kendi fotoğrafları ve renkleriyle d
 
 | Kim | Ne görür, ne yapar |
 |---|---|
-| **Öğrenci** | Ödevlerini görür, dosya teslim eder, önemli ödevi yıldızlar; sınav notlarını, grafiğini, devamsızlığını, ders programını ve etütlerini takip eder |
+| **Öğrenci** | Ödevlerini görür, dosya teslim eder, ödevdeki quizi çözer, önemli ödevi yıldızlar; sınav notlarını, grafiğini, devamsızlığını, ders programını ve etütlerini takip eder |
 | **Veli** | Çocuğunun ödevlerini, notlarını, devamsızlığını görür; servise bindiğini, okula vardığını, eve bırakıldığını ve servisin nerede olduğunu öğrenir; birden çok çocuğu tek hesaptan izler |
-| **Öğretmen** | Ödev verir ve sonuçlandırır, sınav açar ve not girer, yoklama alır, sınıfına ya da velilere mesaj yazar |
+| **Öğretmen** | Ödev verir (isterse içine quiz koyar, cevapları okur) ve sonuçlandırır, sınav açar ve not girer, yoklama alır, sınıfına ya da velilere mesaj yazar |
 | **Müdür** | Sınıfları, dersleri, ders programını, öğretmen ve öğrenci hesaplarını, rolleri ve yetkileri yönetir; okulun giriş sayfasını düzenler |
 | **Servisçi** | Okulun servis saatlerinde **Yoklama** alır (sabah Bindi / Binmedi, akşam Geldi / Gelmedi ve İndi), sırayı düzenler, velilere not yazar; sefer sürerken konumu velilere görünür |
 | **Sistem yöneticisi** | Okulu açar ve müdürünü kişi koduyla atar, müdürleri yönetir, yedek alır |
@@ -44,6 +44,9 @@ doğum tarihi eşleşirse aynı hesabı kendi okuluna alır. Eski okulun kayıtl
 - **Ödev:** sınıfa ya da seçilen öğrencilere ödev, teslim dosyası (fotoğraf, belge,
   video; öğretmen fotoğrafı, videoyu ve sesi indirmeden açar), öğrencinin ödevi açıp açmadığı, sonuç (yaptı, geç yaptı, eksik, yapmadı,
   gelmedi), sonradan düzeltme, yıldız ve süzgeçler.
+- **Quiz:** ödevin içinde Doğru/Yanlış, çoktan seçmeli (bir ya da birden çok doğru) ve açık
+  uçlu sorular; Word'den yapıştırma, süresiz, soru başına ya da bütün quiz için süre, tek
+  deneme, sekme değiştirme kaydı; öğretmen her öğrencinin cevaplarını ve yanlışlarını görür.
 - **Sınav:** hazır şablonlar (Yazılı 0–100, LGS 0–500, doğru/yanlış/boş/net), ondalıklı
   notlar, sınav grupları ve ağırlıklı ortalama, öğrencinin gelişim grafiği.
 - **Devamsızlık ve etüt:** ders yoklaması, etüt günü ve saatinde "geldi / izinli / izinsiz".
@@ -764,6 +767,7 @@ gitmez.
 Öğretmen ödevi sonuçlandırınca öğrenciye **"Matematik dersinden "Oran orantı" ödevi
 açıklandı: Yaptı"** gider; sonuç sonradan değişirse "... ödevi sonucu değişti: Geç yaptı".
 Sınav sonucu ilk girildiğinde **"Matematik dersinden "2. Yazılı" sınavının sonucu açıklandı."**
+Quizin sonucu öğrenciye açılınca (bir kez) **"Matematik dersinden "Oran orantı" quizinin sonucu açıklandı."**
 
 ### Öğrencinin bildirimi veliye de gider
 
@@ -924,7 +928,8 @@ Etüt, okulun belli bir gününde belli saatler arasında yapılan ders dışı
 
 - **Ödev**: sonuçlanmış ödevin sonuçları ("Sonuçları düzenle") ve ödevin
   kendisi (ad, açıklama, tarihler: "Ödevi düzenle") sonradan değiştirilebilir.
-  Ad ya da son teslim değişirse öğrencilere haber gider.
+  Ad ya da son teslim değişirse öğrencilere haber gider. Ödevin quizi ise yalnızca hiçbir
+  öğrenci başlamadıysa değişir.
 - **Mesaj**: gönderilmiş mesajın konusunu ve metnini yalnızca gönderen
   düzeltir ("Düzelt"). Alıcıya yeniden bildirim gitmez; mesajda
   "düzenlendi" ve saati görünür.
@@ -969,7 +974,7 @@ Müdür menüdeki **Özellikler** sayfasından okulunda kullanmadığı bölüml
 - Sunucu da reddeder: kapalı bölümün her ucu 403 döner (`ozellikKapali`). Veli,
   çocuğunun okulunun kuralına tabidir; istekteki öğrenci ancak kişinin bağlı olduğu çocuksa
   sayılır (başka okulun öğrenci kimliğini eklemek kapıyı açmaz). İlerleyiş ve takvim kapalı bölümü atlar;
-  ödevler kapalıysa ödev hatırlatması da gitmez.
+  ödevler kapalıysa ödevin quizi de kapanır ve ödev hatırlatması gitmez.
 - **Kayıtlar silinmez.** Yeniden açılınca ödevler, notlar, yoklamalar eskisi gibi görünür.
 - Değişiklik işlem kaydına yazılır. Tablo: `okul_kapali_ozellikler` (şema 022);
   sunucu listeyi açılışta belleğe okur, her istekte veritabanına gitmez.
@@ -1001,6 +1006,7 @@ Nakil gelen öğrencide (ve velisinde) seçicinin altında **Önceki okullar** g
   **Tümünü seç** ve **Tümünü kaldır** düğmeleri var, üstte kaç kişi seçili yazar.
 - Birden fazla sınıfa aynı anda ödev verilebilir.
 - Aynı anda **birden fazla aktif ödev** olabilir.
+- Ödeve isteğe bağlı bir **quiz** eklenir (aşağıda "Quiz").
 - Ödev bitince **Sonuçlandır** → ödev kontrol ekranı: üstte ödevin adı, altında konusu,
   altında ödevin verildiği öğrenciler alt alta. Her öğrencinin yanındaki kutudan sonuç
   seçilir: **Yaptı · Geç yaptı · Eksik · Yapmadı · Gelmedi (izinli) · Gelmedi (izinsiz)**.
@@ -1073,6 +1079,206 @@ listesini görür; mesaj alıcısı mesajın altında görür.
 Yüklenen dosya önce "taslak"tır; mesaj gönderilince ya da ödev kaydedilince bağlanır.
 Bağlanmayan taslaklar da 7 günde silinir. Başkasının taslağı bağlanamaz.
 
+### Quiz
+
+Öğretmen ödeve bir quiz ekleyebilir (ödev başına tek quiz); öğrenci ödevi açıp quizi sitede ya da
+telefona kurulan site uygulamasında çözer. Quiz ödevin parçasıdır: **Özellikler**'de ödevler kapalıysa
+quiz de kapalıdır (403 `ozellikKapali`), ödev silinince quiz, denemeler ve cevaplar da silinir.
+
+**Hazırlama (öğretmen).** **Yeni ödev ver** ve **Ödevi düzenle** pencerelerinde **Quiz ekle**, pencerenin
+içinde açılıp kapanan bir bölümdür (ikinci pencere açılmaz; bölüm açıkken pencere genişler ve dışına
+tıklayınca kapanmaz, yazılan sorular kaybolmasın diye).
+
+- **Soru türleri:** **Doğru/Yanlış** (doğru cevap Doğru ya da Yanlış seçilir) · **Çoktan seçmeli** (2–10
+  şık, her şıkta "Doğru" kutusu; en az bir doğru, birden çok da olabilir; en az bir şık yanlış olmalı, yoksa
+  "Birden çok şık seçebilirsin" notu cevabı ele verir: iki şıklı, iki doğrulu soru gibi) · **Açık uçlu** (öğrenci yazar;
+  puanlanmaz, yalnızca saklanır, öğretmen kontrol ederken okur). Soru metni çok satırlı olabilir; sorular
+  yukarı/aşağı taşınır ve silinir.
+- **Süre:** **Süresiz** · **Soru başına** (her soruya 10 sn – 10 dk) · **Bütün quiz** (1–180 dk).
+- **Uygulamadan/sekmeden çıkınca o soru kapanır** (isteğe bağlı). Çıkışlar bu seçenek kapalıyken de kaydedilir.
+  Düzenleyicide not: kayıt öğrencinin tarayıcısından gelir; caydırıcıdır, kesin kanıt değildir.
+- **Sonuçlar öğrenciye:** **Son teslimden 10 dakika sonra görünsün** (varsayılan) ya da **Hemen görünsün
+  (bitirince)**. Altındaki not: Son tarihi olmayan ödevde sonuçlar öğretmen açınca ya da ödev
+  sonuçlandırılınca görünür; "Hemen" seçilirse önce bitiren doğru cevapları görür; herkes aynı anda
+  çözmüyorsa cevaplar yayılabilir.
+- **Metinden ekle:** Word'den ya da düz metinden yapıştırılan sorular sunucuda ayrıştırılır
+  (`POST /api/assignments/quiz-metin`); yazmayı bırakınca önizleme listesi ve satır hataları çıkar
+  ("11. satır: 4. soruda doğru şık işaretli değil."). **Ekle** soruları düzenleyiciye aktarır, orada
+  düzeltilir. Biçim:
+
+  ```
+  1) Soru metni (sonraki satırlara taşabilir)
+  *A) doğru şık
+  B) yanlış şık
+  C) *doğru şık          ← yıldız şık harfinin arkasında da olabilir
+  2) Güneş bir yıldızdır.
+  Cevap: Doğru           ← Doğru/Yanlış sorusu (Doğru | Yanlış | D | Y)
+  3) Açık uçlu soru      ← şıksız soru açık uçludur
+  ```
+
+  Numara `1)` `1.` `1-` (Word'ün tireyi çevirdiği `1–` `1—` de), şık `A)` `a)` `A.` biçiminde olabilir;
+  yıldızın benzerleri (`∗` `＊`) de doğru işareti sayılır. Word'den gelen görünmez karakterler (sıfır
+  genişlikli boşluk, yumuşak tire, yön işaretleri) temizlenir. "3.5 kg" gibi sayıyla başlayan satır soru
+  sayılmaz; sorunun ilk şıkkı A olmalıdır, böylece soru metnindeki "I." "II." öncülleri şık sanılmaz.
+  J'den sonraki harf ancak sıradaki şıksa şık sayılır: 11. şık `K)` ise "en fazla 10 şık" hatası çıkar.
+  Şıkka benzeyen ama tanınmayan satır (`A- şık`, `A: şık`, ilk şıkkı B olan soru) uyarı verir: "7. satır
+  şıkka benziyor ama tanınmadı; önceki şıkka eklendi." Metinde 100'den çok soru varsa sonrası alınmaz ve bu
+  bildirilir. İlk sorudan önceki satırlar (başlık, yönerge) tek sorunda toplanır; en çok 50 sorun
+  listelenir, sonrası "Ve 12 sorun daha." diye özetlenir. Önizleme isteği öğretmen başına 10 dakikada 300.
+  **Ekle**'den sonra sorunlu sorular düzenleyicide kırmızı çerçeveyle ve sorunuyla işaretlenir (soru
+  numarası düzenleyicideki sıraya çevrilir; soruya yazınca kalkar); bir soruya bağlanmayan sorunlar
+  bilgi kutusunda kalır.
+- **Önizle:** öğretmen quizi öğrenci gibi görür (soru başına sürede sırayla); tarayıcıda çalışır, hiçbir
+  şey kaydedilmez. Kontrol ekranından da açılır.
+- **Sınırlar:** en çok 100 soru; soru metni 1000, şık 300, açık uçlu cevap 2000 karakter; resim ve formül
+  yok. İstemci ve sunucu aynı sınırları denetler; sınırı aşan metin kırpılmaz, hata verir, hatalı soru
+  kırmızı çerçeveyle gösterilir.
+- Yeni ödevde quiz ödevle aynı işlemde yazılır: quiz bozuksa ödev de verilmez. **Ödevi düzenle**'de quiz
+  değiştiyse önce quiz kaydedilir. Pencere açıkken bir öğrenci başladıysa quiz kaydedilmez (409 kilitli):
+  quiz bölümü kilitli çizilir, ödevin ad, açıklama ve tarih değişiklikleri yine kaydedilir ve pencerede
+  "Ödevin öbür değişiklikleri kaydedildi; quiz kaydedilemedi: 1 öğrenci başladı; ..." yazar.
+- **Kilit:** öğrencilerden biri başladıysa quiz değiştirilemez ve kaldırılamaz ("3 öğrenci başladı; quiz
+  artık değiştirilemez."); yalnızca **Önizle** kalır. Denetim quiz satırı kilitlenerek yapılır, aynı anda
+  başlayan öğrenciyle yarışmaz.
+- Quizi yazmak **Ödev verir**, sonuçları açmak **Ödev sonuçlandırır** yetkisi ister (derse göre daraltılır).
+
+**Çözme (öğrenci).** Ödev penceresinin **Ekler** listesinin başında "Quiz · 10 soru · 20 dk" satırı ve
+**Quizi başlat** düğmesi durur. Düğme önce kurallar sayfasını açar (soru sayısı, süre, tek hak, sekme
+kaydı, sonucun ne zaman açılacağı); asıl başlatma oradaki **Şimdi başla**'dır. Öğrencinin ödev listesinde
+"Quiz: çözmedin", "Quiz: devam ediyor", "Quiz: bitirdin · 2/4 (%50)" yazar.
+
+- **Başlatma şartları** (sunucu denetler): yalnızca ödevin öğrencisi; ödev sonuçlandırılmamış; başlama
+  tarihi ve saati geçmiş; son teslim geçmemiş; sonuçlar kalıcı açılmamış (öğretmen **Sonuçları şimdi aç**
+  dedi ya da son teslimle açılan sonucu bitiren biri gördü). Başlatamayan öğrenci nedenini
+  görür ("Quiz 03.10.2026 09:00 tarihinde açılacak."). Quizi başlatan öğrencinin ödevi "açıldı" sayılır.
+- **Tek deneme:** deneme satırının anahtarı (ödev, öğrenci); aynı anda gelen iki "Başlat" tek deneme açar,
+  ikinci başlatma süren denemeyi döndürür. İkinci hak verilmez.
+- Soru metinleri yalnızca deneme başladıktan sonra gönderilir. **Doğru şık bilgisi** öğrenciye sonuç
+  açılana dek hiç gitmez: ne quiz ucunda, ne `/api/progress`'te, ne ödev nesnesinde.
+- Çözme ekranı bir **sayfadır** (perdeye tıklayınca kapanan pencere değil): üstte kalan süre (sunucunun
+  saatine göre) ve "Soru 3/10". Tek doğrulu soruda radyo düğmesi, birden çok doğrulu soruda kutucuk ve
+  "Birden çok şık seçebilirsin." Şık seçilince hemen, açık uçlu cevap yazmayı bırakınca (1,2 sn) ya da
+  kutudan çıkınca kaydedilir: "Kaydedildi · 14:03:12"; kaydedilemezse **Tekrar dene**. Sayfa yenilenince
+  kaldığı sorudan sürer (sekmenin belleğinde); sekme kapanıp yeniden açılınca ilk boş sorudan.
+  Öğretmenin quizi değiştirdiği anda başlatan öğrenciye güncel sorular gider (başlatma, quiz satırının
+  kilidini bekler; sorular ondan sonra okunur).
+- **Süresiz ve bütün quiz:** sorular arasında serbest gezinme (**Önceki / Sonraki**, soru numaraları) ve
+  onaylı **Bitir**. Bütün quizde süre bitince sunucu denemeyi kapatır. Süresiz quizde kapanmasına (son
+  teslim + 10 dk) bir saatten az kalınca "kapanmasına" sayacı çıkar.
+- **Soru başına:** sorular sırayla gelir, geri dönülmez; öğrenciye yalnızca o anki soru gönderilir.
+  **Sonraki soru** (boş geçerken onay sorar), son soruda onaylı **Bitir**; süre dolunca sonraki soruya
+  kendiliğinden geçilir. Süre sunucuda işler: bağlantı koparsa durmaz, dönünce süresi geçmiş sorular
+  kapanmış olur ve kaldığı sorudan sürer (bir sorunun süresi bitince sonraki soru o anda başlamış sayılır).
+- **Gecikme payı 3 sn:** süre bittikten sonraki 3 saniye içinde sunucuya ulaşan cevap kabul edilir.
+- Deneme en geç **son teslim + 10 dakikada** biter (son teslimden hemen önce başlayan da bitirebilsin;
+  teslim dosyalarındaki pay gibi). Süresi dolan denemeler okunurken ve dakikada bir çalışan `quizTemizle`
+  (sunucu/index.js) ile kapanır.
+- Ödev **Sonuçlandır** denince quiz kapanır: yeni başlatma olmaz, süren denemeler biter (süresi zaten
+  dolmuşsa o anda ve "süre doldu" nedeniyle). Bitiren varsa doğru cevaplar açılmıştır ve bu açılış
+  **kalıcıdır**: **Tekrar aç** yalnızca ödevi yeniden açar, quiz bir daha başlatılamaz (quizi çözmemiş
+  öğrenci cevapları arkadaşından öğrenmiş olabilir; tek hak kuralı). Tekrar aç önce sorar: "Quizin doğru
+  cevapları açıklandığı için quizi çözmemiş 5 öğrenci quizi başlatamaz; yalnızca ödev yeniden açılır."
+  Kimse bitirmeden sonuçlandırılan ödevde açılış kalıcı olmaz; tekrar açınca başlamamış öğrenci çözebilir.
+
+**Sekme ya da uygulama değiştirme.** Yalnızca `visibilitychange` dinlenir (`blur` bildirim perdesinde de
+tetiklendiği için sayılmaz); 2 saniyeden kısa çıkış sayılmaz. Quiz sürerken sitenin başka bir sayfasına
+geçmek (menü, geri tuşu) de çıkıştır: quiz sayfasına dönünce bildirilir (o arada sekme değişirse aynı çıkış
+sürer; başka quize dönülürse eskisinin çıkışı yine gider). Dönünce `POST .../quiz/odak {sure, soruId}`
+`fetch` `keepalive` ile gider (oturum `Authorization` başlığında taşındığı için `sendBeacon` işe yaramaz);
+sekme dışarıdayken kapanırsa o ana kadarki süre `pagehide` ile gider. Sunucu adedi ve toplam saniyeyi
+sayar; dışarıda geçen süre denemenin süresini aşamaz. Öğrenci kurallar sayfasında uyarılır, dönünce
+"Quizden çıktığın kaydedildi." görür. **Çıkınca o soru kapanır** seçiliyse çıkarken açık olan soru kapanır
+("Quizden çıktığın için kapandı"): soru başına sürede sonraki soruya geçilir; serbest modda yalnızca o
+soru kapanır, öbürleri sürer, bütün sorular kapanırsa deneme biter. Kapanacak soruyu sunucu seçer: soru
+başına sürede kendi kaydından (istemcinin `soruId`'si kullanılmaz; çıkarken açık olan soru dışarıdayken
+süresi dolup kapandıysa öğrenci dışarıdayken açılan sonraki soru kapanmaz), serbest modda ekrandaki soru;
+`soruId` boş ya da bu quizin sorusu değilse en son cevaplanan açık soru (o da yoksa ilk açık soru).
+Algılama tarayıcıda yapılır ve atlatılabilir (değiştirilmiş istemci hiç bildirmeyebilir; ikinci pencere ya
+da başka cihaz görünmez; serbest modda cevaplanmış soruya geçip çıkan öğrencinin kapanan sorusu o olur);
+kayıt kanıt değil, caydırıcı bir göstergedir. Öğretmenin ayrıntı penceresinde de bu yazar.
+
+**Puan.** Eşit ağırlık; yalnızca Doğru/Yanlış ve çoktan seçmeli sorular. Seçilen şıklar doğru şıklarla
+birebir aynıysa puan alınır (kısmi puan yok; fazladan bir yanlış şık puanı sıfırlar); boş soru yanlış
+sayılır. **Açık uçlu soru puanlanmaz.** Gösterim: "8/10 (%80) · 2 açık uçlu soru puanlanmaz". Puan yalnızca
+**öneridir**: ödevin sonucunu (Yaptı, Eksik...) öğretmen yine kendisi seçer; ödev serisi ve grafikler
+yalnızca öğretmenin seçtiği sonucu kullanır.
+
+**Sonucun açılması.** Sonuç yalnızca denemesi bitmiş öğrenciye açılır:
+
+| Seçenek | Ne zaman açılır |
+|---|---|
+| Son teslimden sonra (varsayılan) | Son teslim + 10 dakika geçince (o ana kadar bütün denemeler biter); son tarihi olmayan ödevde öğretmen açınca. Öğrenciye açılış saati yazılır ("30 Eylül 2026, Çarşamba · 17:10") |
+| Hemen | Öğrenci bitirince (erken bitiren cevapları yayabilir; seçenek bunu bilerek seçilir) |
+| İkisinde de | Öğretmen **Sonuçları şimdi aç** deyince ya da ödev sonuçlandırılınca |
+
+- Sonuç açılınca öğrenci puanını, kendi cevaplarını, doğru cevapları (yeşil), yanlış seçimlerini
+  (kırmızı) ve açık uçlu cevabını görür. Sonuç kapalıyken bitirmiş öğrenciye sorular gönderilmez; ekranda
+  ne zaman açılacağı yazar.
+- Sonuç açılınca öğrenciye bir kez bildirim gider, velisine kopyası: **"Matematik dersinden "Oran orantı"
+  quizinin sonucu açıklandı."**
+- **Sonuçları şimdi aç** sonuçları kalıcı açar: başlamamış öğrenci quizi artık başlatamaz, **çözmekte olan
+  öğrencinin denemesi o an biter** (bitirenin gördüğü doğru cevapla cevabını düzeltemesin; neden
+  `sonuclandi`: "Öğretmen quizi kapattı"). Onay penceresi kaç öğrencinin quizinin biteceğini söyler.
+- Son teslimle açılan sonuç, bitirmiş biri doğru cevapları görebildiği an kalıcı olur (öğrenci quize
+  bakınca, dakikalık temizlikte ve **Ödevi düzenle** kaydedilmeden önce): son teslim ileri alınsa da
+  sonuçlar kapanmaz, quiz yeniden başlatılamaz; öğretmene "Quizin sonuçları açıklandığı için quiz yeniden
+  başlatılamaz." yazar. Bitiren yoksa (kimse doğru cevabı görmediyse) kalıcı olmaz, tarih uzatılınca quiz
+  yeniden başlatılabilir.
+- **Tekrar aç** açıklanmış sonuçları kapatmaz: bitirenler sonucunu görmeye devam eder, quiz yeniden
+  başlatılamaz (yukarıda).
+
+**Veli.** Ödev listesinde ve satıra tıklayınca açılan pencerede yalnızca durum (başlamadı, devam ediyor,
+bitirdi) ve sonuç açıldıktan sonra puan görür; soruları, cevapları ve sekme kaydını görmez. Öğrencinin
+portalından bakan müdür ve öğretmen de `/api/progress` üzerinden yalnızca bu özeti görür.
+
+**Öğretmenin kontrol ekranı** (ödevin sahibi; öğretmeni ayrılmış ödevde müdür). Ekler listesinin başında
+"Quiz · 10 soru · 20 dk" satırı: kaç öğrencinin başladığı, sonuçların ne zaman açılacağı; **Önizle**,
+**Quizi düzenle**, onaylı **Sonuçları şimdi aç**. Her öğrencinin altında rozet: "Quiz: başlamadı",
+"Quiz: devam ediyor", "Quiz: 8/10 · 2 kez çıktı (35 sn)". Rozete tıklayınca ayrıntı açılır: başlama ve
+bitiş (nedeniyle), sekme kaydı, her soru, öğrencinin cevabı, doğru cevap, yanlışlar kırmızı, açık uçlu
+metin; soru başına sürede her sorunun geçen süresi ve kapanma nedeni (süre doldu, çıkınca kapandı).
+Öğrenci hâlâ çözüyorsa boş sorular "Cevaplanmadı" görünür. Ödev listelerinde (öğretmen, müdürün
+**Ödevler**'i, öğrenci, veli) başlığın yanında küçük **Quiz** rozeti durur; öğretmenin listesinde ayrıca
+"Quiz · 5 soru · 20 dk · 12 öğrenciden 3 kişi bitirdi" yazar.
+
+**Uçlar** (`/api/assignments` altında; ödevler kapalıysa 403 `ozellikKapali`, geçmiş yıla bakan
+öğretmenin ve müdürün POST'u 409; öğrenci ödevde değilse 404, ödevde quiz yoksa 404 `quizYok`):
+
+| Uç | Kim | Ne yapar |
+|---|---|---|
+| `GET /api/assignments/:id/quiz` | ödevin öğrencisi | Durum: `quiz` özeti, `simdi` (sunucu saati), `sonTeslim`, `sonucAcilis` (son teslim + 10 dk; son tarih yoksa ya da "Hemen" seçiliyse `null`), `durum` (`baslamadi`, `devam`, `bitti`), `baslatabilir`, `engel`, `deneme`, `sorular` (doğru bilgisi yok; soru başına sürede yalnızca o anki soru), `sonucAcik`, `sonuc` |
+| `POST .../quiz/basla` | ödevin öğrencisi | Başlatır ya da süren denemeyi döndürür; başlatılamazsa 400 `baslatilamaz` (öğrenci başına 10 dakikada 30) |
+| `POST .../quiz/cevap {soruId, secilenler, metin}` | ödevin öğrencisi | Cevabı yazar: `{kaydedildi, soruId}`; quiz bittiyse ya da soru kapandıysa 409 `kapandi` ve güncel durum (10 dakikada 600) |
+| `POST .../quiz/sonraki {soruId}` | ödevin öğrencisi | Soru başına sürede sonraki soru (son soruda deneme biter) |
+| `POST .../quiz/bitir` | ödevin öğrencisi | Denemeyi bitirir, puanı hesaplar |
+| `POST .../quiz/odak {sure, soruId}` | ödevin öğrencisi | Sekmeden, uygulamadan ya da quiz sayfasından çıkış: `cikisSayildi`, `kapananSoru` (kapanacak soruyu sunucu seçer; 10 dakikada 120) |
+| `GET /api/assignments/:id/quiz` | ödevin sahibi (sahipsiz ödevde müdür) | Quizin tamamı doğrularıyla, `baslayan`, `biten`, `kilitli`, `sonucAcik`, `sonucAcildi` (kalıcı açık); düzenleyiciye olduğu gibi yüklenir |
+| `POST /api/assignments/:id/quiz {quiz}` | ödevin sahibi, Ödev verir | Quizi yazar, `{quiz: null}` kaldırır; öğrenci başladıysa 409 `kilitli` |
+| `GET .../quiz/ayrinti?ogrenci=` | ödevin sahibi | Bir öğrencinin cevapları, doğrular, `dogruMu`, `gecenSn`, `kapandi`, deneme ve sekme kaydı |
+| `POST .../quiz/sonuc-ac` | ödevin sahibi, Ödev sonuçlandırır | Sonuçları şimdi açar, süren denemeleri bitirir (`biten`), bildirimleri gönderir (`bildirilen`) |
+| `POST /api/assignments/quiz-metin {metin}` | öğretmen, müdür | Yapıştırılan metnin önizlemesi: `{sorular, hatalar}` (en çok 300.000 karakter; en çok 50 sorun + özet; kişi başına 10 dakikada 300) |
+
+Var olan uçlara eklenenler: `POST /api/assignments` gövdesinde isteğe bağlı `quiz`; `GET /api/assignments`
+ve müdürün `GET /api/school/assignments` listelerinde `quiz` rozeti (soru sayısı, süre, başlayan, biten);
+`GET /api/assignments/:id` cevabında `quiz` ve `students[].quiz`; `POST /:id/finish` cevabında
+`quizBildirilen`; `GET /api/progress`'te `assignments[].quiz` (durum; puan yalnızca sonuç açılınca).
+
+**Tablolar** (şema 029): `quizler` (`odev_id` anahtar: ödev başına tek quiz; süre türü, bütün quiz süresi,
+çıkınca kapanır, sonuç görünümü, `sonuc_acildi`), `quiz_sorulari` (sıra ödev içinde tekil; tür `dy`,
+`coktan`, `acik`; metin; soru süresi), `quiz_secenekleri` (metin, `dogru`), `quiz_denemeleri` (anahtar
+ödev + öğrenci, yani tek deneme; başlama, bitiş ve nedeni, şu anki soru ve başladığı an, çıkış sayısı ve
+saniyesi, doğru ve puanlı soru sayısı, `sonuc_bildirildi`), `quiz_cevaplari` (anahtar ödev + öğrenci +
+soru; seçilen şık kimlikleri, açık uçlu metin, kayıt anı, soru başına sürede açılış ve kapanış, kapanma
+nedeni `sure`, `cikis`, `gecildi`). Deneme ve cevaplar `odev_ogrencileri`'ne bileşik yabancı anahtarla
+bağlıdır (teslim dosyaları gibi): ödevde olmayan öğrencinin satırı yazılamaz; hepsi ödeve CASCADE bağlıdır.
+Doğru şıklar ödev nesnesine (`depo.odevler`) girmez. Quiz yedeğe girer (`quizler`, `quizDenemeleri`);
+eski yedeklerde bu anahtarlar yoksa boş sayılır.
+
+Kod: `sunucu/bolumler/quiz.js` (yönlendirme `odev.js`'de: öğrenci uçları rol kapısından önce, öğretmen
+uçları sahip denetiminden sonra), saf işlevler `sunucu/yardimci/quiz.js` (yapıştırma ayrıştırıcısı,
+doğrulama, puan, süre), depo `sunucu/veri/depo/quiz.js`; ön yüz `public/js/parcalar/14c-quiz.js` ve
+`public/css/parcalar/35-quiz.css`. Testleri `testler/test-quiz.js` ve sunucusuz `testler/test-quiz-metin.js`.
+
 ### Müdürün ödev görünümü
 
 Müdür ödev vermez — **Ödevler** sayfasında derse göre bakar. Her ders bloğunda
@@ -1080,7 +1286,8 @@ sınıf, ders adı, dersin öğretmeni ve haftalık saati yazar; altında o ders
 verilmiş ödevler sıralanır: **kim verdi**, kaç öğrenciye, son teslim ne zaman,
 açıklaması ne.
 
-Üstteki sınıf seçiciyle tek sınıfa daraltılır.
+Üstteki sınıf seçiciyle tek sınıfa daraltılır. Quizli ödevin adının yanında **Quiz** rozeti durur;
+quizin cevaplarını müdür yalnızca öğretmeni ayrılmış (sahipsiz) ödevin kontrol ekranında görür.
 
 ### Filtreleme ve arama
 
@@ -1535,9 +1742,9 @@ Veriler **PostgreSQL** veritabanında tutulur. Şema okunur SQL dosyalarıyla s�
 (`sunucu/veri/sema/001-ilk.sql` ...); sunucu açılışta uygulanmamış olanları sırayla
 uygular ve hangisinin uygulandığını `sema_surumleri` tablosuna yazar.
 
-- 68 tablo (`sema_surumleri` dahil); başlıcaları: okullar, eğitim yılları, sınıflar, roller
+- 73 tablo (`sema_surumleri` dahil); başlıcaları: okullar, eğitim yılları, sınıflar, roller
   ve yetkileri, kullanıcılar, veli bağları, dersler, ders programı, ödevler, öğrencileri ve
-  teslim dosyaları, sınav şablonları, sınavlar, ölçümler ve değerler, devamsızlık, etütler,
+  teslim dosyaları, ödev quizleri (soru, şık, deneme, cevap), sınav şablonları, sınavlar, ölçümler ve değerler, devamsızlık, etütler,
   mesajlar, alıcıları ve okunmaları, anketler (seçenek, hedef, oy), yemek listesi, servisler,
   öğrencileri ve seferleri, servis yoklaması, notları ve "binmeyecek" işaretleri, kulüpler ve
   üyeleri, takvim, hatırlatıcılar, bildirimler, oturumlar, telefon bildirimi abonelikleri ve
@@ -1669,7 +1876,7 @@ altına yazılır. Test sunucusu açıkken (tohum ve zengin veriyle):
 ```
 export EE_BASE=http://localhost:3200 EE_LOG=testler/test-sunucu.log
 node araclar/zengin-veri.js      # dolu bir okul: sınıflar, program, ödevler, sınavlar
-node araclar/gorsel-veri.js      # çok rollü hesaplar, okul sayfası, etüt, servis, kulüp, anket
+node araclar/gorsel-veri.js      # çok rollü hesaplar, okul sayfası, etüt, servis, kulüp, anket, quiz
 node araclar/gezinti.js
 ```
 
@@ -1714,7 +1921,7 @@ eğitim evi/
 │   │   ├── baglanti.js        ← bağlantı havuzu, sorgu(), islem() (transaction), hata çevirisi
 │   │   ├── sema.js            ← şema dosyalarını sırayla uygular
 │   │   ├── sema/001-ilk.sql   ← tablolar, anahtarlar, kısıtlar, indeksler
-│   │   ├── sema/002...028     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
+│   │   ├── sema/002...029     ← sonraki değişiklikler, sırayla (009 okul adresi ve hesaplar,
 │   │   │                        010 servis konumu, 011 telefon bildirimi aboneliği,
 │   │   │                        012 yetişkin hesabı ve okul rolleri, 013 hazır Öğretmen
 │   │   │                        rolü + etütler + mesaj düzeltme, 014 "okul açtı" işareti,
@@ -1723,7 +1930,8 @@ eğitim evi/
 │   │   │                        geçmişi, 022 okul özellikleri, 023 öğretmen yetkileri,
 │   │   │                        024 hatırlatıcılar, 025 ödev başlama saati, 026 Eğitim Evi
 │   │   │                        Aile, 027 kişi kodu ve müdür başvurusunun kalkması, 028 servis
-│   │   │                        yoklaması, servis saatleri, cihaz anahtarı, uygulama oturumu)
+│   │   │                        yoklaması, servis saatleri, cihaz anahtarı, uygulama oturumu,
+│   │   │                        029 ödevin quizi: sorular, şıklar, denemeler, cevaplar)
 │   │   ├── esleme.js          ← satır <-> uygulama nesnesi (ad_soyad <-> fullName)
 │   │   ├── yazici.js          ← genel INSERT/UPDATE (ad doğrulamalı)
 │   │   ├── depo/              ← tablo gruplarına göre sorgular (kullanıcılar, ödevler, sınavlar...)
@@ -1753,6 +1961,7 @@ eğitim evi/
 │   │   ├── odev-dosya.js      ← /api/odev-dosya: teslim dosyası yükleme ve indirme
 │   │   ├── push.js            ← /api/push: bildirim aboneliği
 │   │   ├── odev.js            ← /api/assignments
+│   │   ├── quiz.js            ← /api/assignments/:id/quiz...: ödevin quizi (düzenleme, çözme, süre, sonuç)
 │   │   ├── sinav.js           ← /api/examgroups, /api/exams
 │   │   ├── ilerleyis.js       ← /api/progress, /api/myschedule
 │   │   ├── veli.js            ← /api/parent
@@ -1773,6 +1982,7 @@ eğitim evi/
 │       ├── resim.js           ← fotoğraf türü (ilk baytlar) ve konum bilgisini silme
 │       ├── hatirlatici-zaman.js ← Türkiye saatiyle gün ve an hesabı (hatırlatıcılar, servis saatleri)
 │       ├── servis-pencere.js  ← okulun servis saat aralıkları: şu an hangi dönem, uzatma, sonraki aralık
+│       ├── quiz.js            ← quizin saf işlevleri: yapıştırma ayrıştırıcısı, doğrulama, puan, süre
 │       └── eposta.js          ← SMTP istemcisi
 │
 ├── public/                    ← ÖN YÜZ (tarayıcıya giden her şey)
@@ -1783,8 +1993,8 @@ eğitim evi/
 │   ├── 404.html, okul-bulunamadi.html ← "Sayfa bulunamadı" ve "Okul bulunamadı"
 │   ├── manifest.json, sw.js   ← telefona kurulabilir uygulama (PWA)
 │   ├── js/tema.js             ← açık/koyu tema; sayfa çizilmeden önce çalışır
-│   ├── js/parcalar/           ← arayüz mantığı, 55 parça (00-durum ... 28-grafik; 19i-servis-yoklama)
-│   ├── css/parcalar/          ← stiller, 36 parça (00-temel: renk/tema değişkenleri)
+│   ├── js/parcalar/           ← arayüz mantığı, 56 parça (00-durum ... 28-grafik; 14c-quiz, 19i-servis-yoklama)
+│   ├── css/parcalar/          ← stiller, 37 parça (00-temel: renk/tema değişkenleri)
 │   └── yazitipi/              ← IBM Plex Sans ve Newsreader (woff2, kendi sunucumuzdan)
 │
 ├── data/                      ← VERİ (depoya girmez)
@@ -1803,7 +2013,7 @@ eğitim evi/
 │   ├── gezinti.js             ← her rolün ekranlarını gerçek tarayıcıda gezer, fotoğraflar, hata toplar
 │   ├── tema-ornekleri.js      ← tema seçim sayfasının örnek görüntüleri
 │   ├── zengin-veri.js         ← ekran görüntüleri için dolu bir okul
-│   ├── gorsel-veri.js         ← ekran görüntüleri için ek veri: çok rollü hesaplar, okul sayfası, etüt, servis
+│   ├── gorsel-veri.js         ← ekran görüntüleri için ek veri: çok rollü hesaplar, okul sayfası, etüt, servis, quiz
 │   └── giris.js               ← araçların ortak giriş yardımcısı (2FA kodunu günlükten okur)
 │
 ├── testler/                   ← TESTLER ve DENETİMLER
@@ -1948,5 +2158,7 @@ telefon bildirimi anahtarı sunucuda kalır. Commit atmadan önce `git status` �
   (cihaz anahtarı, bildirim yoklama, servisçinin arka plan konumu, 30 günlük uygulama oturumu).
   Google Play'de yayın da henüz yok.
 - Eğitim Evi Aile için iPhone sürümü (Apple'ın Screen Time izni gerekir).
+- Quiz sorularına resim ya da formül eklemek. Yerel "Eğitim Evi" uygulamasında quiz ekranı: quiz bugün
+  sitede ve telefona kurulan site uygulamasında çözülür; uçlar `/api/assignments/:id/quiz` altında hazır.
 - Tanıtım sayfası, arama motoru ve bağlantı önizlemesi (internete çıkınca)
 - Canlı ders, kitap kurdu, yılın öğrencisi (sonra ele alınacak)

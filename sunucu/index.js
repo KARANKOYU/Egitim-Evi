@@ -163,6 +163,11 @@ const { hatirlaticilariGonder } = require('./bolumler/hatirlatici');
 const hatirlaticiSayaci = setInterval(() => { hatirlaticilariGonder().catch(e => console.error('Hatırlatıcı:', e.message)); }, 60 * 1000);
 if (hatirlaticiSayaci.unref) hatirlaticiSayaci.unref();
 if (hatirlatmaSayaci.unref) hatirlatmaSayaci.unref();
+/* Quiz dakikada bir: süresi (ya da son teslim + 10 dk) dolan açık denemeler
+   kapanır, açılan sonuçların bildirimi gider. */
+const { quizTemizle } = require('./bolumler/quiz');
+const quizSayaci = setInterval(() => { quizTemizle().catch(e => console.error('Quiz temizliği:', e.message)); }, 60 * 1000);
+if (quizSayaci.unref) quizSayaci.unref();
 
 /* Konum gelmeyen ve servis saati (60 dakikalık uzatmasıyla) biten açık
    seferler kapanır; eski seferler ve 30 günü geçen servis yoklaması, notlar,

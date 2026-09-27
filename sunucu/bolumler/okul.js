@@ -27,6 +27,7 @@ const hesaplar = require('./hesaplar');
 const kisiAktarim = require('./kisi-aktarim');
 const { islemYaz } = require('./islem-kaydi');
 const { odevGecikti, odevSaati } = require('./odev');
+const { listeOzetleri } = require('./quiz');
 
 /* ============ Excel aktarımı ============ */
 
@@ -489,9 +490,11 @@ async function uclar(k) {
        hepsini görür, veren kişi yanında yazar. */
     if (sub === 'assignments' && method === 'GET') {
       if (!yetkiGerek('ders.yonet')) return;
-      const dersOdevleri = async l => (await yilSuz(me,
-        await depo.odevler.dersinOdevleri(me.schoolId, l.classId, l.subject)))
-        .map(a => Object.assign(a, { endTime: odevSaati(a), gecikti: odevGecikti(a) }));
+      const dersOdevleri = async l => {
+        const liste = await yilSuz(me, await depo.odevler.dersinOdevleri(me.schoolId, l.classId, l.subject));
+        const quizler = await listeOzetleri(liste.map(a => a.id));   // "Quiz" rozeti
+        return liste.map(a => Object.assign(a, { endTime: odevSaati(a), gecikti: odevGecikti(a), quiz: quizler.get(a.id) || null }));
+      };
 
       const lid = clean(q.get('lessonId'), 60);
       if (lid) {

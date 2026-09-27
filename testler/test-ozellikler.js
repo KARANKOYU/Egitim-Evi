@@ -34,8 +34,9 @@ const gun = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 
   /* Kapatmadan önce bir ödev: yeniden açılınca yerinde olmalı. */
   const odev = await iste('/api/assignments', 'POST', { title: 'Özellik denemesi ' + z, description: 'x', startAt: gun(0),
-    endAt: gun(3), studentIds: [o1.user.id] }, mat.token);
-  kontrol('ödev verildi (kapatmadan önce)', odev.status === 200, J(odev.body));
+    endAt: gun(3), studentIds: [o1.user.id], quiz: { sorular: [{ tur: 'dy', metin: 'Özellik sorusu', dogru: true }] } }, mat.token);
+  kontrol('ödev verildi (kapatmadan önce, quizli)', odev.status === 200 && !!odev.body.quiz, J(odev.body));
+  const quizYolu = '/api/assignments/' + (odev.body.assignment && odev.body.assignment.id) + '/quiz';
 
   console.log('=== 2) ÖDEV VE ETÜT KAPALI ===');
   const kapat = await iste('/api/ozellikler', 'POST', { kapali: ['odev', 'etut'] }, M);
@@ -62,6 +63,11 @@ const gun = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
   kontrol('takvimde ödev yok', takvim.status === 200 && !takvimOdev, 'status ' + takvim.status);
   const ogrOdevDosya = await iste('/api/odev-dosya?odev=' + (odev.body.assignment && odev.body.assignment.id), 'GET', null, o1.token);
   kontrol('öğrenci teslim dosyalarına da giremiyor', ogrOdevDosya.status === 403, 'status ' + ogrOdevDosya.status);
+  const quizKapali = await Promise.all([iste(quizYolu, 'GET', null, o1.token), iste(quizYolu + '/basla', 'POST', {}, o1.token),
+    iste(quizYolu, 'GET', null, mat.token), iste(quizYolu, 'POST', { quiz: null }, mat.token),
+    iste('/api/assignments/quiz-metin', 'POST', { metin: '1) Soru' }, mat.token)]);
+  kontrol('quiz de kapalı: öğrenci ve öğretmen uçları 403 (ozellikKapali)', quizKapali.every(r => r.status === 403 && r.body.ozellikKapali === 'odev'),
+    J(quizKapali.map(r => r.status)));
 
   console.log('=== 3) VELİ ÇOCUĞUN OKULUNA BAKAR ===');
   const vK = 'ozveli' + z;
@@ -85,6 +91,8 @@ const gun = n => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
   const matOdev2 = await iste('/api/assignments', 'GET', null, mat.token);
   kontrol('ödev yerinde (silinmemiş)', matOdev2.status === 200 &&
     (matOdev2.body.assignments || []).some(a => a.title === 'Özellik denemesi ' + z), 'status ' + matOdev2.status);
+  const quizAcik = await iste(quizYolu, 'GET', null, o1.token);
+  kontrol('quiz yerinde, öğrenci yeniden görüyor', quizAcik.status === 200 && quizAcik.body.quiz.soruSayisi === 1, J(quizAcik.body));
   const kayit = await iste('/api/islem-kaydi', 'GET', null, M);
   kontrol('işlem kaydında görünüyor', J(kayit.body).indexOf('okul.ozellik') >= 0, J((kayit.body.kayitlar || []).slice(0, 2)));
 

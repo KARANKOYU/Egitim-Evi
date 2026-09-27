@@ -206,11 +206,11 @@ function odevListesiOgrenci(list) {
       ik('yildiz') + '</button>' : '';
     h += '<div class="satir odev-satir tikla-odev' + (acilmadi ? ' acilmadi' : '') + '" data-act="odev-oku" data-id="' + esc(a.id) + '"' +
       ' data-ara="' + esc(a.title + ' ' + a.subject) + '"' + (acilmadi ? ' title="Henüz açılmadı"' : '') + '>' + yildiz +
-      '<div class="buyu"><div class="ad">' + esc(a.title) + '</div>' +
+      '<div class="buyu"><div class="ad">' + esc(a.title) + quizListeEtiketi(a.quiz) + '</div>' +
       '<div class="alt">' + esc(a.subject) + ' · ' + esc(a.teacherName) +
       (a.endAt ? ' · son teslim ' + tarihGunSaat(a.endAt, a.endTime) : '') + '</div>' +
       (a.description ? '<div class="alt" style="margin-top:4px">' + esc(kisaMetin(a.description, 140)) + '</div>' : '') +
-      '</div>' + sag + '</div>';
+      quizListeDurumu(a.quiz, odevYildizliMi()) + '</div>' + sag + '</div>';
   }
   return h + '</div>';
 }
@@ -253,7 +253,7 @@ EYLEMLER['odev-oku'] = function (el, id) {
     (a.endAt ? '<div>Son teslim: <b>' + tarihGunSaat(a.endAt, a.endTime) + '</b></div>' : '<div>Süresiz</div>') +
     '</div>' + sonuc + '</div>' +
     (a.description ? '<div class="odev-aciklama">' + esc(a.description) + '</div>' : '') +
-    ekListesiGoster(a.ekler));
+    ekListesiGoster(a.ekler, quizOdevSatiri(a, null)));
   if (S.user.role === 'student' && !S.viewStudentId && a.acildi === false) {
     api('/assignments/' + id + '/acildi', 'POST').then(function () {
       a.acildi = true;
