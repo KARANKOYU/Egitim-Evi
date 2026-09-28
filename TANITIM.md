@@ -212,7 +212,8 @@ disk mutabakatı, günlük yedek, `admins.json` yoklaması). Tablosu [sunucu/ind
    `uclar(k)` işlevi çağrılır. `k` = `{ req, res, me, body, q, p, segs, method, need }`.
 7. Hiçbir bölüm cevap yazmazsa `404 {"error":"Böyle bir adres yok"}`.
 
-Bazı bölümler işi başka bölümlere dağıtır: `/api/school` → `okul.js` → `hesaplar.js`, `kisi-aktarim.js`, `nakil.js`;
+Bazı bölümler işi başka bölümlere dağıtır: `/api/school` → `okul.js` → `hesaplar.js` (nakilde o da `nakil.js`'i
+çağırır) ve `kisi-aktarim.js`;
 `/api/admin` → `yonetici.js` → `yonetici-okul.js`, `okul-disk.js`, `site-ayarlari.js`; ödevin quizi
 (`/api/assignments/:id/quiz`) `odev.js` üzerinden `quiz.js`'e. Ayrıntı: [sunucu/api.md](sunucu/api.md).
 
@@ -621,9 +622,10 @@ Tek bir sunuculu paketi elle koşmak için `tumtest.sh`'in `sunucu_baslat` ve d�
   bölümü o dosyada en son neyin değiştiğini ve bilinen açık işi yazar. Kılavuzun "Henüz eklenmeyenler" bölümü
   kullanıcıya görünen eksikleri listeler.
 - **Belgeleme durumu:** belgeler parça parça yazılıyor. 1. parça: bu dosya, `server.md` ve `sunucu/` kökündeki 17
-  dosyanın `.md`'si, statik sunucunun `.md` kapısı. Sıradakiler: `sunucu/bolumler/`; `sunucu/veri/`, `sunucu/yardimci/`
-  ve `SEMA.md`; `public/js/` ve `CSS.md`; `araclar/`, `testler/`, `TESTLER.md` ve `test-belgeler.js`; en son Android
-  deposu. Aşağıdaki haritada belgesi henüz olmayan dosyalar işaretli.
+  dosyanın `.md`'si, statik sunucunun `.md` kapısı. 2. parça bitti: `sunucu/bolumler/`'in 33 dosyasının hepsinin
+  `.md`'si. Sıradakiler: `sunucu/veri/`, `sunucu/yardimci/` ve `SEMA.md`; `public/js/` ve `CSS.md`; `araclar/`,
+  `testler/`, `TESTLER.md` ve `test-belgeler.js`; en son Android deposu. Aşağıdaki haritada belgesi henüz olmayan
+  dosyalar işaretli.
 - Belgeleme sırasında bulunan bilinen bir hata: `sunucu/okullar.js` `okulVeri`'yi yüklenmeden (`null` iken) dışa
   veriyor; `GET /api/okullar/iller` cevabındaki `tipler` bu yüzden hep boş. Ayrıntı [sunucu/okullar.md](sunucu/okullar.md)'de.
 
@@ -664,39 +666,39 @@ Her kod dosyası ve açıklaması, klasör klasör. Belgesi yazılmış olanlar 
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `sunucu/bolumler/aile.js` | Eğitim Evi Aile: çocuğun telefonundan konum ve ekran süresi, velinin ayarları | (belgesi sonraki parçada) |
-| `sunucu/bolumler/anket.js` | `/api/anketler`: tek soruluk anketler, oy, sonuç | (belgesi sonraki parçada) |
-| `sunucu/bolumler/cihaz.js` | `/api/cihaz`: telefon uygulamasının cihaz anahtarı, bildirim yoklama, servis konumu | (belgesi sonraki parçada) |
-| `sunucu/bolumler/devamsizlik.js` | `/api/devamsizlik`: yoklama alma ve özetler | (belgesi sonraki parçada) |
-| `sunucu/bolumler/egitim-yili.js` | `/api/egitim-yili`: yıl açma, yıl damgası, geçmiş yıla salt okunur bakış | (belgesi sonraki parçada) |
-| `sunucu/bolumler/ekler.js` | `/api/ek`: mesaj ve ödev ekleri | (belgesi sonraki parçada) |
-| `sunucu/bolumler/etut.js` | `/api/etut`: etüt açma, öğrencileri, yoklama | (belgesi sonraki parçada) |
-| `sunucu/bolumler/hatirlatici.js` | `/api/hatirlaticilar`: kişisel hatırlatıcılar ve gönderimi | (belgesi sonraki parçada) |
-| `sunucu/bolumler/hesaplar.js` | `/api/school`: öğrenci/servisçi hesabı, öğretmeni kişi koduyla ekleme, veli bağlama, okul adresi | (belgesi sonraki parçada) |
-| `sunucu/bolumler/ilerleyis.js` | `/api/progress`, `/api/myschedule`: öğrencinin ilerleyişi ve programı | (belgesi sonraki parçada) |
-| `sunucu/bolumler/islem-kaydi.js` | `/api/islem-kaydi` ve `islemYaz`: kim ne zaman ne yaptı | (belgesi sonraki parçada) |
-| `sunucu/bolumler/kayit.js` | Kayıt, giriş, iki adımlı kod, şifre, profil, bildirimler, `/api/me` | (belgesi sonraki parçada) |
-| `sunucu/bolumler/kisi-aktarim.js` | `/api/school`: öğrenci ve servisçi listelerinin toplu aktarımı | (belgesi sonraki parçada) |
-| `sunucu/bolumler/kisilik.js` | Yetişkin hesabı: portallar, portala geçiş, kişi kodu, hesap bilgisi, hesabı silme | (belgesi sonraki parçada) |
-| `sunucu/bolumler/mesaj.js` | `/api/mesajlar`: mesajlar ve duyurular | (belgesi sonraki parçada) |
-| `sunucu/bolumler/nakil.js` | Öğrenci nakli: hesabı kişiye ait, yeni okula taşıma | (belgesi sonraki parçada) |
-| `sunucu/bolumler/odev-dosya.js` | `/api/odev-dosya`: teslim dosyası yükleme ve indirme | (belgesi sonraki parçada) |
-| `sunucu/bolumler/odev.js` | `/api/assignments`: ödevler ve teslim saati yardımcıları | (belgesi sonraki parçada) |
-| `sunucu/bolumler/ogretmen.js` | `/api/teacher`: öğretmenin programı ve öğrencileri | (belgesi sonraki parçada) |
-| `sunucu/bolumler/okul-disk.js` | Okul başına disk sınırı: sayım, uyarılar, saatlik mutabakat | (belgesi sonraki parçada) |
-| `sunucu/bolumler/okul-hayati.js` | `/api/yemek`, `/api/servis`, `/api/kulupler`: yemek, servis, kulüpler | (belgesi sonraki parçada) |
-| `sunucu/bolumler/okul-sayfasi.js` | `/api/okul-sayfa`, `/api/okul-foto`: okulun giriş sayfası | (belgesi sonraki parçada) |
-| `sunucu/bolumler/okul.js` | `/api/school`: sınıflar, dersler, ders programı, roller | (belgesi sonraki parçada) |
-| `sunucu/bolumler/ozellikler.js` | `/api/ozellikler`: okulun kapattığı bölümler | (belgesi sonraki parçada) |
-| `sunucu/bolumler/push.js` | `/api/push`: telefon bildirimi aboneliği | (belgesi sonraki parçada) |
-| `sunucu/bolumler/quiz.js` | `/api/assignments/:id/quiz...`: ödevin quizi | (belgesi sonraki parçada) |
-| `sunucu/bolumler/sinav.js` | `/api/exams`, `/api/examgroups`: sınavlar, ölçümler, gruplar | (belgesi sonraki parçada) |
-| `sunucu/bolumler/site-ayarlari.js` | `/api/admin/site-ayarlari`, okul adresleri: yönetim panelinin Site Ayarları | (belgesi sonraki parçada) |
-| `sunucu/bolumler/takvim.js` | `/api/takvim`: resmî tatiller, okul etkinlikleri, ödev teslimleri | (belgesi sonraki parçada) |
-| `sunucu/bolumler/veli.js` | `/api/parent`: çocuk bağlama ve çıkarma | (belgesi sonraki parçada) |
-| `sunucu/bolumler/yonetici-okul.js` | `/api/admin/okul-ac`, `/api/admin/kisi-bul`: yöneticinin okulu kişi koduyla açması | (belgesi sonraki parçada) |
-| `sunucu/bolumler/yonetici.js` | `/api/admin`: müdürler, okullar, yedekler, yönetici dosyası | (belgesi sonraki parçada) |
-| `sunucu/bolumler/yorum.js` | `/api/yorumlar`: açılış sayfasındaki yorumlar | (belgesi sonraki parçada) |
+| `sunucu/bolumler/aile.js` | Eğitim Evi Aile (`/api/aile`): çocuğun telefonundan konum ve ekran süresi (cihaz anahtarıyla), velinin ayarları ve süre sınırı bildirimleri | [sunucu/bolumler/aile.md](sunucu/bolumler/aile.md) |
+| `sunucu/bolumler/anket.js` | `/api/anketler`: tek soruluk anketler (okul, rol ya da sınıfa), oy, sonuç, gizli anket | [sunucu/bolumler/anket.md](sunucu/bolumler/anket.md) |
+| `sunucu/bolumler/cihaz.js` | `/api/cihaz`: telefon uygulamasının cihaz anahtarı, bildirim yoklama, servisçinin sefer konumu | [sunucu/bolumler/cihaz.md](sunucu/bolumler/cihaz.md) |
+| `sunucu/bolumler/devamsizlik.js` | `/api/devamsizlik`: ders yoklaması, tek ders düzeltme, öğrenci/veli dökümü, okul özeti, devamsızlık bildirimi | [sunucu/bolumler/devamsizlik.md](sunucu/bolumler/devamsizlik.md) |
+| `sunucu/bolumler/egitim-yili.js` | `/api/egitim-yili`: yıl açma, aktif yıl, yıl damgası, geçmiş yıla (nakilde eski okula) salt okunur bakış; öteki bölümlerin yıl süzgeci ve arşiv kapısı | [sunucu/bolumler/egitim-yili.md](sunucu/bolumler/egitim-yili.md) |
+| `sunucu/bolumler/ekler.js` | `/api/ek`: mesaj ve ödev ekleri (taslak yükleme, mesaja/ödeve bağlama, biletle indirme, 7 gün sonra silme) | [sunucu/bolumler/ekler.md](sunucu/bolumler/ekler.md) |
+| `sunucu/bolumler/etut.js` | `/api/etut`: etüt açma, öğrencileri, yoklama (öğretmen yalnız etüt günü), öğrencinin etüt dökümü | [sunucu/bolumler/etut.md](sunucu/bolumler/etut.md) |
+| `sunucu/bolumler/hatirlatici.js` | `/api/hatirlaticilar`: kişisel hatırlatıcılar ve dakikalık gönderimi | [sunucu/bolumler/hatirlatici.md](sunucu/bolumler/hatirlatici.md) |
+| `sunucu/bolumler/hesaplar.js` | `/api/school`: öğrenci/servisçi hesabı (aç, düzenle, şifre, sil), öğretmeni kişi koduyla ekleme, veli bağlama, okul adresi ve konumu | [sunucu/bolumler/hesaplar.md](sunucu/bolumler/hesaplar.md) |
+| `sunucu/bolumler/ilerleyis.js` | `/api/progress`, `/api/myschedule`: öğrencinin ödev listesi ve ilerleyişi (ders oranları, sınav ortalamaları, seri) ve programı | [sunucu/bolumler/ilerleyis.md](sunucu/bolumler/ilerleyis.md) |
+| `sunucu/bolumler/islem-kaydi.js` | `/api/islem-kaydi` ve `islemYaz`: kim ne zaman ne yaptı | [sunucu/bolumler/islem-kaydi.md](sunucu/bolumler/islem-kaydi.md) |
+| `sunucu/bolumler/kayit.js` | Kayıt ve e-posta onayı, giriş ve iki adımlı kod, şifremi unuttum, şifre, profil, aydınlatma onayı, bildirimler, `/api/me`, kayıt ekranının okul aramaları | [sunucu/bolumler/kayit.md](sunucu/bolumler/kayit.md) |
+| `sunucu/bolumler/kisi-aktarim.js` | `/api/school/kisi-...`: öğrenci ve servisçi listelerinin toplu aktarımı (şablon, TXT'den şablon, içe ve dışa aktarım) | [sunucu/bolumler/kisi-aktarim.md](sunucu/bolumler/kisi-aktarim.md) |
+| `sunucu/bolumler/kisilik.js` | Yetişkin hesabı: portallar, portala geçiş, kişi kodu, çocuk ekleme, okuldan ayrılma, hesap bilgisi, hesabı silme | [sunucu/bolumler/kisilik.md](sunucu/bolumler/kisilik.md) |
+| `sunucu/bolumler/mesaj.js` | `/api/mesajlar`: mesajlar ve duyurular (velinin kopyası, izin ayarları, okundu bilgisi); anketlerin alıcı çözümü | [sunucu/bolumler/mesaj.md](sunucu/bolumler/mesaj.md) |
+| `sunucu/bolumler/nakil.js` | Öğrenci nakli: T.C. ve doğum tarihi eşleşince var olan hesabı yeni okula taşıma (`hesaplar.js`'ten çağrılır) | [sunucu/bolumler/nakil.md](sunucu/bolumler/nakil.md) |
+| `sunucu/bolumler/odev-dosya.js` | `/api/odev-dosya`: öğrencinin teslim dosyaları (akışla güvenli yükleme, biletle indirme, tarayıcıda gösterme, öğretmene zip, silme, saatlik temizlik); eklerle ortak yükleme yardımcıları | [sunucu/bolumler/odev-dosya.md](sunucu/bolumler/odev-dosya.md) |
+| `sunucu/bolumler/odev.js` | `/api/assignments`: ödev verme, listeleme, sonuçlandırma, düzeltme, yeniden açma, silme (quiz yollarını `quiz.js`'e devreder) ve teslim anı yardımcıları | [sunucu/bolumler/odev.md](sunucu/bolumler/odev.md) |
+| `sunucu/bolumler/ogretmen.js` | `/api/teacher`: öğretmenin programı, öğrencileri ve Sınıflarım (girdiği sınıflar, öğrenci sonuçları) | [sunucu/bolumler/ogretmen.md](sunucu/bolumler/ogretmen.md) |
+| `sunucu/bolumler/okul-disk.js` | Okul başına disk sınırı: sayım, yüklemede "sığar mı", %80 ve "doldu" uyarıları, saatlik mutabakat, `/api/admin/okul-disk-siniri` | [sunucu/bolumler/okul-disk.md](sunucu/bolumler/okul-disk.md) |
+| `sunucu/bolumler/okul-hayati.js` | `/api/yemek`, `/api/servis`, `/api/kulupler`: yemek listesi, servisler, servis saatleri ve yoklaması, canlı servis konumu ve yaklaşma bildirimi, kulüpler | [sunucu/bolumler/okul-hayati.md](sunucu/bolumler/okul-hayati.md) |
+| `sunucu/bolumler/okul-sayfasi.js` | `/api/okul-sayfa`, `/api/okul-foto`: okulun giriş sayfası (tanıtım, görünüm, kısıtlı CSS, fotoğraflar) | [sunucu/bolumler/okul-sayfasi.md](sunucu/bolumler/okul-sayfasi.md) |
+| `sunucu/bolumler/okul.js` | `/api/school`: sınıflar, dersler, ders programı, roller, öğrenci/öğretmen listeleri, toplu giriş bilgisi, Excel program aktarımı; hesap ve kişi aktarımı uçlarını devreder | [sunucu/bolumler/okul.md](sunucu/bolumler/okul.md) |
+| `sunucu/bolumler/ozellikler.js` | `/api/ozellikler`: müdürün kapattığı bölümler ve her istekteki "bölüm bu okulda kapalı mı" kapısı | [sunucu/bolumler/ozellikler.md](sunucu/bolumler/ozellikler.md) |
+| `sunucu/bolumler/push.js` | `/api/push`: tarayıcı bildirimi (Web Push) aboneliği | [sunucu/bolumler/push.md](sunucu/bolumler/push.md) |
+| `sunucu/bolumler/quiz.js` | `/api/assignments/:id/quiz...`: ödevin quizi (tek deneme, sunucuda işleyen süre, puan, sonuçların açılması, dakikalık temizlik) | [sunucu/bolumler/quiz.md](sunucu/bolumler/quiz.md) |
+| `sunucu/bolumler/sinav.js` | `/api/exams`, `/api/examgroups`: sınavlar, ölçümler, şablonlar, gruplar ve öğrencinin sınav grafiği | [sunucu/bolumler/sinav.md](sunucu/bolumler/sinav.md) |
+| `sunucu/bolumler/site-ayarlari.js` | `/api/admin/site-ayarlari`, okul adresleri: yönetim panelinin Site Ayarları | [sunucu/bolumler/site-ayarlari.md](sunucu/bolumler/site-ayarlari.md) |
+| `sunucu/bolumler/takvim.js` | `/api/takvim`: resmî ve dinî tatiller, okul etkinlikleri, ödev teslimleri, ders sayısı | [sunucu/bolumler/takvim.md](sunucu/bolumler/takvim.md) |
+| `sunucu/bolumler/veli.js` | `/api/parent`: veli koduyla çocuk bağlama, çocuk listesi, bağı kaldırma | [sunucu/bolumler/veli.md](sunucu/bolumler/veli.md) |
+| `sunucu/bolumler/yonetici-okul.js` | `/api/admin/okul-ac`, `/api/admin/kisi-bul`: yöneticinin okulu kişi koduyla açması | [sunucu/bolumler/yonetici-okul.md](sunucu/bolumler/yonetici-okul.md) |
+| `sunucu/bolumler/yonetici.js` | `/api/admin`: yönetici uçlarının yönlendiricisi; müdürler, okullar ve disk, yedekler, yönetici dosyası | [sunucu/bolumler/yonetici.md](sunucu/bolumler/yonetici.md) |
+| `sunucu/bolumler/yorum.js` | `/api/yorumlar`: açılış sayfasındaki yorumlar (yetişkin hesabı başına tek yorum, kısaltılmış ad, uygunsuz kelime süzgeci, yöneticinin gizlemesi) | [sunucu/bolumler/yorum.md](sunucu/bolumler/yorum.md) |
 
 ### `sunucu/veri/`
 

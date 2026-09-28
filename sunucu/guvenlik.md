@@ -46,7 +46,9 @@ bağlantılar sunucu penceresine/günlüğüne yazılır; testler kodu oradan ok
 - `genelIstekSiniri(ip, dosyaMi, oturum)` → `''` ya da `'dosya'|'ip'|'oturum'` — `index.js` her istekte çağırır.
   `GENEL_SINIR`: dakikada IP başına 15000 dosya / 6000 API, oturum başına 300 API. Önce IP; IP doluyken oturum sayacı hiç
   açılmaz; oturum sınırına takılan istek IP sayacından geri düşülür (`genelGeriAl`). Sayaçlar `genelKayit`'te, en çok
-  100000 anahtar; doluysa ve süresi geçen yoksa yeni anahtar sayılmaz (istek geçer — bellek şişmez).
+  `EN_FAZLA_GENEL_SAYAC` (100000) anahtar; doluysa önce süresi geçenler süpürülür, yine yer yoksa yeni anahtar sayılmaz
+  (istek geçer — bellek şişmez). `genelKayit` ve `EN_FAZLA_GENEL_SAYAC` dışa, `test-okul-agi.js` haritayı doldurup
+  büyümediğini denetlesin diye açılır.
 - `hizSinir(anahtar, adet, pencereMs)` → `boolean` — genel amaçlı pencere sayacı (`hizKayit`, en çok 200000); birçok
   bölüm kullanır (okul araması, kişi kodu, telefon bildirimi…).
 - `hataSiniriDoldu(anahtar, adet)` / `hataSay(...)` — yalnız başarısız denemeleri sayan sınır (artırmadan bakma ayrı).
@@ -64,12 +66,18 @@ Giriş kilidi ve okul ağı sınırları (`GIRIS_SINIR`, 15 dk pencere):
 - `girisKilitSn(kilitAnahtar, hesapId, ip)` — kalan kilit saniyesi; `girisSoruLazim(...)` — soru gerekli mi;
   `girisHatasi(...)` — üç sayacı birden artırır; `girisBasarili(kilitAnahtar, hesapId)` — hesabın sayaçlarını siler
   (bağlantınınki kalır); `kilitAnahtar` boşsa (şifre yenilendi) yalnız hesabın toplam hatası.
-- `kayitSayaci(ip, artir)` — IP başına saatte açılan hesap (yalnız gerçekten hesap açılınca artar).
+- `kayitSayaci(ip, artir)` — IP başına açılan hesap sayısını döndürür; pencere `KAYIT_PENCERE_MS` (1 saat), sayaç
+  `hizKayit`'te `kayitOk:<ip>` anahtarıyla. Yalnız `artir` doğruyken artar, formu yanlış dolduran bu sınıra takılmaz.
+  `kayit.js` kayıt başvurusu geçip onay bağlantısı gönderildiği anda artırır (kod yorumu "hesap açılınca" der, ama
+  sayılan an bağlantının gönderilmesidir); kayıt isteğinde sayaç 60'a vardıysa (artırmadan bakar) "saatte en çok 60
+  hesap" diye 429 döner.
 
 Bot sorusu:
 
-- `botSoruUret()` → `{ id, soru: 'a + b = ?' }` — cevap istemciye gitmez, 5 dk bellekte; en çok 5000 soru (doluysa önce
-  süresi geçenler, sonra en eskiler silinir). `botCevapDogru(id, cevap, tuket)` — doğru cevap tek kullanımlık;
+- `botSoruUret()` → `{ id, soru: 'a + b = ?' }` — `a` 3–9, `b` 2–9 arası rastgele; `id` 24 hex. Cevap istemciye gitmez,
+  `botSorular` haritasında (`id` → `{ cevap, bitis }`) `BOT_OMRU_MS` (5 dk) tutulur; en çok `EN_FAZLA_BOT_SORU` (5000)
+  soru (doluysa önce süresi geçenler, yetmezse en eskiler silinir — hepsi birden silinseydi çok soru isteyen biri
+  herkesin sorusunu geçersiz kılardı). `botCevapDogru(id, cevap, tuket)` — doğru cevap tek kullanımlık;
   `tuket === false` ise soru harcanmaz (formda başka alan hatalıysa kullanıcı soruyu yeniden çözmesin);
   `botSoruTuket(id)`.
 

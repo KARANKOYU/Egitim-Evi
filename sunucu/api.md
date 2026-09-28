@@ -50,11 +50,23 @@ Bölüme giden bağlam nesnesi `k`: `{ req, res, me, body, q, p, segs, method, n
   - `./http` → `bad`, `readBody` (2 MB, 30 sn), `sendJSON`;
   - `./site` → `goruldu` (açılış sayfasındaki "şu an açık" sayısı), ayrıca `site` ve `uygulama` uçlarının bölümü;
   - `./veri` → `depo.ozellikler.kapaliMi` (yükleme uçlarında);
-  - bütün bölümler: `anket`, `devamsizlik`, `egitim-yili`, `ekler`, `etut`, `ilerleyis`, `islem-kaydi`, `kayit`,
-    `kisilik`, `mesaj`, `odev`, `odev-dosya`, `okul-hayati`, `okul-sayfasi`, `push`, `ogretmen`, `okul`, `sinav`,
-    `takvim`, `yorum`, `ozellikler`, `hatirlatici`, `aile`, `cihaz`, `veli`, `yonetici`. Bölümlerden özel olarak:
+  - `BOLUM` tablosundaki 26 bölüm (her birinin belgesi `bolumler/` altında): [anket](bolumler/anket.md),
+    [devamsizlik](bolumler/devamsizlik.md), [egitim-yili](bolumler/egitim-yili.md), [ekler](bolumler/ekler.md),
+    [etut](bolumler/etut.md), [ilerleyis](bolumler/ilerleyis.md), [islem-kaydi](bolumler/islem-kaydi.md),
+    [kayit](bolumler/kayit.md), [kisilik](bolumler/kisilik.md), [mesaj](bolumler/mesaj.md), [odev](bolumler/odev.md),
+    [odev-dosya](bolumler/odev-dosya.md), [okul-hayati](bolumler/okul-hayati.md),
+    [okul-sayfasi](bolumler/okul-sayfasi.md), [push](bolumler/push.md), [ogretmen](bolumler/ogretmen.md),
+    [okul](bolumler/okul.md), [sinav](bolumler/sinav.md), [takvim](bolumler/takvim.md), [yorum](bolumler/yorum.md),
+    [ozellikler](bolumler/ozellikler.md), [hatirlatici](bolumler/hatirlatici.md), [aile](bolumler/aile.md),
+    [cihaz](bolumler/cihaz.md), [veli](bolumler/veli.md), [yonetici](bolumler/yonetici.md). Bölümlerden özel olarak:
     `kayit.kvkkGuncelMi`, `ozellikler.kapaliysaReddet`, `egitim_yili.arsivdeMi`, `odev_dosya.uclar`, `ekler.yukle`,
     `okul_sayfasi.fotoYukle`, `aile.cihazUclari`, `cihaz.anahtarUclari`.
+  - Klasördeki öteki 7 bölüm buradan değil, başka bölümlerden çağrılır: [hesaplar](bolumler/hesaplar.md) ve
+    [kisi-aktarim](bolumler/kisi-aktarim.md) `okul.js`'ten, [nakil](bolumler/nakil.md) `hesaplar.js`'ten,
+    [quiz](bolumler/quiz.md) `odev.js`'ten (ayrıca `okul.js`, `ilerleyis.js` ve `index.js` yardımcılarını kullanır),
+    [yonetici-okul](bolumler/yonetici-okul.md) ve [site-ayarlari](bolumler/site-ayarlari.md) `yonetici.js`'ten,
+    [okul-disk](bolumler/okul-disk.md) yükleme yapan bölümlerden (`ekler`, `odev-dosya`, `okul-sayfasi`), `okul.js`'ten,
+    üç yönetici bölümünden ve `index.js`'ten.
 - Onu çağıran: yalnız `sunucu/index.js` (`handleApi`). `yoneticiUcuMu` bugün dışarıdan çağrılmıyor (grep), dışa açık
   duruyor.
 - Doğrudan tabloya dokunmaz; `ozellikler` üzerinden okulun kapalı bölümlerine bakar.
