@@ -623,7 +623,8 @@ Tek bir sunuculu paketi elle koşmak için `tumtest.sh`'in `sunucu_baslat` ve d�
   kullanıcıya görünen eksikleri listeler.
 - **Belgeleme durumu:** belgeler parça parça yazılıyor. 1. parça: bu dosya, `server.md` ve `sunucu/` kökündeki 17
   dosyanın `.md`'si, statik sunucunun `.md` kapısı. 2. parça bitti: `sunucu/bolumler/`'in 33 dosyasının hepsinin
-  `.md`'si. Sıradakiler: `sunucu/veri/`, `sunucu/yardimci/` ve `SEMA.md`; `public/js/` ve `CSS.md`; `araclar/`,
+  `.md`'si. 3. parçanın ilk yarısı bitti: `sunucu/veri/` kökündeki 7 ve `sunucu/yardimci/`'deki 13 dosya. Sıradakiler:
+  `sunucu/veri/depo/` ve `SEMA.md`; `public/js/` ve `CSS.md`; `araclar/`,
   `testler/`, `TESTLER.md` ve `test-belgeler.js`; en son Android deposu. Aşağıdaki haritada belgesi henüz olmayan
   dosyalar işaretli.
 - Belgeleme sırasında bulunan bilinen bir hata: `sunucu/okullar.js` `okulVeri`'yi yüklenmeden (`null` iken) dışa
@@ -704,13 +705,13 @@ Her kod dosyası ve açıklaması, klasör klasör. Belgesi yazılmış olanlar 
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `sunucu/veri/index.js` | Veri katmanının tek girişi: `depo`, `bildir`, açılış, ilk yönetici, yedek | (belgesi sonraki parçada) |
-| `sunucu/veri/baglanti.js` | Bağlantı havuzu, `sorgu`/`tek`/`calistir`/`islem`, hata çevirisi | (belgesi sonraki parçada) |
-| `sunucu/veri/sema.js` | Şema dosyalarını sırayla uygular; test veritabanını sıfırlar | (belgesi sonraki parçada) |
-| `sunucu/veri/esleme.js` | Veritabanı satırı ↔ uygulama nesnesi (`ad_soyad` ↔ `fullName`) | (belgesi sonraki parçada) |
-| `sunucu/veri/yazici.js` | Genel INSERT/UPDATE yardımcıları (ad doğrulamalı) | (belgesi sonraki parçada) |
-| `sunucu/veri/json-aktarim.js` | Eski `db.json` ve yedekler ↔ veritabanı | (belgesi sonraki parçada) |
-| `sunucu/veri/yedek.js` | Günlük JSON yedek, elle yedek, geri yükleme | (belgesi sonraki parçada) |
+| `sunucu/veri/index.js` | Veri katmanının tek girişi: `depo`, `bildir`, açılış, ilk yönetici, yedek | [sunucu/veri/index.md](sunucu/veri/index.md) |
+| `sunucu/veri/baglanti.js` | Bağlantı havuzu, `sorgu`/`tek`/`calistir`/`islem`, hata çevirisi | [sunucu/veri/baglanti.md](sunucu/veri/baglanti.md) |
+| `sunucu/veri/sema.js` | Şema dosyalarını sırayla uygular; test veritabanını sıfırlar | [sunucu/veri/sema.md](sunucu/veri/sema.md) |
+| `sunucu/veri/esleme.js` | Veritabanı satırı ↔ uygulama nesnesi (`ad_soyad` ↔ `fullName`) | [sunucu/veri/esleme.md](sunucu/veri/esleme.md) |
+| `sunucu/veri/yazici.js` | Genel INSERT/UPDATE yardımcıları (ad doğrulamalı) | [sunucu/veri/yazici.md](sunucu/veri/yazici.md) |
+| `sunucu/veri/json-aktarim.js` | Eski `db.json` ve yedekler ↔ veritabanı | [sunucu/veri/json-aktarim.md](sunucu/veri/json-aktarim.md) |
+| `sunucu/veri/yedek.js` | Günlük JSON yedek, elle yedek, geri yükleme | [sunucu/veri/yedek.md](sunucu/veri/yedek.md) |
 
 Şema dosyaları (`sunucu/veri/sema/*.sql`) tek belgede anlatılacak: `sunucu/veri/sema/SEMA.md` (belgesi sonraki parçada).
 
@@ -751,19 +752,19 @@ Her kod dosyası ve açıklaması, klasör klasör. Belgesi yazılmış olanlar 
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `sunucu/yardimci/aktarim.js` | Excel sütun eşleme ve hücre doğrulama | (belgesi sonraki parçada) |
-| `sunucu/yardimci/bulanik-arama.js` | Okul araması: harf, Türkçe karakter, yazım hatası ve kısaltmaya dayanıklı | (belgesi sonraki parçada) |
-| `sunucu/yardimci/css-temizle.js` | Okul sayfasının kısıtlı CSS'i | (belgesi sonraki parçada) |
-| `sunucu/yardimci/eposta.js` | Küçük SMTP istemcisi (465 TLS, 587 STARTTLS) | (belgesi sonraki parçada) |
-| `sunucu/yardimci/hatirlatici-zaman.js` | Türkiye saatiyle hatırlatıcı zamanları | (belgesi sonraki parçada) |
-| `sunucu/yardimci/kucult.js` | Tarayıcıya giden JS/CSS'ten yorumları atar | (belgesi sonraki parçada) |
-| `sunucu/yardimci/kufur-suzgeci.js` | Yorumlar için küfür süzgeci | (belgesi sonraki parçada) |
-| `sunucu/yardimci/quiz.js` | Quizin saf işlevleri: yapıştırma ayrıştırıcısı, doğrulama, puan, süre | (belgesi sonraki parçada) |
-| `sunucu/yardimci/resim.js` | Fotoğraf türü (ilk baytlar) ve konum bilgisini silme | (belgesi sonraki parçada) |
-| `sunucu/yardimci/servis-pencere.js` | Okulun servis saat aralıkları | (belgesi sonraki parçada) |
-| `sunucu/yardimci/tablo-oku.js` | XLSX, XLS, ODS, CSV ve düz metin listesini okur | (belgesi sonraki parçada) |
-| `sunucu/yardimci/xls.js` | Eski Excel (.xls) okuyucu | (belgesi sonraki parçada) |
-| `sunucu/yardimci/xlsx.js` | Excel (.xlsx) okuma ve yazma, paketsiz | (belgesi sonraki parçada) |
+| `sunucu/yardimci/aktarim.js` | Excel sütun eşleme ve hücre doğrulama | [sunucu/yardimci/aktarim.md](sunucu/yardimci/aktarim.md) |
+| `sunucu/yardimci/bulanik-arama.js` | Okul araması: harf, Türkçe karakter, yazım hatası ve kısaltmaya dayanıklı | [sunucu/yardimci/bulanik-arama.md](sunucu/yardimci/bulanik-arama.md) |
+| `sunucu/yardimci/css-temizle.js` | Okul sayfasının kısıtlı CSS'i | [sunucu/yardimci/css-temizle.md](sunucu/yardimci/css-temizle.md) |
+| `sunucu/yardimci/eposta.js` | Küçük SMTP istemcisi (465 TLS, 587 STARTTLS) | [sunucu/yardimci/eposta.md](sunucu/yardimci/eposta.md) |
+| `sunucu/yardimci/hatirlatici-zaman.js` | Türkiye saatiyle hatırlatıcı zamanları | [sunucu/yardimci/hatirlatici-zaman.md](sunucu/yardimci/hatirlatici-zaman.md) |
+| `sunucu/yardimci/kucult.js` | Tarayıcıya giden JS/CSS'ten yorumları atar | [sunucu/yardimci/kucult.md](sunucu/yardimci/kucult.md) |
+| `sunucu/yardimci/kufur-suzgeci.js` | Yorumlar için küfür süzgeci | [sunucu/yardimci/kufur-suzgeci.md](sunucu/yardimci/kufur-suzgeci.md) |
+| `sunucu/yardimci/quiz.js` | Quizin saf işlevleri: yapıştırma ayrıştırıcısı, doğrulama, puan, süre | [sunucu/yardimci/quiz.md](sunucu/yardimci/quiz.md) |
+| `sunucu/yardimci/resim.js` | Fotoğraf türü (ilk baytlar) ve konum bilgisini silme | [sunucu/yardimci/resim.md](sunucu/yardimci/resim.md) |
+| `sunucu/yardimci/servis-pencere.js` | Okulun servis saat aralıkları | [sunucu/yardimci/servis-pencere.md](sunucu/yardimci/servis-pencere.md) |
+| `sunucu/yardimci/tablo-oku.js` | XLSX, XLS, ODS, CSV ve düz metin listesini okur | [sunucu/yardimci/tablo-oku.md](sunucu/yardimci/tablo-oku.md) |
+| `sunucu/yardimci/xls.js` | Eski Excel (.xls) okuyucu | [sunucu/yardimci/xls.md](sunucu/yardimci/xls.md) |
+| `sunucu/yardimci/xlsx.js` | Excel (.xlsx) okuma ve yazma, paketsiz | [sunucu/yardimci/xlsx.md](sunucu/yardimci/xlsx.md) |
 
 ### `public/` ve `public/js/`
 
