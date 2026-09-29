@@ -76,6 +76,7 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 ## Selçuk — [@Selcuk30](https://github.com/Selcuk30)
 
 - Okul içi şikâyet ve öneri kutusu fikri (tasarlandı, sırada).
+- Menü tasarımında taslağı çizdi
 
 ## Mert — [@Manto0701](https://github.com/Manto0701)
 
