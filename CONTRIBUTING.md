@@ -15,7 +15,7 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 - Zorunlu iki adımlı giriş (e-postaya 6 haneli kod); öğrencide isteğe bağlı iki adım (kod ya da doğrulama uygulaması), şifre değişse de süren doğrulama.
 - Yönetici ve destek için doğrulama uygulaması (TOTP); önemli işlerde yeniden kod.
 - Aynı T.C., e-posta ve kullanıcı adı çakışmalarının önlenmesi; bir e-postanın tek hesapta olması.
-- Okula "çalışan" olarak katılma; müdürün başka bir çalışanı onaysız müdür yapması; müdür çıkarmada ortak karar; 18 yaş altında "+ Ekle"deki seçeneklerin soluk görünmesi.
+- Okula "çalışan" olarak katılma; müdürün başka bir çalışanı onaysız müdür yapması; müdür çıkarmada ortak karar.
 - Beni hatırla, şifremi unuttum, şifrede göz, yanlış girişte kırmızı uyarı; her kayıt ve girişte bot doğrulaması.
 - Okul bilgisayarlarında (okulda telefon yasak olduğu için) kodsuz giriş yapılabilen okul cihazları.
 - Okulun tahtaları için "tahta." ile başlayan tahta hesapları.
