@@ -65,8 +65,14 @@ desteğiyle, Enes'in tarif ettiği biçimde ve onun denetiminde yazıldı. Getir
 
 - Okul içi şikâyet ve öneri kutusu fikri (tasarlandı, sırada).
 
-## Grup üyeleri
+## Mert — [@Manto0701](https://github.com/Manto0701)
 
-- Mert — [@Manto0701](https://github.com/Manto0701)
-- Atlas — [@Atlas1121](https://github.com/Atlas1121)
-- Harun — [@HARUN-123](https://github.com/HARUN-123)
+- &nbsp;
+
+## Atlas — [@Atlas1121](https://github.com/Atlas1121)
+
+- &nbsp;
+
+## Harun — [@HARUN-123](https://github.com/HARUN-123)
+
+- &nbsp;
