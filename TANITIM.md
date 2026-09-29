@@ -624,7 +624,7 @@ Tek bir sunuculu paketi elle koşmak için `tumtest.sh`'in `sunucu_baslat` ve d�
 - **Belgeleme durumu:** belgeler parça parça yazılıyor. 1. parça: bu dosya, `server.md` ve `sunucu/` kökündeki 17
   dosyanın `.md`'si, statik sunucunun `.md` kapısı. 2. parça bitti: `sunucu/bolumler/`'in 33 dosyasının hepsinin
   `.md`'si. 3. parça bitti: `sunucu/veri/` kökündeki 7, `sunucu/veri/depo/`'daki 28 ve `sunucu/yardimci/`'deki 13 dosya
-  ile `SEMA.md` — `sunucu/` klasörünün tamamı belgelendi. Sıradakiler: `public/js/` ve `CSS.md`; `araclar/`,
+  ile `SEMA.md` — `sunucu/` klasörünün tamamı belgelendi. 4. parça başladı: `public/js/parcalar/` 00–04e (11 dosya). Sıradakiler: `public/js/`'in kalanı ve `CSS.md`; `araclar/`,
   `testler/`, `TESTLER.md` ve `test-belgeler.js`; en son Android deposu. Aşağıdaki haritada belgesi henüz olmayan
   dosyalar işaretli.
 - Belgeleme sırasında bulunan bilinen bir hata: `sunucu/okullar.js` `okulVeri`'yi yüklenmeden (`null` iken) dışa
@@ -781,17 +781,17 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `public/js/parcalar/00-durum.js` | Uygulama durumu `S` ve boş `YONETIM` kancası | (belgesi sonraki parçada) |
-| `public/js/parcalar/01-yardimcilar.js` | Küçük yardımcılar, `api()`, `EYLEMLER` | (belgesi sonraki parçada) |
-| `public/js/parcalar/02-ikonlar.js` | Çizgi SVG ikonlar | (belgesi sonraki parçada) |
-| `public/js/parcalar/02b-cizimler.js` | Portallar, "+ Ekle" ve açılış sayfası çizimleri | (belgesi sonraki parçada) |
-| `public/js/parcalar/03-mesaj-modal.js` | Ekrana ileti ve açılır pencere | (belgesi sonraki parçada) |
-| `public/js/parcalar/04-pwa.js` | Telefona uygulama olarak kurma, servis çalışanı kaydı | (belgesi sonraki parçada) |
-| `public/js/parcalar/04a-form-alanlari.js` | Form alanlarının ortak davranışları | (belgesi sonraki parçada) |
-| `public/js/parcalar/04b-bildirim-izni.js` | Web Push izni ve aboneliği | (belgesi sonraki parçada) |
-| `public/js/parcalar/04c-telefon.js` | Ülke kodlu telefon alanı | (belgesi sonraki parçada) |
-| `public/js/parcalar/04d-ekler.js` | Dosya ekleme alanı (mesaj, ödev) | (belgesi sonraki parçada) |
-| `public/js/parcalar/04e-tarih-secici.js` | Türkçe tarih seçici | (belgesi sonraki parçada) |
+| `public/js/parcalar/00-durum.js` | Uygulama durumu `S` ve boş `YONETIM` kancası | [public/js/parcalar/00-durum.md](public/js/parcalar/00-durum.md) |
+| `public/js/parcalar/01-yardimcilar.js` | Küçük yardımcılar, `api()`, `EYLEMLER` | [public/js/parcalar/01-yardimcilar.md](public/js/parcalar/01-yardimcilar.md) |
+| `public/js/parcalar/02-ikonlar.js` | Çizgi SVG ikonlar | [public/js/parcalar/02-ikonlar.md](public/js/parcalar/02-ikonlar.md) |
+| `public/js/parcalar/02b-cizimler.js` | Portallar, "+ Ekle" ve açılış sayfası çizimleri | [public/js/parcalar/02b-cizimler.md](public/js/parcalar/02b-cizimler.md) |
+| `public/js/parcalar/03-mesaj-modal.js` | Ekrana ileti ve açılır pencere | [public/js/parcalar/03-mesaj-modal.md](public/js/parcalar/03-mesaj-modal.md) |
+| `public/js/parcalar/04-pwa.js` | Telefona uygulama olarak kurma, servis çalışanı kaydı | [public/js/parcalar/04-pwa.md](public/js/parcalar/04-pwa.md) |
+| `public/js/parcalar/04a-form-alanlari.js` | Form alanlarının ortak davranışları | [public/js/parcalar/04a-form-alanlari.md](public/js/parcalar/04a-form-alanlari.md) |
+| `public/js/parcalar/04b-bildirim-izni.js` | Web Push izni ve aboneliği | [public/js/parcalar/04b-bildirim-izni.md](public/js/parcalar/04b-bildirim-izni.md) |
+| `public/js/parcalar/04c-telefon.js` | Ülke kodlu telefon alanı | [public/js/parcalar/04c-telefon.md](public/js/parcalar/04c-telefon.md) |
+| `public/js/parcalar/04d-ekler.js` | Dosya ekleme alanı (mesaj, ödev) | [public/js/parcalar/04d-ekler.md](public/js/parcalar/04d-ekler.md) |
+| `public/js/parcalar/04e-tarih-secici.js` | Türkçe tarih seçici | [public/js/parcalar/04e-tarih-secici.md](public/js/parcalar/04e-tarih-secici.md) |
 | `public/js/parcalar/04f-resim-kucult.js` | Yüklemeden önce tarayıcıda resim küçültme | (belgesi sonraki parçada) |
 | `public/js/parcalar/05-giris.js` | Giriş, kayıt, iki adımlı kod, şifremi unuttum | (belgesi sonraki parçada) |
 | `public/js/parcalar/05a-dis-sayfalar.js` | Giriş yapmamış ziyaretçinin sayfaları | (belgesi sonraki parçada) |
