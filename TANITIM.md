@@ -365,7 +365,7 @@ uçlarını reddeder, menüden de kalkar, kayıtlar silinmez.
   saklanır; yönetim panelinden elle alma ve geri yükleme). JSON ↔ veritabanı çevirisi `sunucu/veri/json-aktarim.js`'te.
   Sunucuda ayrıca `pg_dump` önerilir (kurulum belgesi).
 
-Şema dosyaları (her birinin ayrıntısı ileride `sunucu/veri/sema/SEMA.md`'de):
+Şema dosyaları (her birinin ayrıntısı [sunucu/veri/sema/SEMA.md](sunucu/veri/sema/SEMA.md)'de):
 
 | Dosya | Ne ekler |
 |---|---|
@@ -623,8 +623,8 @@ Tek bir sunuculu paketi elle koşmak için `tumtest.sh`'in `sunucu_baslat` ve d�
   kullanıcıya görünen eksikleri listeler.
 - **Belgeleme durumu:** belgeler parça parça yazılıyor. 1. parça: bu dosya, `server.md` ve `sunucu/` kökündeki 17
   dosyanın `.md`'si, statik sunucunun `.md` kapısı. 2. parça bitti: `sunucu/bolumler/`'in 33 dosyasının hepsinin
-  `.md`'si. 3. parçanın ilk yarısı bitti: `sunucu/veri/` kökündeki 7 ve `sunucu/yardimci/`'deki 13 dosya. Sıradakiler:
-  `sunucu/veri/depo/` ve `SEMA.md`; `public/js/` ve `CSS.md`; `araclar/`,
+  `.md`'si. 3. parça bitti: `sunucu/veri/` kökündeki 7, `sunucu/veri/depo/`'daki 28 ve `sunucu/yardimci/`'deki 13 dosya
+  ile `SEMA.md` — `sunucu/` klasörünün tamamı belgelendi. Sıradakiler: `public/js/` ve `CSS.md`; `araclar/`,
   `testler/`, `TESTLER.md` ve `test-belgeler.js`; en son Android deposu. Aşağıdaki haritada belgesi henüz olmayan
   dosyalar işaretli.
 - Belgeleme sırasında bulunan bilinen bir hata: `sunucu/okullar.js` `okulVeri`'yi yüklenmeden (`null` iken) dışa
@@ -713,40 +713,40 @@ Her kod dosyası ve açıklaması, klasör klasör. Belgesi yazılmış olanlar 
 | `sunucu/veri/json-aktarim.js` | Eski `db.json` ve yedekler ↔ veritabanı | [sunucu/veri/json-aktarim.md](sunucu/veri/json-aktarim.md) |
 | `sunucu/veri/yedek.js` | Günlük JSON yedek, elle yedek, geri yükleme | [sunucu/veri/yedek.md](sunucu/veri/yedek.md) |
 
-Şema dosyaları (`sunucu/veri/sema/*.sql`) tek belgede anlatılacak: `sunucu/veri/sema/SEMA.md` (belgesi sonraki parçada).
+Şema dosyaları (`sunucu/veri/sema/*.sql`) tek belgede anlatılır: [sunucu/veri/sema/SEMA.md](sunucu/veri/sema/SEMA.md).
 
 ### `sunucu/veri/depo/`
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `sunucu/veri/depo/aile.js` | Eğitim Evi Aile: cihazlar, konumlar, kullanım, velinin ayarları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/anketler.js` | Anketler, seçenekler, hedefler, oylar | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/cihazlar.js` | Telefon uygulamasının cihaz anahtarları (özetleri) | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/devamsizlik.js` | Devamsızlık kayıtları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/ekler.js` | Mesaj ve ödev eklerinin bilgisi | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/etutler.js` | Etütler, öğrencileri, yoklamaları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/genel.js` | Küçük tablolar: takvim, bildirimler, işlem kaydı, hatırlatmalar | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/hatirlaticilar.js` | Kişisel hatırlatıcılar | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/kullanicilar.js` | Kullanıcılar, veli-çocuk bağları, mesaj engelleri | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/mesajlar.js` | Mesajlar, alıcılar, okunmalar | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/odev-dosyalari.js` | Ödev teslim dosyalarının bilgisi | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/odevler.js` | Ödevler, ödevin öğrencileri ve sınıfları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/ogrenci-gecmisi.js` | Öğrencinin geçmiş okulları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/okul-disk.js` | Okul başına disk sınırı ve kullanım | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/okul-hayati.js` | Yemek listesi, servisler, kulüpler | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/okul-sayfalari.js` | Okul sayfası ve fotoğrafları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/okullar.js` | Okullar ve eğitim yılları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/onaylar.js` | Bekleyen e-posta onayları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/oturumlar.js` | Oturumlar, oturum ömrü, yönetim çerezleri | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/ozellikler.js` | Okulun kapattığı özellikler (bellekte) | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/push.js` | Web Push abonelikleri | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/quiz.js` | Quizler, sorular, şıklar, denemeler, cevaplar | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/roller.js` | Roller, yetkileri ve kapsamları | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/servis-yoklama.js` | Servis yoklaması, seferler, notlar, "binmeyecek" işaretleri | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/sinavlar.js` | Sınav şablonları, gruplar, sınavlar, ölçümler ve değerler | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/siniflar.js` | Sınıflar, dersler, haftalık ders programı | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/site-ayarlari.js` | Site ayarları (bellekte) | (belgesi sonraki parçada) |
-| `sunucu/veri/depo/yorumlar.js` | Açılış sayfası yorumları | (belgesi sonraki parçada) |
+| `sunucu/veri/depo/aile.js` | Eğitim Evi Aile: cihazlar, konumlar, kullanım, velinin ayarları | [sunucu/veri/depo/aile.md](sunucu/veri/depo/aile.md) |
+| `sunucu/veri/depo/anketler.js` | Anketler, seçenekler, hedefler, oylar | [sunucu/veri/depo/anketler.md](sunucu/veri/depo/anketler.md) |
+| `sunucu/veri/depo/cihazlar.js` | Telefon uygulamasının cihaz anahtarları (özetleri) | [sunucu/veri/depo/cihazlar.md](sunucu/veri/depo/cihazlar.md) |
+| `sunucu/veri/depo/devamsizlik.js` | Devamsızlık kayıtları | [sunucu/veri/depo/devamsizlik.md](sunucu/veri/depo/devamsizlik.md) |
+| `sunucu/veri/depo/ekler.js` | Mesaj ve ödev eklerinin bilgisi | [sunucu/veri/depo/ekler.md](sunucu/veri/depo/ekler.md) |
+| `sunucu/veri/depo/etutler.js` | Etütler, öğrencileri, yoklamaları | [sunucu/veri/depo/etutler.md](sunucu/veri/depo/etutler.md) |
+| `sunucu/veri/depo/genel.js` | Küçük tablolar: takvim, bildirimler, işlem kaydı, hatırlatmalar | [sunucu/veri/depo/genel.md](sunucu/veri/depo/genel.md) |
+| `sunucu/veri/depo/hatirlaticilar.js` | Kişisel hatırlatıcılar | [sunucu/veri/depo/hatirlaticilar.md](sunucu/veri/depo/hatirlaticilar.md) |
+| `sunucu/veri/depo/kullanicilar.js` | Kullanıcılar, veli-çocuk bağları, mesaj engelleri | [sunucu/veri/depo/kullanicilar.md](sunucu/veri/depo/kullanicilar.md) |
+| `sunucu/veri/depo/mesajlar.js` | Mesajlar, alıcılar, okunmalar | [sunucu/veri/depo/mesajlar.md](sunucu/veri/depo/mesajlar.md) |
+| `sunucu/veri/depo/odev-dosyalari.js` | Ödev teslim dosyalarının bilgisi | [sunucu/veri/depo/odev-dosyalari.md](sunucu/veri/depo/odev-dosyalari.md) |
+| `sunucu/veri/depo/odevler.js` | Ödevler, ödevin öğrencileri ve sınıfları | [sunucu/veri/depo/odevler.md](sunucu/veri/depo/odevler.md) |
+| `sunucu/veri/depo/ogrenci-gecmisi.js` | Öğrencinin geçmiş okulları | [sunucu/veri/depo/ogrenci-gecmisi.md](sunucu/veri/depo/ogrenci-gecmisi.md) |
+| `sunucu/veri/depo/okul-disk.js` | Okul başına disk sınırı ve kullanım | [sunucu/veri/depo/okul-disk.md](sunucu/veri/depo/okul-disk.md) |
+| `sunucu/veri/depo/okul-hayati.js` | Yemek listesi, servisler, kulüpler | [sunucu/veri/depo/okul-hayati.md](sunucu/veri/depo/okul-hayati.md) |
+| `sunucu/veri/depo/okul-sayfalari.js` | Okul sayfası ve fotoğrafları | [sunucu/veri/depo/okul-sayfalari.md](sunucu/veri/depo/okul-sayfalari.md) |
+| `sunucu/veri/depo/okullar.js` | Okullar ve eğitim yılları | [sunucu/veri/depo/okullar.md](sunucu/veri/depo/okullar.md) |
+| `sunucu/veri/depo/onaylar.js` | Bekleyen e-posta onayları | [sunucu/veri/depo/onaylar.md](sunucu/veri/depo/onaylar.md) |
+| `sunucu/veri/depo/oturumlar.js` | Oturumlar, oturum ömrü, yönetim çerezleri | [sunucu/veri/depo/oturumlar.md](sunucu/veri/depo/oturumlar.md) |
+| `sunucu/veri/depo/ozellikler.js` | Okulun kapattığı özellikler (bellekte) | [sunucu/veri/depo/ozellikler.md](sunucu/veri/depo/ozellikler.md) |
+| `sunucu/veri/depo/push.js` | Web Push abonelikleri | [sunucu/veri/depo/push.md](sunucu/veri/depo/push.md) |
+| `sunucu/veri/depo/quiz.js` | Quizler, sorular, şıklar, denemeler, cevaplar | [sunucu/veri/depo/quiz.md](sunucu/veri/depo/quiz.md) |
+| `sunucu/veri/depo/roller.js` | Roller, yetkileri ve kapsamları | [sunucu/veri/depo/roller.md](sunucu/veri/depo/roller.md) |
+| `sunucu/veri/depo/servis-yoklama.js` | Servis yoklaması, seferler, notlar, "binmeyecek" işaretleri | [sunucu/veri/depo/servis-yoklama.md](sunucu/veri/depo/servis-yoklama.md) |
+| `sunucu/veri/depo/sinavlar.js` | Sınav şablonları, gruplar, sınavlar, ölçümler ve değerler | [sunucu/veri/depo/sinavlar.md](sunucu/veri/depo/sinavlar.md) |
+| `sunucu/veri/depo/siniflar.js` | Sınıflar, dersler, haftalık ders programı | [sunucu/veri/depo/siniflar.md](sunucu/veri/depo/siniflar.md) |
+| `sunucu/veri/depo/site-ayarlari.js` | Site ayarları (bellekte) | [sunucu/veri/depo/site-ayarlari.md](sunucu/veri/depo/site-ayarlari.md) |
+| `sunucu/veri/depo/yorumlar.js` | Açılış sayfası yorumları | [sunucu/veri/depo/yorumlar.md](sunucu/veri/depo/yorumlar.md) |
 
 ### `sunucu/yardimci/`
 
