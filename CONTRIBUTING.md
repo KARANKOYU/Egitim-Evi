@@ -24,9 +24,13 @@ desteğiyle, Enes'in tarif ettiği biçimde ve onun denetiminde yazıldı. Getir
 - Türkçe ve İngilizce iki adlı sayfa adresleri (`/login` – `/giris`, `/indir` – `/download`, `/kvkk/kvkk.html`).
 
 **Öğretmen, öğrenci ve veli**
-- Quiz: açık uçlu sorulara puan verilmemesi, öğretmenin elle değerlendirmesi, doğru cevapların sonradan açılması.
+- Quiz (çevrim içi sınav): açık uçlu sorulara puan verilmemesi, öğretmenin elle değerlendirmesi, doğru cevapların sonradan açılması.
+- Anketler.
 - Ders yoklaması ve velinin "dersine gelmedi" bildirimi.
 - Veli için tek bildirim (kardeşlerde aynı bildirimin iki kez gitmemesi).
+
+**Tasarım**
+- Sayfa düzeni: sayfaların ve menülerin yerleşimi.
 
 **Servis ve aile**
 - Servis yoklaması: sabah "bindi/binmedi", akşam "geldi"; müdürün belirlediği saatlerde açık sefer; servisin konumu ve yaklaşma bildirimi.
