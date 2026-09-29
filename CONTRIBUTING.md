@@ -1,7 +1,6 @@
 # Eğitim Evi — katkıda bulunanlar
 
-Eğitim Evi bir okul grup projesi olarak 28 Ağustos 2026'da başladı. Aşağıda kimin hangi fikirle katkı verdiği ve projeye nasıl katkıda
-bulunulacağı yazar.
+Eğitim Evi bir okul grup projesi olarak 28 Ağustos 2026'da başladı. Aşağıda kimin hangi fikirle katkı verdiği yazar.
 
 ## Enes — [@KARANKOYU](https://github.com/KARANKOYU) (proje sahibi)
 
@@ -37,6 +36,7 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 
 **Öğretmen, öğrenci ve veli**
 - Quiz (çevrim içi sınav): doğru/yanlış, çoklu doğru, açık uçlu (puan verilmez, öğretmen değerlendirir), soru başına süre, tek deneme.
+- Quiz soru düzenleyici: soruya resim, matematik yazımı, soru bankası.
 - Anketler; Google Forms gibi anket düzenleyici (tek/çoklu seçim, açılır liste, zorunlu soru, taslağı kaydet).
 - Sınavlar: "+ yeni değer ekle" (Doğru, Yanlış, Net…), formülle hesaplanan değerler, kaydırıcılı sınav grupları (üst değer, yüzdeler), Excel'den not aktarma.
 - Ödev: yaptı / geç yaptı / eksik / yapmadı / gelmedi (izinli-izinsiz) sonuçları, süzgeçler, ödev serisi, açılmamış ödevin turuncu görünmesi, sonradan düzenleme.
@@ -94,7 +94,6 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 Kodun büyük bölümünü yazdı; testleri, belgeleri ve güvenlik denetimlerini yaptı. Önerip Enes'in onayladığı fikirlerden bazıları:
 
 - Okul sayfası için görsel düzenleyici (CSS editörü) ve bloklarla sayfa düzeni.
-- Quiz soru düzenleyici (soruya resim, matematik yazımı, soru bankası).
 - Hazır mesaj şablonları ({öğrenci}, {sınıf} alanlarıyla) ve ileri tarihli gönderim.
 - Mezun olan öğrencinin portal düzeni ("Mezun · okul", veli bağının sürmesi).
 - Servisçinin de portal olması; rakamdan oluşan kullanıcı adının hiçbir yerde görünmemesi.
@@ -106,23 +105,3 @@ Kodun büyük bölümünü yazdı; testleri, belgeleri ve güvenlik denetimlerin
   eğitmen panelinde yalnız toplam sayılar (izleyenlerin adı görünmez).
 - Sağdan sola diller (Arapça) için sayfa düzeni.
 - Çelişki ve istek denetimleri; belgeleri koda karşı doğrulama.
-
-# Nasıl katkıda bulunulur
-
-1. **Önce oku:** [TANITIM.md](TANITIM.md) projenin bütün düzenini ve belge haritasını anlatır. Değiştireceğin her kod dosyasının
-   yanında aynı adlı bir `.md` vardır.
-2. **Kurallar**
-   - Node 24 ve PostgreSQL 17; tek npm bağımlılığı `pg`. Yeni bağımlılık ekleme.
-   - Ön yüz ES5, çerçevesiz; `public/js/parcalar/*.js` ad sırasıyla tek dosyada birleşir.
-   - SQL yalnız `sunucu/veri/depo/` altında ve her zaman parametreli.
-   - Veritabanı değişikliği yeni numaralı bir şema dosyasıyla yapılır (`sunucu/veri/sema/NNN-ad.sql`); eski şema dosyaları değişmez.
-   - Kişisel veri işleyen ya da gösteren her değişiklik aynı işte aydınlatma metnini (`public/kvkk/kvkk.html`) günceller ve
-     `KVKK_SURUM`'u artırır.
-   - Bir kod dosyasını değiştiren, yanındaki `.md`'nin ilgili bölümlerini ve "Son durum"unu da günceller.
-   - `data/` klasörü, şifreler, anahtarlar ve kişisel bilgiler depoya girmez (`testler/test-gizli-dosyalar.js` bunu denetler).
-   - Arayüz Türkçe; arayüzde emoji kullanılmaz.
-3. **Test:** `bash testler/tumtest.sh` — bütün paketler `egitimevi_test` veritabanıyla 3200 portunda çalışır; sonuç `KALDI: 0` ve
-   `DENETIM SORUNU: 0` olmalı. Yeni davranışa test ekle.
-4. **Hata ve öneri:** GitHub'da bir issue aç: ne yaptın, ne bekledin, ne oldu. Güvenlik açığı bulduysan herkese açık yazma; proje
-   sahibine doğrudan bildir.
-5. **Değişiklik gönderme:** kendi dalında çalış, testleri çalıştır, ne değiştiğini ve nasıl denediğini açıklayan bir pull request aç.
