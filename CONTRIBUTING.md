@@ -43,8 +43,8 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 - Ders programından yoklama ve velinin "dersine gelmedi" bildirimi; etüt (gün, saat, geldi/izinli/izinsiz).
 - Etüt planlamada öğretmen ve öğrencilerin boş saatlerinin anında görülmesi.
 - Başarılarım: öğrencinin belgeleri ve başarıları (müdür "Teşekkür Belgesi" gibi başlıkla ekler).
-- Takvim ve özel günler; hatırlatıcılar; mesajlar ve duyurular; zengin yazı düzenleyici.
-- Bildirimler (ödev, sınav, ders değişikliği) ve telefon bildirimi; veliye tek bildirim, çocuğun adıyla.
+- Takvim ve özel günler; mesajlar ve duyurular; zengin yazı düzenleyici.
+- Bildirim sistemi: ödev, sınav, ders değişikliği bildirimleri ve telefon bildirimi; veliye tek bildirim, çocuğun adıyla.
 - Toplantılar (Zoom/Meet bağlantısı, zamanı gelince "Katıl"); gelmeyen öğrenci için sınıfın uzaktan ders bağlantısı.
 
 **Eğitim içerikleri**
@@ -62,6 +62,7 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 **Tasarım**
 - Sayfa düzeni: sayfaların ve menülerin yerleşimi; yapay zekâ gibi görünmeyen, canlı renkli (kırmızı + turkuaz) tasarım.
 - Sol üstte açılıp kapanan üç çizgili menü; sağ üstte "+ Ekle"; açık/koyu tema düğmesi.
+- Ana sayfa, giriş ve kayıt ekranları, paneller ve pencerelerin arayüzü.
 - Açılış sayfası, Hakkında, SSS, yorumlar (yalnız yetişkinler, 0–5 yıldız).
 - Kırmızı ev, baca ve aralık kapılı logo.
 - Çok dil: üstte dil seçici ve çevirmenlerin çeviri yaptığı panel (`/panel/translate`).
@@ -76,7 +77,8 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 ## Selçuk — [@Selcuk30](https://github.com/Selcuk30)
 
 - Okul içi şikâyet ve öneri kutusu fikri (tasarlandı, sırada).
-- Menü tasarımında taslağı çizdi
+- Hatırlatıcı fikri.
+- Öğrencinin gözünden ana sayfanın ilk taslağı.
 
 ## Mert — [@Manto0701](https://github.com/Manto0701)
 
