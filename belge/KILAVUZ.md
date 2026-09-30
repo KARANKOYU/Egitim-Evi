@@ -830,8 +830,9 @@ Bir öğretmen aynı gün ve saatte iki farklı sınıfa düşerse sistem uyarı
 e-posta, doğum tarihi, adres (isteğe bağlı); öğrencide sınıf ve okul no, servisçide
 telefon. Kaydedince kullanıcı adı, şifre (ya da "T.C.
 kimlik numarası"), okulun giriş adresi ve öğrencinin veli kodu (4'erli tireli gruplar ve **Kopyala**)
-gösterilir; şifre bir daha gösterilmez. Öğrencinin veli kodu hesap açılınca üretilir, servisçide
-kod yoktur.
+gösterilir; şifre bir daha gösterilmez. Şifre ekrandayken pencerenin dışına tıklamak onu kapatmaz;
+geri tuşu, başka sayfa, çıkış ya da sekmeyi kapatma önce sorar (**Tamam** ve **Bir tane daha aç**
+sormaz). Öğrencinin veli kodu hesap açılınca üretilir, servisçide kod yoktur.
 
 ### Öğrenci nakli (başka okuldan gelen öğrenci)
 
@@ -896,7 +897,8 @@ Her öğrencinin satırındaki **Hesap** butonundan:
 
 Şifre değişince o kişinin açık oturumları kapanır. **İlk girişte kendi şifresini
 belirlesin** işaretliyse (varsayılan) kişi girer girmez yeni şifre koyar;
-**Şifreyi T.C. no yap** ile şifre T.C. no'ya döner. Servisçi hesabı aynı pencereden
+**Şifreyi T.C. no yap** ile şifre T.C. no'ya döner. Yeni şifre pencerede kalır, kendiliğinden
+silinmez; pencere kapanana kadar geri tuşu ve çıkış önce sorar. Servisçi hesabı aynı pencereden
 silinir, öğretmen **Okuldan çıkar** ile okuldan çıkarılır (hesabı kendisinde kalır);
 öğrencininki silinmez, okuldan ayrılan öğrenci sınıfsız bırakılır.
 
@@ -911,6 +913,9 @@ ya da bütün okul seçilir. Varsayılan olarak **yalnızca henüz giriş yapmam
 - Liste **bir kez** gösterilir: **Excel indir** ya da **Yazdır / PDF**. Yazdırmada her
   öğrenciye kesilip verilecek bir kâğıt çıkar: adres, kullanıcı adı, şifre ve veliye
   veli kodu. Pencere kapanınca liste tarayıcı belleğinden de silinir.
+- Liste indirilmeden ya da yazdırılmadan geri tuşu, menüden başka sayfa, **Çıkış yap**, başka
+  portala geçme ya da sekmeyi kapatma önce sorar; "İptal" denirse liste yerinde kalır. Excel
+  aktarımıyla açılan hesapların listesi de yazdırılmadan çıkış ya da yeni aktarım önce sorar.
 - Kâğıdını kaybeden öğrenci için tekrar "henüz giriş yapmamış" seçilir: yeni şifreyle
   giriş yapana kadar öyle sayılır.
 - İşlem kaydına yazılır; okul başına saatte 30 dağıtım, tek seferde en fazla 600 öğrenci.

@@ -23,6 +23,8 @@ function adrestenParca(adres) {
 var adresGuncelleniyor = false;
 
 function git(sayfa) {
+  /* Bir kez gösterilen şifreler açıkken sayfa değişmeden önce sor (03-mesaj-modal.js TEK_SEFER). */
+  if (sayfa !== S.page && !tekSeferAyrilabilir('sayfa')) return Promise.resolve();
   /* Adresi de güncelle ki geri tuşu ve yenileme çalışsın. */
   if (adrestenSayfa() !== sayfa) {
     adresGuncelleniyor = true;

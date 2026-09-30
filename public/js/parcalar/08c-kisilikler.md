@@ -95,11 +95,15 @@ yöneticide portal listesi gelmez: menüde "Portallarım", üstte "+ Ekle" yoktu
   - zaten bu rol satırındaysan (`tur === 'rol'` ve `S.user.id === id`) → yalnız `git('ana')`;
   - yetişkin hesabındaysan, rolün `parent` ve `tur === 'veli'` ise → sunucuya gitmez: `S.veliCocuk = id`,
     `portalDisiYaz(false)`, `yilBilgisiYukle()` (yıl seçici o çocuğun okuluna göre), `git('ana')`;
-  - değilse düğme kilitlenir, `POST /api/kisilik/gec { tur, id }` → `oturumuDegistir(d)`; hata → düğme açılır,
+  - değilse önce `tekSeferAyrilabilir('oturum')` ([03-mesaj-modal.md](03-mesaj-modal.md) `TEK_SEFER`): bir kez
+    gösterilen şifreler (giriş bilgisi listesi, aktarım sonucu, yeni hesabın şifresi) açıksa "Ayrılınsın mı?" sorulur,
+    "İptal" → hiçbir şey olmaz (yeni oturum ekran durumunu sileceği için). Sonra düğme kilitlenir,
+    `POST /api/kisilik/gec { tur, id }` → `oturumuDegistir(d)`; hata → düğme açılır,
     `hataGoster` (tarayıcı uyarısı; ör. "Bu okul şu an kapalı; sistem yöneticisi yeni müdürünü atayınca açılır.").
 - `EYLEMLER['kisilik-ayril']` — onay: "<Okul> okulundan ayrılmak istiyor musun? Okulun öğretmen listesinden
   çıkarsın; verdiğin ödevler ve notlar okulda kalır. Geri dönmek için okula yeni kişi kodunu vermen gerekir."
-  → `POST /api/kisilik/ayril { id, onay: true }`. Cevapta `token` varsa (kişi tam o roldeydi, oturumu satırla kapandı)
+  → içinde bulunduğu okuldan ayrılıyorsa (`S.user.id === id`; oturum değişecek) `tekSeferAyrilabilir('oturum')` →
+  `POST /api/kisilik/ayril { id, onay: true }`. Cevapta `token` varsa (kişi tam o roldeydi, oturumu satırla kapandı)
   ileti açılışa bırakılır, `kisilikSec = true` ile `oturumuDegistir` → yetişkin hesabının ana sayfası. Yoksa
   `portallariTazele()` → `git('profil')` → yeşil ileti. Hata: düğme eski hâline, uyarı.
 - `EYLEMLER['kisilik-cocuk-kaldir']` — onay: "<Çocuk> hesabından kaldırılsın mı? Bilgilerini artık
@@ -275,10 +279,13 @@ aynı kişi veli portalındayken "Veli · Can" satırına basar
 
 ## Son durum
 
-- `git log`: 4 commit. Dosya `97cbacd commit 340` (2026-09-26) ile doğdu ("Hesap değiştir" rol seçim sayfası);
+- `git log`: 5 commit. Son değişiklik `commit 543` (2026-09-30): `kisilik-gec` (yeni oturuma geçerken) ve içinde
+  bulunulan okuldan `kisilik-ayril` önce `tekSeferAyrilabilir('oturum')` ile sorar; bir kez gösterilen şifreler portal
+  değiştirince uyarısız siliniyordu.
+- Dosya `97cbacd commit 340` (2026-09-26) ile doğdu ("Hesap değiştir" rol seçim sayfası);
   `e881271 commit 341` (2026-09-26) rol geçişini (`kisilik-gec`), okuldan ayrılmayı/başvuruyu geri çekmeyi ve
   `cocuklariTazele`'yi ekledi.
-- Son değişiklik `153d63d commit 522` (2026-09-27, kişi kodu 16 hane): Veli panelindeki ipucu "boşluklar önemli değil"
+- Ondan önce `153d63d commit 522` (2026-09-27, kişi kodu 16 hane): Veli panelindeki ipucu "boşluklar önemli değil"
   → "tireler kendiliğinden gelir" (kod kutusu artık tireleri kendisi koyuyor).
 - Ondan önce `0acca75 commit 516` (2026-09-27, kayıt/kişi kodu/portallar) dosyayı baştan yazdı: ayrı "Nasıl devam
   edeceksin?" sayfası (`SAYFALAR.kisilikler`) kalktı; yerine sol menünün başında `portalMenusu`, portal dışı ana sayfa

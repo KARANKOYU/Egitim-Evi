@@ -24,6 +24,9 @@ dağıt"a basar:
    yazın"). Tarayıcının "PDF olarak kaydet"i aynı çıktıyı verir.
 5. **Kapat:** liste indirilmediyse ya da yazdırılmadıysa "Kapatırsan bu şifreler bir daha gösterilmez" onayı; sonra
    liste bellekten silinir, Öğrenciler sayfası tazelenir.
+6. **Yanlışlıkla ayrılma:** liste açık ve indirilmemişken geri tuşu, menüden başka sayfa, "Çıkış yap", başka portala
+   geçme ya da sekmeyi kapatma/yenileme önce sorar: "Giriş bilgileri listesini indirmedin ya da yazdırmadın. Ayrılırsan
+   bu şifreler bir daha gösterilmez. Ayrılınsın mı?" (sekmede tarayıcının kendi kutusu). "İptal" → liste yerinde kalır.
 
 Aynı mektup yazdırma işlevi (`girisMektuplariYazdir`) Excel ile toplu hesap açıldıktan sonraki "Giriş kâğıtlarını
 yazdır" düğmesinde de kullanılır (`15-aktarim.js`).
@@ -51,7 +54,11 @@ sayfasında ([10-mudur.md](10-mudur.md)); listeyi göremeyen (yalnız `ogrenci.s
   bir daha gösterilmez. Öğrenciye kendi satırını ver; veli kodu velinin çocuğunu hesabına eklemesi içindir.", en çok 300
   px yüksekliğinde kayan tablo; şifre ve veli kodu (4'erli tireli, `kisiKoduBicim`) eş aralıklı yazıyla. Düğmeler
   `giris-bilgisi-kapat`, `giris-bilgisi-excel`, `giris-bilgisi-yazdir`. Perdeye `data-zorunlu="1"` konur: perdeye
-  tıklamak pencereyi kapatmaz (`25-tiklama.js` bu işarete bakar).
+  tıklamak pencereyi kapatmaz (`25-tiklama.js` bu işarete bakar). Ayrıca `TEK_SEFER.girisListesi` kaydı bırakılır
+  ([03-mesaj-modal.md](03-mesaj-modal.md)): `sayfada: true`; `sor()` liste indirilmemişse "Giriş bilgileri listesini
+  indirmedin ya da yazdırmadın. Ayrılırsan bu şifreler bir daha gösterilmez. Ayrılınsın mı?" döner, indirildiyse boş;
+  `temizle()` `girisListesi = null` ve `modalKapat()`. Geri tuşu, `git()`, çıkış, portal değiştirme ve `beforeunload`
+  bu kayda bakar.
 - `EYLEMLER['giris-bilgisi-excel']` — `xlsx` base64'ünü bayta çevirir, `Blob` (Excel türü) → geçici adres → görünmez
   bağlantıya tıklama → dosya "giris-bilgileri-<kapsam>.xlsx" (kapsamdaki harf, rakam, Türkçe harf ve tire dışı her
   şey "-" olur) olarak iner; 4 saniye sonra geçici adres bırakılır; `indirildi = true`. Excel'i sunucu üretir
@@ -65,12 +72,13 @@ sayfasında ([10-mudur.md](10-mudur.md)); listeyi göremeyen (yalnız `ogrenci.s
   sınıfı konur, `window.print()`. Yazdırma bitince (`afterprint`) sınıf ve kabın içi temizlenir.
 - `EYLEMLER['giris-bilgisi-yazdir']` — `girisMektuplariYazdir(d.okul, d.satirlar)`, `indirildi = true`.
 - `EYLEMLER['giris-bilgisi-kapat']` — indirilmediyse onay: "Listeyi indirmedin ya da yazdırmadın. Kapatırsan bu
-  şifreler bir daha gösterilmez. Kapatılsın mı?" → `girisListesi = null`, pencere kapanır, `git('okul-ogrenciler')`.
+  şifreler bir daha gösterilmez. Kapatılsın mı?" → `delete TEK_SEFER.girisListesi`, `girisListesi = null`, pencere
+  kapanır, `git('okul-ogrenciler')`.
 
 ## Kimle konuşur?
 
 - Çağırdıkları: `S` ([00-durum.md](00-durum.md)); `$`, `esc`, `api`, `EYLEMLER` ([01-yardimcilar.md](01-yardimcilar.md));
-  `modalAc`, `modalKapat`, `mesajGoster` ([03-mesaj-modal.md](03-mesaj-modal.md)); `kisiKoduBicim`, `dugmeBekle`,
+  `modalAc`, `modalKapat`, `mesajGoster`, `TEK_SEFER` ([03-mesaj-modal.md](03-mesaj-modal.md)); `kisiKoduBicim`, `dugmeBekle`,
   `dugmeBitir` ([05-giris.md](05-giris.md)); `okulYolu` ([05a-dis-sayfalar.md](05a-dis-sayfalar.md)); `git`
   ([07-yonlendirme.md](07-yonlendirme.md)); `S._sinifListe`, `S._ogrListe` ([10-mudur.md](10-mudur.md) doldurur).
 - Sunucu ucu: `POST /api/school/giris-bilgisi` — [../../../sunucu/bolumler/okul.md](../../../sunucu/bolumler/okul.md).
@@ -99,11 +107,14 @@ sayfasında ([10-mudur.md](10-mudur.md)); listeyi göremeyen (yalnız `ogrenci.s
 "Şifreleri yenile…" ─► (işaret yoksa onay) ─► POST /api/school/giris-bilgisi { classId, sadeceGirmeyen, onay: true }
    sunucu: yeni şifreler (yalnız özet saklanır), oturumlar kapanır, bildirim, işlem kaydı
    ◄─ { adet, kapsam, okul, satirlar, xlsx }
-  girisListesi = d ─► girisSonucGoster(): tablo + [Kapat] [Excel indir] [Yazdır / PDF]; perde zorunlu
+  girisListesi = d ─► girisSonucGoster(): tablo + [Kapat] [Excel indir] [Yazdır / PDF]; perde zorunlu;
+                      TEK_SEFER.girisListesi kaydı
 "Excel indir" ─► base64 → Blob → "giris-bilgileri-7-A.xlsx" ; indirildi = true
 "Yazdır / PDF" ─► #yazdirKap'a mektuplar ─► body.yazdiriliyor ─► window.print()
                   (yazıcı yalnız mektupları görür) ─► afterprint: kap boşalır ; indirildi = true
-"Kapat" ─► indirilmediyse onay ─► girisListesi = null ─► git('okul-ogrenciler')
+"Kapat" ─► indirilmediyse onay ─► kayıt silinir, girisListesi = null ─► git('okul-ogrenciler')
+geri tuşu / menü / Çıkış / Geç / sekmeyi kapatma ─► indirilmediyse "Ayrılınsın mı?"
+   İptal ─► liste yerinde ; Tamam ─► girisListesi = null, pencere kapanır, istenen yere gidilir
 ```
 
 ## Dikkat!
@@ -111,13 +122,12 @@ sayfasında ([10-mudur.md](10-mudur.md)); listeyi göremeyen (yalnız `ogrenci.s
 - **Liste bir kez gösterilir; kayıp geri gelmez.** Sunucu yalnız şifre özetini saklar. Liste kaybolursa aynı öğrenciler
   için yeniden dağıtılır (yeni şifreler, eskiler geçersiz, oturumlar kapanır). Yeni şifreyle hiç girmemiş öğrenci
   "henüz giriş yapmamış" sayılmaya devam eder, bu yüzden varsayılan seçim onları yeniden yakalar.
-- **Geri tuşu listeyi uyarısız kapatır.** Tarayıcının geri tuşu (ya da telefonda geri hareketi) sayfa değiştirirken açık
-  pencereyi kapatır (`25-tiklama.js` `hashchange` → `modalKapat`); "Listeyi indirmedin…" onayı bu yolda çalışmaz,
-  şifreler bir daha görülemez. Kod okumasına göre; denenmedi.
-- **"Bellekten silinir" yalnız "Kapat" düğmesinde doğru.** KILAVUZ "Pencere kapanınca liste tarayıcı belleğinden de
-  silinir" der; `girisListesi = null` yalnız "Kapat"ta yapılır. Geri tuşuyla kapanınca ya da çıkış yapılınca
-  (`26-baslat.js` `oturumDurumunuSifirla` bu değişkeni silmez) şifreli liste sayfa yenilenene kadar sekmenin belleğinde
-  kalır. Ekranda ona ulaşan bir yol yok ama söylenen güvence tam değil.
+- **Ayrılma yolları sorar (`commit 543`'ten beri).** Geri tuşu, menü, çıkış, portal değiştirme, yenileme ve sekmeyi
+  kapatma liste indirilmemişse önce sorar (`TEK_SEFER`); "Tamam" denince liste bellekten de silinir. Oturum süresi dolup
+  sessiz çıkış olursa (`cikisYap(true)`) soru çıkmaz; `oturumDurumunuSifirla` listeyi yine siler. Bazı telefon
+  tarayıcıları sekmeyi kapatırken soru kutusunu hiç göstermez.
+- **Yeni sayfa açan bir düğme eklersen** `git()` üzerinden geçsin; `$('sayfa').innerHTML`'i doğrudan değiştiren bir yol
+  `TEK_SEFER`'i atlar ve pencereyi açık bırakır.
 - **"Yazdır"a basmak "indirildi" sayar.** Yazdırma penceresinde vazgeçilse de `indirildi = true` olur ve "Kapat" onay
   sormadan kapatır.
 - **`afterprint` gelmezse mektuplar gizli kapta kalır.** Kap ekranda hiç görünmez (`display: none`), ama şifreli
@@ -148,26 +158,30 @@ sayfasında ([10-mudur.md](10-mudur.md)); listeyi göremeyen (yalnız `ogrenci.s
 - `testler/test-aktarim.js` — Excel aktarımında şifresi T.C. olan hesapta şifrenin listede yazılmaması (`tcIle`;
   mektupta "T.C. kimlik numaran").
 - `testler/buton-denetimi.js` — `giris-bilgisi-*` eylemlerinin karşılığı.
-- Bu dosyanın tarayıcı davranışını (indirme, yazdırma, onaylar) deneyen bir test yok.
+- Bu dosyanın tarayıcı davranışını (indirme, yazdırma, onaylar) deneyen otomatik bir test yok. Ayrılma sorusu
+  2026-09-30'da 3200'de elle denendi (geri tuşu, menü, Çıkış; İptal ve Tamam; "Kapat"tan sonra soru çıkmaması).
 - Elle (3200): müdürle Öğrenciler → "Giriş bilgisi dağıt" → bir sınıf seç, sayacı izle → "Şifreleri yenile…" → tablo;
   "Yazdır / PDF" → baskı önizlemesinde yalnız mektuplar; "Kapat" → onay; tablodaki bir öğrenciyle yeni şifreyle gir →
   kendi şifresini belirleme penceresi.
 
 ## Son durum
 
-- `git log`: 5 commit. Dosya `a780f62 commit 4` (2026-08-28) ile doğdu (sonuç penceresi, mektup yazdırma, Kapat);
+- `git log`: 6 commit. Dosya `a780f62 commit 4` (2026-08-28) ile doğdu (sonuç penceresi, mektup yazdırma, Kapat);
   `85a732a commit 23` (2026-08-28) açma ve üretme eylemlerini, `54f9d84 commit 50` (2026-08-29) seçim penceresini
   (`girisBilgisiAc`, sayaç) ekledi.
-- Son değişiklik `0acca75 commit 516` (2026-09-27, kayıt/kişi kodu/portallar): veli kodu tabloda ve mektupta
+- Son değişiklik `commit 543` (2026-09-30): sonuç penceresi `TEK_SEFER.girisListesi` kaydı bırakır; geri tuşu, menü,
+  çıkış, portal değiştirme, yenileme ve sekmeyi kapatma liste indirilmemişse önce sorar ve ayrılınca listeyi bellekten
+  siler (önceden geri tuşu listeyi uyarısız kaybettiriyordu; çıkışta liste sekmenin belleğinde kalıyordu). "Kapat" kaydı
+  siler.
+- Ondan önce `0acca75 commit 516` (2026-09-27, kayıt/kişi kodu/portallar): veli kodu tabloda ve mektupta
   `kisiKoduBicim` ile 4'erli tireli; mektuptaki okul adresi `okulYolu()` ile (`/school/<kısa ad>`); velinin talimatı
   "Veli girişi ile hesabınızı açın, veli kodu alanına yazın" yerine "Kayıt ol … sağ üstteki + Ekle > Veli ekranına bu
   veli kodunu yazın (büyük/küçük harf fark eder)" oldu.
 - Ondan önce `4bacc99 commit 91` (2026-08-29): "Excel indir" (`giris-bilgisi-excel`) eklendi.
-- Bilinen açıklar (kod değiştirilmedi): geri tuşuyla uyarısız kayıp, "bellekten silinir" güvencesinin eksikliği,
-  "Yazdır"ın indirildi sayılması, aktarım hesaplarında mektubun yanlış "belirleyeceksin" demesi, dar listede sayacın
-  giriş yapmışları da sayması (Dikkat).
+- Bilinen açıklar (kod değiştirilmedi): "Yazdır"ın indirildi sayılması, aktarım hesaplarında mektubun yanlış
+  "belirleyeceksin" demesi, dar listede sayacın giriş yapmışları da sayması (Dikkat).
 - Planlı işlerden bu dosyaya dokunacaklar: "Güvenlik denetimi" (iş 3: okulun verdiği her şifrede ilk girişte değiştirme
   zorunluluğu — mektup metni o zaman her durumda doğru olur); "Tek kişi tek hesap + portallar öğrencide de" (iş 19:
   öğrencinin başka kurum portalı, mektuptaki okul adresi); "Okul cihazı" ve "Toplantılar" (iş 26, 21: ortak bilgisayar
-  ve tahta hesabı giriş bilgileri); "Üst şerit" (iş 29: sol üstte "←" açık pencereyi önce kapatacak — geri tuşuyla liste
-  kaybı konusu burada da düşünülmeli); "Çok dil" (iş 22: mektup ve pencere metinleri).
+  ve tahta hesabı giriş bilgileri); "Üst şerit" (iş 29: sol üstte "←" açık pencereyi önce kapatacak — yeni ← → ve ⌂
+  düğmeleri de `git()` ya da `TEK_SEFER` üzerinden geçmeli); "Çok dil" (iş 22: mektup ve pencere metinleri).

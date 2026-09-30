@@ -1,7 +1,7 @@
 # public/js/parcalar/03-mesaj-modal.js
 
-Ekrana kısa ileti basma (`mesajGoster`, `sayfaMesaji`), oturum anahtarıyla dosya indirme (`dosyaIndir`) ve tek açılır
-pencere (`modalAc`, `modalKapat`).
+Ekrana kısa ileti basma (`mesajGoster`, `sayfaMesaji`), oturum anahtarıyla dosya indirme (`dosyaIndir`), tek açılır
+pencere (`modalAc`, `modalKapat`) ve bir kez gösterilen şifrelerin kaybolmaması için ayrılma sorusu (`TEK_SEFER`).
 
 ## Bu dosya ne yapar?
 
@@ -13,6 +13,11 @@ aynı renkte, pencereler aynı düzende görünür.
 (tarayıcı geçmişine ve sunucu günlüğüne düşer); `dosyaIndir` dosyayı `Authorization` başlığıyla alır ve tarayıcıya
 "indir" dedirtir.
 
+Dördüncü iş, bir kez gösterilen bilgiyi korumak. Toplu giriş bilgisi listesi ya da Excel aktarımıyla açılan hesapların
+şifreleri ekranda yalnız bir kez görünür; sunucu yalnız özetlerini saklar. Kişi listeyi indirmeden ya da yazdırmadan geri
+tuşuna basar, menüden başka sayfaya geçer, çıkış yapar, başka portala geçer ya da sekmeyi kapatırsa şifreler kaybolurdu.
+`TEK_SEFER` bu yolların hepsinde önce "Ayrılınsın mı?" diye sorar; kişi ayrılmayı seçerse şifreler bellekten de silinir.
+
 ## İçinde neler var?
 
 ### `mesajGoster(hedef, tur, metin)`
@@ -22,14 +27,16 @@ aynı renkte, pencereler aynı düzende görünür.
 - `tur`: `hata` (kırmızı), `iyi` (yeşil), `bilgi` (marka rengi), `uyari` (turuncu). Türü sabit yazılmış çağrılar bugün
   parçalarda `hata` 98, `iyi` 26, `bilgi` 9, `uyari` 4; yönetim parçalarında 8, 2, 1, 1. Birkaç çağrı türü değişkenden alır
   (ör. `26-baslat.js` e-posta onayının sonucu `onay.tur`).
-- `iyi` ileti 6 saniye sonra kendiliğinden silinir; ötekiler kalır.
+- `iyi` ileti 6 saniye sonra kendiliğinden silinir; ötekiler kalır. Zamanlayıcı yalnız kendi yazdığı iletiyi siler: o
+  arada aynı kutuya yeni bir ileti yazıldıysa (hata, yeni şifre) o kalır.
 
 ### `sayfaMesaji(tur, metin)`
 
 - Açık sayfanın (`#sayfa`) EN ÜSTÜNE `<div class="msg <tur> sayfa-mesaj" role="status">` ekler; çizilmiş sayfa yerinde
   kalır. Önceki sayfa iletisi varsa önce onu kaldırır (aynı anda tek sayfa iletisi).
 - `role="status"` ekran okuyucuya iletiyi okutur.
-- `iyi` ise 6 saniye sonra kaldırılır. Kodda çoğunlukla `iyi` için kullanılır (31 çağrı; `bilgi` 5, `hata` 1, `uyari` 1).
+- `iyi` ise 6 saniye sonra kaldırılır (yalnız bu ileti; o arada yazılan yenisi kalır). Kodda çoğunlukla `iyi` için
+  kullanılır (31 çağrı; `bilgi` 5, `hata` 1, `uyari` 1).
 - Neden var: eskiden `mesajGoster('sayfa', …)` yazılıyordu ve bütün sayfanın yerine ileti geçiyordu.
 
 ### `dosyaIndir(yol, ad)`
@@ -61,15 +68,42 @@ aynı renkte, pencereler aynı düzende görünür.
 - `modalKapat` `#modalKok`'u boşaltır.
 - Aynı anda tek pencere vardır: yeni `modalAc` eskisinin yerine geçer.
 
+### `TEK_SEFER`, `tekSeferSor(tur)`, `tekSeferAyrilabilir(tur)`
+
+- `TEK_SEFER` bir nesne: bir kez gösterilen bilgi ekrandayken onu gösteren parça buraya bir kayıt bırakır, bilgi güvene
+  alınınca (ör. "Kapat" onaylandı) kaydı siler. Kayıt: `{ sor, sayfada, temizle }`.
+  - `sor()` — soru metnini döner; boş metin "bilgi artık güvende, sormadan ayrılabilir" demektir (ör. liste indirildi ya da
+    yazdırıldı).
+  - `sayfada` — `true`: bilgi sayfa değişince kaybolur (pencerede duruyor), geri tuşu ve menü de sormalı. `false`: bilgi
+    sayfa değişse de kalır (ör. aktarım sonucu `S.aktarim`'da durur); yalnız çıkış, portal değiştirme, yenileme ve sekmeyi
+    kapatma sorar.
+  - `temizle()` — kişi ayrılmayı seçince bilgiyi bellekten siler (ör. `girisListesi = null`).
+- Bugün üç kayıt var: `girisListesi` (`10a-giris-bilgisi.js`, `sayfada: true`), `hesapSifre` (`10b-hesaplar.js`,
+  `sayfada: true` — "Hesap açıldı" penceresindeki ya da "Şifreyi değiştir"den sonraki yeni şifre; `sor()` şifre öğesi
+  `#tekSeferSifre` ekranda durdukça sorar, pencere kapanınca kendiliğinden susar) ve `aktarimSonucu` (`15-aktarim.js`,
+  `sayfada: false`).
+- `tekSeferSor(tur)` — `tur` `'sayfa'` ise yalnız `sayfada` kayıtlara, `'oturum'` ise hepsine bakar; ilk boş olmayan soruyu
+  döner, yoksa `''`. Soru sormaz; `beforeunload` bunu kullanır (tarayıcı kendi "Siteden ayrılınsın mı?" kutusunu açar).
+- `tekSeferAyrilabilir(tur)` — soru varsa `confirm` ile sorar. "İptal" → `false` (çağıran işi bırakır). Soru yoksa ya da
+  "Tamam" → o türdeki kayıtların `temizle()`'si çağrılır, kayıtlar silinir, `true` döner.
+- Kullananlar: `07-yonlendirme.js` (`git`, sayfa değişiyorsa `'sayfa'`), `25-tiklama.js` (`hashchange` — geri/ileri tuşu,
+  `'sayfa'`; `beforeunload` — yenileme ve sekmeyi kapatma, `'oturum'`), `26-baslat.js` (`cikisYap`, sessiz değilse
+  `'oturum'`; `oturumDurumunuSifirla` `TEK_SEFER = {}` yapar), `08c-kisilikler.js` (`kisilik-gec` ve içinde bulunduğu
+  okuldan `kisilik-ayril`, `'oturum'`).
+
 ## Kimle konuşur?
 
 - Çağırdıkları: `$`, `esc` ([01-yardimcilar.md](01-yardimcilar.md)), `S.token` ([00-durum.md](00-durum.md)), `fetch`,
   `URL.createObjectURL`. Sayfa iskeleti `public/index.html`: `#sayfa` (sayfa içeriği) ve `#modalKok` (pencere kökü, sayfanın
   sonunda).
 - Pencereyi kapatan öteki yerler: `25-tiklama.js` (`data-act="modal-kapat"`; perdeye, yani pencerenin dışına tıklama —
-  perde `data-zorunlu` taşımıyorsa; geri tuşuyla sayfa değişince), `26-baslat.js` (`cikisYap`), `08c-kisilikler.js`
-  (`oturumuDegistir`). Zorunlu pencere: `26-baslat.js` `kvkkOnayIste` perdeye `data-zorunlu="1"` koyar, dışarı tıklamak
-  onu kapatmaz.
+  perde `data-zorunlu` taşımıyorsa; geri tuşuyla sayfa değişince — önce `TEK_SEFER` sorar), `26-baslat.js` (`cikisYap`),
+  `08c-kisilikler.js` (`oturumuDegistir`). Zorunlu pencere: `26-baslat.js` `kvkkOnayIste`, `10a-giris-bilgisi.js`
+  `girisSonucGoster` ve `10b-hesaplar.js` `hesapSifresiKorunsun` perdeye `data-zorunlu="1"` koyar, dışarı tıklamak onu
+  kapatmaz.
+- `TEK_SEFER`'e kayıt bırakanlar: [10a-giris-bilgisi.md](10a-giris-bilgisi.md) (`girisListesi`),
+  [10b-hesaplar.md](10b-hesaplar.md) (`hesapSifre`), `15-aktarim.js` (`aktarimSonucu`). Soranlar: [07-yonlendirme.md](07-yonlendirme.md) (`git`), `25-tiklama.js`, `26-baslat.js`,
+  [08c-kisilikler.md](08c-kisilikler.md).
 - Onu kullananlar:
   - `mesajGoster` — 27 parça ve 4 yönetim parçası (en çok `05-giris.js`, `10b-hesaplar.js`, `12-ogretmen-sinav.js`,
     `19g-okul-sayfasi.js`, `25-tiklama.js`); bu gruptan [04b-bildirim-izni.md](04b-bildirim-izni.md).
@@ -109,15 +143,29 @@ dosyaIndir('/api/school/aktarim-disa?tur=ogrenci', 'ogrenciler.xlsx')
    fetch + Authorization ─► blob ─► blob: adresi ─► <a download> tıkla ─► 4 sn sonra adresi bırak
 ```
 
+### Bir kez gösterilen şifreler
+
+```
+girisSonucGoster() ─► TEK_SEFER.girisListesi = { sayfada: true, sor, temizle }
+geri tuşu ─► hashchange ─► tekSeferAyrilabilir('sayfa')
+   ├─ liste indirilmedi: confirm("… Ayrılınsın mı?")
+   │     ├─ İptal ─► history.replaceState('#/<açık sayfa>') ; pencere ve liste yerinde
+   │     └─ Tamam ─► temizle(): girisListesi = null, modalKapat ─► git(hedef)
+   └─ indirildi / yazdırıldı: sormadan geçer
+menü (git) ─► aynı soru ; Çıkış / Geç / okuldan ayrıl ─► tekSeferAyrilabilir('oturum')
+yenileme, sekmeyi kapatma ─► beforeunload: tekSeferSor('oturum') doluysa tarayıcı kendi kutusunu açar
+"Kapat" (10a) ─► kendi onayı ─► delete TEK_SEFER.girisListesi
+```
+
 ## Dikkat!
 
 - **`govde` ve `altHtml` kaçırılmaz.** `modalAc` onları HTML olarak yazar; içine kullanıcı verisi koyan çağıran onu
   `esc`'ten geçirmeli. Yalnız `baslik` burada kaçırılır. (Aynı kural `sayfaMesaji`/`mesajGoster` için tersidir: onlar
   metni her zaman kaçırır, içine HTML yazamazsın.)
-- **Zamanlayıcı yarışı.** `iyi` iletisinin 6 saniyelik silme zamanlayıcısı, o arada aynı yere yazılmış YENİ iletiyi de
-  siler: `mesajGoster` öğenin içini, `sayfaMesaji` o an duran `.sayfa-mesaj`'ı boşaltır. Ör. "Kaydedildi" görünürken 3.
-  saniyede bir hata iletisi yazılırsa, hata 3 saniye sonra kaybolur. Kod değiştirilmedi; düzeltmek için zamanlayıcı
-  yalnız kendi yazdığı öğeyi silmeli.
+- **Kalıcı olması gereken ileti `iyi` olmamalı.** `iyi` 6 saniyede kalkar; kişinin not alması gereken bir şey (ör.
+  `10b-hesaplar.js`'te yeni şifre) `bilgi` türüyle yazılır. `commit 543`'e kadar zamanlayıcı o arada yazılan yeni iletiyi
+  de siliyordu (ör. "Kaydedildi"den 3 saniye sonra yazılan hata 3 saniye sonra kayboluyordu); artık yalnız kendi
+  yazdığını siler.
 - **Pencere erişilebilirliği sınırlı.** Pencere `role="dialog"`/`aria-modal` taşımıyor, açılınca odak pencereye taşınmıyor,
   Esc tuşu kapatmıyor (pencerenin içinde Esc'i dinleyen tek şey [04e-tarih-secici.md](04e-tarih-secici.md)'nin takvim
   kutusu; başka yerlerde Esc'i yalnız yapımcılar listesi ve rolsüz ekrandaki okul arama sonuçları dinler). Klavyeyle
@@ -128,6 +176,15 @@ dosyaIndir('/api/school/aktarim-disa?tur=ogrenci', 'ogrenciler.xlsx')
   indirme kullanılır (ör. ekler: [04d-ekler.md](04d-ekler.md) `ek-indir`, tek kullanımlık bilet adresine `location.href`).
 - `mesajGoster`'e verilen kimlik yoksa hiçbir şey olmaz, hata da çıkmaz; yeni bir form yazarken ileti kutusunu (`<div
   id="…Mesaj">`) koymayı unutma.
+- **Bir kez gösterilen yeni bir bilgi eklersen `TEK_SEFER`'e kayıt bırak.** Yoksa geri tuşu ve çıkış onu uyarısız siler.
+  Bilgi güvene alınınca (indirildi, "Kapat" onaylandı) kaydı `delete TEK_SEFER.<ad>` ile kaldır; kalırsa sonraki her sayfa
+  geçişinde boşuna soru çıkar.
+- **Sessiz çıkış sormaz.** `cikisYap(true)` (oturum süresi dolunca `01-yardimcilar.js` 401, hesap silinince
+  `23-veli-ayarlar.js`) soru sormadan çıkar; o anda açık liste kaybolur. Oturum zaten geçersiz olduğu için başka yol yok.
+- **Yenileme ve sekmeyi kapatma sorusu tarayıcınındır.** `beforeunload`'da kendi metnimiz gösterilemez; tarayıcı
+  "Siteden ayrılınsın mı?" gibi genel bir kutu açar. Bazı telefon tarayıcıları bu kutuyu hiç göstermez.
+- **Sorular `confirm` ile.** Tarayıcının kendi kutusu; uygulamanın pencere görünümünde değil. Bütün uygulamadaki öteki
+  onaylar da böyle.
 
 ## Testleri
 
@@ -141,13 +198,21 @@ dosyaIndir('/api/school/aktarim-disa?tur=ogrenci', 'ogrenciler.xlsx')
 - Elle: profilde bir alanı kaydet → yeşil ileti 6 saniyede kalkmalı; bir pencere aç, dışına tıkla → kapanmalı; aydınlatma
   metni onayı penceresinde dışarı tıklamak kapatmamalı; müdürle Aktarım'dan öğrenci listesini indir → `ogrenciler.xlsx`
   inmeli, adres satırında anahtar görünmemeli.
+- `TEK_SEFER`'i deneyen otomatik test yok. Elle (3200, 2026-09-30'da denendi): müdürle Öğrenciler → "Giriş bilgisi dağıt"
+  → liste açıkken geri tuşu / menüden Ana Sayfa → "Ayrılınsın mı?" sorusu; İptal → pencere ve adres yerinde; Tamam → sayfa
+  değişir, sonraki geçişte soru çıkmaz; liste açıkken Çıkış → aynı soru, İptal → oturum sürer; "Kapat" onaylanınca sonraki
+  geçişte soru çıkmaz.
 
 ## Son durum
 
-- `git log`: 2 commit. Son değişiklik `a6665fb commit 105` (2026-08-29): `sayfaMesaji` eklendi (işlem iletisi çizilmiş
+- `git log`: 3 commit. Son değişiklik `commit 543` (2026-09-30): `TEK_SEFER`, `tekSeferSor`, `tekSeferAyrilabilir`
+  eklendi (bir kez gösterilen giriş bilgileri geri tuşu, menü, çıkış, portal değiştirme, yenileme ve sekmeyi kapatmada
+  uyarısız kayboluyordu). Ondan önce `a6665fb commit 105` (2026-08-29): `sayfaMesaji` eklendi (işlem iletisi çizilmiş
   sayfanın üstüne; eskiden `mesajGoster('sayfa')` bütün sayfanın yerine yazıyordu). İlk hâl `a780f62 commit 4`
   (2026-08-28): `mesajGoster`, `dosyaIndir`, `modalKapat`, `modalAc`.
-- Bilinen açıklar (kod değiştirilmedi): zamanlayıcı yarışı, pencerenin erişilebilirliği (odak, Esc, `role`).
+- `commit 543` ayrıca zamanlayıcı yarışını giderdi: `mesajGoster` ve `sayfaMesaji`'nin 6 saniyelik silmesi yalnız
+  kendi yazdığı iletiyi kaldırır.
+- Bilinen açıklar (kod değiştirilmedi): pencerenin erişilebilirliği (odak, Esc, `role`).
 - Planlı işlerden bu dosyaya dokunması beklenenler: "Sistem" (bakım modu şeridi, site duyurusu, "Yenilikler" penceresi —
   ileti ve pencere biçimini kullanacaklar); "Kullanıcı arama … Verilerimi indir" (şifre sorulup ZIP indirilecek;
   `dosyaIndir`'in doğal kullanıcısı); "Yıl geçişi" (önemli işlerde çift doğrulama penceresi); "Çok dil" (`Kapat`,

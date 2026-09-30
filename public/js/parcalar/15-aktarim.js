@@ -40,6 +40,30 @@ function metinBase64(metin) {
   return btoa(s);
 }
 
+/* Açılan hesapların şifreleri yalnız aktarım sonucunda, bir kez görünür (03-mesaj-modal.js TEK_SEFER).
+   Sonuç sayfa değişse de S.aktarim'da durur; çıkış, yenileme, sekmeyi kapatma, başka tür seçme ya da yeni
+   dosya yükleme onu siler — yazdırılmadıysa önce sorulur. */
+function aktarimSonucKorumasi() {
+  TEK_SEFER.aktarimSonucu = {
+    sayfada: false,
+    sor: function () {
+      var A = S.aktarim;
+      return A && A.sonuc && A.sonuc.hesaplar && A.sonuc.hesaplar.length && !A.sonuc.yazdirildi
+        ? 'Açılan hesapların giriş bilgilerini yazdırmadın. Devam edersen bu şifreler bir daha gösterilmez. Devam edilsin mi?' : '';
+    },
+    temizle: function () { if (S.aktarim) S.aktarim.sonuc = null; }
+  };
+}
+
+/* Başka tür seçme ya da yeni dosya: sonuç silinmeden önce sor. */
+function aktarimSonucuBirakilabilir() {
+  var t = TEK_SEFER.aktarimSonucu;
+  var soru = t ? t.sor() : '';
+  if (soru && !confirm(soru)) return false;
+  delete TEK_SEFER.aktarimSonucu;
+  return true;
+}
+
 function aktarimDurumu() {
   if (!S.aktarim || !S.aktarim.tur || !AKTARIM_ADLARI[S.aktarim.tur]) {
     S.aktarim = { yon: (S.aktarim && S.aktarim.yon) || 'ice', tur: 'kisi', liste: '', dosyaAd: '', dosya: '', rapor: null, sonuc: null };
@@ -238,6 +262,7 @@ EYLEMLER['aktarim-yon'] = function (el) {
   return git('aktarim');
 };
 EYLEMLER['aktarim-tur'] = function (el) {
+  if (!aktarimSonucuBirakilabilir()) return;
   var A = aktarimDurumu();
   var tur = el.getAttribute('data-tur');
   if (!AKTARIM_ADLARI[tur]) return;
@@ -281,6 +306,7 @@ EYLEMLER['aktarim-uygula'] = function (el) {
   dugmeBekle(el, 'Uygulanıyor...');
   return aktarimIstegi(true).then(function (r) {
     S.aktarim = { yon: 'ice', tur: A.tur, liste: A.liste, dosyaAd: '', dosya: '', rapor: null, sonuc: r };
+    if (r && r.hesaplar && r.hesaplar.length) aktarimSonucKorumasi();
     return git('aktarim');
   })['catch'](function (e) { dugmeBitir(el); mesajGoster('aktarimMesaj', 'hata', e.message); });
 };
@@ -294,12 +320,14 @@ EYLEMLER['aktarim-temizle'] = function () {
   var A = aktarimDurumu();
   if (A.sonuc && A.sonuc.hesaplar && A.sonuc.hesaplar.length &&
     !confirm('Giriş bilgileri listesi kapanacak ve bir daha gösterilmeyecek. Kapatılsın mı?')) return;
+  delete TEK_SEFER.aktarimSonucu;
   A.sonuc = null;
   return git('aktarim');
 };
 EYLEMLER['aktarim-mektup'] = function () {
   var A = aktarimDurumu();
   if (!A.sonuc || !A.sonuc.hesaplar) return;
+  A.sonuc.yazdirildi = true;
   girisMektuplariYazdir(S.user.schoolName, A.sonuc.hesaplar.map(function (o) {
     return { ad: o.ad, sinif: o.sinif, kullaniciAdi: o.kullaniciAdi, sifre: o.sifre, tcIle: o.tcIle, veliKodu: o.veliKodu };
   }));
@@ -322,6 +350,7 @@ function aktarimDosyaBagla() {
   giris.onchange = function () {
     var d = giris.files && giris.files[0];
     if (!d) return;
+    if (!aktarimSonucuBirakilabilir()) { giris.value = ''; return; }
     if (d.size > 950000) {
       mesajGoster('aktarimMesaj', 'hata', 'Dosya çok büyük (en fazla 950 KB). Listeyi ikiye bölüp iki kez yükle.');
       return;

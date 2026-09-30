@@ -186,6 +186,8 @@ EYLEMLER['kisilik-gec'] = function (el, id) {
     portalDisiYaz(false);
     return yilBilgisiYukle().then(function () { return git('ana'); });
   }
+  /* Yeni oturum ekran durumunu siler: bir kez gösterilen şifreler açıksa önce sor (03-mesaj-modal.js TEK_SEFER). */
+  if (!tekSeferAyrilabilir('oturum')) return;
   el.disabled = true;
   return api('/kisilik/gec', 'POST', { tur: tur, id: id })
     .then(function (d) { oturumuDegistir(d); })['catch'](function (e) { el.disabled = false; hataGoster(e); });
@@ -194,6 +196,8 @@ EYLEMLER['kisilik-gec'] = function (el, id) {
 EYLEMLER['kisilik-ayril'] = function (el, id) {
   if (!confirm((el.getAttribute('data-ad') || 'Bu okul') + ' okulundan ayrılmak istiyor musun?\n\nOkulun öğretmen listesinden çıkarsın; ' +
     'verdiğin ödevler ve notlar okulda kalır. Geri dönmek için okula yeni kişi kodunu vermen gerekir.')) return;
+  /* İçinde bulunduğu okuldan ayrılırsa oturum değişir: bir kez gösterilen şifreler açıksa önce sor. */
+  if (S.user && S.user.id === id && !tekSeferAyrilabilir('oturum')) return;
   dugmeBekle(el, 'Bekle...');
   return api('/kisilik/ayril', 'POST', { id: id, onay: true }).then(function (d) {
     /* Bıraktığı okuldaydıysa oturum yetişkin hesabına döner: ana sayfasında

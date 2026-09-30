@@ -190,7 +190,7 @@ EYLEMLER['hesap-ac-kaydet'] = function (el) {
         '<div class="ad">T.C. kimlik numarası</div>' +
         '<div class="alt">İlk girişte kendi şifresini belirleyecek.</div></div></div>'
       : '<div class="satir"><div class="buyu"><div class="alt">Şifre</div>' +
-        '<div class="kod-goster">' + esc(g.sifre) + '</div></div>' +
+        '<div class="kod-goster" id="tekSeferSifre">' + esc(g.sifre) + '</div></div>' +
         '<button class="btn ghost kucuk" data-act="kod-kopyala" data-kod="' + esc(g.sifre) + '">Kopyala</button></div>';
     modalAc('Hesap açıldı',
       '<div class="msg iyi">' + esc(d.message) + '</div>' +
@@ -205,6 +205,7 @@ EYLEMLER['hesap-ac-kaydet'] = function (el) {
       (k.varsayilanSifre ? '' : '<div class="hint">Bu şifre bir daha gösterilemez; şimdi kişiye ilet.</div>'),
       '<button class="btn ghost" data-act="hesap-yeni" data-rol="' + esc(rol) + '">Bir tane daha aç</button>' +
       '<button class="btn" data-act="hesap-bitti" data-rol="' + esc(rol) + '">Tamam</button>');
+    if (!k.varsayilanSifre) hesapSifresiKorunsun();
   })['catch'](function (e) {
     dugmeBitir(el);
     /* T.C. başka okuldaki bir öğrencinin: doğum tarihiyle doğrulanınca taşınır. */
@@ -230,6 +231,22 @@ function nakilSonucu(d, rol) {
     'Öğrenci ve velisi eğitim yılı seçicisinden bakabilir.</div>',
     '<button class="btn ghost" data-act="hesap-yeni" data-rol="' + esc(rol) + '">Bir tane daha ekle</button>' +
     '<button class="btn" data-act="hesap-bitti" data-rol="' + esc(rol) + '">Tamam</button>');
+}
+
+/* Yeni şifre ekrandayken (hesap açıldı ya da şifre değiştirildi) pencere perdeye
+   tıklamakla kapanmasın; geri tuşu, menü, çıkış ve sekmeyi kapatma önce sorsun
+   (03-mesaj-modal.js TEK_SEFER). Soru yalnız şifre ekrandayken sorulur: pencere
+   "Tamam", "Kapat" ya da yeni bir pencereyle kapanınca kendiliğinden susar. */
+function hesapSifresiKorunsun() {
+  var perde = document.querySelector('.perde');
+  if (perde) perde.setAttribute('data-zorunlu', '1');
+  TEK_SEFER.hesapSifre = {
+    sayfada: true,
+    sor: function () {
+      return $('tekSeferSifre') ? 'Yeni şifre ekranda ve bir daha gösterilmeyecek. Kişiye ilettiysen ayrılabilirsin. Ayrılınsın mı?' : '';
+    },
+    temizle: function () { modalKapat(); }
+  };
 }
 
 EYLEMLER['hesap-bitti'] = function () {
@@ -443,8 +460,13 @@ function hesapSifreGonder(el, id, sifre) {
   dugmeBekle(el, 'Kaydediliyor...');
   return api('/school/hesap-sifre', 'POST', { id: id, password: sifre, degistirsin: degistirsin }).then(function (d) {
     dugmeBitir(el);
-    mesajGoster('hesapSifreMesaj', 'iyi', d.message + (sifre ? ' Yeni şifre: ' + sifre : ''));
     if ($('hfYeniSifre')) $('hfYeniSifre').value = '';
+    if (!sifre) { mesajGoster('hesapSifreMesaj', 'iyi', d.message); return; }
+    /* Yeni şifre bir kez gösterilir: yeşil ileti gibi 6 saniyede silinmesin. */
+    mesajGoster('hesapSifreMesaj', 'bilgi', d.message + ' Yeni şifre: ' + sifre);
+    var ileti = $('hesapSifreMesaj') && $('hesapSifreMesaj').firstChild;
+    if (ileti) ileti.id = 'tekSeferSifre';
+    hesapSifresiKorunsun();
   })['catch'](function (e) {
     dugmeBitir(el);
     mesajGoster('hesapSifreMesaj', 'hata', e.message);

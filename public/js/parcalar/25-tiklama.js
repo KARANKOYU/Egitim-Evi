@@ -78,7 +78,19 @@ function tiklamaKur() {
     var hedef = adrestenSayfa();
     adrestekiCocuguAl();
     /* Geri tuşu sayfayı değiştirirken açık pencere önceki sayfada kalır. */
-    if (hedef && hedef !== S.page && SAYFALAR[hedef]) { modalKapat(); git(hedef); }
+    if (hedef && hedef !== S.page && SAYFALAR[hedef]) {
+      /* Bir kez gösterilen şifreler açıksa önce sor; vazgeçerse adres geri alınır
+         (geri alınan adres S.page olduğu için sonraki hashchange bir şey yapmaz). */
+      if (!tekSeferAyrilabilir('sayfa')) {
+        try { history.replaceState(null, '', '#/' + S.page); } catch (e) { location.hash = '#/' + S.page; }
+        return;
+      }
+      modalKapat(); git(hedef);
+    }
+  });
+  /* Sekmeyi kapatma ya da yenileme: bir kez gösterilen şifreler kaybolacaksa tarayıcı sorsun. */
+  window.addEventListener('beforeunload', function (ev) {
+    if (tekSeferSor('oturum')) { ev.preventDefault(); ev.returnValue = ''; return ''; }
   });
 }
 
@@ -463,8 +475,8 @@ function islem(act, el) {
   }
   if (act === 'kaynakca') {
     return modalAc('Kaynakça', '<p>Bu sistem Eğitim Evi projesi kapsamında geliştirilmiştir.</p>' +
-      '<p style="color:var(--soluk);font-size:13.5px">Tüm veriler okulunun kendi sunucusunda saklanır, ' +
-      'üçüncü taraflarla paylaşılmaz ve sistemde reklam bulunmaz.</p>');
+      '<p style="color:var(--soluk);font-size:13.5px">Tüm veriler Eğitim Evi\'nin sunucusunda saklanır; her okul yalnız ' +
+      'kendi verisini görür. Veriler üçüncü taraflarla paylaşılmaz ve sistemde reklam bulunmaz.</p>');
   }
 
   /* müdür */

@@ -20,6 +20,7 @@ function oturumDurumunuSifirla() {
   S.servisHaritaCocuk = ''; S.servisVeri = null; S.svBinmez = null;
   servisYoklamaSifirla();                              // servisçinin seçili servisi, bekleyen işaretleri
   kisilikVeri = null;
+  girisListesi = null; TEK_SEFER = {};                  // şifre listesi sonraki kişinin sekmesinde kalmasın
   var panel = $('bildirimPanel');
   if (panel) panel.innerHTML = '';
   var rozet = $('bildirimRozet');
@@ -85,6 +86,8 @@ function uygulamayiBaslat() {
 }
 
 function cikisYap(sessiz) {
+  /* Bir kez gösterilen şifreler (giriş bilgileri, aktarım sonucu) indirilmeden çıkılmasın. */
+  if (!sessiz && !tekSeferAyrilabilir('oturum')) return;
   var eski = S.token;
   var bitir = function () {
     S.token = null; S.user = null; S.children = []; S.veliCocuk = null; S.kapali = [];

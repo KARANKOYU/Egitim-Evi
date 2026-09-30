@@ -27,8 +27,9 @@ ve herkesin onayı yeniden istenir (kapı [api.md](../api.md)'de).
 
 ### Sabitler
 
-- `KVKK_SURUM` — bugün `'1.13'`. Yanındaki yorum her sürümde metne ne eklendiğini sayar (1.2 doğum tarihi … 1.12
-  ödevin quizi, 1.13 ödev teslim dosyalarının 50 MB sınırı ve saklama süreleri). Dışa açık.
+- `KVKK_SURUM` — bugün `'1.14'`. Yanındaki yorum her sürümde metne ne eklendiğini sayar (1.2 doğum tarihi … 1.12
+  ödevin quizi, 1.13 ödev teslim dosyalarının 50 MB sınırı ve saklama süreleri, 1.14 verilerin tutulduğu yerin
+  düzeltilmesi: okulun kendi sunucusu değil, Eğitim Evi'nin sunucusu). Dışa açık.
 - `PORTAL_AD` (iç) — `{ teacher: 'Öğretmen', principal: 'Müdür' }`: "Portallarım" satırlarının adı.
 
 ### Dışa açık işlevler
@@ -370,7 +371,10 @@ tek kullanım, bütün oturumlar kapanır).
 
 ## Son durum
 
-- Son commit `566b917 commit 524` (2026-09-27, canlı hazırlık): `KVKK_SURUM` 1.12 → 1.13 (ödev teslim dosyaları,
+- Son commit `commit 543` (2026-09-30): `KVKK_SURUM` 1.13 → 1.14. Aydınlatma metni (1. bölüm ve telefon bildirimi
+  maddesi), giriş ekranındaki gizlilik notu ve "Bu sistem hakkında" penceresi verilerin "okulun (kendi) sunucusunda"
+  durduğunu söylüyordu; doğrusu Eğitim Evi'nin sunucusu, her okulun verisi ayrı. Herkes yeniden onaylar.
+- Ondan önce `566b917 commit 524` (2026-09-27, canlı hazırlık): `KVKK_SURUM` 1.12 → 1.13 (ödev teslim dosyaları,
   50 MB, saklama süreleri). Okul ağı için sınırlar büyüdü: okul-adres 300 → 3000/dk, challenge 300 → 1500/10 dk,
   sifre-unuttum 5 → 20/15 dk, sifre-yenile 10 → 30/15 dk. Girişteki eski `kilitliMi`/`basarisizDeneme`/
   `soruGerekliMi` yerine `guvenlik.js`'in yeni giriş sınırları (`girisIpEngeli`, `girisKilitSn`, `girisSoruLazim`,

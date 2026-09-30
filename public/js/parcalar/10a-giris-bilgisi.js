@@ -86,6 +86,16 @@ function girisSonucGoster() {
   /* Yanlışlıkla perdeye tıklayıp listeyi kaybetmesin. */
   var perde = document.querySelector('.perde');
   if (perde) perde.setAttribute('data-zorunlu', '1');
+  /* Geri tuşu, menüden başka sayfa, çıkış ve sekmeyi kapatma da önce sorsun;
+     ayrılınca şifreli liste bellekte kalmasın (03-mesaj-modal.js TEK_SEFER). */
+  TEK_SEFER.girisListesi = {
+    sayfada: true,
+    sor: function () {
+      return girisListesi && !girisListesi.indirildi
+        ? 'Giriş bilgileri listesini indirmedin ya da yazdırmadın. Ayrılırsan bu şifreler bir daha gösterilmez. Ayrılınsın mı?' : '';
+    },
+    temizle: function () { girisListesi = null; modalKapat(); }
+  };
 }
 
 EYLEMLER['giris-bilgisi-excel'] = function () {
@@ -153,6 +163,7 @@ EYLEMLER['giris-bilgisi-yazdir'] = function () {
 EYLEMLER['giris-bilgisi-kapat'] = function () {
   if (girisListesi && !girisListesi.indirildi &&
     !confirm('Listeyi indirmedin ya da yazdırmadın. Kapatırsan bu şifreler bir daha gösterilmez. Kapatılsın mı?')) return;
+  delete TEK_SEFER.girisListesi;
   girisListesi = null;
   modalKapat();
   git('okul-ogrenciler');

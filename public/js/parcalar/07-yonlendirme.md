@@ -41,6 +41,10 @@ Kim görür: giriş yapmış herkes (öğrenci, veli, öğretmen, müdür, servi
 ### Sayfa açma
 
 - `git(sayfa)` — sırasıyla:
+  0. Başka bir sayfaya geçiliyorsa (`sayfa !== S.page`) `tekSeferAyrilabilir('sayfa')` ([03-mesaj-modal.md](03-mesaj-modal.md)
+     `TEK_SEFER`): bir kez gösterilen şifre listesi açık ve indirilmemişse "Ayrılınsın mı?" sorulur; "İptal" → hiçbir şey
+     yapılmadan boş bir söz döner (`git(x).then(…)` yazan çağıran hata almaz). Aynı sayfayı yeniden açmak (`git(S.page)`)
+     sormaz.
   1. Adresteki sayfa farklıysa `location.hash = '#/' + sayfa` (geri tuşu ve yenileme için; `?c=` düşer).
   2. Sayfaya bağlı durum sıfırlanır: `S.page = sayfa`, `S.araHook = null` (sayfanın kendi arama işlevi),
      `S._sayfaDegisti = false` (kaydedilmemiş yazı işareti), `S.odevF` (ödev filtreleri) boşaltılır, üst arama kutusu
@@ -146,7 +150,9 @@ kişi "Takvim"e basar ─► 25-tiklama.js: data-nav="takvim" ─► git('takvim
 tarayıcı ← ─► hashchange (25-tiklama.js)
   adresGuncelleniyor? (hep false, bkz. Dikkat) → devam
   hedef = adrestenSayfa(); adrestekiCocuguAl()
-  hedef var, S.page'den farklı, SAYFALAR[hedef] var ─► modalKapat(); git(hedef)
+  hedef var, S.page'den farklı, SAYFALAR[hedef] var
+    ├─ tekSeferAyrilabilir('sayfa') false (şifre listesi açık, "İptal") ─► history.replaceState('#/' + S.page) ; dur
+    └─ true ─► modalKapat(); git(hedef)   (git'in kendi sorusu artık boş döner)
 ```
 
 ### Yenile düğmesi
@@ -181,10 +187,12 @@ tarayıcı ← ─► hashchange (25-tiklama.js)
   ama sözü döndürmüyorsa, `git('x').then(sayfaMesaji…)` iletisi sayfa bitmeden yazılıp silinebilir.
 - **Yenilemede `navCiz` yok.** `sayfayiYenile` menüyü yeniden çizmez; menüyü değiştiren bir şey (ör. yeni rol) varsa
   `portallariTazele` ya da `git` gerekir.
-- **"Bu sistem hakkında" metni ayrı dosyada ve bugünkü düzenle çelişiyor.** Alt bilgideki bağlantının açtığı pencere
-  (`25-tiklama.js`, `kaynakca`) "Tüm veriler okulunun kendi sunucusunda saklanır" diyor; oysa Eğitim Evi bütün okulların
-  tek sunucuda durduğu bir site (hedef alan adı tek). Kişisel veriyle ilgili bir cümle olduğu için aydınlatma metniyle
-  uyumlu hâle getirilmeli (kod değiştirilmedi).
+- **"Bu sistem hakkında" metni ayrı dosyada.** Alt bilgideki bağlantının açtığı pencere `25-tiklama.js`'te (`kaynakca`).
+  Veri saklama cümlesi kişisel veriyle ilgili; değişirse aydınlatma metniyle (`public/kvkk/kvkk.html` 1. bölüm) birlikte
+  değişmeli. `commit 543`'ten beri "Tüm veriler Eğitim Evi'nin sunucusunda saklanır; her okul yalnız kendi verisini görür."
+  (önceden yanlışlıkla "okulunun kendi sunucusunda" diyordu).
+- **"İptal"de de söz döner ama sayfa değişmez.** Şifre listesi sorusunda "İptal" seçilince `git()` boş bir söz döner;
+  `git('profil').then(sayfaMesaji…)` gibi bir çağıran iletisini o an açık olan sayfaya yazar.
 - **Parça sırası.** `SAYFALAR` [08-ana-sayfa.md](08-ana-sayfa.md)'de `var SAYFALAR = {}` ile kurulur; `SAYFALAR.x = …`
   yazan bir parça ad sırasında 08'den ÖNCE gelirse yüklenirken hata verir. Bu dosya `SAYFALAR`'ı yalnız çalışma anında
   (`git` içinde) okuduğu için güvende.
@@ -206,15 +214,18 @@ tarayıcı ← ─► hashchange (25-tiklama.js)
 
 ## Son durum
 
-- `git log`: 6 commit. Dosya `7506855 commit 22` (2026-08-28) ile doğdu; `85a732a commit 23` ve `b325b83 commit 35`
+- `git log`: 7 commit. Son değişiklik `commit 543` (2026-09-30): `git()` başka sayfaya geçmeden önce
+  `tekSeferAyrilabilir('sayfa')` ile sorar (bir kez gösterilen giriş bilgileri menüden başka sayfaya geçince uyarısız
+  kayboluyordu).
+- Dosya `7506855 commit 22` (2026-08-28) ile doğdu; `85a732a commit 23` ve `b325b83 commit 35`
   (2026-08-28) ilk düzenlemeler.
-- Son değişiklik `276c0a0 commit 521` (2026-09-27, yönetim paneli ve site ayarları): yalnız `altBilgi`'nin yorumu
+- Ondan önce `276c0a0 commit 521` (2026-09-27, yönetim paneli ve site ayarları): yalnız `altBilgi`'nin yorumu
   ("data/config.yml doluysa" → "ayarlanmışsa"): iletişim bilgileri artık yönetim panelindeki site ayarlarından da gelir.
 - Ondan önce `b6bfc03 commit 517` (2026-09-27, sayfa klasörleri): alt bilgideki aydınlatma metni bağlantısı `/kvkk.html`
   → `/kvkk/kvkk.html`. `da5e50c commit 257` (2026-09-25): `adrestekiCocuguAl` eklendi (velinin bildirimindeki `?c=`
   çocuğunun açılışta ve geri tuşunda seçilmesi).
 - Bilinen açıklar (kod değiştirilmedi): etkisiz `adresGuncelleniyor` bayrağı, `git()`'in kaydedilmemiş yazıyı sormadan
-  silmesi, "Bu sistem hakkında" metninin veri saklama cümlesi (Dikkat).
+  silmesi (Dikkat). "Bu sistem hakkında" metni `commit 543`'te düzeltildi.
 - Planlı işlerden bu dosyaya dokunacaklar: "Üst şerit sadeleştirme" (iş 29; tanım bu dosyayı adıyla anıyor: her sayfa
   `history.pushState` ile geçmişe yazılacak, ← → tarayıcı geçmişini kullanacak, açık pencere varken "←" önce pencereyi
   kapatacak, ⌂ bulunulan portalın ana sayfasına; "Yenile" profil menüsüne taşınacak); "Paneller" (iş 5: alt bilgide
