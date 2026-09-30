@@ -792,10 +792,10 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/04c-telefon.js` | Ülke kodlu telefon alanı | [public/js/parcalar/04c-telefon.md](public/js/parcalar/04c-telefon.md) |
 | `public/js/parcalar/04d-ekler.js` | Dosya ekleme alanı (mesaj, ödev) | [public/js/parcalar/04d-ekler.md](public/js/parcalar/04d-ekler.md) |
 | `public/js/parcalar/04e-tarih-secici.js` | Türkçe tarih seçici | [public/js/parcalar/04e-tarih-secici.md](public/js/parcalar/04e-tarih-secici.md) |
-| `public/js/parcalar/04f-resim-kucult.js` | Yüklemeden önce tarayıcıda resim küçültme | (belgesi sonraki parçada) |
-| `public/js/parcalar/05-giris.js` | Giriş, kayıt, iki adımlı kod, şifremi unuttum | (belgesi sonraki parçada) |
-| `public/js/parcalar/05a-dis-sayfalar.js` | Giriş yapmamış ziyaretçinin sayfaları | (belgesi sonraki parçada) |
-| `public/js/parcalar/05b-sifre-zorunlu.js` | Aydınlatma onayı, zorunlu şifre belirleme, yönetime geçiş | (belgesi sonraki parçada) |
+| `public/js/parcalar/04f-resim-kucult.js` | Yüklemeden önce tarayıcıda resim küçültme | [public/js/parcalar/04f-resim-kucult.md](public/js/parcalar/04f-resim-kucult.md) |
+| `public/js/parcalar/05-giris.js` | Giriş, kayıt, iki adımlı kod, şifremi unuttum | [public/js/parcalar/05-giris.md](public/js/parcalar/05-giris.md) |
+| `public/js/parcalar/05a-dis-sayfalar.js` | Giriş yapmamış ziyaretçinin sayfaları | [public/js/parcalar/05a-dis-sayfalar.md](public/js/parcalar/05a-dis-sayfalar.md) |
+| `public/js/parcalar/05b-sifre-zorunlu.js` | Aydınlatma onayı, zorunlu şifre belirleme, yönetime geçiş | [public/js/parcalar/05b-sifre-zorunlu.md](public/js/parcalar/05b-sifre-zorunlu.md) |
 | `public/js/parcalar/06-menu.js` | Role göre sol menü | (belgesi sonraki parçada) |
 | `public/js/parcalar/07-yonlendirme.js` | Adres çubuğuyla sayfa açma: `git()`, `yaz()` | (belgesi sonraki parçada) |
 | `public/js/parcalar/08-ana-sayfa.js` | `SAYFALAR` ve her rolün ana sayfası | (belgesi sonraki parçada) |
