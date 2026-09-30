@@ -796,14 +796,14 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/05-giris.js` | Giriş, kayıt, iki adımlı kod, şifremi unuttum | [public/js/parcalar/05-giris.md](public/js/parcalar/05-giris.md) |
 | `public/js/parcalar/05a-dis-sayfalar.js` | Giriş yapmamış ziyaretçinin sayfaları | [public/js/parcalar/05a-dis-sayfalar.md](public/js/parcalar/05a-dis-sayfalar.md) |
 | `public/js/parcalar/05b-sifre-zorunlu.js` | Aydınlatma onayı, zorunlu şifre belirleme, yönetime geçiş | [public/js/parcalar/05b-sifre-zorunlu.md](public/js/parcalar/05b-sifre-zorunlu.md) |
-| `public/js/parcalar/06-menu.js` | Role göre sol menü | (belgesi sonraki parçada) |
-| `public/js/parcalar/07-yonlendirme.js` | Adres çubuğuyla sayfa açma: `git()`, `yaz()` | (belgesi sonraki parçada) |
-| `public/js/parcalar/08-ana-sayfa.js` | `SAYFALAR` ve her rolün ana sayfası | (belgesi sonraki parçada) |
-| `public/js/parcalar/08b-rolsuz.js` | Okul seçimi (yöneticinin "Okul aç" penceresi için MEB listesinde arama) | (belgesi sonraki parçada) |
-| `public/js/parcalar/08c-kisilikler.js` | Portallar ve "+ Ekle" | (belgesi sonraki parçada) |
-| `public/js/parcalar/08d-okul-disk.js` | Okulun dosya alanı doluluk çubuğu | (belgesi sonraki parçada) |
-| `public/js/parcalar/10-mudur.js` | Müdür sayfaları: öğrenciler, öğretmenler, veli bağlama | (belgesi sonraki parçada) |
-| `public/js/parcalar/10a-giris-bilgisi.js` | Toplu giriş bilgisi dağıtımı | (belgesi sonraki parçada) |
+| `public/js/parcalar/06-menu.js` | Role göre sol menü | [public/js/parcalar/06-menu.md](public/js/parcalar/06-menu.md) |
+| `public/js/parcalar/07-yonlendirme.js` | Adres çubuğuyla sayfa açma: `git()`, `yaz()` | [public/js/parcalar/07-yonlendirme.md](public/js/parcalar/07-yonlendirme.md) |
+| `public/js/parcalar/08-ana-sayfa.js` | `SAYFALAR` ve her rolün ana sayfası | [public/js/parcalar/08-ana-sayfa.md](public/js/parcalar/08-ana-sayfa.md) |
+| `public/js/parcalar/08b-rolsuz.js` | Okul seçimi (yöneticinin "Okul aç" penceresi için MEB listesinde arama) | [public/js/parcalar/08b-rolsuz.md](public/js/parcalar/08b-rolsuz.md) |
+| `public/js/parcalar/08c-kisilikler.js` | Portallar ve "+ Ekle" | [public/js/parcalar/08c-kisilikler.md](public/js/parcalar/08c-kisilikler.md) |
+| `public/js/parcalar/08d-okul-disk.js` | Okulun dosya alanı doluluk çubuğu | [public/js/parcalar/08d-okul-disk.md](public/js/parcalar/08d-okul-disk.md) |
+| `public/js/parcalar/10-mudur.js` | Müdür sayfaları: öğrenciler, öğretmenler, veli bağlama | [public/js/parcalar/10-mudur.md](public/js/parcalar/10-mudur.md) |
+| `public/js/parcalar/10a-giris-bilgisi.js` | Toplu giriş bilgisi dağıtımı | [public/js/parcalar/10a-giris-bilgisi.md](public/js/parcalar/10a-giris-bilgisi.md) |
 | `public/js/parcalar/10b-hesaplar.js` | Okulun açtığı hesaplar (öğrenci, servisçi) | (belgesi sonraki parçada) |
 | `public/js/parcalar/11-ogretmen-odev.js` | Öğretmen ve müdürün ödev sayfaları | (belgesi sonraki parçada) |
 | `public/js/parcalar/11b-siniflarim.js` | Öğretmenin Sınıflarım bölümü | (belgesi sonraki parçada) |
