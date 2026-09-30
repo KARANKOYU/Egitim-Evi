@@ -76,7 +76,7 @@ ettiği biçimde ve onun denetiminde yazıldı. Aşağıdakiler Enes'in fikirler
 
 ## Selçuk — [@Selcuk30](https://github.com/Selcuk30)
 
-- Okul içi şikâyet ve öneri kutusu fikri (tasarlandı, sırada).
+- Mesajlarda "Şikâyet" etiketi önerisi (okul yönetimine şikâyet; tasarlandı, sırada).
 - Hatırlatıcı fikri.
 - Öğrencinin gözünden ana sayfanın ilk taslağı.
 
