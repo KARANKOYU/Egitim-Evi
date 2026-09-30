@@ -811,7 +811,7 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/13-ogrenci-veli.js` | Öğrenci ve veli ilerleyiş görünümleri | (belgesi sonraki parçada) |
 | `public/js/parcalar/14-odev-filtre.js` | Ödev listesi süzgeçleri | (belgesi sonraki parçada) |
 | `public/js/parcalar/14b-odev-teslim.js` | Ödev teslim dosyaları | (belgesi sonraki parçada) |
-| `public/js/parcalar/14c-quiz.js` | Quiz düzenleyici, çözme ve sonuç ekranları | (belgesi sonraki parçada) |
+| `public/js/parcalar/14c-quiz.js` | Quiz düzenleyici, çözme ve sonuç ekranları | [public/js/parcalar/14c-quiz.md](public/js/parcalar/14c-quiz.md) |
 | `public/js/parcalar/15-aktarim.js` | Excel aktarım ekranı | (belgesi sonraki parçada) |
 | `public/js/parcalar/16-egitim-yili.js` | Eğitim yılı seçimi ve yönetimi | (belgesi sonraki parçada) |
 | `public/js/parcalar/16b-okul-ayarlari.js` | Okulun adresi ve haritadaki yeri | (belgesi sonraki parçada) |
