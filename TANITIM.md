@@ -804,10 +804,10 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/08d-okul-disk.js` | Okulun dosya alanı doluluk çubuğu | [public/js/parcalar/08d-okul-disk.md](public/js/parcalar/08d-okul-disk.md) |
 | `public/js/parcalar/10-mudur.js` | Müdür sayfaları: öğrenciler, öğretmenler, veli bağlama | [public/js/parcalar/10-mudur.md](public/js/parcalar/10-mudur.md) |
 | `public/js/parcalar/10a-giris-bilgisi.js` | Toplu giriş bilgisi dağıtımı | [public/js/parcalar/10a-giris-bilgisi.md](public/js/parcalar/10a-giris-bilgisi.md) |
-| `public/js/parcalar/10b-hesaplar.js` | Okulun açtığı hesaplar (öğrenci, servisçi) | (belgesi sonraki parçada) |
-| `public/js/parcalar/11-ogretmen-odev.js` | Öğretmen ve müdürün ödev sayfaları | (belgesi sonraki parçada) |
-| `public/js/parcalar/11b-siniflarim.js` | Öğretmenin Sınıflarım bölümü | (belgesi sonraki parçada) |
-| `public/js/parcalar/12-ogretmen-sinav.js` | Sınav ekranı: sınavlar, gruplar, şablonlar, değer girişi | (belgesi sonraki parçada) |
+| `public/js/parcalar/10b-hesaplar.js` | Okulun açtığı hesaplar (öğrenci, servisçi) | [public/js/parcalar/10b-hesaplar.md](public/js/parcalar/10b-hesaplar.md) |
+| `public/js/parcalar/11-ogretmen-odev.js` | Öğretmen ve müdürün ödev sayfaları | [public/js/parcalar/11-ogretmen-odev.md](public/js/parcalar/11-ogretmen-odev.md) |
+| `public/js/parcalar/11b-siniflarim.js` | Öğretmenin Sınıflarım bölümü | [public/js/parcalar/11b-siniflarim.md](public/js/parcalar/11b-siniflarim.md) |
+| `public/js/parcalar/12-ogretmen-sinav.js` | Sınav ekranı: sınavlar, gruplar, şablonlar, değer girişi | [public/js/parcalar/12-ogretmen-sinav.md](public/js/parcalar/12-ogretmen-sinav.md) |
 | `public/js/parcalar/13-ogrenci-veli.js` | Öğrenci ve veli ilerleyiş görünümleri | (belgesi sonraki parçada) |
 | `public/js/parcalar/14-odev-filtre.js` | Ödev listesi süzgeçleri | (belgesi sonraki parçada) |
 | `public/js/parcalar/14b-odev-teslim.js` | Ödev teslim dosyaları | (belgesi sonraki parçada) |
