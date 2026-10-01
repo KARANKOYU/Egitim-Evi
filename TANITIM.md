@@ -816,11 +816,11 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/16-egitim-yili.js` | Eğitim yılı seçimi ve yönetimi | [public/js/parcalar/16-egitim-yili.md](public/js/parcalar/16-egitim-yili.md) |
 | `public/js/parcalar/16b-okul-ayarlari.js` | Okulun adresi ve haritadaki yeri | [public/js/parcalar/16b-okul-ayarlari.md](public/js/parcalar/16b-okul-ayarlari.md) |
 | `public/js/parcalar/16c-ozellikler.js` | Okulun özellikleri (bölüm aç/kapat) | [public/js/parcalar/16c-ozellikler.md](public/js/parcalar/16c-ozellikler.md) |
-| `public/js/parcalar/17-takvim.js` | Takvim: ay görünümü, tatiller, etkinlikler | (belgesi sonraki parçada) |
-| `public/js/parcalar/18-devamsizlik.js` | Devamsızlık: yoklama, öğrenci ve müdür görünümü | (belgesi sonraki parçada) |
-| `public/js/parcalar/18b-etut.js` | Etütler | (belgesi sonraki parçada) |
-| `public/js/parcalar/19-mesajlar.js` | Mesajlar ve duyurular | (belgesi sonraki parçada) |
-| `public/js/parcalar/19b-anketler.js` | Anketler | (belgesi sonraki parçada) |
+| `public/js/parcalar/17-takvim.js` | Takvim: ay görünümü, tatiller, etkinlikler | [public/js/parcalar/17-takvim.md](public/js/parcalar/17-takvim.md) |
+| `public/js/parcalar/18-devamsizlik.js` | Devamsızlık: yoklama, öğrenci ve müdür görünümü | [public/js/parcalar/18-devamsizlik.md](public/js/parcalar/18-devamsizlik.md) |
+| `public/js/parcalar/18b-etut.js` | Etütler | [public/js/parcalar/18b-etut.md](public/js/parcalar/18b-etut.md) |
+| `public/js/parcalar/19-mesajlar.js` | Mesajlar ve duyurular | [public/js/parcalar/19-mesajlar.md](public/js/parcalar/19-mesajlar.md) |
+| `public/js/parcalar/19b-anketler.js` | Anketler | [public/js/parcalar/19b-anketler.md](public/js/parcalar/19b-anketler.md) |
 | `public/js/parcalar/19c-okul-hayati.js` | Yemek listesi, servis, kulüpler | (belgesi sonraki parçada) |
 | `public/js/parcalar/19d-harita.js` | Kütüphanesiz küçük OpenStreetMap haritası | (belgesi sonraki parçada) |
 | `public/js/parcalar/19e-servis-konum.js` | Servis haritası ve servisçinin konum gönderimi | (belgesi sonraki parçada) |
