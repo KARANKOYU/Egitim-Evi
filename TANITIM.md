@@ -821,9 +821,9 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/18b-etut.js` | Etütler | [public/js/parcalar/18b-etut.md](public/js/parcalar/18b-etut.md) |
 | `public/js/parcalar/19-mesajlar.js` | Mesajlar ve duyurular | [public/js/parcalar/19-mesajlar.md](public/js/parcalar/19-mesajlar.md) |
 | `public/js/parcalar/19b-anketler.js` | Anketler | [public/js/parcalar/19b-anketler.md](public/js/parcalar/19b-anketler.md) |
-| `public/js/parcalar/19c-okul-hayati.js` | Yemek listesi, servis, kulüpler | (belgesi sonraki parçada) |
-| `public/js/parcalar/19d-harita.js` | Kütüphanesiz küçük OpenStreetMap haritası | (belgesi sonraki parçada) |
-| `public/js/parcalar/19e-servis-konum.js` | Servis haritası ve servisçinin konum gönderimi | (belgesi sonraki parçada) |
+| `public/js/parcalar/19c-okul-hayati.js` | Yemek listesi, servis, kulüpler | [public/js/parcalar/19c-okul-hayati.md](public/js/parcalar/19c-okul-hayati.md) |
+| `public/js/parcalar/19d-harita.js` | Kütüphanesiz küçük OpenStreetMap haritası | [public/js/parcalar/19d-harita.md](public/js/parcalar/19d-harita.md) |
+| `public/js/parcalar/19e-servis-konum.js` | Servis haritası ve servisçinin konum gönderimi | [public/js/parcalar/19e-servis-konum.md](public/js/parcalar/19e-servis-konum.md) |
 | `public/js/parcalar/19f-roller.js` | Roller ve yetkiler ekranı | (belgesi sonraki parçada) |
 | `public/js/parcalar/19g-okul-sayfasi.js` | Okul sayfası ve düzenleme ekranı | (belgesi sonraki parçada) |
 | `public/js/parcalar/19h-hatirlaticilar.js` | Kişisel hatırlatıcılar | (belgesi sonraki parçada) |
