@@ -861,10 +861,10 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `araclar/gorsel-veri.js` | Ekran görüntüleri için ek veri | [araclar/gorsel-veri.md](araclar/gorsel-veri.md) |
 | `araclar/simge-uret.js` | Uygulama simgesini üretir | [araclar/simge-uret.md](araclar/simge-uret.md) |
 | `araclar/tema-ornekleri.js` | Tema seçim sayfasının örnek görüntüleri | [araclar/tema-ornekleri.md](araclar/tema-ornekleri.md) |
-| `araclar/veritabani-kur.js` | İlk veritabanı kurulumu | (belgesi sonraki parçada) |
-| `araclar/yazitipi-indir.js` | Yazı tiplerini indirir, `@font-face` üretir | (belgesi sonraki parçada) |
-| `araclar/yuk-testi.js` | Kalabalık okul verisiyle yük ölçümü | (belgesi sonraki parçada) |
-| `araclar/zengin-veri.js` | Ekran görüntüleri için dolu bir okul | (belgesi sonraki parçada) |
+| `araclar/veritabani-kur.js` | İlk veritabanı kurulumu | [araclar/veritabani-kur.md](araclar/veritabani-kur.md) |
+| `araclar/yazitipi-indir.js` | Yazı tiplerini indirir, `@font-face` üretir | [araclar/yazitipi-indir.md](araclar/yazitipi-indir.md) |
+| `araclar/yuk-testi.js` | Kalabalık okul verisiyle yük ölçümü | [araclar/yuk-testi.md](araclar/yuk-testi.md) |
+| `araclar/zengin-veri.js` | Ekran görüntüleri için dolu bir okul | [araclar/zengin-veri.md](araclar/zengin-veri.md) |
 
 ### `testler/`
 
