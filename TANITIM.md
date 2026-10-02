@@ -855,8 +855,8 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 |---|---|---|
 | `araclar/deneme-okulu.js` | Elle deneme için hazır okul ve hesaplar | (belgesi sonraki parçada) |
 | `araclar/eposta-ayarla.js` | SMTP kurulum sihirbazı | (belgesi sonraki parçada) |
-| `araclar/gezinti-metin.js` | Ekranlarla kılavuzun fotoğraf altı metinleri | (belgesi sonraki parçada) |
-| `araclar/gezinti.js` | Ekran gezintisi ve fotoğraflar | (belgesi sonraki parçada) |
+| `araclar/gezinti-metin.js` | Ekranlarla kılavuzun fotoğraf altı metinleri | [araclar/gezinti-metin.md](araclar/gezinti-metin.md) |
+| `araclar/gezinti.js` | Ekran gezintisi ve fotoğraflar | [araclar/gezinti.md](araclar/gezinti.md) |
 | `araclar/giris.js` | Araçların ve testlerin ortak giriş yardımcısı | (belgesi sonraki parçada) |
 | `araclar/gorsel-veri.js` | Ekran görüntüleri için ek veri | (belgesi sonraki parçada) |
 | `araclar/simge-uret.js` | Uygulama simgesini üretir | (belgesi sonraki parçada) |
