@@ -27,9 +27,10 @@ ve herkesin onayı yeniden istenir (kapı [api.md](../api.md)'de).
 
 ### Sabitler
 
-- `KVKK_SURUM` — bugün `'1.14'`. Yanındaki yorum her sürümde metne ne eklendiğini sayar (1.2 doğum tarihi … 1.12
+- `KVKK_SURUM` — bugün `'1.15'`. Yanındaki yorum her sürümde metne ne eklendiğini sayar (1.2 doğum tarihi … 1.12
   ödevin quizi, 1.13 ödev teslim dosyalarının 50 MB sınırı ve saklama süreleri, 1.14 verilerin tutulduğu yerin
-  düzeltilmesi: okulun kendi sunucusu değil, Eğitim Evi'nin sunucusu). Dışa açık.
+  düzeltilmesi: okulun kendi sunucusu değil, Eğitim Evi'nin sunucusu; 1.15 T.C. kimlik numarasının bütün hesaplarda zorunlu
+  olması ve amacı). Dışa açık.
 - `PORTAL_AD` (iç) — `{ teacher: 'Öğretmen', principal: 'Müdür' }`: "Portallarım" satırlarının adı.
 
 ### Dışa açık işlevler
@@ -371,7 +372,11 @@ tek kullanım, bütün oturumlar kapanır).
 
 ## Son durum
 
-- Son commit `commit 543` (2026-09-30): `KVKK_SURUM` 1.13 → 1.14. Aydınlatma metni (1. bölüm ve telefon bildirimi
+- 2026-10-02: `KVKK_SURUM` 1.14 → 1.15. Aydınlatma metni T.C. kimlik numarasını bütün hesaplarda zorunlu yazıyor (amacı:
+  tek kişi tek hesap, veli–çocuk bağı, okul değişikliği; her yerde geçerlilik kuralı). Kod henüz değişmedi: kayıtta ve
+  Ayarlar'da yetişkin için alan hâlâ "isteğe bağlı". Zorunlu hâle getiren kod Linux oturumunda yazılacak
+  (tanımı: `.claude/gelistirme/tanimlar/spec-ogrenci-portal.md` sonu, git dışında). Herkes yeniden onaylar.
+- Önceki commit `commit 543` (2026-09-30): `KVKK_SURUM` 1.13 → 1.14. Aydınlatma metni (1. bölüm ve telefon bildirimi
   maddesi), giriş ekranındaki gizlilik notu ve "Bu sistem hakkında" penceresi verilerin "okulun (kendi) sunucusunda"
   durduğunu söylüyordu; doğrusu Eğitim Evi'nin sunucusu, her okulun verisi ayrı. Herkes yeniden onaylar.
 - Ondan önce `566b917 commit 524` (2026-09-27, canlı hazırlık): `KVKK_SURUM` 1.12 → 1.13 (ödev teslim dosyaları,
