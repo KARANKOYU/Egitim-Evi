@@ -843,11 +843,11 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `public/js/yonetim/09-yonetici.js` | Yönetici sayfaları: müdürler, okullar (okul açma), yedekler, yorumlar | (belgesi sonraki parçada) |
-| `public/js/yonetim/09a-yonetim-paneli.js` | Yönetim panelinin menüsü ve ana sayfası; `YONETIM` kancasını doldurur | (belgesi sonraki parçada) |
-| `public/js/yonetim/09b-site-ayarlari.js` | Site Ayarları ekranı | (belgesi sonraki parçada) |
-| `public/js/yonetim/09c-yonetici-dosyasi.js` | Yönetici Dosyası ekranı | (belgesi sonraki parçada) |
-| `public/js/yonetim/09d-okul-disk.js` | Okulların disk sınırı ekranı | (belgesi sonraki parçada) |
+| `public/js/yonetim/09-yonetici.js` | Yönetici sayfaları: müdürler, okullar (okul açma), yedekler, yorumlar | [public/js/yonetim/09-yonetici.md](public/js/yonetim/09-yonetici.md) |
+| `public/js/yonetim/09a-yonetim-paneli.js` | Yönetim panelinin menüsü ve ana sayfası; `YONETIM` kancasını doldurur | [public/js/yonetim/09a-yonetim-paneli.md](public/js/yonetim/09a-yonetim-paneli.md) |
+| `public/js/yonetim/09b-site-ayarlari.js` | Site Ayarları ekranı | [public/js/yonetim/09b-site-ayarlari.md](public/js/yonetim/09b-site-ayarlari.md) |
+| `public/js/yonetim/09c-yonetici-dosyasi.js` | Yönetici Dosyası ekranı | [public/js/yonetim/09c-yonetici-dosyasi.md](public/js/yonetim/09c-yonetici-dosyasi.md) |
+| `public/js/yonetim/09d-okul-disk.js` | Okulların disk sınırı ekranı | [public/js/yonetim/09d-okul-disk.md](public/js/yonetim/09d-okul-disk.md) |
 
 ### `araclar/`
 
