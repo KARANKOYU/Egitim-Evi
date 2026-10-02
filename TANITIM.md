@@ -770,10 +770,10 @@ Her kod dosyası ve açıklaması, klasör klasör. Belgesi yazılmış olanlar 
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `public/sw.js` | Servis çalışanı: kurulabilir uygulama, çevrimdışı açılış, bildirim gösterme | (belgesi sonraki parçada) |
-| `public/js/tema.js` | Açık/koyu tema, sayfa çizilmeden önce | (belgesi sonraki parçada) |
-| `public/js/belge.js` | Düz belge sayfaları (aydınlatma metni, koşullar) için tema düğmesi ve Yapımcılar | (belgesi sonraki parçada) |
-| `public/js/indir.js` | İndirme sayfasının Android sürüm tablosu | (belgesi sonraki parçada) |
+| `public/sw.js` | Servis çalışanı: kurulabilir uygulama, çevrimdışı açılış, bildirim gösterme | [public/sw.md](public/sw.md) |
+| `public/js/tema.js` | Açık/koyu tema, sayfa çizilmeden önce | [public/js/tema.md](public/js/tema.md) |
+| `public/js/belge.js` | Düz belge sayfaları (aydınlatma metni, koşullar) için tema düğmesi ve Yapımcılar | [public/js/belge.md](public/js/belge.md) |
+| `public/js/indir.js` | İndirme sayfasının Android sürüm tablosu | [public/js/indir.md](public/js/indir.md) |
 
 CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/css/parcalar/CSS.md` (belgesi sonraki parçada).
 
