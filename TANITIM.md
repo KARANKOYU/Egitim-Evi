@@ -833,11 +833,11 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/22-programim.js` | Kişinin kendi programı | [public/js/parcalar/22-programim.md](public/js/parcalar/22-programim.md) |
 | `public/js/parcalar/23-veli-ayarlar.js` | Veli sayfaları ve hesap ayarları | [public/js/parcalar/23-veli-ayarlar.md](public/js/parcalar/23-veli-ayarlar.md) |
 | `public/js/parcalar/24-bildirim-arama-mobil.js` | Bildirimler, sayfa içi arama, mobil menü | [public/js/parcalar/24-bildirim-arama-mobil.md](public/js/parcalar/24-bildirim-arama-mobil.md) |
-| `public/js/parcalar/25-tiklama.js` | Bütün `data-act`/`data-nav` tıklamaları: `islem()` | (belgesi sonraki parçada) |
-| `public/js/parcalar/26-baslat.js` | Açılış ve çıkış: oturumu doğrula, uygulamayı başlat | (belgesi sonraki parçada) |
-| `public/js/parcalar/27-veli-panel.js` | Veli paneli: bütün çocuklar bir arada | (belgesi sonraki parçada) |
-| `public/js/parcalar/27b-aile.js` | Veli: Çocuğumun telefonu | (belgesi sonraki parçada) |
-| `public/js/parcalar/28-grafik.js` | Kütüphanesiz SVG grafikler | (belgesi sonraki parçada) |
+| `public/js/parcalar/25-tiklama.js` | Bütün `data-act`/`data-nav` tıklamaları: `islem()` | [public/js/parcalar/25-tiklama.md](public/js/parcalar/25-tiklama.md) |
+| `public/js/parcalar/26-baslat.js` | Açılış ve çıkış: oturumu doğrula, uygulamayı başlat | [public/js/parcalar/26-baslat.md](public/js/parcalar/26-baslat.md) |
+| `public/js/parcalar/27-veli-panel.js` | Veli paneli: bütün çocuklar bir arada | [public/js/parcalar/27-veli-panel.md](public/js/parcalar/27-veli-panel.md) |
+| `public/js/parcalar/27b-aile.js` | Veli: Çocuğumun telefonu | [public/js/parcalar/27b-aile.md](public/js/parcalar/27b-aile.md) |
+| `public/js/parcalar/28-grafik.js` | Kütüphanesiz SVG grafikler | [public/js/parcalar/28-grafik.md](public/js/parcalar/28-grafik.md) |
 
 ### `public/js/yonetim/`
 
