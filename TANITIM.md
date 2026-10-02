@@ -853,14 +853,14 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `araclar/deneme-okulu.js` | Elle deneme için hazır okul ve hesaplar | (belgesi sonraki parçada) |
-| `araclar/eposta-ayarla.js` | SMTP kurulum sihirbazı | (belgesi sonraki parçada) |
+| `araclar/deneme-okulu.js` | Elle deneme için hazır okul ve hesaplar | [araclar/deneme-okulu.md](araclar/deneme-okulu.md) |
+| `araclar/eposta-ayarla.js` | SMTP kurulum sihirbazı | [araclar/eposta-ayarla.md](araclar/eposta-ayarla.md) |
 | `araclar/gezinti-metin.js` | Ekranlarla kılavuzun fotoğraf altı metinleri | [araclar/gezinti-metin.md](araclar/gezinti-metin.md) |
 | `araclar/gezinti.js` | Ekran gezintisi ve fotoğraflar | [araclar/gezinti.md](araclar/gezinti.md) |
-| `araclar/giris.js` | Araçların ve testlerin ortak giriş yardımcısı | (belgesi sonraki parçada) |
-| `araclar/gorsel-veri.js` | Ekran görüntüleri için ek veri | (belgesi sonraki parçada) |
-| `araclar/simge-uret.js` | Uygulama simgesini üretir | (belgesi sonraki parçada) |
-| `araclar/tema-ornekleri.js` | Tema seçim sayfasının örnek görüntüleri | (belgesi sonraki parçada) |
+| `araclar/giris.js` | Araçların ve testlerin ortak giriş yardımcısı | [araclar/giris.md](araclar/giris.md) |
+| `araclar/gorsel-veri.js` | Ekran görüntüleri için ek veri | [araclar/gorsel-veri.md](araclar/gorsel-veri.md) |
+| `araclar/simge-uret.js` | Uygulama simgesini üretir | [araclar/simge-uret.md](araclar/simge-uret.md) |
+| `araclar/tema-ornekleri.js` | Tema seçim sayfasının örnek görüntüleri | [araclar/tema-ornekleri.md](araclar/tema-ornekleri.md) |
 | `araclar/veritabani-kur.js` | İlk veritabanı kurulumu | (belgesi sonraki parçada) |
 | `araclar/yazitipi-indir.js` | Yazı tiplerini indirir, `@font-face` üretir | (belgesi sonraki parçada) |
 | `araclar/yuk-testi.js` | Kalabalık okul verisiyle yük ölçümü | (belgesi sonraki parçada) |
