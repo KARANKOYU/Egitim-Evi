@@ -27,10 +27,10 @@ ve herkesin onayı yeniden istenir (kapı [api.md](../api.md)'de).
 
 ### Sabitler
 
-- `KVKK_SURUM` — bugün `'1.15'`. Yanındaki yorum her sürümde metne ne eklendiğini sayar (1.2 doğum tarihi … 1.12
+- `KVKK_SURUM` — bugün `'1.16'`. Yanındaki yorum her sürümde metne ne eklendiğini sayar (1.2 doğum tarihi … 1.12
   ödevin quizi, 1.13 ödev teslim dosyalarının 50 MB sınırı ve saklama süreleri, 1.14 verilerin tutulduğu yerin
   düzeltilmesi: okulun kendi sunucusu değil, Eğitim Evi'nin sunucusu; 1.15 T.C. kimlik numarasının bütün hesaplarda zorunlu
-  olması ve amacı). Dışa açık.
+  olması ve amacı; 1.16 6. bölümde kalan "okulun kullandığı sunucu" yanlışı). Dışa açık.
 - `PORTAL_AD` (iç) — `{ teacher: 'Öğretmen', principal: 'Müdür' }`: "Portallarım" satırlarının adı.
 
 ### Dışa açık işlevler
@@ -372,6 +372,9 @@ tek kullanım, bütün oturumlar kapanır).
 
 ## Son durum
 
+- 2026-10-02 (ikinci): `KVKK_SURUM` 1.15 → 1.16. Commit 543'teki "okulun (kendi) sunucusu" düzeltmesi üç yerde kalmıştı:
+  aydınlatma metninin 6. bölümü ("Veriler okulun kullandığı sunucuda tutulur") ve açılış sayfasındaki Hakkında ile SSS cevabı
+  ("Okulun kullandığı sunucuda"). Hepsi "Eğitim Evi'nin sunucusu; her okulun verisi ayrı" oldu. Herkes yeniden onaylar.
 - 2026-10-02: `KVKK_SURUM` 1.14 → 1.15. Aydınlatma metni T.C. kimlik numarasını bütün hesaplarda zorunlu yazıyor (amacı:
   tek kişi tek hesap, veli–çocuk bağı, okul değişikliği; her yerde geçerlilik kuralı). Kod henüz değişmedi: kayıtta ve
   Ayarlar'da yetişkin için alan hâlâ "isteğe bağlı". Zorunlu hâle getiren kod Linux oturumunda yazılacak

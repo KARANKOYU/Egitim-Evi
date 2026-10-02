@@ -30,7 +30,7 @@ const yonetimCerezi = require('../yonetim-cerezi');
 
 /* Aydınlatma metninin sürümü. Metin değişirse burayı da artır:
    kullanıcıların onayı yeniden istenmelidir. */
-const KVKK_SURUM = '1.15';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
+const KVKK_SURUM = '1.16';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C. kimlik no;
                             // 1.4: ödev dosyaları, anket, servis, kulüp, son giriş;
                             // 1.5: okulun açtığı hesapta T.C., ev ve servis konumu, telefon bildirimi;
                             // 1.6: e-posta onayı, müdür başvurusunda yaş, okul sayfası, ödev yıldızı;
@@ -54,6 +54,7 @@ const KVKK_SURUM = '1.15';  // 1.2: doğum tarihi; 1.3: kullanıcı adı ve T.C.
                             //       verileri okul adına işler
                             // 1.15: T.C. kimlik no bütün hesaplarda zorunlu (yetişkinde de; okulla paylaşılmaz),
                             //       amacı kişileri eşleştirmek; her yerde geçerlilik kuralıyla denetlenir
+                            // 1.16: 6. bölümde de "okulun kullandığı sunucu" yanlışı düzeltildi (1.14'ün kalanı)
 
 /* ============ kayıt ============ */
 /* Kendisi kaydolan tek tür hesap yetişkin hesabıdır: veli, öğretmen ve müdür
