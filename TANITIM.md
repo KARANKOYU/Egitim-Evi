@@ -828,11 +828,11 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `public/js/parcalar/19g-okul-sayfasi.js` | Okul sayfası ve düzenleme ekranı | [public/js/parcalar/19g-okul-sayfasi.md](public/js/parcalar/19g-okul-sayfasi.md) |
 | `public/js/parcalar/19h-hatirlaticilar.js` | Kişisel hatırlatıcılar | [public/js/parcalar/19h-hatirlaticilar.md](public/js/parcalar/19h-hatirlaticilar.md) |
 | `public/js/parcalar/19i-servis-yoklama.js` | Servisçinin Yoklama sayfası ve yönetimin salt okunur görünümü | [public/js/parcalar/19i-servis-yoklama.md](public/js/parcalar/19i-servis-yoklama.md) |
-| `public/js/parcalar/20-siniflar.js` | Sınıf ve ders yönetimi | (belgesi sonraki parçada) |
-| `public/js/parcalar/21-ders-programi.js` | Ders programı düzenleme ve çizimi | (belgesi sonraki parçada) |
-| `public/js/parcalar/22-programim.js` | Kişinin kendi programı | (belgesi sonraki parçada) |
-| `public/js/parcalar/23-veli-ayarlar.js` | Veli sayfaları ve hesap ayarları | (belgesi sonraki parçada) |
-| `public/js/parcalar/24-bildirim-arama-mobil.js` | Bildirimler, sayfa içi arama, mobil menü | (belgesi sonraki parçada) |
+| `public/js/parcalar/20-siniflar.js` | Sınıf ve ders yönetimi | [public/js/parcalar/20-siniflar.md](public/js/parcalar/20-siniflar.md) |
+| `public/js/parcalar/21-ders-programi.js` | Ders programı düzenleme ve çizimi | [public/js/parcalar/21-ders-programi.md](public/js/parcalar/21-ders-programi.md) |
+| `public/js/parcalar/22-programim.js` | Kişinin kendi programı | [public/js/parcalar/22-programim.md](public/js/parcalar/22-programim.md) |
+| `public/js/parcalar/23-veli-ayarlar.js` | Veli sayfaları ve hesap ayarları | [public/js/parcalar/23-veli-ayarlar.md](public/js/parcalar/23-veli-ayarlar.md) |
+| `public/js/parcalar/24-bildirim-arama-mobil.js` | Bildirimler, sayfa içi arama, mobil menü | [public/js/parcalar/24-bildirim-arama-mobil.md](public/js/parcalar/24-bildirim-arama-mobil.md) |
 | `public/js/parcalar/25-tiklama.js` | Bütün `data-act`/`data-nav` tıklamaları: `islem()` | (belgesi sonraki parçada) |
 | `public/js/parcalar/26-baslat.js` | Açılış ve çıkış: oturumu doğrula, uygulamayı başlat | (belgesi sonraki parçada) |
 | `public/js/parcalar/27-veli-panel.js` | Veli paneli: bütün çocuklar bir arada | (belgesi sonraki parçada) |
