@@ -896,18 +896,18 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `testler/test-etut.js` | Hazır Öğretmen rolü, etütler, düzeltmeler, açılış rakamları | [testler/test-etut.md](testler/test-etut.md) |
 | `testler/test-giris-bilgisi.js` | Toplu giriş bilgisi dağıtımı | [testler/test-giris-bilgisi.md](testler/test-giris-bilgisi.md) |
 | `testler/test-giris-kayit.js` | Giriş ve kayıt | [testler/test-giris-kayit.md](testler/test-giris-kayit.md) |
-| `testler/test-gizli-dosyalar.js` | Gizli ve kişisel dosyaların depoya girmemesi (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-hatirlatici-zaman.js` | Hatırlatıcı zaman hesabı (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-hatirlatici.js` | Kişisel hatırlatıcılar | (belgesi sonraki parçada) |
-| `testler/test-kapsam.js` | Yetki kapsamı (ders/sınıf daraltması) | (belgesi sonraki parçada) |
-| `testler/test-kisi-kodu.js` | Kişi kodu, veli kodu, portallar | (belgesi sonraki parçada) |
-| `testler/test-kucult.js` | Yorum atıcı ve birleşik paket (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-mesaj.js` | Mesajlar ve duyurular | (belgesi sonraki parçada) |
-| `testler/test-nakil.js` | Öğrenci nakli | (belgesi sonraki parçada) |
-| `testler/test-odev-dosya.js` | Ödev teslim dosyaları | (belgesi sonraki parçada) |
-| `testler/test-odev-saat.js` | Ödev teslim saati ve geçmiş ödevin düzenlenmesi | (belgesi sonraki parçada) |
-| `testler/test-okul-agi.js` | 300 kişi tek IP: yük ve saldırı koruması | (belgesi sonraki parçada) |
-| `testler/test-okul-disk.js` | Okul başına disk sınırı | (belgesi sonraki parçada) |
+| `testler/test-gizli-dosyalar.js` | Gizli ve kişisel dosyaların depoya girmemesi (sunucusuz) | [testler/test-gizli-dosyalar.md](testler/test-gizli-dosyalar.md) |
+| `testler/test-hatirlatici-zaman.js` | Hatırlatıcı zaman hesabı (sunucusuz) | [testler/test-hatirlatici-zaman.md](testler/test-hatirlatici-zaman.md) |
+| `testler/test-hatirlatici.js` | Kişisel hatırlatıcılar | [testler/test-hatirlatici.md](testler/test-hatirlatici.md) |
+| `testler/test-kapsam.js` | Yetki kapsamı (ders/sınıf daraltması) | [testler/test-kapsam.md](testler/test-kapsam.md) |
+| `testler/test-kisi-kodu.js` | Kişi kodu, veli kodu, portallar | [testler/test-kisi-kodu.md](testler/test-kisi-kodu.md) |
+| `testler/test-kucult.js` | Yorum atıcı ve birleşik paket (sunucusuz) | [testler/test-kucult.md](testler/test-kucult.md) |
+| `testler/test-mesaj.js` | Mesajlar ve duyurular | [testler/test-mesaj.md](testler/test-mesaj.md) |
+| `testler/test-nakil.js` | Öğrenci nakli | [testler/test-nakil.md](testler/test-nakil.md) |
+| `testler/test-odev-dosya.js` | Ödev teslim dosyaları | [testler/test-odev-dosya.md](testler/test-odev-dosya.md) |
+| `testler/test-odev-saat.js` | Ödev teslim saati ve geçmiş ödevin düzenlenmesi | [testler/test-odev-saat.md](testler/test-odev-saat.md) |
+| `testler/test-okul-agi.js` | 300 kişi tek IP: yük ve saldırı koruması | [testler/test-okul-agi.md](testler/test-okul-agi.md) |
+| `testler/test-okul-disk.js` | Okul başına disk sınırı | [testler/test-okul-disk.md](testler/test-okul-disk.md) |
 | `testler/test-okul-hayati.js` | Yemek listesi, servis, kulüpler | (belgesi sonraki parçada) |
 | `testler/test-okul-sayfasi.js` | Okul sayfası | (belgesi sonraki parçada) |
 | `testler/test-ozellikler.js` | Okulun özellikleri | (belgesi sonraki parçada) |
