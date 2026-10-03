@@ -873,17 +873,17 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
 | `testler/tumtest.sh` | Bütün paketleri ve denetimleri sırayla koşturur | (belgesi sonraki parçada) |
-| `testler/seed.js` | Test okulunu ve hesaplarını kurar | (belgesi sonraki parçada) |
+| `testler/seed.js` | Test okulunu ve hesaplarını kurar | [testler/seed.md](testler/seed.md) |
 | `testler/test-ayarlari.js` | Test veri klasörüne `egitimevi_test` bağlantısını yazar | (belgesi sonraki parçada) |
-| `testler/giris.js` | `araclar/giris.js`'e kısa yol | (belgesi sonraki parçada) |
-| `testler/debug-hazirlik.js` | Hata ayıklama turu için dolu ortam (tumtest dışında) | (belgesi sonraki parçada) |
-| `testler/hazirlik-aktarim.js` | Aktarım ekran görüntüsü için ortam (tumtest dışında) | (belgesi sonraki parçada) |
-| `testler/buton-denetimi.js` | Ölü düğme, tanımsız sayfa ve API yolu denetimi | (belgesi sonraki parçada) |
-| `testler/girdi-denetimi.js` | Bozuk ve kötü niyetli girdiyle 500/sızıntı denetimi | (belgesi sonraki parçada) |
-| `testler/sql-denetimi.js` | SQL'e kullanıcı değeri karışabilir mi | (belgesi sonraki parçada) |
-| `testler/yazim-denetimi.js` | Türkçe yazım denetimi | (belgesi sonraki parçada) |
-| `testler/yetki-denetimi.js` | Her uç × her rol yetki denetimi | (belgesi sonraki parçada) |
-| `testler/guvenlik-test.js` | Güvenlik başlıkları, parça dosyalarının gizliliği ve öteki güvenlik denetimleri | (belgesi sonraki parçada) |
+| `testler/giris.js` | `araclar/giris.js`'e kısa yol | [testler/giris.md](testler/giris.md) |
+| `testler/debug-hazirlik.js` | Hata ayıklama turu için dolu ortam (tumtest dışında) | [testler/debug-hazirlik.md](testler/debug-hazirlik.md) |
+| `testler/hazirlik-aktarim.js` | Aktarım ekran görüntüsü için ortam (tumtest dışında) | [testler/hazirlik-aktarim.md](testler/hazirlik-aktarim.md) |
+| `testler/buton-denetimi.js` | Ölü düğme, tanımsız sayfa ve API yolu denetimi | [testler/buton-denetimi.md](testler/buton-denetimi.md) |
+| `testler/girdi-denetimi.js` | Bozuk ve kötü niyetli girdiyle 500/sızıntı denetimi | [testler/girdi-denetimi.md](testler/girdi-denetimi.md) |
+| `testler/sql-denetimi.js` | SQL'e kullanıcı değeri karışabilir mi | [testler/sql-denetimi.md](testler/sql-denetimi.md) |
+| `testler/yazim-denetimi.js` | Türkçe yazım denetimi | [testler/yazim-denetimi.md](testler/yazim-denetimi.md) |
+| `testler/yetki-denetimi.js` | Her uç × her rol yetki denetimi | [testler/yetki-denetimi.md](testler/yetki-denetimi.md) |
+| `testler/guvenlik-test.js` | Güvenlik başlıkları, parça dosyalarının gizliliği ve öteki güvenlik denetimleri | [testler/guvenlik-test.md](testler/guvenlik-test.md) |
 | `testler/test-admin-gizli.js` | Gizli `/admin`, aynı 404, `.md` kapısı, yönetici uçları | (belgesi sonraki parçada) |
 | `testler/test-adresler.js` | Sayfa adresleri, 301'ler, `%00`, yönlendirme saldırıları | (belgesi sonraki parçada) |
 | `testler/test-aile.js` | Eğitim Evi Aile | (belgesi sonraki parçada) |
