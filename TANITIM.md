@@ -890,12 +890,12 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `testler/test-aktarim.js` | Toplu aktarım (xlsx, xls, ods, csv, metin) | [testler/test-aktarim.md](testler/test-aktarim.md) |
 | `testler/test-anket.js` | Anketler ve duyuru okundu bilgisi | [testler/test-anket.md](testler/test-anket.md) |
 | `testler/test-bildirim.js` | Bildirimlerin tekilliği ve veliye kopyası | [testler/test-bildirim.md](testler/test-bildirim.md) |
-| `testler/test-cakisma.js` | Aynı T.C., e-posta, kullanıcı adı; eşzamanlı istekler | (belgesi sonraki parçada) |
-| `testler/test-devamsizlik.js` | Devamsızlık | (belgesi sonraki parçada) |
-| `testler/test-egitim-yili.js` | Eğitim yılı ve arşiv | (belgesi sonraki parçada) |
-| `testler/test-etut.js` | Hazır Öğretmen rolü, etütler, düzeltmeler, açılış rakamları | (belgesi sonraki parçada) |
-| `testler/test-giris-bilgisi.js` | Toplu giriş bilgisi dağıtımı | (belgesi sonraki parçada) |
-| `testler/test-giris-kayit.js` | Giriş ve kayıt | (belgesi sonraki parçada) |
+| `testler/test-cakisma.js` | Aynı T.C., e-posta, kullanıcı adı; eşzamanlı istekler | [testler/test-cakisma.md](testler/test-cakisma.md) |
+| `testler/test-devamsizlik.js` | Devamsızlık | [testler/test-devamsizlik.md](testler/test-devamsizlik.md) |
+| `testler/test-egitim-yili.js` | Eğitim yılı ve arşiv | [testler/test-egitim-yili.md](testler/test-egitim-yili.md) |
+| `testler/test-etut.js` | Hazır Öğretmen rolü, etütler, düzeltmeler, açılış rakamları | [testler/test-etut.md](testler/test-etut.md) |
+| `testler/test-giris-bilgisi.js` | Toplu giriş bilgisi dağıtımı | [testler/test-giris-bilgisi.md](testler/test-giris-bilgisi.md) |
+| `testler/test-giris-kayit.js` | Giriş ve kayıt | [testler/test-giris-kayit.md](testler/test-giris-kayit.md) |
 | `testler/test-gizli-dosyalar.js` | Gizli ve kişisel dosyaların depoya girmemesi (sunucusuz) | (belgesi sonraki parçada) |
 | `testler/test-hatirlatici-zaman.js` | Hatırlatıcı zaman hesabı (sunucusuz) | (belgesi sonraki parçada) |
 | `testler/test-hatirlatici.js` | Kişisel hatırlatıcılar | (belgesi sonraki parçada) |
