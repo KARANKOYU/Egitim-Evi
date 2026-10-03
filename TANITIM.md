@@ -77,10 +77,13 @@ kendi çocuğunun velisi olabilir. Her okul rolü veritabanında ayrı bir **rol
 eğitim evi/
 ├── server.js          4 satırlık kabuk: sunucu/index.js'i çağırır (eski "node server.js" alışkanlığı için)
 ├── package.json       tek bağımlılık (pg) ve komutlar: start, veritabani-kur, eposta-ayarla, test
+├── package-lock.json  npm ci'nin kurduğu kesin sürümler (pg ve onun alt paketleri)
 ├── yapimcilar.json    "Yapımcılar" listesinin varsayılanı (panelde kaydedilmemişse bu gösterilir)
 ├── badwordsfilter.json yorum süzgecinin kelime listesi (sunucu/yardimci/kufur-suzgeci.js okur)
 ├── .gitignore         depoya girmeyecekler (data/, gizli anahtarlar, günlükler...)
-├── TANITIM.md         bu dosya
+├── README.md          GitHub'ın ilk sayfası: telif notu ("Tüm hakları saklıdır"), Android deposu
+├── CONTRIBUTING.md    katkıda bulunanlar ve kimin hangi fikri verdiği
+├── TANITIM.md         bu dosya (kök dosyalarının her biri: bölüm 15, "Kök dosyaları")
 │
 ├── sunucu/            ARKA UÇ (Node.js)
 │   ├── *.js           giriş noktası, HTTP, API yönlendiricisi, güvenlik, yetki, ayarlar, ortak yardımcılar
@@ -456,6 +459,9 @@ yardımcısı `araclar/giris.js`: iki adımlı giriş zorunlu olduğu için kodu
 `debug-hazirlik.js` ve `hazirlik-aktarim.js` `tumtest` listesinde değil; elle deneme ve ekran görüntüsü için ortam
 kurarlar.
 
+Paketlerin tek tek ne denediği, test hesapları, örnek tablo dosyaları ve yeni bir paketin nasıl ekleneceği:
+[testler/TESTLER.md](testler/TESTLER.md).
+
 Her kod dosyasının `.md`'sindeki **Testleri** bölümü o dosyayı hangi paketlerin koruduğunu yazar. Belgeler için ileride
 `testler/test-belgeler.js` gelecek (her kod dosyasının yanında `.md` ve sekiz bölüm var mı, bu dosyadaki harita tam mı).
 
@@ -496,7 +502,9 @@ kullanmaz, ekranlarını kendi çizer ve sunucunun JSON uçlarını kullanır. �
 
 İndirme sayfası (`/indir/indir.html`, `public/js/indir.js`) sürüm tablosunu `/api/uygulama`'dan alır; sunucu onu
 GitHub Releases'ten okuyup süzer ve 15 dakika saklar (`sunucu/uygulama-surum.js`). Android deposunun kendi `TANITIM.md`'si
-ve her `.java` dosyasının `.md`'si belgelemenin son parçasında yazılacak.
+var: uygulamanın ekranlarını, sunucuyla konuşmasını, oturum ve cihaz anahtarlarını, derleme ve sürüm yayınlamayı anlatır;
+her `.java` dosyasının yanında sekiz bölümlü `.md`'si, kod dışı dosyası olan her klasörde `KLASOR.md`'si durur. Depo:
+[github.com/KARANKOYU/Egitim-Evi-App](https://github.com/KARANKOYU/Egitim-Evi-App).
 
 ## 11. Sözlük
 
@@ -621,25 +629,39 @@ Tek bir sunuculu paketi elle koşmak için `tumtest.sh`'in `sunucu_baslat` ve d�
 - Yoksa: `git log --oneline -10` ve `git status` ile son değişikliğe bak; her kod dosyasının `.md`'sindeki **Son durum**
   bölümü o dosyada en son neyin değiştiğini ve bilinen açık işi yazar. Kılavuzun "Henüz eklenmeyenler" bölümü
   kullanıcıya görünen eksikleri listeler.
-- **Belgeleme durumu:** belgeler parça parça yazılıyor. 1. parça: bu dosya, `server.md` ve `sunucu/` kökündeki 17
-  dosyanın `.md`'si, statik sunucunun `.md` kapısı. 2. parça bitti: `sunucu/bolumler/`'in 33 dosyasının hepsinin
-  `.md`'si. 3. parça bitti: `sunucu/veri/` kökündeki 7, `sunucu/veri/depo/`'daki 28 ve `sunucu/yardimci/`'deki 13 dosya
-  ile `SEMA.md` — `sunucu/` klasörünün tamamı belgelendi. 4. parça başladı: `public/js/parcalar/` 00–04e (11 dosya). Sıradakiler: `public/js/`'in kalanı ve `CSS.md`; `araclar/`,
-  `testler/`, `TESTLER.md` ve `test-belgeler.js`; en son Android deposu. Aşağıdaki haritada belgesi henüz olmayan
-  dosyalar işaretli.
+- **Belgeleme durumu (3 Ekim 2026): kod ve klasör belgeleri bitti.** İzlenen 238 kod dosyasının hepsinin (`server.js`,
+  `sunucu/`'nun 98 dosyası, `public/js/`'in 65 dosyası ve `public/sw.js`, `araclar/`'ın 12, `testler/`'in 61 dosyası)
+  yanında sekiz bölümlü `.md`'si var. Kod dışı dosyası olan 11 klasörün her birinin klasör belgesi var (`KLASOR.md`;
+  `testler/` için `TESTLER.md`, CSS parçaları için `CSS.md`, şema dosyaları için `SEMA.md`); kök dosyaları bu dosyanın
+  haritasında tek tek anlatılır. Aşağıdaki haritada her satır kendi belgesine bağlıdır. Şimdi `features/` yazılıyor:
+  her özellik kendi klasöründe, her rolün gözünden, birbirine bağlı belgeler; hem bugün kodda olanı hem kararlaştırılmış
+  ama henüz kodlanmamış tasarımı anlatır, her belgedeki **Durum** satırı hangisi olduğunu söyler (henüz depoda değil).
+  Android uygulaması ayrı depoda; onun da kendi `TANITIM.md`'si, her Java dosyasının `.md`'si ve klasör belgeleri var:
+  [github.com/KARANKOYU/Egitim-Evi-App](https://github.com/KARANKOYU/Egitim-Evi-App). Belgeleri denetleyen
+  `testler/test-belgeler.js` henüz yok (bölüm 8).
 - Belgeleme sırasında bulunan bilinen bir hata: `sunucu/okullar.js` `okulVeri`'yi yüklenmeden (`null` iken) dışa
   veriyor; `GET /api/okullar/iller` cevabındaki `tipler` bu yüzden hep boş. Ayrıntı [sunucu/okullar.md](sunucu/okullar.md)'de.
 
 ## 15. Belge haritası
 
-Her kod dosyası ve açıklaması, klasör klasör. Belgesi yazılmış olanlar bağlantılıdır; henüz yazılmamış olanlar
-"(belgesi sonraki parçada)" diye işaretli. Belge adı hep kod dosyasının adıdır, uzantısı `.md`.
+Her kod dosyası ve açıklaması, klasör klasör; her satır kendi belgesine bağlıdır. Kod dosyasının belgesinin adı hep
+kod dosyasının adıdır, uzantısı `.md`. Kod dışı dosyalar (HTML, CSS, SQL, resim, yazı tipi, örnek tablolar...) bulundukları
+klasörün belgesinde tek tek anlatılır (yalnız ekran fotoğrafları tek tek değil, alt klasör alt klasör): aşağıdaki **Klasör
+belgeleri** tablosu. Kök dosyalarının ayrı belgesi yoktur, hepsi hemen aşağıda tek satırla anlatılır.
 
-### Kök
+### Kök dosyaları
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `server.js` | 4 satırlık kabuk: `sunucu/index.js`'i başlatır | [server.md](server.md) |
+| `server.js` | 4 satırlık kabuk: `sunucu/index.js`'i başlatır; yanındaki `server.md` onun belgesi | [server.md](server.md) |
+| `package.json` | Paket tanımı: adı `egitim-evi`, sürüm 2.0.0, `private` (npm'e yayımlanmaz), giriş `sunucu/index.js`, Node 20 ve üstü; komutlar `start`, `veritabani-kur`, `eposta-ayarla`, `test` (`bash testler/tumtest.sh`); tek bağımlılık `pg`, sabit sürümle | bu satır; komutlar bölüm 13'te |
+| `package-lock.json` | `npm ci`'nin kurduğu kesin sürümler: `pg` ve onun kendi alt paketleri (`pg-pool`, `pg-protocol`, `pg-types`...). Elle düzenlenmez; `package.json` değişince npm yeniler | bu satır |
+| `.gitignore` | Depoya asla girmeyecekler: `data/` (ayarlar, yönetici hesapları, yedekler, yüklenen dosyalar), `testler/testdata/`, nerede durursa dursun `admins.json`, anahtar ve sertifika dosyaları, veritabanı dökümleri, günlükler, `node_modules/`, araçların tarayıcı profilleri, `*.bat`, `araclar/okullari-cek.js`, `public/_*`, `yapi/`, `.claude/`. `testler/test-gizli-dosyalar.js` aynı kuralları ayrıca denetler | bu satır; bölüm 3 ("Depoda olmayanlar") ve 12 |
+| `README.md` | GitHub'da deponun ilk sayfası: Android deposunun bağlantısı ve telif notu. **Tüm hakları saklıdır:** depo yalnız incelensin diye herkese açık, açık kaynak lisansı değil; yazılı izin olmadan kodu kopyalamak, değiştirmek, dağıtmak, başka bir sunucuda çalıştırmak ve "Eğitim Evi" adını ve logosunu kullanmak yasak (Türkçe ve İngilizce) | [README.md](README.md) |
+| `CONTRIBUTING.md` | Katkıda bulunanlar: proje sahibi ve grup arkadaşları (GitHub adlarıyla), kimin hangi fikri verdiği, yapay zekânın payı | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| `TANITIM.md` | Bu dosya: projenin baştan sona turu ve bütün belgelerin haritası | bu dosya |
+| `yapimcilar.json` | "Yapımcılar" düğmesinin açtığı listenin varsayılanı (`ad`, `github`, `katki`); yönetici Site Ayarları'ndan bir liste kaydetmediyse bu gösterilir (yapımcılarda `config.yml` adımı yok). `sunucu/site.js` okur, değişince en geç 30 sn içinde yeniden okur | [sunucu/site.md](sunucu/site.md) |
+| `badwordsfilter.json` | Yorum süzgecinin kelime listesi (`aciklama` ve `kelimeler`); `sunucu/yardimci/kufur-suzgeci.js` okur, değişince 30 sn içinde yeniden okur | [sunucu/yardimci/kufur-suzgeci.md](sunucu/yardimci/kufur-suzgeci.md) |
 
 ### `sunucu/` (kök)
 
@@ -775,7 +797,9 @@ Her kod dosyası ve açıklaması, klasör klasör. Belgesi yazılmış olanlar 
 | `public/js/belge.js` | Düz belge sayfaları (aydınlatma metni, koşullar) için tema düğmesi ve Yapımcılar | [public/js/belge.md](public/js/belge.md) |
 | `public/js/indir.js` | İndirme sayfasının Android sürüm tablosu | [public/js/indir.md](public/js/indir.md) |
 
-CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/css/parcalar/CSS.md` (belgesi sonraki parçada).
+CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılır: [public/css/parcalar/CSS.md](public/css/parcalar/CSS.md).
+`public/` klasörünün kod dışı dosyaları (`index.html`, `manifest.json`, simgeler...) ve alt klasörleri: aşağıdaki
+**Klasör belgeleri**.
 
 ### `public/js/parcalar/`
 
@@ -868,11 +892,12 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 
 ### `testler/`
 
-`testler/tumtest.sh` ve genel test düzeni ayrıca `testler/TESTLER.md`'de anlatılacak (belgesi sonraki parçada).
+`testler/tumtest.sh`, genel test düzeni, test hesapları ve örnek tablo dosyaları ayrıca
+[testler/TESTLER.md](testler/TESTLER.md)'de anlatılır.
 
 | Dosya | Ne yapar | Belgesi |
 |---|---|---|
-| `testler/tumtest.sh` | Bütün paketleri ve denetimleri sırayla koşturur | (belgesi sonraki parçada) |
+| `testler/tumtest.sh` | Bütün paketleri ve denetimleri sırayla koşturur | [testler/TESTLER.md](testler/TESTLER.md) |
 | `testler/seed.js` | Test okulunu ve hesaplarını kurar | [testler/seed.md](testler/seed.md) |
 | `testler/test-ayarlari.js` | Test veri klasörüne `egitimevi_test` bağlantısını yazar | [testler/test-ayarlari.md](testler/test-ayarlari.md) |
 | `testler/giris.js` | `araclar/giris.js`'e kısa yol | [testler/giris.md](testler/giris.md) |
@@ -935,6 +960,26 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `testler/test-yonetim.js` | Okulun açtığı hesaplar ve hesap modeli | [testler/test-yonetim.md](testler/test-yonetim.md) |
 | `testler/test-yorum-ek.js` | Açılış sayfası yorumları ve ekler | [testler/test-yorum-ek.md](testler/test-yorum-ek.md) |
 
+### Klasör belgeleri
+
+Kod dışı dosyası olan her klasörün bir belgesi var; belge klasörün ne işe yaradığını ve içindeki her dosyayı (ne olduğu,
+kimin kullandığı, nasıl üretilip güncellendiği, dikkat edilecekler) tek tek anlatır. `ekran-goruntuleri/`'ndeki
+fotoğraflar tek tek değil, alt klasör alt klasör ve adlandırma kuralıyla anlatılır.
+
+| Klasör | İçindekiler | Belgesi |
+|---|---|---|
+| `public/` | Tek sayfalık uygulamanın kabuğu `index.html`, `404.html`, `okul-bulunamadi.html`, `manifest.json`, simgeler (`simge*.png`, `simge.svg`), servis çalışanının yeri; alt klasörlerin haritası | [public/KLASOR.md](public/KLASOR.md) |
+| `public/css/parcalar/` | 38 CSS parçası (`00-temel.css` ... `36-ayar-kartlari.css`): birleşme sırası, renk değişkenleri ve koyu tema, her parçanın neyi biçimlendirdiği | [public/css/parcalar/CSS.md](public/css/parcalar/CSS.md) |
+| `public/indir/` | `indir.html`: Android uygulamasının sürüm tablosu ve iPhone/iPad için "Ana Ekrana Ekle" adımları | [public/indir/KLASOR.md](public/indir/KLASOR.md) |
+| `public/kosullar/` | `kosullar.html`: kullanım koşulları | [public/kosullar/KLASOR.md](public/kosullar/KLASOR.md) |
+| `public/kvkk/` | `kvkk.html`: aydınlatma metni; sürümü değişince herkes yeniden onaylar | [public/kvkk/KLASOR.md](public/kvkk/KLASOR.md) |
+| `public/yazitipi/` | IBM Plex Sans ve Newsreader, dört `.woff2` dosyası (latin ve latin-ext) | [public/yazitipi/KLASOR.md](public/yazitipi/KLASOR.md) |
+| `sunucu/veri/sema/` | 35 numaralı SQL şema dosyası: her biri ne ekler, neden, hangi depo dosyası kullanır; tablo dizini | [sunucu/veri/sema/SEMA.md](sunucu/veri/sema/SEMA.md) |
+| `testler/` | `tumtest.sh`, test düzeni, test hesapları, örnek `.xls`/`.xlsx` dosyaları, yeni paket ekleme | [testler/TESTLER.md](testler/TESTLER.md) |
+| `belge/` | `KILAVUZ.md`, `SUNUCUYA-KURULUM.md`, `NASIL-YAPILDI.html` ve iki gizli ayar dosyasının örnekleri (`config.ornek.yml`, `admins.ornek.json`) | [belge/KLASOR.md](belge/KLASOR.md) |
+| `ekran-goruntuleri/` | Ekranlarla kılavuz: `index.html` albümü ve 14 alt klasördeki ekran fotoğrafları; `araclar/gezinti.js` üretir | [ekran-goruntuleri/KLASOR.md](ekran-goruntuleri/KLASOR.md) |
+| `tasarim/` | Tasarım denemeleri: `tema-secimi.html` ve `onizleme.html`; uygulamaya girmez | [tasarim/KLASOR.md](tasarim/KLASOR.md) |
+
 ### Öteki belgeler
 
 | Belge | Ne anlatır |
@@ -943,3 +988,4 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | [belge/SUNUCUYA-KURULUM.md](belge/SUNUCUYA-KURULUM.md) | Linux VPS'e kurulum ve `egitimevi.org` |
 | `belge/NASIL-YAPILDI.html` | Projenin nasıl yazıldığının hikâyesi |
 | `ekran-goruntuleri/index.html` | Ekranlarla kılavuz (müdürün gözünden bütün okul yönetimi, sonra her rol) |
+| [Android deposunun TANITIM.md'si](https://github.com/KARANKOYU/Egitim-Evi-App/blob/main/TANITIM.md) | Yerel Android uygulamasının turu ve kendi belge haritası (ayrı depo) |

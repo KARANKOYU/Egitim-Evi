@@ -35,7 +35,7 @@ yönetici yoksa ilk yöneticiyi kurar ve kurallara aykırı eski kayıtları pen
 
 ### `depo` nesnesi
 
-Her anahtar `sunucu/veri/depo/` altındaki bir dosyadır (belgeleri sonraki parçada): `kullanicilar`, `roller`, `oturumlar`,
+Her anahtar `sunucu/veri/depo/` altındaki bir dosyadır (belgeleri yanlarında, [TANITIM.md](../../TANITIM.md) haritasında): `kullanicilar`, `roller`, `oturumlar`,
 `okullar`, `siniflar`, `odevler`, `quiz`, `sinavlar`, `mesajlar`, `anketler`, `okulHayati` (`okul-hayati.js`),
 `servisYoklama` (`servis-yoklama.js`), `cihazlar`, `odevDosyalari` (`odev-dosyalari.js`), `okulDisk` (`okul-disk.js`),
 `etutler`, `onaylar`, `okulSayfalari` (`okul-sayfalari.js`), `yorumlar`, `ekler`, `ogrenciGecmisi` (`ogrenci-gecmisi.js`),

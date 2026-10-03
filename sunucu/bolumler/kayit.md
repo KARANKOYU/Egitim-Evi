@@ -221,8 +221,8 @@ Ayrıntılar:
   - `../site` ([site.md](../site.md)) — `istemciAyarlari` (`bildirimAralikDk`);
   - `../yonetim-cerezi` ([yonetim-cerezi.md](../yonetim-cerezi.md)) — `yoneticiMi`, `cerezVer`, `cerezSil`,
     `YONETIM_ADRESI`;
-  - `../yardimci/bulanik-arama` — `AramaDizini`, `sade` (okul adresi araması; belgesi henüz yok:
-    `sunucu/yardimci/bulanik-arama.js`);
+  - `../yardimci/bulanik-arama` ([bulanik-arama.md](../yardimci/bulanik-arama.md)) — `AramaDizini`, `sade` (okul adresi
+    araması);
   - bölümler: `./islem-kaydi` (`islemYaz`), `./ozellikler` (`kullanicininKapalilari`), `./okul-sayfasi`
     (`okulSayfasiGorunumu`);
   - `../veri` — `depo`, `islem`, `cakisma`.
