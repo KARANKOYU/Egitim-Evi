@@ -635,7 +635,8 @@ Tek bir sunuculu paketi elle koşmak için `tumtest.sh`'in `sunucu_baslat` ve d�
   `testler/` için `TESTLER.md`, CSS parçaları için `CSS.md`, şema dosyaları için `SEMA.md`); kök dosyaları bu dosyanın
   haritasında tek tek anlatılır. Aşağıdaki haritada her satır kendi belgesine bağlıdır. Şimdi `features/` yazılıyor:
   her özellik kendi klasöründe, her rolün gözünden, birbirine bağlı belgeler; hem bugün kodda olanı hem kararlaştırılmış
-  ama henüz kodlanmamış tasarımı anlatır, her belgedeki **Durum** satırı hangisi olduğunu söyler (henüz depoda değil).
+  ama henüz kodlanmamış tasarımı anlatır, her belgedeki **Durum** satırı hangisi olduğunu söyler. Giriş sayfası
+  [features/README.md](features/README.md); 43 klasörün 32 tanesi yazıldı (3 Ekim 2026), kalanlar ve rol kapıları yazılıyor.
   Android uygulaması ayrı depoda; onun da kendi `TANITIM.md`'si, her Java dosyasının `.md`'si ve klasör belgeleri var:
   [github.com/KARANKOYU/Egitim-Evi-App](https://github.com/KARANKOYU/Egitim-Evi-App). Belgeleri denetleyen
   `testler/test-belgeler.js` henüz yok (bölüm 8).
@@ -979,6 +980,7 @@ fotoğraflar tek tek değil, alt klasör alt klasör ve adlandırma kuralıyla a
 | `belge/` | `KILAVUZ.md`, `SUNUCUYA-KURULUM.md`, `NASIL-YAPILDI.html` ve iki gizli ayar dosyasının örnekleri (`config.ornek.yml`, `admins.ornek.json`) | [belge/KLASOR.md](belge/KLASOR.md) |
 | `ekran-goruntuleri/` | Ekranlarla kılavuz: `index.html` albümü ve 14 alt klasördeki ekran fotoğrafları; `araclar/gezinti.js` üretir | [ekran-goruntuleri/KLASOR.md](ekran-goruntuleri/KLASOR.md) |
 | `tasarim/` | Tasarım denemeleri: `tema-secimi.html` ve `onizleme.html`; uygulamaya girmez | [tasarim/KLASOR.md](tasarim/KLASOR.md) |
+| `features/` | Özellik belgeleri: her özellik bir klasör, her alt özellik ayrı belge, rol rol ve adım adım; bugün kodda olan ve kararlaştırılan tasarım (her belgede **Durum** satırı). 43 klasörün 32 tanesi yazıldı (3 Ekim 2026) | [features/README.md](features/README.md) |
 
 ### Öteki belgeler
 
