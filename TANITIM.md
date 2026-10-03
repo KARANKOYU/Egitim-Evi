@@ -908,32 +908,32 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `testler/test-odev-saat.js` | Ödev teslim saati ve geçmiş ödevin düzenlenmesi | [testler/test-odev-saat.md](testler/test-odev-saat.md) |
 | `testler/test-okul-agi.js` | 300 kişi tek IP: yük ve saldırı koruması | [testler/test-okul-agi.md](testler/test-okul-agi.md) |
 | `testler/test-okul-disk.js` | Okul başına disk sınırı | [testler/test-okul-disk.md](testler/test-okul-disk.md) |
-| `testler/test-okul-hayati.js` | Yemek listesi, servis, kulüpler | (belgesi sonraki parçada) |
-| `testler/test-okul-sayfasi.js` | Okul sayfası | (belgesi sonraki parçada) |
-| `testler/test-ozellikler.js` | Okulun özellikleri | (belgesi sonraki parçada) |
-| `testler/test-program.js` | Sınıflar ve ders programı | (belgesi sonraki parçada) |
-| `testler/test-push.js` | Telefon bildirimi şifrelemesi (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-quiz-metin.js` | Quiz yapıştırma ayrıştırıcısı (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-quiz.js` | Ödevin quizi | (belgesi sonraki parçada) |
-| `testler/test-resim-kucult.js` | Tarayıcıda resim küçültme, başsız tarayıcıyla (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-rol.js` | Yetki kataloğu ve roller | (belgesi sonraki parçada) |
-| `testler/test-servis-konum.js` | Servisçi, canlı konum, yaklaşma bildirimi | (belgesi sonraki parçada) |
-| `testler/test-servis-pencere.js` | Servis saat aralıkları (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-servis-yoklama.js` | Servis yoklaması, cihaz anahtarı, uygulama oturumu | (belgesi sonraki parçada) |
-| `testler/test-sifre.js` | Şifremi unuttum akışı | (belgesi sonraki parçada) |
-| `testler/test-sinav.js` | Sınavlar | (belgesi sonraki parçada) |
-| `testler/test-siniflarim.js` | Sınıflarım, ödev serisi, programdan yoklama | (belgesi sonraki parçada) |
-| `testler/test-site-ayarlari.js` | Site ayarları ve okul adresleri | (belgesi sonraki parçada) |
-| `testler/test-takvim.js` | Takvim | (belgesi sonraki parçada) |
-| `testler/test-uygulama-surum.js` | İndirme sayfasının sürüm listesi (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-vekil-ip.js` | Ters vekil arkasında istemci adresi (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-veli-coklu.js` | Veli bağları, çok çocuk, çok rol | (belgesi sonraki parçada) |
-| `testler/test-xlsx.js` | Excel modülü (sunucusuz) | (belgesi sonraki parçada) |
-| `testler/test-yedek.js` | Yedek alma ve geri yükleme | (belgesi sonraki parçada) |
-| `testler/test-yetiskin.js` | Yetişkin hesabı ve okul rolleri | (belgesi sonraki parçada) |
-| `testler/test-yonetici-dosyasi.js` | `admins.json` ve canlı okuma | (belgesi sonraki parçada) |
-| `testler/test-yonetim.js` | Okulun açtığı hesaplar ve hesap modeli | (belgesi sonraki parçada) |
-| `testler/test-yorum-ek.js` | Açılış sayfası yorumları ve ekler | (belgesi sonraki parçada) |
+| `testler/test-okul-hayati.js` | Yemek listesi, servis, kulüpler | [testler/test-okul-hayati.md](testler/test-okul-hayati.md) |
+| `testler/test-okul-sayfasi.js` | Okul sayfası | [testler/test-okul-sayfasi.md](testler/test-okul-sayfasi.md) |
+| `testler/test-ozellikler.js` | Okulun özellikleri | [testler/test-ozellikler.md](testler/test-ozellikler.md) |
+| `testler/test-program.js` | Sınıflar ve ders programı | [testler/test-program.md](testler/test-program.md) |
+| `testler/test-push.js` | Telefon bildirimi şifrelemesi (sunucusuz) | [testler/test-push.md](testler/test-push.md) |
+| `testler/test-quiz-metin.js` | Quiz yapıştırma ayrıştırıcısı (sunucusuz) | [testler/test-quiz-metin.md](testler/test-quiz-metin.md) |
+| `testler/test-quiz.js` | Ödevin quizi | [testler/test-quiz.md](testler/test-quiz.md) |
+| `testler/test-resim-kucult.js` | Tarayıcıda resim küçültme, başsız tarayıcıyla (sunucusuz) | [testler/test-resim-kucult.md](testler/test-resim-kucult.md) |
+| `testler/test-rol.js` | Yetki kataloğu ve roller | [testler/test-rol.md](testler/test-rol.md) |
+| `testler/test-servis-konum.js` | Servisçi, canlı konum, yaklaşma bildirimi | [testler/test-servis-konum.md](testler/test-servis-konum.md) |
+| `testler/test-servis-pencere.js` | Servis saat aralıkları (sunucusuz) | [testler/test-servis-pencere.md](testler/test-servis-pencere.md) |
+| `testler/test-servis-yoklama.js` | Servis yoklaması, cihaz anahtarı, uygulama oturumu | [testler/test-servis-yoklama.md](testler/test-servis-yoklama.md) |
+| `testler/test-sifre.js` | Şifremi unuttum akışı | [testler/test-sifre.md](testler/test-sifre.md) |
+| `testler/test-sinav.js` | Sınavlar | [testler/test-sinav.md](testler/test-sinav.md) |
+| `testler/test-siniflarim.js` | Sınıflarım, ödev serisi, programdan yoklama | [testler/test-siniflarim.md](testler/test-siniflarim.md) |
+| `testler/test-site-ayarlari.js` | Site ayarları ve okul adresleri | [testler/test-site-ayarlari.md](testler/test-site-ayarlari.md) |
+| `testler/test-takvim.js` | Takvim | [testler/test-takvim.md](testler/test-takvim.md) |
+| `testler/test-uygulama-surum.js` | İndirme sayfasının sürüm listesi (sunucusuz) | [testler/test-uygulama-surum.md](testler/test-uygulama-surum.md) |
+| `testler/test-vekil-ip.js` | Ters vekil arkasında istemci adresi (sunucusuz) | [testler/test-vekil-ip.md](testler/test-vekil-ip.md) |
+| `testler/test-veli-coklu.js` | Veli bağları, çok çocuk, çok rol | [testler/test-veli-coklu.md](testler/test-veli-coklu.md) |
+| `testler/test-xlsx.js` | Excel modülü (sunucusuz) | [testler/test-xlsx.md](testler/test-xlsx.md) |
+| `testler/test-yedek.js` | Yedek alma ve geri yükleme | [testler/test-yedek.md](testler/test-yedek.md) |
+| `testler/test-yetiskin.js` | Yetişkin hesabı ve okul rolleri | [testler/test-yetiskin.md](testler/test-yetiskin.md) |
+| `testler/test-yonetici-dosyasi.js` | `admins.json` ve canlı okuma | [testler/test-yonetici-dosyasi.md](testler/test-yonetici-dosyasi.md) |
+| `testler/test-yonetim.js` | Okulun açtığı hesaplar ve hesap modeli | [testler/test-yonetim.md](testler/test-yonetim.md) |
+| `testler/test-yorum-ek.js` | Açılış sayfası yorumları ve ekler | [testler/test-yorum-ek.md](testler/test-yorum-ek.md) |
 
 ### Öteki belgeler
 
