@@ -874,7 +874,7 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 |---|---|---|
 | `testler/tumtest.sh` | Bütün paketleri ve denetimleri sırayla koşturur | (belgesi sonraki parçada) |
 | `testler/seed.js` | Test okulunu ve hesaplarını kurar | [testler/seed.md](testler/seed.md) |
-| `testler/test-ayarlari.js` | Test veri klasörüne `egitimevi_test` bağlantısını yazar | (belgesi sonraki parçada) |
+| `testler/test-ayarlari.js` | Test veri klasörüne `egitimevi_test` bağlantısını yazar | [testler/test-ayarlari.md](testler/test-ayarlari.md) |
 | `testler/giris.js` | `araclar/giris.js`'e kısa yol | [testler/giris.md](testler/giris.md) |
 | `testler/debug-hazirlik.js` | Hata ayıklama turu için dolu ortam (tumtest dışında) | [testler/debug-hazirlik.md](testler/debug-hazirlik.md) |
 | `testler/hazirlik-aktarim.js` | Aktarım ekran görüntüsü için ortam (tumtest dışında) | [testler/hazirlik-aktarim.md](testler/hazirlik-aktarim.md) |
@@ -884,12 +884,12 @@ CSS parçaları (`public/css/parcalar/*.css`) tek belgede anlatılacak: `public/
 | `testler/yazim-denetimi.js` | Türkçe yazım denetimi | [testler/yazim-denetimi.md](testler/yazim-denetimi.md) |
 | `testler/yetki-denetimi.js` | Her uç × her rol yetki denetimi | [testler/yetki-denetimi.md](testler/yetki-denetimi.md) |
 | `testler/guvenlik-test.js` | Güvenlik başlıkları, parça dosyalarının gizliliği ve öteki güvenlik denetimleri | [testler/guvenlik-test.md](testler/guvenlik-test.md) |
-| `testler/test-admin-gizli.js` | Gizli `/admin`, aynı 404, `.md` kapısı, yönetici uçları | (belgesi sonraki parçada) |
-| `testler/test-adresler.js` | Sayfa adresleri, 301'ler, `%00`, yönlendirme saldırıları | (belgesi sonraki parçada) |
-| `testler/test-aile.js` | Eğitim Evi Aile | (belgesi sonraki parçada) |
-| `testler/test-aktarim.js` | Toplu aktarım (xlsx, xls, ods, csv, metin) | (belgesi sonraki parçada) |
-| `testler/test-anket.js` | Anketler ve duyuru okundu bilgisi | (belgesi sonraki parçada) |
-| `testler/test-bildirim.js` | Bildirimlerin tekilliği ve veliye kopyası | (belgesi sonraki parçada) |
+| `testler/test-admin-gizli.js` | Gizli `/admin`, aynı 404, `.md` kapısı, yönetici uçları | [testler/test-admin-gizli.md](testler/test-admin-gizli.md) |
+| `testler/test-adresler.js` | Sayfa adresleri, 301'ler, `%00`, yönlendirme saldırıları | [testler/test-adresler.md](testler/test-adresler.md) |
+| `testler/test-aile.js` | Eğitim Evi Aile | [testler/test-aile.md](testler/test-aile.md) |
+| `testler/test-aktarim.js` | Toplu aktarım (xlsx, xls, ods, csv, metin) | [testler/test-aktarim.md](testler/test-aktarim.md) |
+| `testler/test-anket.js` | Anketler ve duyuru okundu bilgisi | [testler/test-anket.md](testler/test-anket.md) |
+| `testler/test-bildirim.js` | Bildirimlerin tekilliği ve veliye kopyası | [testler/test-bildirim.md](testler/test-bildirim.md) |
 | `testler/test-cakisma.js` | Aynı T.C., e-posta, kullanıcı adı; eşzamanlı istekler | (belgesi sonraki parçada) |
 | `testler/test-devamsizlik.js` | Devamsızlık | (belgesi sonraki parçada) |
 | `testler/test-egitim-yili.js` | Eğitim yılı ve arşiv | (belgesi sonraki parçada) |
